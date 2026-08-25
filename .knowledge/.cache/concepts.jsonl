@@ -521,6 +521,7 @@
 {"category": "objective", "id": "requirement:external-boundary-runtime", "path": ".knowledge/requirement/external-boundary-runtime.md", "role": "primary", "title": "External Boundary Runtime Script", "type": "requirement"}
 {"category": "objective", "id": "requirement:external-public-assets", "path": ".knowledge/requirement/external-public-assets.md", "role": "primary", "title": "External Public Assets", "type": "requirement"}
 {"category": "objective", "id": "requirement:fasthttp-middleware-registration", "path": ".knowledge/requirement/fasthttp-middleware-registration.md", "role": "primary", "title": "Application Middleware Registration On The fasthttp Build", "type": "requirement"}
+{"category": "objective", "id": "requirement:filter-form-state-round-trip", "path": ".knowledge/requirement/filter-form-state-round-trip.md", "role": "primary", "title": "Filter Form State Round Trip", "type": "requirement"}
 {"category": "objective", "id": "requirement:firestore-auth-backend", "path": ".knowledge/requirement/firestore-auth-backend.md", "role": "primary", "title": "Firestore Authentication Backend", "type": "requirement"}
 {"category": "objective", "id": "requirement:firestore-auth-stores", "path": ".knowledge/requirement/firestore-auth-stores.md", "role": "primary", "title": "Firestore Account-Side Authentication Stores", "type": "requirement"}
 {"category": "objective", "id": "requirement:firestore-generation", "path": ".knowledge/requirement/firestore-generation.md", "role": "primary", "title": "Firestore Code Generation", "type": "requirement"}
@@ -575,6 +576,7 @@
 {"category": "objective", "id": "requirement:rate-limit-problem-responses", "path": ".knowledge/requirement/rate-limit-problem-responses.md", "role": "primary", "title": "Rate Limit Problem Responses", "type": "requirement"}
 {"category": "objective", "id": "requirement:read-write-splitting", "path": ".knowledge/requirement/read-write-splitting.md", "role": "primary", "title": "Read-Write Split Connections", "type": "requirement"}
 {"category": "objective", "id": "requirement:reloadable-component-endpoint", "path": ".knowledge/requirement/reloadable-component-endpoint.md", "role": "primary", "title": "Reloadable Component Endpoint", "type": "requirement"}
+{"category": "objective", "id": "requirement:repeated-query-parameter", "path": ".knowledge/requirement/repeated-query-parameter.md", "role": "primary", "title": "Repeated Query Parameter", "type": "requirement"}
 {"category": "objective", "id": "requirement:response-gzip-encoder", "path": ".knowledge/requirement/response-gzip-encoder.md", "role": "primary", "title": "Gzip Response Encoder", "type": "requirement"}
 {"category": "objective", "id": "requirement:scriptless-action-forms", "path": ".knowledge/requirement/scriptless-action-forms.md", "role": "primary", "title": "Scriptless Action Forms", "type": "requirement"}
 {"category": "objective", "id": "requirement:second-build-feature-parity", "path": ".knowledge/requirement/second-build-feature-parity.md", "role": "primary", "title": "Feature Parity For The fasthttp Second Build", "type": "requirement"}
@@ -628,6 +630,7 @@
 {"category": "constraint", "id": "rule:page-directory-naming", "path": ".knowledge/rule/page-directory-naming.md", "role": "supporting", "title": "Page Directory Naming", "type": "rule"}
 {"category": "constraint", "id": "rule:production-readiness-checks", "path": ".knowledge/rule/production-readiness-checks.md", "role": "supporting", "title": "Production Readiness Checks", "type": "rule"}
 {"category": "constraint", "id": "rule:project-integrity-checks", "path": ".knowledge/rule/project-integrity-checks.md", "role": "supporting", "title": "Project Integrity Checks", "type": "rule"}
+{"category": "constraint", "id": "rule:query-array-wire-format", "path": ".knowledge/rule/query-array-wire-format.md", "role": "supporting", "title": "Query Array Wire Format", "type": "rule"}
 {"category": "constraint", "id": "rule:query-reproduction-format", "path": ".knowledge/rule/query-reproduction-format.md", "role": "supporting", "title": "Query Reproduction Format", "type": "rule"}
 {"category": "constraint", "id": "rule:rdb-dsn-resolution", "path": ".knowledge/rule/rdb-dsn-resolution.md", "role": "supporting", "title": "RDB DSN Scheme Resolution", "type": "rule"}
 {"category": "constraint", "id": "rule:route-and-template-checks", "path": ".knowledge/rule/route-and-template-checks.md", "role": "supporting", "title": "Route and Template Checks", "type": "rule"}

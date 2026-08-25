@@ -112,6 +112,13 @@ if (window.popcornweb) {
 `update()` replaces the whole query string, just as a GET form does. Read and
 pass back any parameters that should survive.
 
+An array value becomes one pair per element — `{ tag: ["boots", "hats"] }`
+writes `?tag=boots&tag=hats` — which is the repeated key a checkbox group
+submits and the only array spelling the server reads. An empty array writes
+nothing, the same query a form with no box checked sends. Joining the elements
+into one comma-separated value would produce a query no form could have written,
+and a comma inside an element could never be told from the join.
+
 ## One route, two kinds of response
 
 The optimization does not introduce a second page implementation. It adds a

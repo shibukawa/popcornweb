@@ -234,8 +234,8 @@ func registerConfigDefinition0() {
 		},
 		FlagMetas: []cliparser.FieldMeta{
 			{Prefix: "auth", Key: "enabled", Kind: cliparser.KindBool},
-			{Prefix: "auth", Key: "backend", Help: "storage backend of the authentication tables: rdb or dynamo"},
-			{Prefix: "auth", Key: "mode", Help: "oidc_only, oidc_passkey, passkey_only, or jwt_only"},
+			{Prefix: "auth", Key: "backend", Help: "storage backend of the authentication tables: rdb or dynamo", Enum: []string{"rdb", "dynamo"}},
+			{Prefix: "auth", Key: "mode", Help: "oidc_only, oidc_passkey, passkey_only, or jwt_only", Enum: []string{"oidc_only", "oidc_passkey", "passkey_only", "jwt_only"}},
 			{Prefix: "auth", Key: "login_path", Help: "path that starts the provider flow"},
 			{Prefix: "auth", Key: "callback_path"},
 			{Prefix: "auth", Key: "logout_path"},
@@ -272,7 +272,7 @@ func registerConfigDefinition0() {
 			{Prefix: "auth", Key: "oidc.claim.values", Kind: cliparser.KindArray},
 			{Prefix: "auth", Key: "oidc.claim.match", Help: "any or all"},
 			{Prefix: "auth", Key: "oidc.registered_claims", Help: "claims compared against the allowlist; defaults to identity_claim", Kind: cliparser.KindArray},
-			{Prefix: "auth", Key: "oidc.logout_scope", Help: "what a logout does to the provider session: reconfirm or global"},
+			{Prefix: "auth", Key: "oidc.logout_scope", Help: "what a logout does to the provider session: reconfirm or global", Enum: []string{"reconfirm", "global"}},
 			{Prefix: "auth", Key: "oidc.provider_logout", Help: "removed; use auth.oidc.logout_scope", Kind: cliparser.KindBool},
 			{Prefix: "auth", Key: "oidc.allow_global_logout_request", Help: "permit a logout request to escalate to a global sign-out", Kind: cliparser.KindBool},
 			{Prefix: "auth", Key: "oidc.allow_loopback_http", Help: "permit an http loopback issuer during development", Kind: cliparser.KindBool},
@@ -284,11 +284,11 @@ func registerConfigDefinition0() {
 			{Prefix: "auth", Key: "passkey.discoverable", Help: "required or preferred"},
 			{Prefix: "auth", Key: "jwt.issuer", Env: "AUTH_JWT_ISSUER", Help: "exact iss claim value this deployment accepts"},
 			{Prefix: "auth", Key: "jwt.audience", Help: "aud value naming this API; required", Kind: cliparser.KindArray},
-			{Prefix: "auth", Key: "jwt.audience_match", Help: "any or all"},
+			{Prefix: "auth", Key: "jwt.audience_match", Help: "any or all", Enum: []string{"any", "all"}},
 			{Prefix: "auth", Key: "jwt.algorithms", Help: "exact verification algorithm allowlist; required, e.g. [\"RS256\"]", Kind: cliparser.KindArray},
 			{Prefix: "auth", Key: "jwt.required_token_type", Help: "typ header to demand; empty accepts an absent typ"},
 			{Prefix: "auth", Key: "jwt.required_scopes", Help: "scope values every request must carry", Kind: cliparser.KindArray},
-			{Prefix: "auth", Key: "jwt.discovery", Help: "oidc, oauth, or manual"},
+			{Prefix: "auth", Key: "jwt.discovery", Help: "oidc, oauth, or manual", Enum: []string{"oidc", "oauth", "manual"}},
 			{Prefix: "auth", Key: "jwt.jwks_uri", Help: "signing key set, for manual discovery"},
 			{Prefix: "auth", Key: "jwt.leeway", Help: "clock skew allowance"},
 			{Prefix: "auth", Key: "jwt.max_token_lifetime", Help: "longest exp-minus-iat accepted; required"},
@@ -303,15 +303,15 @@ func registerConfigDefinition0() {
 			{Prefix: "auth", Key: "jwt.claim.match", Help: "any or all"},
 			{Prefix: "auth", Key: "jwt.registered_claims", Help: "claims compared against the allowlist; defaults to identity_claim", Kind: cliparser.KindArray},
 			{Prefix: "auth", Key: "jwt.revocation.mode", Help: "off, token, subject, or both; required in jwt_only"},
-			{Prefix: "auth", Key: "jwt.revocation.on_unavailable", Help: "refuse or admit when the store cannot answer"},
+			{Prefix: "auth", Key: "jwt.revocation.on_unavailable", Help: "refuse or admit when the store cannot answer", Enum: []string{"refuse", "admit"}},
 			{Prefix: "auth", Key: "jwt.revocation.max_propagation_delay", Help: "how stale a cached revocation answer may be; zero disables the cache"},
 			{Prefix: "auth", Key: "jwt.dev.trust_unverified_tokens", Help: "development only: admit a token without verifying it", Kind: cliparser.KindBool},
 		},
 		Apply: applyConfigDefinition0,
 		Scaffold: []configbind.ScaffoldField{
 			{Key: "enabled", Kind: configbind.ScaffoldBool, Default: "false"},
-			{Key: "backend", Kind: configbind.ScaffoldString, Default: "rdb", Help: "storage backend of the authentication tables: rdb or dynamo"},
-			{Key: "mode", Kind: configbind.ScaffoldString, Default: "oidc_only", Help: "oidc_only, oidc_passkey, passkey_only, or jwt_only"},
+			{Key: "backend", Kind: configbind.ScaffoldString, Default: "rdb", Help: "storage backend of the authentication tables: rdb or dynamo", Enum: []string{"rdb", "dynamo"}},
+			{Key: "mode", Kind: configbind.ScaffoldString, Default: "oidc_only", Help: "oidc_only, oidc_passkey, passkey_only, or jwt_only", Enum: []string{"oidc_only", "oidc_passkey", "passkey_only", "jwt_only"}},
 			{Key: "login_path", Kind: configbind.ScaffoldString, Default: "/auth/login", Help: "path that starts the provider flow"},
 			{Key: "callback_path", Kind: configbind.ScaffoldString, Default: "/auth/callback"},
 			{Key: "logout_path", Kind: configbind.ScaffoldString, Default: "/auth/logout"},
@@ -353,7 +353,7 @@ func registerConfigDefinition0() {
 			{Key: "oidc.claim.values", Kind: configbind.ScaffoldStringSlice},
 			{Key: "oidc.claim.match", Kind: configbind.ScaffoldString, Default: "any", Help: "any or all"},
 			{Key: "oidc.registered_claims", Kind: configbind.ScaffoldStringSlice, Help: "claims compared against the allowlist; defaults to identity_claim"},
-			{Key: "oidc.logout_scope", Kind: configbind.ScaffoldString, Default: "reconfirm", Help: "what a logout does to the provider session: reconfirm or global"},
+			{Key: "oidc.logout_scope", Kind: configbind.ScaffoldString, Default: "reconfirm", Help: "what a logout does to the provider session: reconfirm or global", Enum: []string{"reconfirm", "global"}},
 			{Key: "oidc.provider_logout", Kind: configbind.ScaffoldBool, Default: "false", Help: "removed; use auth.oidc.logout_scope"},
 			{Key: "oidc.allow_global_logout_request", Kind: configbind.ScaffoldBool, Default: "false", Help: "permit a logout request to escalate to a global sign-out"},
 			{Key: "oidc.allow_loopback_http", Kind: configbind.ScaffoldBool, Default: "false", Help: "permit an http loopback issuer during development"},
@@ -365,11 +365,11 @@ func registerConfigDefinition0() {
 			{Key: "passkey.discoverable", Kind: configbind.ScaffoldString, Default: "preferred", Help: "required or preferred"},
 			{Key: "jwt.issuer", Kind: configbind.ScaffoldString, Env: "AUTH_JWT_ISSUER", Help: "exact iss claim value this deployment accepts"},
 			{Key: "jwt.audience", Kind: configbind.ScaffoldStringSlice, Help: "aud value naming this API; required"},
-			{Key: "jwt.audience_match", Kind: configbind.ScaffoldString, Default: "any", Help: "any or all"},
+			{Key: "jwt.audience_match", Kind: configbind.ScaffoldString, Default: "any", Help: "any or all", Enum: []string{"any", "all"}},
 			{Key: "jwt.algorithms", Kind: configbind.ScaffoldStringSlice, Help: "exact verification algorithm allowlist; required, e.g. [\"RS256\"]"},
 			{Key: "jwt.required_token_type", Kind: configbind.ScaffoldString, Default: "at+jwt", Help: "typ header to demand; empty accepts an absent typ"},
 			{Key: "jwt.required_scopes", Kind: configbind.ScaffoldStringSlice, Help: "scope values every request must carry"},
-			{Key: "jwt.discovery", Kind: configbind.ScaffoldString, Default: "oidc", Help: "oidc, oauth, or manual"},
+			{Key: "jwt.discovery", Kind: configbind.ScaffoldString, Default: "oidc", Help: "oidc, oauth, or manual", Enum: []string{"oidc", "oauth", "manual"}},
 			{Key: "jwt.jwks_uri", Kind: configbind.ScaffoldString, Help: "signing key set, for manual discovery"},
 			{Key: "jwt.leeway", Kind: configbind.ScaffoldDuration, Default: "30s", Help: "clock skew allowance"},
 			{Key: "jwt.max_token_lifetime", Kind: configbind.ScaffoldDuration, Help: "longest exp-minus-iat accepted; required"},
@@ -384,7 +384,7 @@ func registerConfigDefinition0() {
 			{Key: "jwt.claim.match", Kind: configbind.ScaffoldString, Default: "any", Help: "any or all"},
 			{Key: "jwt.registered_claims", Kind: configbind.ScaffoldStringSlice, Help: "claims compared against the allowlist; defaults to identity_claim"},
 			{Key: "jwt.revocation.mode", Kind: configbind.ScaffoldString, Help: "off, token, subject, or both; required in jwt_only"},
-			{Key: "jwt.revocation.on_unavailable", Kind: configbind.ScaffoldString, Default: "refuse", Help: "refuse or admit when the store cannot answer"},
+			{Key: "jwt.revocation.on_unavailable", Kind: configbind.ScaffoldString, Default: "refuse", Help: "refuse or admit when the store cannot answer", Enum: []string{"refuse", "admit"}},
 			{Key: "jwt.revocation.max_propagation_delay", Kind: configbind.ScaffoldDuration, Help: "how stale a cached revocation answer may be; zero disables the cache"},
 			{Key: "jwt.dev.trust_unverified_tokens", Kind: configbind.ScaffoldBool, Default: "false", Help: "development only: admit a token without verifying it"},
 		},
@@ -406,11 +406,21 @@ func applyConfigDefinition0(dst any, o *configbind.Overlay) error {
 		p.Enabled = false
 	}
 	if v, ok := o.GetString("auth.backend"); ok {
+		switch v {
+		case "rdb", "dynamo":
+		default:
+			return fmt.Errorf("configbind: auth.backend: %q must be one of: rdb, dynamo", v)
+		}
 		p.Backend = v
 	} else {
 		p.Backend = "rdb"
 	}
 	if v, ok := o.GetString("auth.mode"); ok {
+		switch v {
+		case "oidc_only", "oidc_passkey", "passkey_only", "jwt_only":
+		default:
+			return fmt.Errorf("configbind: auth.mode: %q must be one of: oidc_only, oidc_passkey, passkey_only, jwt_only", v)
+		}
 		p.Mode = v
 	} else {
 		p.Mode = "oidc_only"
@@ -641,6 +651,11 @@ func applyConfigDefinition0(dst any, o *configbind.Overlay) error {
 		p.OIDC.RegisteredClaims = v
 	}
 	if v, ok := o.GetString("auth.oidc.logout_scope"); ok {
+		switch v {
+		case "reconfirm", "global":
+		default:
+			return fmt.Errorf("configbind: auth.oidc.logout_scope: %q must be one of: reconfirm, global", v)
+		}
 		p.OIDC.LogoutScope = v
 	} else {
 		p.OIDC.LogoutScope = "reconfirm"
@@ -703,6 +718,11 @@ func applyConfigDefinition0(dst any, o *configbind.Overlay) error {
 		p.JWT.Audience = v
 	}
 	if v, ok := o.GetString("auth.jwt.audience_match"); ok {
+		switch v {
+		case "any", "all":
+		default:
+			return fmt.Errorf("configbind: auth.jwt.audience_match: %q must be one of: any, all", v)
+		}
 		p.JWT.AudienceMatch = v
 	} else {
 		p.JWT.AudienceMatch = "any"
@@ -719,6 +739,11 @@ func applyConfigDefinition0(dst any, o *configbind.Overlay) error {
 		p.JWT.RequiredScopes = v
 	}
 	if v, ok := o.GetString("auth.jwt.discovery"); ok {
+		switch v {
+		case "oidc", "oauth", "manual":
+		default:
+			return fmt.Errorf("configbind: auth.jwt.discovery: %q must be one of: oidc, oauth, manual", v)
+		}
 		p.JWT.Discovery = v
 	} else {
 		p.JWT.Discovery = "oidc"
@@ -804,6 +829,11 @@ func applyConfigDefinition0(dst any, o *configbind.Overlay) error {
 		p.JWT.Revocation.Mode = v
 	}
 	if v, ok := o.GetString("auth.jwt.revocation.on_unavailable"); ok {
+		switch v {
+		case "refuse", "admit":
+		default:
+			return fmt.Errorf("configbind: auth.jwt.revocation.on_unavailable: %q must be one of: refuse, admit", v)
+		}
 		p.JWT.Revocation.OnUnavailable = v
 	} else {
 		p.JWT.Revocation.OnUnavailable = "refuse"

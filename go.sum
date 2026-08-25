@@ -183,6 +183,8 @@ github.com/shibukawa/localotelviewer v1.0.2 h1:bwIj/Wy/fiW0eTC4S9a1eDUx8IYtjmOGF
 github.com/shibukawa/localotelviewer v1.0.2/go.mod h1:4uHkRUebfefDmDaY1xgu4ZRpe+TVxbdDerJrFXImD4o=
 github.com/shibukawa/tinybind-go v0.5.22 h1:lPQGAmZDqvJK6VAepAMfogztFKQ/g9P0R8JBIyyN68g=
 github.com/shibukawa/tinybind-go v0.5.22/go.mod h1:W95ybJt/JaxgyCbyIGriqM59nkEVSDYpyaEma1IVfKc=
+github.com/shibukawa/tinybind-go v0.5.26 h1:hASfd3vsX0EYdIYH/6Yzo3taWp/fUjGph1BBUlFBHB4=
+github.com/shibukawa/tinybind-go v0.5.26/go.mod h1:W95ybJt/JaxgyCbyIGriqM59nkEVSDYpyaEma1IVfKc=
 github.com/shibukawa/tinygodriver v1.2.9 h1:uvHYiUSrmOt0y+oIjh11uWEoCkOJ3IZKP1+EmR59ZaM=
 github.com/shibukawa/tinygodriver v1.2.9/go.mod h1:DLwOzLMnjY7+kmpALZ+lnwv7s8sWNXT1HanLp2WIUkk=
 github.com/shirou/gopsutil/v4 v4.26.6 h1:Mzr/npDtQC/xpeEuQKHZt8Zo9CmPvhTj8nkR8w5TLDs=
