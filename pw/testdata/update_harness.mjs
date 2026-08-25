@@ -946,6 +946,36 @@ for (const target of ["javascript:globalThis.__pwned = true", "data:text/html,<s
 	check(scrolledTo === null, "a refinement of the page on screen left the viewport alone");
 }
 
+// An array parameter becomes one pair per element: the repeated key a form
+// submits and the server reads. Joining them would write a query no form could
+// have produced, and a comma inside an element could never be told from the
+// join.
+{
+	const runtime = fresh();
+	nextResponse = response({
+		headers: { "Pw-Render": "navigation", "Content-Type": "application/json" },
+		json: { ops: [] },
+	});
+	await runtime.update({ tag: ["boots", "a,b"], q: "go" });
+	const url = new URL(requests[0].url);
+	const tags = url.searchParams.getAll("tag");
+	check(tags.length === 2 && tags[0] === "boots" && tags[1] === "a,b", "an array became a repeated key, order kept");
+	check(url.searchParams.get("q") === "go", "a scalar beside it still set one value");
+	check(!requests[0].url.includes("boots%2Ca%2Cb"), "the elements were not joined into one value");
+}
+
+// An empty array names the key nowhere, which is the same query a form with no
+// box checked submits.
+{
+	const runtime = fresh();
+	nextResponse = response({
+		headers: { "Pw-Render": "navigation", "Content-Type": "application/json" },
+		json: { ops: [] },
+	});
+	await runtime.update({ tag: [], q: "go" });
+	check(!new URL(requests[0].url).searchParams.has("tag"), "an empty array wrote no pair");
+}
+
 // --- interception -----------------------------------------------------------
 //
 // Which URL and which method a gesture turns into is protocol, and it is the
@@ -969,6 +999,21 @@ for (const target of ["javascript:globalThis.__pwned = true", "data:text/html,<s
 	check(requests.length === 1, "the form issued one update request");
 	check(requests[0].url === "https://example.test/orders?q=boots&sort=newest", "the fields became the query");
 	check(requests[0].headers["Pw-Render"] === "navigation", "the form asked for a navigation delta");
+}
+
+// A checkbox group submits its name once per checked box, and the interception
+// has to write exactly that: it is the array spelling, and the whole reason the
+// server reads a repeated key.
+{
+	const runtime = fresh();
+	element("results");
+	nextResponse = deltaResponse("results");
+	const form = node("FORM", { action: "/orders" });
+	form.fields = [["tag", "boots"], ["tag", "hats"], ["q", "go"]];
+	const event = submitEvent(form);
+	dispatch("submit", event);
+	await new Promise((resolve) => setTimeout(resolve, 0));
+	check(requests[0].url === "https://example.test/orders?tag=boots&tag=hats&q=go", "the repeated field became a repeated key");
 }
 
 // The submitter's own overrides decide the method before this runtime decides

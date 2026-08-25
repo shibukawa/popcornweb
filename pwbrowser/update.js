@@ -949,8 +949,7 @@ export function createUpdateRuntime(config) {
 		if (!kind) return { applied: false, reason: "not a reloadable component" };
 		const url = new URL((options && options.url) || location.href, document.baseURI);
 		if (url.origin !== location.origin) return fall(url.href, "cross-origin");
-		url.search = "";
-		for (const name of Object.keys(params || {})) url.searchParams.set(name, String(params[name]));
+		writeQuery(url, params);
 		const request = claim("redraw:" + elementId);
 		markBusy(true);
 		try {
@@ -1265,6 +1264,24 @@ export function createUpdateRuntime(config) {
 		return url.pathname === here.pathname && url.search === here.search;
 	}
 
+	// writeQuery sets one URL's search from a parameter object. An array value
+	// becomes one pair per element, in the order given, which is the repeated
+	// key a GET form submits for a checkbox group and the one array spelling
+	// the server reads. Joining them into a single value would produce a query
+	// no form could have written, and a comma inside an element could never be
+	// told from the join.
+	function writeQuery(url, params) {
+		url.search = "";
+		for (const name of Object.keys(params || {})) {
+			const value = params[name];
+			if (Array.isArray(value)) {
+				for (const item of value) url.searchParams.append(name, String(item));
+				continue;
+			}
+			url.searchParams.set(name, String(value));
+		}
+	}
+
 	intercept();
 	installAnnouncer();
 	seedManifest();
@@ -1279,8 +1296,7 @@ export function createUpdateRuntime(config) {
 		// this matches it rather than merging.
 		update(params) {
 			const url = new URL(location.href);
-			url.search = "";
-			for (const name of Object.keys(params || {})) url.searchParams.set(name, String(params[name]));
+			writeQuery(url, params);
 			return go(url.href, "replace");
 		},
 		navigate(url) {

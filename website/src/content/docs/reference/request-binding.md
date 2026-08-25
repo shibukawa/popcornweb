@@ -79,6 +79,22 @@ and maps to objects with string keys, all to any depth. A
 `application/x-www-form-urlencoded` or `multipart/form-data` body carries flat
 keys, so declare a nested shape only where the client sends JSON.
 
+Two composites are exceptions, because they have a spelling outside a document.
+`[]byte` binds from any value source as base64. A `[]scalar` binds from a
+**repeated query key** — `?tag=a&tag=b`, which is what a checkbox group submits
+— behind an explicit `query` tag:
+
+```go
+Tags []string `query:"tag"`
+```
+
+The explicit tag is required: an untagged slice is the JSON case and still comes
+from the body. An absent key and a key carrying only empty values both leave the
+slice nil, and one unparsable element fails the request rather than binding a
+partial list. `?tag[]=a` binds a key literally named `tag[]`, and `?tag=a,b` is
+one element — neither bracket nor comma is read as an array. A repeated `path`,
+`header`, or `cookie` value is still refused.
+
 Pointer fields are not bound. Prefer value fields, and read
 [presence](#presence-and-the-zero-value) for what that costs.
 

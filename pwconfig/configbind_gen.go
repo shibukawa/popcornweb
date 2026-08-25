@@ -614,7 +614,7 @@ func registerRateLimitConfigDefinition2() {
 		},
 		FlagMetas: []cliparser.FieldMeta{
 			{Prefix: "ratelimit", Key: "enabled", Kind: cliparser.KindBool},
-			{Prefix: "ratelimit", Key: "backend", Help: "counter storage: memory or redis"},
+			{Prefix: "ratelimit", Key: "backend", Help: "counter storage: memory or redis", Enum: []string{"memory", "redis"}},
 			{Prefix: "ratelimit", Key: "window", Help: "period every count is measured over"},
 			{Prefix: "ratelimit", Key: "per_subject", Help: "requests one authenticated subject may make in a window; zero disables"},
 			{Prefix: "ratelimit", Key: "per_address", Help: "requests one caller with no session may make in a window"},
@@ -626,7 +626,7 @@ func registerRateLimitConfigDefinition2() {
 		Apply: applyRateLimitConfigDefinition2,
 		Scaffold: []configbind.ScaffoldField{
 			{Key: "enabled", Kind: configbind.ScaffoldBool, Default: "false"},
-			{Key: "backend", Kind: configbind.ScaffoldString, Default: "memory", Help: "counter storage: memory or redis"},
+			{Key: "backend", Kind: configbind.ScaffoldString, Default: "memory", Help: "counter storage: memory or redis", Enum: []string{"memory", "redis"}},
 			{Key: "window", Kind: configbind.ScaffoldDuration, Default: "1m", Help: "period every count is measured over"},
 			{Key: "per_subject", Kind: configbind.ScaffoldInt, Default: "600", Help: "requests one authenticated subject may make in a window; zero disables"},
 			{Key: "per_address", Kind: configbind.ScaffoldInt, Default: "300", Help: "requests one caller with no session may make in a window"},
@@ -653,6 +653,11 @@ func applyRateLimitConfigDefinition2(dst any, o *configbind.Overlay) error {
 		p.Enabled = false
 	}
 	if v, ok := o.GetString("ratelimit.backend"); ok {
+		switch v {
+		case "memory", "redis":
+		default:
+			return fmt.Errorf("configbind: ratelimit.backend: %q must be one of: memory, redis", v)
+		}
 		p.Backend = v
 	} else {
 		p.Backend = "memory"
@@ -796,7 +801,7 @@ func registerSessionConfigDefinition3() {
 		},
 		FlagMetas: []cliparser.FieldMeta{
 			{Prefix: "session", Key: "enabled", Kind: cliparser.KindBool},
-			{Prefix: "session", Key: "backend", Help: "session storage backend: rdb, cookie, dev-volatile, dev-persist, redis, dynamo, or firestore"},
+			{Prefix: "session", Key: "backend", Help: "session storage backend: rdb, cookie, dev-volatile, dev-persist, redis, dynamo, or firestore", Enum: []string{"rdb", "cookie", "dev-volatile", "dev-persist", "redis", "dynamo", "firestore"}},
 			{Prefix: "session", Key: "retention", Help: "how long the store may hold one record; the session lifetime under [auth] narrows it"},
 			{Prefix: "session", Key: "cookie.name"},
 			{Prefix: "session", Key: "cookie.path"},
@@ -821,7 +826,7 @@ func registerSessionConfigDefinition3() {
 		Apply: applySessionConfigDefinition3,
 		Scaffold: []configbind.ScaffoldField{
 			{Key: "enabled", Kind: configbind.ScaffoldBool, Default: "false"},
-			{Key: "backend", Kind: configbind.ScaffoldString, Default: "rdb", Help: "session storage backend: rdb, cookie, dev-volatile, dev-persist, redis, dynamo, or firestore"},
+			{Key: "backend", Kind: configbind.ScaffoldString, Default: "rdb", Help: "session storage backend: rdb, cookie, dev-volatile, dev-persist, redis, dynamo, or firestore", Enum: []string{"rdb", "cookie", "dev-volatile", "dev-persist", "redis", "dynamo", "firestore"}},
 			{Key: "retention", Kind: configbind.ScaffoldDuration, Default: "720h", Help: "how long the store may hold one record; the session lifetime under [auth] narrows it"},
 			{Key: "cookie.name", Kind: configbind.ScaffoldString, Default: "pw_session"},
 			{Key: "cookie.path", Kind: configbind.ScaffoldString, Default: "/"},
@@ -861,6 +866,11 @@ func applySessionConfigDefinition3(dst any, o *configbind.Overlay) error {
 		p.Enabled = false
 	}
 	if v, ok := o.GetString("session.backend"); ok {
+		switch v {
+		case "rdb", "cookie", "dev-volatile", "dev-persist", "redis", "dynamo", "firestore":
+		default:
+			return fmt.Errorf("configbind: session.backend: %q must be one of: rdb, cookie, dev-volatile, dev-persist, redis, dynamo, firestore", v)
+		}
 		p.Backend = v
 	} else {
 		p.Backend = "rdb"
@@ -1121,7 +1131,7 @@ func registerObservabilityConfigDefinition4() {
 		},
 		FlagMetas: []cliparser.FieldMeta{
 			{Prefix: "observability", Key: "minimum_level", Help: "severity floor: trace, debug, info, warn, error, or off"},
-			{Prefix: "observability", Key: "stdout_format", Help: "terminal record encoding: json or plaintext"},
+			{Prefix: "observability", Key: "stdout_format", Help: "terminal record encoding: json or plaintext", Enum: []string{"json", "plaintext"}},
 			{Prefix: "observability", Key: "service_name", Env: "OTEL_SERVICE_NAME"},
 			{Prefix: "observability", Key: "resource_attributes", Help: "extra key=value identifiers reported with the service name", Kind: cliparser.KindArray},
 			{Prefix: "observability", Key: "boot_log", Help: "startup summary: auto, tree, record, or off"},
@@ -1143,7 +1153,7 @@ func registerObservabilityConfigDefinition4() {
 			{Prefix: "observability", Key: "trace.sampler_arg", Env: "OTEL_TRACES_SAMPLER_ARG", Help: "sampler argument; the kept fraction for a traceidratio sampler"},
 			{Prefix: "observability", Key: "metrics.enabled", Help: "record framework metrics: auto, on, or off; auto follows metric export"},
 			{Prefix: "observability", Key: "metrics.interval", Help: "how often metrics are collected and exported"},
-			{Prefix: "observability", Key: "metrics.temporality", Help: "metric temporality: delta or cumulative"},
+			{Prefix: "observability", Key: "metrics.temporality", Help: "metric temporality: delta or cumulative", Enum: []string{"delta", "cumulative"}},
 			{Prefix: "observability", Key: "metrics.http", Help: "record http.server request duration, concurrency, and body sizes", Kind: cliparser.KindBool},
 			{Prefix: "observability", Key: "metrics.db", Help: "record db.client operation duration per driver and statement keyword", Kind: cliparser.KindBool},
 			{Prefix: "observability", Key: "metrics.runtime", Help: "record go.* runtime memory, goroutine, and gc instruments", Kind: cliparser.KindBool},
@@ -1160,7 +1170,7 @@ func registerObservabilityConfigDefinition4() {
 		Apply: applyObservabilityConfigDefinition4,
 		Scaffold: []configbind.ScaffoldField{
 			{Key: "minimum_level", Kind: configbind.ScaffoldString, Default: "info", Help: "severity floor: trace, debug, info, warn, error, or off"},
-			{Key: "stdout_format", Kind: configbind.ScaffoldString, Default: "json", Help: "terminal record encoding: json or plaintext"},
+			{Key: "stdout_format", Kind: configbind.ScaffoldString, Default: "json", Help: "terminal record encoding: json or plaintext", Enum: []string{"json", "plaintext"}},
 			{Key: "service_name", Kind: configbind.ScaffoldString, Env: "OTEL_SERVICE_NAME"},
 			{Key: "resource_attributes", Kind: configbind.ScaffoldStringSlice, Help: "extra key=value identifiers reported with the service name"},
 			{Key: "boot_log", Kind: configbind.ScaffoldString, Default: "auto", Help: "startup summary: auto, tree, record, or off"},
@@ -1182,7 +1192,7 @@ func registerObservabilityConfigDefinition4() {
 			{Key: "trace.sampler_arg", Kind: configbind.ScaffoldString, Env: "OTEL_TRACES_SAMPLER_ARG", Help: "sampler argument; the kept fraction for a traceidratio sampler"},
 			{Key: "metrics.enabled", Kind: configbind.ScaffoldString, Default: "auto", Help: "record framework metrics: auto, on, or off; auto follows metric export"},
 			{Key: "metrics.interval", Kind: configbind.ScaffoldDuration, Default: "60s", Help: "how often metrics are collected and exported"},
-			{Key: "metrics.temporality", Kind: configbind.ScaffoldString, Default: "delta", Help: "metric temporality: delta or cumulative"},
+			{Key: "metrics.temporality", Kind: configbind.ScaffoldString, Default: "delta", Help: "metric temporality: delta or cumulative", Enum: []string{"delta", "cumulative"}},
 			{Key: "metrics.http", Kind: configbind.ScaffoldBool, Default: "true", Help: "record http.server request duration, concurrency, and body sizes"},
 			{Key: "metrics.db", Kind: configbind.ScaffoldBool, Default: "true", Help: "record db.client operation duration per driver and statement keyword"},
 			{Key: "metrics.runtime", Kind: configbind.ScaffoldBool, Default: "true", Help: "record go.* runtime memory, goroutine, and gc instruments"},
@@ -1210,6 +1220,11 @@ func applyObservabilityConfigDefinition4(dst any, o *configbind.Overlay) error {
 		p.MinimumLevel = "info"
 	}
 	if v, ok := o.GetString("observability.stdout_format"); ok {
+		switch v {
+		case "json", "plaintext":
+		default:
+			return fmt.Errorf("configbind: observability.stdout_format: %q must be one of: json, plaintext", v)
+		}
 		p.StdoutFormat = v
 	} else {
 		p.StdoutFormat = "json"
@@ -1352,6 +1367,11 @@ func applyObservabilityConfigDefinition4(dst any, o *configbind.Overlay) error {
 		p.Metrics.Interval = 60000000000 // 1m0s
 	}
 	if v, ok := o.GetString("observability.metrics.temporality"); ok {
+		switch v {
+		case "delta", "cumulative":
+		default:
+			return fmt.Errorf("configbind: observability.metrics.temporality: %q must be one of: delta, cumulative", v)
+		}
 		p.Metrics.Temporality = v
 	} else {
 		p.Metrics.Temporality = "delta"

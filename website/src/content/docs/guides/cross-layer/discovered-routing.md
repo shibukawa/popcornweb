@@ -184,10 +184,10 @@ export component Page(id: string, page: int?): html {
 That list is the component's, whether or not `page.go` exists — a page's inputs
 are what the URL carries, and nothing else reads them.
 
-A URL carries no objects, so inputs are scalars. That leaves one thing a plain
-scalar cannot express: an absent `?page` and an explicit `?page=0` would arrive
-as the same zero. A trailing question mark keeps them apart by binding a
-pointer, which the loader then reads:
+A URL carries no objects, so inputs are scalars — with one exception below. That
+leaves one thing a plain scalar cannot express: an absent `?page` and an
+explicit `?page=0` would arrive as the same zero. A trailing question mark keeps
+them apart by binding a pointer, which the loader then reads:
 
 ```html
 external LoadUser(id: string, page: int?): View
@@ -198,6 +198,38 @@ export component Page(id: string, page: int?): html {
 <p>page {view.page}</p>
 }
 ```
+
+### A key the URL repeats
+
+An array is the exception, because a repeated key is something a URL does carry
+natively. A checkbox group or a multi-select submits one pair per checked
+control — `?tag=boots&tag=hats` — so an input declared as an array collects them
+all, in the order the URL wrote them:
+
+```html
+export component Page(tag: string[]): html {
+<ul>{for t in tag}<li>{t}</li>{/for}</ul>
+}
+```
+
+Declare the array only where a key really may repeat. A page reading `?tag=a&tag=b`
+through a plain `tag: string` still gets `a` and no warning, which is the case the
+array declaration exists to replace.
+
+Three things follow from the repeated key being the only spelling read:
+
+- An absent key and a key carrying only empty values both arrive as an empty
+  array, so a blank filter control contributes nothing. That is why an array
+  input takes no `?` — it is already absent when it is empty.
+- `?tag[]=boots` binds nothing. Brackets are ordinary key characters in Go and
+  in the browser alike, so that URL names a key called `tag[]`, which no
+  declaration can spell. The bracket convention belongs to PHP and Rack.
+- `?tag=boots,hats` is one element holding a comma. Percent-encoding it as
+  `%2C` changes nothing, because the query is decoded before anything could
+  split it — which is why the comma-joined spelling is not read at all.
+
+A path segment cannot be an array: a segment carries one value, and a catch-all
+binds its whole remainder as one string.
 
 ```go
 func LoadUser(id string, page *int) (View, error) {

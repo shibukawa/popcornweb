@@ -43,6 +43,7 @@ known_gaps:
   - typed and cache-invalidating actions, which remain api:server-action
   - server-action outside a page tree, for which the upstream resolver seam now exists
   - page metadata, sitemap, and robots artifacts, for which data:page-route-table is the material
+  - a query key reaching a form control again, and a repeated key reaching an input at all, per requirement:filter-form-state-round-trip and requirement:repeated-query-parameter
 closed_upstream:
   v0_2_5:
     - api:request-binding inside an action
