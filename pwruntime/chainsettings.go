@@ -47,6 +47,12 @@ type ChainSettings struct {
 	OpenAPI    string
 	APIDoc     string
 	APIDocPath string
+	// APICatalog and APICatalogOrigin are the RFC 9727 endpoint's switch and
+	// the origin its links are built from; unset writes them relative. The path
+	// is the standard's, so it is pwruntime.APICatalogPath rather than a
+	// setting.
+	APICatalog       bool
+	APICatalogOrigin string
 	// CSRF is the cross-site check's configuration, carried whole because the
 	// check reads most of it: the scope patterns, the token names, the cookie
 	// name and the lifetime.

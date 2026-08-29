@@ -5,6 +5,7 @@ import (
 	"io"
 	"io/fs"
 	"net/http"
+	"strconv"
 
 	"github.com/shibukawa/popcornweb/middlewares"
 	"github.com/shibukawa/popcornweb/pwconfig"
@@ -94,8 +95,20 @@ func buildRuntimeHandler(handler http.Handler, server ServerConfig, security Sec
 	frames = append(frames, chainFrame{slot: SlotOperational, name: "operational", middleware: func(next http.Handler) http.Handler {
 		return operationalEndpoints(next, server, resources)
 	}})
+	// Resolved here rather than inside the frame, so a catalog with nothing to
+	// link refuses startup instead of serving a document that conforms to
+	// nothing. The resolver is the shared leaf's, so the other transport
+	// refuses the same configuration for the same reason.
+	catalog, err := pwruntime.ResolveAPICatalog(pwruntime.APICatalogSettings{
+		Enabled: server.APICatalog, Origin: server.APICatalogOrigin,
+		OpenAPI: server.OpenAPI, APIDoc: server.APIDoc,
+		APIDocPath: server.APIDocPath, Health: server.Health,
+	})
+	if err != nil {
+		return nil, err
+	}
 	frames = append(frames, chainFrame{slot: SlotAPIDoc, name: "apidoc", middleware: func(next http.Handler) http.Handler {
-		return documentationEndpoints(next, server)
+		return documentationEndpoints(next, server, catalog)
 	}})
 	// Extensions see the same resources the request handler will, so a
 	// disabled or misconfigured capability fails during startup rather than on
@@ -163,13 +176,37 @@ func operationalEndpoints(next http.Handler, config ServerConfig, resources pwru
 //
 // A configuration that serves neither returns the handler unchanged, so the
 // common case adds no frame to the chain.
-func documentationEndpoints(next http.Handler, config ServerConfig) http.Handler {
+func documentationEndpoints(next http.Handler, config ServerConfig, catalog pwruntime.ResolvedAPICatalog) http.Handler {
 	apiDoc := apiDocUI(config.APIDoc, config.OpenAPI)
-	if config.OpenAPI == "" && apiDoc == nil {
+	if config.OpenAPI == "" && apiDoc == nil && !catalog.Enabled() {
 		return next
 	}
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch {
+		case catalog.Enabled() && r.URL.Path == pwruntime.APICatalogPath:
+			if !operationalMethod(w, r) {
+				return
+			}
+			document := catalog.Document()
+			header := w.Header()
+			header.Set("Content-Type", pwruntime.APICatalogContentType)
+			// Section 2 asks a HEAD to carry the relation. Sending it on both
+			// costs nothing and answers a client that looked only at the
+			// headers of a GET.
+			header.Set("Link", pwruntime.APICatalogLinkHeader)
+			// Readable from anywhere, for the reason
+			// pwruntime.OpenAPIDocumentOrigin gives about the document this
+			// points at. A catalog readable only from origins already known
+			// defeats what a discovery endpoint is for.
+			header.Set(pwruntime.OpenAPIDocumentOrigin.Name, pwruntime.OpenAPIDocumentOrigin.Value)
+			// Set explicitly so a HEAD reports the length a GET would, which is
+			// the question a HEAD is asking.
+			header.Set("Content-Length", strconv.Itoa(len(document)))
+			w.WriteHeader(http.StatusOK)
+			if r.Method != http.MethodHead {
+				_, _ = w.Write(document)
+			}
+			return
 		case config.OpenAPI != "" && r.URL.Path == config.OpenAPI:
 			if !operationalMethod(w, r) {
 				return

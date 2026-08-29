@@ -967,7 +967,7 @@ openapi = "/openapi.json"
 # (/docs). Leave this key out of staging and production configs to keep the UI
 # private.
 api_doc = "scalar"
-
+` + apiCatalogRuntimeConfig(options) + `
 [observability]
 minimum_level = "debug"
 service_name = "` + name + `"
@@ -2505,6 +2505,42 @@ func corsRuntimeConfig(options initOptions) string {
 # origins above a read of this deployment as the logged-in visitor, and it
 # refuses an include of "/**" for exactly that reason.
 # allow_credentials = false
+`
+}
+
+// apiCatalogRuntimeConfig writes the RFC 9727 switch into every scaffolded
+// configuration, so the endpoint is learned from the file that already
+// configures the three endpoints it links to rather than from the reference.
+//
+// The value differs by preset. The machine-facing one set out to publish the
+// API this announces, so it ships on. Everywhere else it ships off: an
+// application that serves pages publishes an API as a side effect of having
+// handlers, which is not the same as deciding to publish one, and a key written
+// off is still a key the reader has read.
+func apiCatalogRuntimeConfig(options initOptions) string {
+	if servesAPI(options) {
+		return `# RFC 9727: /.well-known/api-catalog answers with a Linkset pointing at the
+# three keys above, so a client handed nothing but this origin finds the
+# document, the reference UI, and the probe.
+#
+# The links are written relative unless api_catalog_origin names this
+# deployment's origin. Relative resolves correctly for anything following the
+# catalog; name the origin once something stores one instead.
+api_catalog = true
+# api_catalog_origin = "https://api.example.com"
+`
+	}
+	return `# RFC 9727: turning this on answers /.well-known/api-catalog with a Linkset
+# pointing at the three keys above, so a client handed nothing but this origin
+# finds the document, the reference UI, and the probe. It stays off until an API
+# is something this project publishes on purpose rather than as a side effect of
+# having handlers.
+#
+# The links it would publish are relative unless api_catalog_origin names this
+# deployment's origin, which matters only to a reader that stores the catalog
+# rather than following it.
+api_catalog = false
+# api_catalog_origin = "https://api.example.com"
 `
 }
 

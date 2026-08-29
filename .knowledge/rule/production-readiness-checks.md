@@ -12,7 +12,7 @@ premise:
   boundary: readiness here means what the framework configured; it says nothing about capacity, backups, or infrastructure
 exposure:
   openapi-exposed:
-    trigger: data:server-runtime-config openapi.enabled true
+    trigger: data:server-runtime-config openapi names a path
     severity: warning
     reason: policy:operational-endpoints protects it like an application route, so this asks whether that was intended rather than declaring a hole
   debug-logging:

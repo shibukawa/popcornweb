@@ -42,6 +42,8 @@ func registerServerConfigDefinition0() {
 			"server.openapi",
 			"server.api_doc",
 			"server.api_doc_path",
+			"server.api_catalog",
+			"server.api_catalog_origin",
 			"server.public.enabled",
 			"server.public.mount",
 			"server.public.read_local",
@@ -64,6 +66,7 @@ func registerServerConfigDefinition0() {
 		},
 		DependsOn: map[string][]configbind.Dependency{
 			"server.api_doc_path":       {{Key: "server.api_doc"}},
+			"server.api_catalog_origin": {{Key: "server.api_catalog"}},
 			"server.public.mount":       {{Key: "server.public.enabled"}},
 			"server.public.read_local":  {{Key: "server.public.enabled"}},
 			"server.public.svg_sandbox": {{Key: "server.public.enabled"}},
@@ -92,6 +95,8 @@ func registerServerConfigDefinition0() {
 			{Prefix: "server", Key: "openapi", Help: "OpenAPI document path, e.g. /openapi.json; unset serves none"},
 			{Prefix: "server", Key: "api_doc", Help: "API documentation UI: scalar, swagger, or empty to disable"},
 			{Prefix: "server", Key: "api_doc_path", Help: "API documentation UI path"},
+			{Prefix: "server", Key: "api_catalog", Help: "answer /.well-known/api-catalog with an RFC 9727 API catalog", Kind: cliparser.KindBool},
+			{Prefix: "server", Key: "api_catalog_origin", Help: "absolute origin the API catalog's links are built from, e.g. https://api.example.com; unset writes them relative"},
 			{Prefix: "server", Key: "public.enabled", Kind: cliparser.KindBool},
 			{Prefix: "server", Key: "public.mount"},
 			{Prefix: "server", Key: "public.read_local", Kind: cliparser.KindBool},
@@ -113,6 +118,8 @@ func registerServerConfigDefinition0() {
 			{Key: "openapi", Kind: configbind.ScaffoldString, Help: "OpenAPI document path, e.g. /openapi.json; unset serves none"},
 			{Key: "api_doc", Kind: configbind.ScaffoldString, Help: "API documentation UI: scalar, swagger, or empty to disable"},
 			{Key: "api_doc_path", Kind: configbind.ScaffoldString, Default: "/docs", Help: "API documentation UI path"},
+			{Key: "api_catalog", Kind: configbind.ScaffoldBool, Help: "answer /.well-known/api-catalog with an RFC 9727 API catalog"},
+			{Key: "api_catalog_origin", Kind: configbind.ScaffoldString, Help: "absolute origin the API catalog's links are built from, e.g. https://api.example.com; unset writes them relative"},
 			{Key: "public.enabled", Kind: configbind.ScaffoldBool, Default: "true"},
 			{Key: "public.mount", Kind: configbind.ScaffoldString, Default: "/public"},
 			{Key: "public.read_local", Kind: configbind.ScaffoldBool, Default: "false"},
@@ -217,6 +224,16 @@ func applyServerConfigDefinition0(dst any, o *configbind.Overlay) error {
 		p.APIDocPath = v
 	} else {
 		p.APIDocPath = "/docs"
+	}
+	if v, ok := o.GetString("server.api_catalog"); ok {
+		bb, err := strconv.ParseBool(v)
+		if err != nil {
+			return fmt.Errorf("configbind: server.api_catalog: %w", err)
+		}
+		p.APICatalog = bb
+	}
+	if v, ok := o.GetString("server.api_catalog_origin"); ok {
+		p.APICatalogOrigin = v
 	}
 	if v, ok := o.GetString("server.public.enabled"); ok {
 		bb, err := strconv.ParseBool(v)

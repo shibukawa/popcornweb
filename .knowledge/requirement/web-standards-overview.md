@@ -57,6 +57,12 @@ sections:
       - system:tinybind
       - policy:operational-endpoints
       - requirement:dev-api-reference
+    api_discovery_entry:
+      added: 2026-08-28, once shipped, per the page rule against claiming unshipped support
+      owner: requirement:api-catalog-well-known
+      names: RFC 9727 and the RFC 9264 Linkset it is carried in, since both numbers decide whether a client's parser accepts the document
+      carries: that the catalog is projected from the endpoints this section already describes rather than authored, which is why it sits here and not in operational_http; that its links are relative until server.api_catalog_origin names one and are never guessed from the request Host; and the cross-origin wildcard it shares with the document it points at
+      exclusions: no nested catalogs, no negotiated APIs.json or HAL alternative, and no service-meta link
   cache_control:
     headline: asset validators and immutable caching, private dynamic responses, and no-store protocols
     links:

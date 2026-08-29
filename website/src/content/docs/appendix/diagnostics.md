@@ -383,6 +383,13 @@ Three things go wrong here: wiring the binary does not actually carry, values th
 - **Reads**: merged configuration
 - **Fix**: set server.public.read_local to false; pw dev forces it on its own
 
+### PW0425: the API catalog is enabled with no API document to link
+
+- **Severity**: error
+- **Applies to**: every environment
+- **Reads**: merged configuration
+- **Fix**: set server.openapi, or turn server.api_catalog off
+
 ### PW0426: logs are plaintext outside dev
 
 - **Severity**: note
@@ -396,6 +403,13 @@ Three things go wrong here: wiring the binary does not actually carry, values th
 - **Applies to**: every environment except `dev`
 - **Reads**: merged configuration
 - **Fix**: set observability.otel.endpoint to export traces and logs
+
+### PW0429: the API catalog publishes relative links
+
+- **Severity**: note
+- **Applies to**: every environment except `dev`
+- **Reads**: merged configuration
+- **Fix**: name the deployment's canonical origin in server.api_catalog_origin
 
 ### PW0430: the development identity provider is enabled outside dev
 

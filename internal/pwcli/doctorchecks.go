@@ -435,6 +435,30 @@ func (r *checkRun) checkEnvironmentValues() {
 	if enabled, resolved := r.Config.boolValue("observability.otel.enabled"); resolved && !enabled {
 		r.report(pwcheck.TelemetryDisabled, "observability.otel.enabled is false", "observability.otel.enabled")
 	}
+	r.checkAPICatalog()
+}
+
+// checkAPICatalog reports the two ways the RFC 9727 endpoint is turned on and
+// left unable to answer well.
+//
+// The first is the refusal the runtime already makes, reported here so it is
+// found by reading the configuration rather than by a failed start. The second
+// is silent: the catalog answers, and every link in it names whichever host the
+// caller asked for.
+func (r *checkRun) checkAPICatalog() {
+	if enabled, resolved := r.Config.boolValue("server.api_catalog"); !resolved || !enabled {
+		return
+	}
+	if r.Config.raw("server.openapi") == "" && r.Config.raw("server.api_doc") == "" {
+		r.report(pwcheck.APICatalogWithoutAPI,
+			"server.api_catalog is on with neither server.openapi nor server.api_doc set",
+			"server.api_catalog")
+	}
+	if r.Config.raw("server.api_catalog_origin") == "" {
+		r.report(pwcheck.APICatalogRelativeLinks,
+			"server.api_catalog_origin is unset, so the catalog's links are relative to wherever it is read from",
+			"server.api_catalog_origin")
+	}
 }
 
 func (r *checkRun) checkIdentityProvider() {
