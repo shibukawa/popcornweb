@@ -59,6 +59,14 @@ func WriteHTMLChain(r *fasthttp.RequestCtx, wrappers []HTMLWrapper, leaf HTMLFra
 		return
 	}
 	varyOnDeclaredAxes(r, htmlbind.MergeVary(wrappers, leaf))
+	// The document answers from the same URL as a delta, a redraw and a live
+	// delivery, so it says which request headers told it apart from them. A
+	// cache that stored it under the URL alone would answer any of the three
+	// with a page — and the document is the one response here that may carry no
+	// per-request validator at all, which makes it the storable one.
+	if settings, ok := pwruntime.ResolvedUpdateSettings(); ok && settings.Enabled {
+		varyOnUpdateHeaders(r)
+	}
 	writeChainCachePolicy(r, wrappers, leaf)
 	r.Response.Header.SetContentType(htmlContentType)
 	r.SetStatusCode(fasthttp.StatusOK)

@@ -201,7 +201,10 @@ func (s *Store) TouchRecord(ctx context.Context, keyHash string, record session.
 	if !validKeyHash(keyHash) {
 		return session.ErrInvalidKey
 	}
-	if idleExpiresAt.After(record.ExpiresAt) {
+	// The zero-time guard is Touch's, for the reason Touch states: a record
+	// carrying only an idle bound has no absolute deadline to renew past, and
+	// comparing against the zero time would refuse every renewal of one.
+	if !record.ExpiresAt.IsZero() && idleExpiresAt.After(record.ExpiresAt) {
 		return session.ErrNotFound
 	}
 	record.LastSeenAt = lastSeenAt

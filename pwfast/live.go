@@ -221,10 +221,22 @@ func writeLiveHeaders(r *fasthttp.RequestCtx) {
 	r.SetStatusCode(fasthttp.StatusOK)
 }
 
-// liveClientKey names the client the admission bound counts against.
+// liveClientKey names the client the admission bound counts against: the
+// authenticated subject where there is one, and the resolved caller otherwise,
+// because an anonymous screen is still one browser and grouping every anonymous
+// client together would refuse the second visitor of the day.
 func liveClientKey(r *fasthttp.RequestCtx) string {
 	if subject := pwruntime.RequestAuthentication(r); subject.Authenticated && subject.Subject != "" {
 		return "subject:" + subject.Subject
+	}
+	// The address the chain resolved rather than the peer, which is what the
+	// rate limiter of this same transport already counts against: behind a
+	// terminating proxy the peer is the proxy, and every anonymous visitor would
+	// collapse into one bucket and be refused from the fifth of them at the
+	// shipped default. The peer is the fallback for a handler served outside the
+	// framework's own frames, where nothing resolved one.
+	if address := pwruntime.ReadClientAddress(r); address != "" {
+		return "remote:" + address
 	}
 	return "remote:" + r.RemoteIP().String()
 }
