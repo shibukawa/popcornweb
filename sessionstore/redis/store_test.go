@@ -263,6 +263,103 @@ func TestStoreTouchRefusesToReviveOrOverextend(t *testing.T) {
 	}
 }
 
+// TouchRecord is the renewal a Manager takes when it already holds the record,
+// so it must keep every rule Touch keeps. It has its own tests because it has
+// its own copy of those rules: the caller supplies the record instead of the
+// store reading one, and a guard dropped from this copy is a guard nothing else
+// enforces.
+func TestStoreTouchRecordRenewsFromTheRecordInHand(t *testing.T) {
+	c := &clock{now: time.UnixMilli(1_800_000_000_000)}
+	store, client := testStore(t, c)
+	record := testRecord(c.Now())
+	if err := store.Put(t.Context(), testKey, record); err != nil {
+		t.Fatal(err)
+	}
+
+	c.advance(10 * time.Minute)
+	renewed := c.Now().Add(30 * time.Minute)
+	if err := store.TouchRecord(t.Context(), testKey, record, c.Now(), renewed); err != nil {
+		t.Fatalf("TouchRecord: %v", err)
+	}
+	if client.lastTTL != 30*time.Minute {
+		t.Fatalf("renewed ttl = %v", client.lastTTL)
+	}
+	loaded, err := store.Get(t.Context(), testKey)
+	if err != nil {
+		t.Fatalf("Get: %v", err)
+	}
+	if !loaded.IdleExpiresAt.Equal(renewed) || !loaded.LastSeenAt.Equal(c.Now()) {
+		t.Fatalf("renewed record = %#v", loaded)
+	}
+	if string(loaded.Payload) != string(record.Payload) || !loaded.ExpiresAt.Equal(record.ExpiresAt) {
+		t.Fatalf("renewal changed the payload or the absolute expiry: %#v", loaded)
+	}
+}
+
+// A record bounded only by inactivity has no absolute deadline to renew past,
+// which is what the zero-time guard in every store means. Comparing an idle
+// deadline against the zero time instead refuses every renewal of such a
+// record, and the session then expires under a reader who never stopped using
+// it — silently, because the Manager reads a refused renewal as a session that
+// ended rather than as a failure.
+func TestStoreTouchRecordRenewsARecordBoundedOnlyByIdle(t *testing.T) {
+	c := &clock{now: time.UnixMilli(1_800_000_000_000)}
+	store, _ := testStore(t, c)
+	record := testRecord(c.Now())
+	record.ExpiresAt = time.Time{}
+	if err := store.Put(t.Context(), testKey, record); err != nil {
+		t.Fatal(err)
+	}
+
+	c.advance(10 * time.Minute)
+	renewed := c.Now().Add(30 * time.Minute)
+	// Touch answers this record, so TouchRecord has to answer it the same way:
+	// the two are one renewal reached two ways, not two policies.
+	if err := store.Touch(t.Context(), testKey, c.Now(), renewed); err != nil {
+		t.Fatalf("Touch on an idle-only record: %v", err)
+	}
+	if err := store.TouchRecord(t.Context(), testKey, record, c.Now(), renewed); err != nil {
+		t.Fatalf("TouchRecord on an idle-only record: %v", err)
+	}
+	loaded, err := store.Get(t.Context(), testKey)
+	if err != nil {
+		t.Fatalf("Get: %v", err)
+	}
+	if !loaded.IdleExpiresAt.Equal(renewed) {
+		t.Fatalf("renewed record = %#v", loaded)
+	}
+}
+
+func TestStoreTouchRecordRefusesToReviveOrOverextend(t *testing.T) {
+	c := &clock{now: time.UnixMilli(1_800_000_000_000)}
+	store, _ := testStore(t, c)
+	record := testRecord(c.Now())
+	if err := store.Put(t.Context(), testKey, record); err != nil {
+		t.Fatal(err)
+	}
+
+	// Past the absolute expiry there is nothing to renew.
+	if err := store.TouchRecord(t.Context(), testKey, record, c.Now(),
+		record.ExpiresAt.Add(time.Minute)); !errors.Is(err, session.ErrNotFound) {
+		t.Fatalf("overextending TouchRecord error = %v", err)
+	}
+	// A record that was never written is not created by a renewal, which is what
+	// the conditional write is for: the caller's record is not evidence the key
+	// is still there.
+	missing := strings.Repeat("a", keyHashLength)
+	if err := store.TouchRecord(t.Context(), missing, record, c.Now(),
+		c.Now().Add(time.Minute)); !errors.Is(err, session.ErrNotFound) {
+		t.Fatalf("missing TouchRecord error = %v", err)
+	}
+	// And one the server has collected is gone, however fresh the record the
+	// caller is holding looks.
+	c.advance(2 * time.Hour)
+	if err := store.TouchRecord(t.Context(), testKey, record, c.Now(),
+		c.Now().Add(time.Minute)); !errors.Is(err, session.ErrNotFound) {
+		t.Fatalf("expired TouchRecord error = %v", err)
+	}
+}
+
 func TestStoreDeleteIsIdempotent(t *testing.T) {
 	c := &clock{now: time.UnixMilli(1_800_000_000_000)}
 	store, _ := testStore(t, c)

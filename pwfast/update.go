@@ -89,7 +89,7 @@ func WriteUpdate(r *fasthttp.RequestCtx, status int, regions ...UpdateRegion) {
 		WriteProblem(r, InternalServerError(err))
 		return
 	}
-	writeUpdateResponse(r, response)
+	writeUpdateResponse(r, response, updateCacheControl)
 }
 
 // WriteUpdateNavigate tells the browser to leave the page, which is how an
@@ -120,7 +120,7 @@ func WriteUpdateNavigate(r *fasthttp.RequestCtx, url string) {
 		WriteProblem(r, InternalServerError(err))
 		return
 	}
-	writeUpdateResponse(r, response)
+	writeUpdateResponse(r, response, updateCacheControl)
 }
 
 // RedrawComponents answers a redraw request for the components named here, and
@@ -148,7 +148,7 @@ func RedrawComponents(r *fasthttp.RequestCtx, components ...pwruntime.UpdateRelo
 				Err:     err,
 			}
 			pwruntime.LogUpdateRefusal(r, failure)
-			writeUpdateResponse(r, fasthttpupdate.FailureResponse(failure))
+			writeUpdateResponse(r, fasthttpupdate.FailureResponse(failure), "")
 			return true
 		}
 	}
@@ -180,21 +180,63 @@ func answerRedraw(r *fasthttp.RequestCtx, options fasthttpupdate.Options, regist
 	if !answered {
 		return false
 	}
-	writeUpdateResponse(r, response)
+	writeUpdateResponse(r, response, redrawCacheControl)
 	return true
 }
 
-// writeUpdateResponse sends a composed answer.
+// writeUpdateResponse sends a composed answer under this framework's cache
+// policy.
 //
 // The module builds a response and leaves the sending to its caller, which is
 // what lets this half exist: the value carries a status, a header set, and a
-// body, and none of the three names a transport. Only this function does.
-func writeUpdateResponse(r *fasthttp.RequestCtx, response fasthttpupdate.Response) {
-	applyHeader(r, response.Header)
-	if response.Status != 0 {
-		r.SetStatusCode(response.Status)
+// body, and none of the three names a transport. Only this function does — and
+// the policy is one of the things it has to write, because the module writes
+// none and a response leaving here without one is a per-reader body a shared
+// cache may hold under the page's own URL.
+//
+// A refusal is never stored whatever the caller asked for, because its body says
+// why one request failed and nothing else may be answered with it.
+//
+// The conditional request is answered here for the same reason the policy is
+// written here: a 304 is a cache decision, and the module stopped making them.
+func writeUpdateResponse(r *fasthttp.RequestCtx, response fasthttpupdate.Response, cacheControl string) {
+	if response.Failure != nil || cacheControl == "" {
+		cacheControl = updateCacheControl
 	}
+	r.Response.Header.Set("Cache-Control", cacheControl)
+	// A refusal carries no axes of its own, and it answers from the page's URL
+	// like everything else here, so the shared ones go on unconditionally.
+	varyOnUpdateHeaders(r)
+	applyHeader(r, response.Header)
+	if response.NotModified(r) {
+		r.SetStatusCode(fasthttp.StatusNotModified)
+		return
+	}
+	status := response.Status
+	if status == 0 {
+		status = fasthttp.StatusOK
+	}
+	r.SetStatusCode(status)
 	_, _ = r.Write(response.Body)
+}
+
+// varyOnUpdateHeaders names the request headers every response from a page's URL
+// depends on, whichever of them this request turns out to be.
+//
+// It goes on before anything branches. A page, its deltas and its redraws share
+// one URL, so a cache that stored the page under that URL alone would answer all
+// three with it — and the page is the response most likely to be storable, since
+// it is the only one here that carries no per-request validator.
+//
+// The render header is what discriminates: every update request names its mode
+// there and a document names nothing, so these two axes are enough to keep the
+// page separate from all of it. The narrower axes a redraw needs on top of these
+// come from the module, which is what knows them. The prefix is the shared
+// leaf's constant rather than the resolved settings', because it is what
+// updateOptions negotiates on and the two must name one namespace.
+func varyOnUpdateHeaders(r *fasthttp.RequestCtx) {
+	addVaryHeader(r, pwruntime.UpdateHeaderPrefix+"-Render")
+	addVaryHeader(r, pwruntime.UpdateHeaderPrefix+"-Build")
 }
 
 // applyHeader copies a composed header set onto the response.
@@ -203,8 +245,20 @@ func writeUpdateResponse(r *fasthttp.RequestCtx, response fasthttpupdate.Respons
 // and it is an ordinary map rather than a transport: nothing here reads a
 // request or writes a body. Only the destination differs, which is the whole
 // reason a second copier exists.
+//
+// It is not fasthttpupdate.ApplyTo, which adds every field: Vary goes through
+// this framework's own de-duplicating path, so an axis already named does not
+// appear twice, and everything else is replaced, so a second value cannot appear
+// beside the one a caller had already chosen.
 func applyHeader(r *fasthttp.RequestCtx, header http.Header) {
 	for name, values := range header {
+		if http.CanonicalHeaderKey(name) == "Vary" {
+			for _, value := range values {
+				addVaryHeader(r, value)
+			}
+			continue
+		}
+		r.Response.Header.Del(name)
 		for _, value := range values {
 			r.Response.Header.Add(name, value)
 		}
@@ -275,6 +329,22 @@ func boundedRenderContext(r *fasthttp.RequestCtx, settings pwruntime.UpdateSetti
 	return context.WithTimeout(r, settings.AsyncTimeout)
 }
 
-// updateCacheControl keeps a delta and a live delivery out of every cache. A
-// shared cache holding one would answer another reader's page with it.
-const updateCacheControl = "private, no-store"
+// The cache policy of every update response this transport writes.
+//
+// The module computes what only it can know — which request headers an answer
+// depends on, what its body is, which mode was served, what it digests to — and
+// writes no policy at all, because what a deployment decides arrives here. These
+// are pw's values, kept identical: one request answered under two policies by
+// two transports is exactly the drift the shared decisions exist to prevent.
+const (
+	// An update body restates validators for one document under ambient
+	// credentials, so it is never shareable and never worth storing. The
+	// streamed navigation delta is sent under it too, and a live delivery under
+	// the same value written where that response commits.
+	updateCacheControl = "no-store"
+	// A redraw renders per-user content, so it stays out of every shared cache.
+	// It is no-cache rather than no-store because no-store would forbid the
+	// conditional request its entity tag exists for: a browser that may not keep
+	// the bytes can never ask whether they changed.
+	redrawCacheControl = "private, no-cache"
+)
