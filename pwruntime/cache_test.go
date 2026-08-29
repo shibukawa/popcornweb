@@ -417,6 +417,49 @@ func TestTagInvalidationDropsEveryEntryTheTagNames(t *testing.T) {
 	}
 }
 
+// groupedKey carries two tags, which is what a list entry naming its
+// collection and its owner looks like.
+type groupedKey struct{ ID string }
+
+func (k groupedKey) CacheKey() string {
+	return cachekeybind.KeyString(keyIdentity+"groupedKey") + cachekeybind.KeyString(k.ID)
+}
+
+func (k groupedKey) CacheTags() []string { return []string{"group:a", "user:" + k.ID} }
+
+// regroupedKey re-creates the same entry under an unrelated tag, which is what
+// the key looks like after the data it caches moved owners.
+type regroupedKey struct{ ID string }
+
+func (k regroupedKey) CacheKey() string {
+	return cachekeybind.KeyString(keyIdentity+"groupedKey") + cachekeybind.KeyString(k.ID)
+}
+
+func (k regroupedKey) CacheTags() []string { return []string{"other:z"} }
+
+// An entry dropped by one of its tags must also leave the other tags' indexes,
+// or the stale reference outlives it: once the key is re-created under new
+// tags, invalidating the old tag would delete an entry that never carried it.
+func TestTagInvalidationUntagsTheOtherTags(t *testing.T) {
+	store := testStore(t, CacheStoreConfig{Scope: "public"})
+	ctx := context.Background()
+	fetch := func(context.Context) (string, error) { return "value", nil }
+	if _, err := Memo(ctx, store, groupedKey{ID: "u1"}, fetch); err != nil {
+		t.Fatal(err)
+	}
+	MemoInvalidateTag(store, "group:a")
+	if MemoHas(ctx, store, groupedKey{ID: "u1"}) {
+		t.Fatal("the group invalidation missed the entry")
+	}
+	if _, err := Memo(ctx, store, regroupedKey{ID: "u1"}, fetch); err != nil {
+		t.Fatal(err)
+	}
+	MemoInvalidateTag(store, "user:u1")
+	if !MemoHas(ctx, store, regroupedKey{ID: "u1"}) {
+		t.Errorf("an entry never tagged user:u1 was dropped by that tag")
+	}
+}
+
 func TestMemoSetWritesWithoutAFetch(t *testing.T) {
 	store := testStore(t, CacheStoreConfig{Scope: "public"})
 	ctx := context.Background()

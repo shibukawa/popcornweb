@@ -302,8 +302,13 @@ func (s *CacheStore) deletePrefix(prefix string) {
 func (s *CacheStore) deleteTag(tag string) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	// removeLocked rather than a bare map delete, because an entry may carry
+	// more than one tag: dropped without untagging, its key would stay in the
+	// other tags' indexes, and a later invalidation of one of those would
+	// delete whatever entry had reused the key since — an entry that never
+	// carried the invalidated tag at all.
 	for key := range s.tagged[tag] {
-		delete(s.entries, key)
+		s.removeLocked(key)
 	}
 	delete(s.tagged, tag)
 	s.compactLocked()

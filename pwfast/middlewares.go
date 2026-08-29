@@ -141,10 +141,14 @@ func requestIsHTTPS(r *fasthttp.RequestCtx, proxies requestorigin.Proxies) bool 
 // handler; this one writes them into the request value. Everything downstream
 // reads them the same way, because the request value answers Value from the
 // store this writes to.
+// The capsule is prepared once here rather than once per request, exactly as
+// the other transport's frame prepares it: a capsule with no per-request state
+// is shared rather than re-copied to the heap each time.
 func InjectResources(resources pwruntime.Resources) Middleware {
+	prepared := pwruntime.PrepareResources(resources)
 	return func(next fasthttp.RequestHandler) fasthttp.RequestHandler {
 		return func(r *fasthttp.RequestCtx) {
-			pwruntime.StoreResources(r, resources)
+			prepared.StoreOn(r)
 			next(r)
 		}
 	}
