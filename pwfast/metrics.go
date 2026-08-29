@@ -47,6 +47,24 @@ func Metrics(metrics *pwruntime.Metrics) Middleware {
 	if metrics == nil || metrics.RequestDuration == nil {
 		return func(next fasthttp.RequestHandler) fasthttp.RequestHandler { return next }
 	}
+	// The concurrency attributes have tiny cardinality — the semconv verb set
+	// against two schemes — and are identical for every request of one pair,
+	// so they are built once here and looked up rather than allocated twice
+	// per request, exactly as the other transport's frame builds them. The map
+	// is never written again, so the lookup needs no lock.
+	type methodScheme struct{ method, scheme string }
+	activeFor := map[methodScheme][]otel.Attribute{}
+	for _, method := range []string{
+		"GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "CONNECT", "OPTIONS",
+		"TRACE", "_OTHER",
+	} {
+		for _, scheme := range []string{"http", "https"} {
+			activeFor[methodScheme{method, scheme}] = []otel.Attribute{
+				otel.String("http.request.method", method),
+				otel.String("url.scheme", scheme),
+			}
+		}
+	}
 	return func(next fasthttp.RequestHandler) fasthttp.RequestHandler {
 		return func(r *fasthttp.RequestCtx) {
 			started := time.Now()
@@ -56,10 +74,9 @@ func Metrics(metrics *pwruntime.Metrics) Middleware {
 			// tokens or a crafted scheme.
 			scheme := pwruntime.NormalizeScheme(string(r.URI().Scheme()))
 			method := pwruntime.NormalizeHTTPMethod(string(r.Method()))
-			active := []otel.Attribute{
-				otel.String("http.request.method", method),
-				otel.String("url.scheme", scheme),
-			}
+			// The normalized pairs are the whole universe the seed above
+			// enumerates, so the lookup always answers.
+			active := activeFor[methodScheme{method, scheme}]
 			metrics.ActiveRequests.Add(r, 1, active...)
 			defer func() {
 				metrics.ActiveRequests.Add(r, -1, active...)

@@ -99,6 +99,51 @@ func StoreResources(store ValueStore, resources Resources) {
 	store.SetUserValue(contextKey{}, prepareResources(resources))
 }
 
+// PreparedResources is one injector frame's capsule, prepared at chain
+// construction rather than per request.
+//
+// The injectors hand every request the same Resources value, and prepareResources
+// copied it to the heap once per request to do so. Most deployments' capsule is
+// request-independent — the per-request fields prepare would add are a
+// connection set's round-robin memo and the statement-wrapper cache, and a
+// capsule without either is frozen after preparation, with every later change
+// travelling through a derived copy. Such a capsule is prepared here once and
+// shared by every request; one that does need per-request state keeps being
+// prepared per request, unchanged.
+type PreparedResources struct {
+	shared *Resources
+	source Resources
+}
+
+// PrepareResources readies resources for an injector frame.
+func PrepareResources(resources Resources) PreparedResources {
+	prepared := prepareResources(resources)
+	if prepared.picked == nil && prepared.instrumented == nil {
+		return PreparedResources{shared: prepared}
+	}
+	return PreparedResources{source: resources}
+}
+
+// Attach returns ctx carrying the capsule, the injector's WithResources.
+func (p PreparedResources) Attach(ctx context.Context) context.Context {
+	if p.shared != nil {
+		if ctx == nil {
+			ctx = context.Background()
+		}
+		return context.WithValue(ctx, contextKey{}, p.shared)
+	}
+	return WithResources(ctx, p.source)
+}
+
+// StoreOn records the capsule on a request value, the injector's StoreResources.
+func (p PreparedResources) StoreOn(store ValueStore) {
+	if p.shared != nil {
+		store.SetUserValue(contextKey{}, p.shared)
+		return
+	}
+	StoreResources(store, p.source)
+}
+
 // StoreLogAttributes is WithLogAttributes for a value store.
 func StoreLogAttributes(store ValueStore, attributes ...Attribute) {
 	if len(attributes) == 0 {
