@@ -415,6 +415,7 @@
 {"category": "objective", "id": "requirement:additional-editor-clients", "path": ".knowledge/requirement/additional-editor-clients.md", "role": "primary", "title": "Editors Beyond VS Code", "type": "requirement"}
 {"category": "objective", "id": "requirement:agent-log-analysis-skill", "path": ".knowledge/requirement/agent-log-analysis-skill.md", "role": "primary", "title": "Agent Log Analysis Skill", "type": "requirement"}
 {"category": "objective", "id": "requirement:alternate-http-backend-readiness", "path": ".knowledge/requirement/alternate-http-backend-readiness.md", "role": "primary", "title": "Readiness For A Non-net/http Backend", "type": "requirement"}
+{"category": "objective", "id": "requirement:api-catalog-well-known", "path": ".knowledge/requirement/api-catalog-well-known.md", "role": "primary", "title": "API Catalog Well-Known URI", "type": "requirement"}
 {"category": "objective", "id": "requirement:api-cbor-representation", "path": ".knowledge/requirement/api-cbor-representation.md", "role": "primary", "title": "CBOR API Representation", "type": "requirement"}
 {"category": "objective", "id": "requirement:api-lifecycle-response-headers", "path": ".knowledge/requirement/api-lifecycle-response-headers.md", "role": "primary", "title": "API Lifecycle Response Headers", "type": "requirement"}
 {"category": "objective", "id": "requirement:api-server-scaffold", "path": ".knowledge/requirement/api-server-scaffold.md", "role": "primary", "title": "API Server Preset Scaffold", "type": "requirement"}

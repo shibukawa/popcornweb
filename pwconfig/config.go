@@ -64,6 +64,19 @@ type ServerConfig struct {
 	OpenAPI    string `key:"openapi" help:"OpenAPI document path, e.g. /openapi.json; unset serves none"`
 	APIDoc     string `help:"API documentation UI: scalar, swagger, or empty to disable"`
 	APIDocPath string `default:"/docs" dependon:".api_doc" help:"API documentation UI path"`
+	// APICatalog answers the RFC 9727 well-known URI with a Linkset over the
+	// four settings above. It is a switch and not a path because the standard
+	// fixes the location, which is the one endpoint address an operator does
+	// not have to read out of a settings file to know.
+	//
+	// APICatalogOrigin is the absolute scheme-and-host the catalog's links are
+	// built from. RFC 9264 asks for references that are not relative, so that a
+	// catalog kept after the exchange that delivered it still resolves, and
+	// this is the only setting that names the origin this deployment answers
+	// on. Unset writes the links relative rather than guessing an origin from
+	// the caller's own Host: see the note on pwruntime.buildAPICatalog.
+	APICatalog       bool   `help:"answer /.well-known/api-catalog with an RFC 9727 API catalog"`
+	APICatalogOrigin string `dependon:".api_catalog" help:"absolute origin the API catalog's links are built from, e.g. https://api.example.com; unset writes them relative"`
 	// Public serves the application's embedded static assets.
 	Public PublicConfig `help:"framework-owned static asset endpoint"`
 }

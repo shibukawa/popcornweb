@@ -5,6 +5,7 @@ import (
 
 	"github.com/shibukawa/popcornweb/internal/pwcheck"
 	"github.com/shibukawa/popcornweb/internal/pwroutes"
+	"github.com/shibukawa/popcornweb/pwruntime"
 )
 
 // checkRoutes runs the PW02xx entries of rule:route-and-template-checks over
@@ -68,7 +69,21 @@ func (r *checkRun) frameworkMounts() []pwroutes.Mount {
 		{Pattern: r.Config.raw("server.readiness"), EnabledBy: "server.readiness"},
 		{Pattern: r.Config.raw("server.openapi"), EnabledBy: "server.openapi"},
 		{Pattern: r.Config.raw("server.api_doc_path"), EnabledBy: "server.api_doc"},
+		// The catalog's path is RFC 9727's rather than a key's, so it is named
+		// here: the route table is where a reader learns which addresses the
+		// framework answers on, and this is the one they cannot read off the
+		// configuration file.
+		{Pattern: r.apiCatalogMount(), EnabledBy: "server.api_catalog"},
 	}
+}
+
+// apiCatalogMount is the fixed path when the switch is on, and the empty
+// pattern a disabled mount contributes otherwise.
+func (r *checkRun) apiCatalogMount() string {
+	if enabled, resolved := r.Config.boolValue("server.api_catalog"); resolved && enabled {
+		return pwruntime.APICatalogPath
+	}
+	return ""
 }
 
 // describeSites names where entries were written, which is the evidence a

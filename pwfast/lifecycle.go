@@ -283,8 +283,19 @@ func Middlewares(handler fasthttp.RequestHandler, options RuntimeOptions) (fasth
 	// answered and closed before anything else sees it.
 	frames = append(frames, Frame{Slot: SlotOperational, Name: "framework_assets",
 		Middleware: FrameworkAssets()})
+	// Resolved before the chain is composed, so a catalog with nothing to link
+	// refuses startup here exactly as it does on the other transport: the
+	// resolver is the shared leaf's and neither transport validates its own.
+	catalog, err := pwruntime.ResolveAPICatalog(pwruntime.APICatalogSettings{
+		Enabled: settings.APICatalog, Origin: settings.APICatalogOrigin,
+		OpenAPI: settings.OpenAPI, APIDoc: settings.APIDoc,
+		APIDocPath: settings.APIDocPath, Health: settings.Health,
+	})
+	if err != nil {
+		return nil, err
+	}
 	frames = append(frames, Frame{Slot: SlotAPIDoc, Name: "apidoc",
-		Middleware: DocumentationEndpoints(settings.OpenAPI, settings.APIDoc, settings.APIDocPath)})
+		Middleware: DocumentationEndpoints(settings.OpenAPI, settings.APIDoc, settings.APIDocPath, catalog)})
 	if options.Guard.Protected != nil {
 		frames = append(frames, Frame{Slot: SlotGuard, Name: "guard", Middleware: Guard(options.Guard)})
 	}
@@ -431,14 +442,39 @@ func writeOperationalStatus(r *fasthttp.RequestCtx, healthy bool) {
 //
 // A configuration naming neither returns the handler unchanged, so the common
 // case adds nothing to the chain.
-func DocumentationEndpoints(openAPIPath, docKind, docPath string) Middleware {
+func DocumentationEndpoints(openAPIPath, docKind, docPath string,
+	catalog pwruntime.ResolvedAPICatalog) Middleware {
 	page, hasPage := apidoc.Build(docKind, openAPIPath)
 	return func(next fasthttp.RequestHandler) fasthttp.RequestHandler {
-		if openAPIPath == "" && !hasPage {
+		if openAPIPath == "" && !hasPage && !catalog.Enabled() {
 			return next
 		}
 		return func(r *fasthttp.RequestCtx) {
 			switch path := string(r.Path()); {
+			case catalog.Enabled() && path == pwruntime.APICatalogPath:
+				if !operationalMethod(r) {
+					return
+				}
+				document := catalog.Document()
+				header := &r.Response.Header
+				header.SetContentType(pwruntime.APICatalogContentType)
+				// Section 2 asks a HEAD to carry the relation; sending it on
+				// both costs nothing and answers a client that read only the
+				// headers of a GET.
+				header.Set("Link", pwruntime.APICatalogLinkHeader)
+				// Readable from anywhere, for the reason
+				// pwruntime.OpenAPIDocumentOrigin gives about the document this
+				// points at, and identically on both transports because the
+				// value is declared once there.
+				header.Set(pwruntime.OpenAPIDocumentOrigin.Name, pwruntime.OpenAPIDocumentOrigin.Value)
+				if string(r.Method()) == fasthttp.MethodHead {
+					// The length is the answer a HEAD is asking for, so it is
+					// reported rather than left at zero.
+					header.SetContentLength(len(document))
+					return
+				}
+				_, _ = r.Write(document)
+				return
 			case openAPIPath != "" && path == openAPIPath:
 				if !operationalMethod(r) {
 					return

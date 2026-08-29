@@ -195,6 +195,42 @@ answers a cross-origin reader with the unauthenticated response.
 - [Handlers and generated contracts](/guides/frontend/handlers/)
 - [Operational endpoints](/guides/deployment/operational-endpoints/)
 
+## API discovery
+
+A client handed nothing but an origin still has to be told where the document
+above lives. RFC 9727 removes that step. Turning on `server.api_catalog` answers
+`/.well-known/api-catalog` with a catalog naming the OpenAPI document, the
+reference UI, and the liveness probe — the three endpoints the configuration
+already declares. Nothing is written for it, which is why one switch is the
+whole of the adoption.
+
+The catalog is an RFC 9264 link set, served as `application/linkset+json`
+carrying the profile parameter that says this particular set of links is an API
+catalog. A `HEAD` answers with the `api-catalog` link relation, which is what
+the specification asks a supporting publisher for. Its links are relative unless
+`server.api_catalog_origin` names the origin to build them from — relative
+resolves against whatever URL the client fetched the catalog from, so the
+endpoint needs no configuration to work, and RFC 9264's preference for
+non-relative references is about a catalog somebody stores rather than follows.
+The origin is never inferred from the request's `Host`: a guess taken from a
+header the caller chose outlives the request and may name a host you do not own.
+`pw doctor` notes the unset key outside development as PW0429.
+
+Like the document it points at, the catalog answers
+`Access-Control-Allow-Origin: *` whatever the cross-origin policy says — an
+endpoint readable only from origins somebody already listed is not a discovery
+endpoint. Unlike the probes, it stays inside the rate limit rather than joining
+the exempt operational endpoints: a probe arrives on a schedule and a catalog is
+fetched once, and RFC 9727 asks for the limit rather than an exception to it.
+
+Catalogs nested inside other catalogs, the alternative formats offered through
+content negotiation, and the `service-meta` link are all out of scope. One
+binary publishes one API; a portfolio large enough to want grouping is
+assembling its catalog above these binaries rather than inside one of them.
+
+- [`[server]` configuration](/reference/configuration/#server)
+- [Operational endpoints](/guides/deployment/operational-endpoints/)
+
 ## Caching and content negotiation
 
 HTML is private and `no-store` unless its document shell declares a public
