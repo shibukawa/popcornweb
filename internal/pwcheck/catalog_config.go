@@ -39,11 +39,13 @@ const (
 	VerboseLogLevel        = "PW0422"
 	MemoryDatabase         = "PW0423"
 	LocalPublicRead        = "PW0424"
+	APICatalogWithoutAPI   = "PW0425"
 	PlaintextLogs          = "PW0426"
 	TelemetryDisabled      = "PW0427"
 	// PW0428 named the single-DSN form of middleware.rdb, which no longer
 	// exists. The identifier is retired rather than reused, so that an
 	// identifier printed by one build never means two different things.
+	APICatalogRelativeLinks = "PW0429"
 
 	// Identity provider: dev may authenticate against the local emulator, and
 	// a deployment must not.
@@ -246,6 +248,32 @@ func init() {
 			Severity: Warning, DevSeverity: Note, Scope: Deployed,
 			Inputs: Config, Phase: Doctor,
 			Remedy: "set server.public.read_local to false; pw dev forces it on its own",
+		},
+		Check{
+			// A catalog with nothing to link would serve a document carrying a
+			// status link, a self-referential item link, and no link to any API
+			// description, which meets RFC 9727 section 4.1 on no reading. The
+			// runtime refuses it, so this reports it before a start is tried.
+			ID: APICatalogWithoutAPI, Group: GroupConfig,
+			Title:    "the API catalog is enabled with no API document to link",
+			Severity: Error, DevSeverity: Error, Scope: Every,
+			Inputs: Config, Phase: Doctor,
+			Remedy: "set server.openapi, or turn server.api_catalog off",
+		},
+		Check{
+			// The catalog's links are absolute, because RFC 9264 asks for
+			// references that are not relative, so that a catalog kept after
+			// the exchange that delivered it still resolves. With no origin
+			// configured the links are relative instead: correct for the client
+			// fetching them, and context-dependent for anything that stores
+			// them. This is a note rather than a warning because the served
+			// document is conformant and works; what it is missing is the
+			// self-containment one setting would buy.
+			ID: APICatalogRelativeLinks, Group: GroupConfig,
+			Title:    "the API catalog publishes relative links",
+			Severity: Note, DevSeverity: Note, Scope: Deployed,
+			Inputs: Config, Phase: Doctor,
+			Remedy: "name the deployment's canonical origin in server.api_catalog_origin",
 		},
 		Check{
 			ID: PlaintextLogs, Group: GroupConfig,

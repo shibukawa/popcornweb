@@ -89,6 +89,8 @@ environment variable.
 | `openapi` | *(empty)* | OpenAPI document path, e.g. `/openapi.json` |
 | `api_doc` | *(empty)* | API documentation UI: `scalar`, `swagger`, or empty |
 | `api_doc_path` | `"/docs"` | where that UI is mounted |
+| `api_catalog` | `false` | answer `/.well-known/api-catalog` with an [RFC 9727 catalog](/appendix/web-standards/#api-discovery) |
+| `api_catalog_origin` | *(empty)* | absolute origin the catalog's links are built from; empty writes them relative |
 | `public.enabled` | `true` | serve the embedded static assets |
 | `public.mount` | `"/public"` | where they are mounted |
 | `public.read_local` | `false` | read from disk instead of the embedded tree |
@@ -102,6 +104,21 @@ An application route colliding with an enabled operational endpoint fails
 startup, before either can shadow the other. `api_doc` additionally requires
 `openapi` — a UI over a document nobody serves has nothing to render. See
 [API Documentation](/productivity/api-documentation/).
+
+`api_catalog` is a switch rather than a path because RFC 9727 fixes the
+location, and it is the one framework address an operator cannot read off this
+file. It requires `openapi` or `api_doc` for the reason `api_doc` requires
+`openapi`: a catalog whose only links point at a probe and at itself describes
+no API, and startup refuses it rather than serving it.
+
+`api_catalog_origin` is optional. Unset, the catalog's links are relative and
+resolve against the URL the client fetched it from, which is correct for anything
+following the catalog. Name it once something *stores* your catalog instead —
+RFC 9264 asks for references that are not relative so a stored link set still
+resolves. The framework never infers the origin from the request's `Host`,
+because a guess taken from a header the caller chose is durable and may name a
+host you do not own. `pw doctor` reports the unset key outside development as
+PW0429, a note.
 
 ## `[middleware]`
 

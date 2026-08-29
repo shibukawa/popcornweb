@@ -469,6 +469,60 @@ func TestAPIServerPresetCarriesACommentedCORSBlock(t *testing.T) {
 	}
 }
 
+// The API preset is the one publishing a machine contract on purpose, so it is
+// the one that announces where the contract is. The origin stays commented for
+// the reason the CORS block does: it is a deployment fact nobody has chosen yet.
+func TestAPIServerPresetTurnsOnTheAPICatalog(t *testing.T) {
+	options, err := parseInitArgs([]string{"--preset=api-server", "demo"})
+	if err != nil {
+		t.Fatalf("err = %v", err)
+	}
+	config := scaffoldFiles(options)[pwenv.FileName(pwenv.Development)]
+	if !strings.Contains(config, "\napi_catalog = true\n") {
+		t.Errorf("the catalog is not enabled:\n%s", config)
+	}
+	if !strings.Contains(config, `# api_catalog_origin = "https://api.example.com"`) {
+		t.Errorf("the origin key is not offered:\n%s", config)
+	}
+	// The endpoint it links has to be in the same file, or the process refuses
+	// to start and pw doctor reports PW0425.
+	if !strings.Contains(config, `openapi = "/openapi.json"`) {
+		t.Errorf("the catalog is on with no document to link:\n%s", config)
+	}
+}
+
+// A browser project publishes an API as a side effect of having handlers, which
+// is not the same as setting out to publish one, so its catalog ships off. The
+// key is still written: a reader deciding whether to publish one should find it
+// beside the endpoints it would link, not in the reference.
+func TestBrowserPresetScaffoldsTheAPICatalogOff(t *testing.T) {
+	options, err := parseInitArgs([]string{"demo"})
+	if err != nil {
+		t.Fatalf("err = %v", err)
+	}
+	config := scaffoldFiles(options)[pwenv.FileName(pwenv.Development)]
+	if !strings.Contains(config, "\napi_catalog = false\n") {
+		t.Errorf("the catalog switch was not scaffolded:\n%s", config)
+	}
+	if !strings.Contains(config, `# api_catalog_origin = "https://api.example.com"`) {
+		t.Errorf("the origin key is not offered:\n%s", config)
+	}
+}
+
+// A package has no listener and no configuration file at all, so nothing about
+// an endpoint reaches it.
+func TestPackageProjectScaffoldsNoAPICatalog(t *testing.T) {
+	options, err := parseInitArgs([]string{"--preset=package", "demo"})
+	if err != nil {
+		t.Fatalf("err = %v", err)
+	}
+	for name, body := range scaffoldFiles(options) {
+		if strings.Contains(body, "api_catalog") {
+			t.Errorf("%s mentions the catalog:\n%s", name, body)
+		}
+	}
+}
+
 // A browser project scaffolds the CSRF section and no cross-origin one: its
 // pages are served from the origin that reads them, so admitting another origin
 // is a decision it has no reason to be shown.

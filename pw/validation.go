@@ -14,6 +14,7 @@ import (
 	"github.com/shibukawa/popcornweb/middlewares"
 	"github.com/shibukawa/popcornweb/pwconfig"
 	"github.com/shibukawa/popcornweb/pwobservability"
+	"github.com/shibukawa/popcornweb/pwruntime"
 	"github.com/shibukawa/popcornweb/pwsession"
 )
 
@@ -313,6 +314,16 @@ func validateServerConfig(config ServerConfig) error {
 	if config.APIDoc != "" && config.OpenAPI == "" {
 		return fmt.Errorf("server.api_doc requires server.openapi")
 	}
+	// Validated through the shared resolver, so this transport refuses exactly
+	// what the other one does rather than through a second reading of the same
+	// two rules.
+	if _, err := pwruntime.ResolveAPICatalog(pwruntime.APICatalogSettings{
+		Enabled: config.APICatalog, Origin: config.APICatalogOrigin,
+		OpenAPI: config.OpenAPI, APIDoc: config.APIDoc,
+		APIDocPath: config.APIDocPath, Health: config.Health,
+	}); err != nil {
+		return err
+	}
 	seen := map[string]string{}
 	for key, endpoint := range operationalEndpointPaths(config) {
 		if err := validateEndpointPath(key, endpoint); err != nil {
@@ -353,6 +364,12 @@ func operationalEndpointPaths(config ServerConfig) map[string]string {
 	}
 	if config.APIDoc != "" {
 		paths["server.api_doc_path"] = config.APIDocPath
+	}
+	// The catalog's path is RFC 9727's rather than the deployment's, so it
+	// carries no key of its own; it is listed here so it is checked for the
+	// same collisions as the endpoints it links to.
+	if config.APICatalog {
+		paths["server.api_catalog"] = pwruntime.APICatalogPath
 	}
 	return paths
 }

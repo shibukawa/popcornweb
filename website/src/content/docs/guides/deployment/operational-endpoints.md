@@ -1,6 +1,6 @@
 ---
 title: Health and Readiness
-description: The liveness, readiness, and OpenAPI endpoints the primary listener can expose, and why none of them has a default path.
+description: The liveness, readiness, OpenAPI, and API-catalog endpoints the primary listener can expose, and why none of them has a default path.
 sidebar:
   order: 1
 ---
@@ -203,6 +203,54 @@ which keeps the reference private until a staging or production config
 deliberately opts in. See [API Documentation](/productivity/api-documentation/),
 and [`pw doctor`](/pw/project/doctor/), which reports an exposed documentation
 endpoint as a readiness finding for a deployed environment.
+
+## Announcing the API catalog
+
+A client that has your origin still has to be told that the document is at
+`/openapi.json` and not at `/openapi` or `/v1/openapi.json`. One key ends that
+conversation:
+
+```toml
+[server]
+openapi = "/openapi.json"
+api_doc = "scalar"
+api_catalog = true
+api_catalog_origin = "https://api.example.com"
+```
+
+`/.well-known/api-catalog` now answers with an
+[RFC 9727](https://www.rfc-editor.org/rfc/rfc9727.html) catalog naming the three
+endpoints above: the document, the UI, and `health`. It takes no path of its own
+because the standard fixes the location, and it is assembled entirely from keys
+you have already set — so an endpoint that moves takes its catalog entry with it
+and there is nothing to keep in step.
+
+`api_catalog_origin` is optional. Leave it unset and the links are written
+relative — `/openapi.json` rather than `https://api.example.com/openapi.json` —
+which resolves against whatever URL the client fetched the catalog from. That is
+correct for every client following the catalog, so the endpoint works with no
+origin configured at all.
+
+Name it anyway once something stores your catalog rather than just following it.
+RFC 9264 asks for references that are not relative so that a link set outliving
+the exchange that delivered it still resolves, and an aggregator holding your
+catalog in a database has exactly that problem. `pw doctor` reports the unset key
+outside development as PW0429, a note.
+
+What the framework will not do is guess. The only origin it could infer is the
+request's own `Host`, which the caller chose, and a guessed absolute URL is
+durable and may name a host you do not own — so an unnamed origin publishes what
+it knows instead.
+
+Enabling the catalog with neither `openapi` nor `api_doc` set is a startup
+error rather than a warning. The only links left would point at the probe and at
+the catalog itself, which describes no API to anyone.
+
+Leave it off for an application that serves pages. Handlers publish an API as a
+side effect of existing, and a catalog announces one you chose to publish. Every
+scaffolded `config.dev.toml` carries the key so the decision is visible beside
+the endpoints it would link — `pw init` writes it `true` for the `api-server`
+preset and `false` everywhere else.
 
 ## Collisions fail startup
 

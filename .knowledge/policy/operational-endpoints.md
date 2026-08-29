@@ -35,6 +35,13 @@ api_doc:
   configuration: data:server-runtime-config api_doc selects scalar or swagger, and api_doc_path serves it
   default: api:cli-init scaffolds it into the development configuration only, so staging and production omit the key and register no route
   access: policy:authenticated-path-protection applies, as it does to the document itself
+api_catalog:
+  status: implemented 2026-08-28, specified by requirement:api-catalog-well-known
+  what: /.well-known/api-catalog answering an RFC 9727 Linkset that links the three endpoints above rather than describing anything of its own
+  configuration: data:server-runtime-config api_catalog switches it on, and api_catalog_origin fixes the origin its links are built from; unset writes them relative
+  methods: GET and HEAD, the HEAD answer carrying a Link header of the api-catalog relation
+  access: policy:authenticated-path-protection applies, and the cross_origin wildcard of the OpenAPI document above applies for the same three reasons
+  fixed_path: unlike the four keys above it takes no path, because the RFC fixes the location and the operator reading the file learns the address from the key name
 non_goals:
   - metrics endpoint in the first release
 ```

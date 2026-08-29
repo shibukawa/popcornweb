@@ -382,6 +382,13 @@ sidebar:
 - **読むもの**: マージ済み設定
 - **直し方**: set server.public.read_local to false; pw dev forces it on its own
 
+### PW0425: the API catalog is enabled with no API document to link
+
+- **深刻度**: error
+- **対象**: すべての環境
+- **読むもの**: マージ済み設定
+- **直し方**: set server.openapi, or turn server.api_catalog off
+
 ### PW0426: logs are plaintext outside dev
 
 - **深刻度**: note
@@ -395,6 +402,13 @@ sidebar:
 - **対象**: `dev` 以外のすべての環境
 - **読むもの**: マージ済み設定
 - **直し方**: set observability.otel.endpoint to export traces and logs
+
+### PW0429: the API catalog publishes relative links
+
+- **深刻度**: note
+- **対象**: `dev` 以外のすべての環境
+- **読むもの**: マージ済み設定
+- **直し方**: name the deployment's canonical origin in server.api_catalog_origin
 
 ### PW0430: the development identity provider is enabled outside dev
 

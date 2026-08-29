@@ -164,7 +164,7 @@ considered:
     if_it_returns: a deployment genuinely needing two origin sets on two paths is the evidence that would justify it, and nothing in the tree needs one today
 openapi_document:
   decided: 2026-08-13, readable from anywhere by default
-  what: the generated document at data:server-runtime-config openapi.path, and the api_doc UI policy:operational-endpoints places beside it
+  what: the generated document at data:server-runtime-config openapi, and the api_doc UI policy:operational-endpoints places beside it
   header: Access-Control-Allow-Origin star with credentials off, always, whatever security.cors says and whether or not the frame is enabled
   why_the_endpoint_and_not_the_configuration: the document describes a contract the deployment already chose to publish, carries nothing per visitor, and is the one path whose plausible reader is a tool nobody can enumerate in advance
   why_it_is_safe_even_when_protected: policy:operational-endpoints puts the document behind policy:authenticated-path-protection like any route, and a wildcard forbids credentials, so a cross-origin page reading a protected document receives the unauthenticated answer and learns nothing
@@ -175,5 +175,5 @@ scaffolding:
   who: requirement:api-server-scaffold, whose reader is building the machine-facing API this requirement's driving case names
   what: a commented security.cors block naming enabled, allowed_origins and allowed_methods, inert until uncommented because enabled defaults false
   where: the base configuration rather than config.dev.toml, since which origins may call is a deployment fact and not a development relaxation
-  silent_about_the_document: the block says nothing about openapi.path, which needs no configuration per openapi_document above
+  silent_about_the_document: the block says nothing about server.openapi, which needs no configuration per openapi_document above
 ```

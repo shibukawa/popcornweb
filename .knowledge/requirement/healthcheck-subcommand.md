@@ -19,7 +19,7 @@ behavior:
   - issue one GET with a bounded timeout and no redirect following
   - 2xx exits 0; any other status, connection failure, or timeout exits 1
 options:
-  --ready: probe readiness.path instead of health.path
+  --ready: probe server.readiness instead of server.health
   --timeout: probe deadline as a duration, default 3s
 exit_codes:
   healthy: 0
