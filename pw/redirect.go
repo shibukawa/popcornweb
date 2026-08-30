@@ -2,7 +2,6 @@ package pw
 
 import (
 	"net/http"
-	"net/url"
 
 	"github.com/shibukawa/popcornweb/internal/safeurl"
 	"github.com/shibukawa/popcornweb/pwruntime"
@@ -73,24 +72,33 @@ func FormValue(r *http.Request, key string) string {
 // generated decoder serve either.
 func PathValue(r *http.Request, key string) string { return tinybind.PathValue(r, key) }
 
+// QueryValues is the request's query string split once into raw key=value
+// spans, in wire order. It is the module's alias, so the value a decoder holds
+// is the same type on either transport and the lookups cannot drift apart.
+type QueryValues = tinybind.QueryValues
+
 // Queries returns the parsed query, for a decoder reading several parameters
 // from one request.
-func Queries(r *http.Request) url.Values {
-	if r == nil || r.URL == nil {
-		return nil
-	}
-	return r.URL.Query()
-}
+//
+// Since system:tinybind v0.5.27 the parse is the module's own rather than
+// url.Values: the two transports used to split the same raw query with two
+// parsers — url.ParseQuery here, the driver's on fasthttp — and a pair one of
+// them drops, a semicolon or a broken percent escape, then bound different
+// values for a query the client chose. One parser is what makes the answer one.
+func Queries(r *http.Request) QueryValues { return tinybind.Queries(r) }
 
 // QueryLookup reads one parameter from a parsed query, reporting whether it was
 // present. Presence and emptiness are different answers: a flag parameter
 // arrives with no value at all.
-func QueryLookup(query url.Values, key string) (string, bool) {
-	values, ok := query[key]
-	if !ok || len(values) == 0 {
-		return "", false
-	}
-	return values[0], true
+func QueryLookup(query QueryValues, key string) (string, bool) {
+	return tinybind.QueryLookup(query, key)
+}
+
+// QueryLookupAll reads every value of one repeated parameter, in URL order,
+// which is the array spelling an urlencoded form submits for a checkbox group.
+// It is the accessor a generated decoder reads a string[] input through.
+func QueryLookupAll(query QueryValues, key string) []string {
+	return tinybind.QueryLookupAll(query, key)
 }
 
 // The returned forms, for code that decides a response without holding a

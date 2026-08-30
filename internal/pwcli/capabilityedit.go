@@ -51,13 +51,18 @@ const capabilityPageTreePurpose = "pages"
 // setPagesPurpose writes the page tree purpose, adding the key when the project
 // predates it. Every other purpose is required and can be edited in place; this
 // one is the exception, so it is the only edit that may have to insert a line.
+//
+// Whether to insert is decided by looking for the key, never by whether the
+// loaded list has entries: a scaffold that declined the capability writes
+// pages = [], which is a present key holding nothing, and inserting beside it
+// would define generate.pages twice — which the TOML parser refuses.
 func setPagesPurpose(state projectState, values []string) (string, error) {
-	if len(state.config.Generate.Pages) > 0 {
-		return setGeneratePurpose(state, capabilityPageTreePurpose, values)
-	}
 	source, err := os.ReadFile(filepath.Join(state.root, "popcornweb.toml"))
 	if err != nil {
 		return "", err
+	}
+	if edited, err := setGeneratePurposeIn(string(source), capabilityPageTreePurpose, values); err == nil {
+		return edited, nil
 	}
 	entry := capabilityPageTreePurpose + " = [" + quotedList(values) + "]\n"
 	table := ""
