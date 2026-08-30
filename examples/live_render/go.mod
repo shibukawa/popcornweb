@@ -4,8 +4,8 @@ go 1.26.0
 
 require (
 	github.com/shibukawa/popcornweb v0.0.0
-	github.com/shibukawa/tinybind-go v0.5.22
-	github.com/shibukawa/tinygodriver v1.2.9
+	github.com/shibukawa/tinybind-go v0.5.27
+	github.com/shibukawa/tinygodriver v1.2.10
 )
 
 require (

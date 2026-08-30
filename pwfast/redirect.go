@@ -193,15 +193,32 @@ func PathValue(r *fasthttp.RequestCtx, key string) string {
 	return fasthttpbind.PathValue(r, key)
 }
 
+// QueryValues is the request's query string split once into raw key=value
+// spans, in wire order — the same alias the net/http half holds, so a decoder
+// moved between transports keeps its type.
+type QueryValues = fasthttpbind.QueryValues
+
 // Queries returns the parsed query, for a decoder reading several
 // parameters from one request.
-func Queries(r *fasthttp.RequestCtx) *fasthttp.Args { return r.QueryArgs() }
+//
+// Since system:tinybind v0.5.27 it goes through the module rather than
+// QueryArgs: the driver's parser admits pairs url.ParseQuery drops, and the
+// two runtimes then bound different values for a query the client chose. One
+// parser is what makes the answer one.
+func Queries(r *fasthttp.RequestCtx) QueryValues { return fasthttpbind.Queries(r) }
 
 // QueryLookup reads one parameter from a parsed query, reporting whether it was
 // present. Presence and emptiness are different answers: a flag parameter
 // arrives with no value at all.
-func QueryLookup(query *fasthttp.Args, key string) (string, bool) {
+func QueryLookup(query QueryValues, key string) (string, bool) {
 	return fasthttpbind.QueryLookup(query, key)
+}
+
+// QueryLookupAll reads every value of one repeated parameter, in URL order,
+// which is the array spelling an urlencoded form submits for a checkbox group.
+// It is the accessor a generated decoder reads a string[] input through.
+func QueryLookupAll(query QueryValues, key string) []string {
+	return fasthttpbind.QueryLookupAll(query, key)
 }
 
 // WantsLive reports whether this request asked for deliveries instead of a
