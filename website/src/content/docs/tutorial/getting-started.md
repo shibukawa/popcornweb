@@ -13,7 +13,7 @@ This chapter creates that page, runs it, and changes it. Fifteen minutes,
 roughly, most of it spent waiting for the first build.
 
 :::note[Before you start]
-Go 1.26 or later and the `pw` command — see [Installation](/start/installation/).
+Go 1.27 or later and the `pw` command — see [Installation](/start/installation/).
 Devbox is optional; the project works either way, and the commands below say
 where the two paths differ. Everything else the project needs, `pw init` writes.
 :::

@@ -15,10 +15,10 @@ func TestARecordSlotExpiresBeforeItsSession(t *testing.T) {
 	c := &clock{now: time.Unix(1_700_000_000, 0)}
 	store := newMapStore()
 	registry := NewRegistry()
-	if err := Register[payload](registry, "account", Private, nil); err != nil {
+	if err := registry.Register[payload]("account", Private, nil); err != nil {
 		t.Fatal(err)
 	}
-	if err := Register[preference](registry, "admission", Private, nil, ExpiresAfter(30*time.Second)); err != nil {
+	if err := registry.Register[preference]("admission", Private, nil, ExpiresAfter(30*time.Second)); err != nil {
 		t.Fatal(err)
 	}
 	manager := testManager(t, registry, store, defaultOptions(t, c.Now))
@@ -61,13 +61,13 @@ func TestAnOutlivingSlotSurvivesDestroy(t *testing.T) {
 	c := &clock{now: time.Unix(1_700_000_000, 0)}
 	store := newMapStore()
 	registry := NewRegistry()
-	if err := Register[payload](registry, "account", Private, nil); err != nil {
+	if err := registry.Register[payload]("account", Private, nil); err != nil {
 		t.Fatal(err)
 	}
-	if err := Register[locale](registry, "locale", ReadOnly, nil, OutlivesSession(BrowserMax)); err != nil {
+	if err := registry.Register[locale]("locale", ReadOnly, nil, OutlivesSession(BrowserMax)); err != nil {
 		t.Fatal(err)
 	}
-	if err := Register[density](registry, "density", Shared, nil); err != nil {
+	if err := registry.Register[density]("density", Shared, nil); err != nil {
 		t.Fatal(err)
 	}
 	manager := testManager(t, registry, store, defaultOptions(t, c.Now))
@@ -122,10 +122,10 @@ func TestAnOutlivingSlotSurvivesDestroy(t *testing.T) {
 func TestAStatedLifetimeReachesTheCookie(t *testing.T) {
 	c := &clock{now: time.Unix(1_700_000_000, 0)}
 	registry := NewRegistry()
-	if err := Register[locale](registry, "locale", ReadOnly, nil, OutlivesSession(90*24*time.Hour)); err != nil {
+	if err := registry.Register[locale]("locale", ReadOnly, nil, OutlivesSession(90*24*time.Hour)); err != nil {
 		t.Fatal(err)
 	}
-	if err := Register[density](registry, "density", Shared, nil); err != nil {
+	if err := registry.Register[density]("density", Shared, nil); err != nil {
 		t.Fatal(err)
 	}
 	manager := testManager(t, registry, newMapStore(), defaultOptions(t, c.Now))
@@ -156,7 +156,7 @@ func TestAStatedLifetimeReachesTheCookie(t *testing.T) {
 func TestOutlivingIsRefusedForARecordSlot(t *testing.T) {
 	for _, placement := range []Placement{Private, ServerOnly} {
 		registry := NewRegistry()
-		err := Register[payload](registry, "creds", placement, nil, OutlivesSession(time.Hour))
+		err := registry.Register[payload]("creds", placement, nil, OutlivesSession(time.Hour))
 		if !errors.Is(err, ErrInvalidOptions) {
 			t.Fatalf("%s: error = %v, want a refusal", placement, err)
 		}
@@ -164,7 +164,7 @@ func TestOutlivingIsRefusedForARecordSlot(t *testing.T) {
 	// Dying early is fine everywhere, which is what makes the rule one-directional.
 	for _, placement := range []Placement{Shared, ReadOnly, Private, ServerOnly} {
 		registry := NewRegistry()
-		if err := Register[payload](registry, "creds", placement, nil, ExpiresAfter(time.Hour)); err != nil {
+		if err := registry.Register[payload]("creds", placement, nil, ExpiresAfter(time.Hour)); err != nil {
 			t.Fatalf("%s: ExpiresAfter was refused: %v", placement, err)
 		}
 	}
@@ -179,7 +179,7 @@ func TestLifetimeOptionsAreValidated(t *testing.T) {
 	}
 	for name, options := range cases {
 		registry := NewRegistry()
-		if err := Register[locale](registry, "locale", ReadOnly, nil, options...); !errors.Is(err, ErrInvalidOptions) {
+		if err := registry.Register[locale]("locale", ReadOnly, nil, options...); !errors.Is(err, ErrInvalidOptions) {
 			t.Fatalf("%s: error = %v", name, err)
 		}
 	}

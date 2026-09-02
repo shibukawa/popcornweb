@@ -184,7 +184,7 @@ func TestFreshnessPrefersTheProviderProofTime(t *testing.T) {
 // the window shared one confirmation; spending it on use closes that.
 func TestAZeroWindowAdmissionIsSpentOnUse(t *testing.T) {
 	registry := session.NewRegistry()
-	if err := session.Register[SessionData](registry, sessionSlotKey, session.Private, nil); err != nil {
+	if err := registry.Register[SessionData](sessionSlotKey, session.Private, nil); err != nil {
 		t.Fatal(err)
 	}
 	keys, err := session.ParseKeyring("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=")

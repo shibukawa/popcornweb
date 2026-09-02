@@ -9,12 +9,15 @@ sidebar:
 変わらないのに、ページはそれより頻繁に開かれます。このままでは、リクエストのたびに
 同じ通信が発生します。
 
-`pw.Memo` はその戻り値を保存し、次回以降の呼び出しで再利用します。
+ストアの `Get` はその戻り値を保存し、次回以降の呼び出しで再利用します。
 
 ```go
-quote, err := pw.Memo(r.Context(), store, QuoteKey{Pair: pair},
+quote, err := store.Get(r.Context(), QuoteKey{Pair: pair},
     func(ctx context.Context) (Quote, error) { return fetchQuote(ctx, pair) })
 ```
+
+`store` は `pw.MemoStore` が設定から解決したストアで、`Get`・`Has`・`Set` と各無効化は
+すべてそのメソッドです。
 
 この種のキャッシュを置ける場所は2つあり、もう一方は
 [レンダリングキャッシュ](/ja/guides/frontend/rendering-cache/#コンポーネント自身のロードをキャッシュする)
@@ -24,7 +27,7 @@ quote, err := pw.Memo(r.Context(), store, QuoteKey{Pair: pair},
 
 ただし見た目ほど当てはまりません。コンポーネントのローダは同期 external なので失敗を報告
 できず、コンポーネントキャッシュには TTL しかなく stale の窓も無効化もなく、エントリは
-マークアップ向けに見積もられた描画ストアに載ります。`pw.Memo` を使うのは、ロードが失敗しうる
+マークアップ向けに見積もられた描画ストアに載ります。データキャッシュを使うのは、ロードが失敗しうる
 うえ読者がそれを知る必要があるとき、書き込みが期限を待たずにエントリを落とす必要があるとき、
 上流の障害を伝播させずに凌ぎたいとき、そしてコンポーネントが届かない場所でその値が要るとき
 です。
@@ -80,7 +83,7 @@ func ShowQuote(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	pair := r.PathValue("pair")
-	quote, err := pw.Memo(r.Context(), store, QuoteKey{Pair: pair},
+	quote, err := store.Get(r.Context(), QuoteKey{Pair: pair},
 		func(ctx context.Context) (Quote, error) {
 			return fetchQuote(ctx, pair)
 		})
@@ -98,7 +101,7 @@ func fetchQuote(ctx context.Context, pair string) (Quote, error) {
 ```
 
 `pw generate` は `QuoteKey` のキーメソッドを `cachekey_pw_gen.go` に書き出します。この型を
-キー型にしているのは上の `pw.Memo` 呼び出しです。生成は呼び出し箇所から結果の隣の引数を
+キー型にしているのは上の `store.Get` 呼び出しです。生成は呼び出し箇所から結果の隣の引数を
 辿るので、印を付けただけでどこからもキャッシュに渡していない構造体からは何も生成されませ
 ん。
 
@@ -107,7 +110,7 @@ func fetchQuote(ctx context.Context, pair string) (Quote, error) {
 そこからキーを組み立てるということは、取得を避けるために引いているはずの値からキーを作る
 ということになります。だから問いのほうに印を付け、残りは放っておきます。
 
-`fetchQuote` 側は自分がキャッシュされていることを知りません。`pw.Memo` は呼び出しを置き換え
+`fetchQuote` 側は自分がキャッシュされていることを知りません。`store.Get` は呼び出しを置き換え
 るのではなく包みます。あとで外すときも同じで、包みを消すか、`enabled = false` にすれば、
 どの呼び出し箇所も自分の関数へそのまま素通りします。1行も直さずに。
 
@@ -173,12 +176,12 @@ stale = "5m"
 
 ```go
 // 正しい —— fetch は渡されたコンテキストを使う。
-pw.Memo(r.Context(), store, key, func(ctx context.Context) (Quote, error) {
+store.Get(r.Context(), key, func(ctx context.Context) (Quote, error) {
     return fetchQuote(ctx, pair)
 })
 
 // 誤り —— fetch がリクエストのコンテキストを捕捉してしまっている。
-pw.Memo(r.Context(), store, key, func(context.Context) (Quote, error) {
+store.Get(r.Context(), key, func(context.Context) (Quote, error) {
     return fetchQuote(r.Context(), pair)
 })
 ```
@@ -196,12 +199,12 @@ TTL だけでは、書いた本人がすでに間違いだと知っている窓�
 エントリを古くしたのが自分のハンドラなら、そう伝えてください。
 
 ```go
-pw.MemoInvalidate(ctx, store, QuoteKey{Pair: pair})
+store.Invalidate(ctx, QuoteKey{Pair: pair})
 ```
 
 キー1つでは表せない場合のために、粗い形が2つあります。
-`pw.MemoInvalidateScope(store, subject)` はある読者の持ち物をすべて落とします。サインアウト
-やアカウント変更が欲しいのはこれです。`pw.MemoInvalidateTag` はタグが名指すものをすべて
+`store.InvalidateScope(subject)` はある読者の持ち物をすべて落とします。サインアウトや
+アカウント変更が欲しいのはこれです。`store.InvalidateTag` はタグが名指すものをすべて
 落とします。1回の書き込みが複数のキーのエントリを同時に無効にする場合向けで、キー型は
 `CacheKey` の隣に `pw.CacheTagger` を実装してタグを宣言します。
 
@@ -232,9 +235,9 @@ pw.MemoInvalidate(ctx, store, QuoteKey{Pair: pair})
 トランザクションの中でだけ真であり、保存するということは、周りのロールバックが消すはず
 だった値を公開するということです。
 
-**`pw.MemoHas` は構造上レースします。** 答えるのは「**いま**エントリが新鮮か」であって、
+**`store.Has` は構造上レースします。** 答えるのは「**いま**エントリが新鮮か」であって、
 次の行が動くまでにそれは切れ得ます。診断か、重い処理を始めるかどうかの判断に使ってくだ
-さい。続く `pw.Memo` がヒットする前提のガードには使えません。
+さい。続く `store.Get` がヒットする前提のガードには使えません。
 
 **エントリは再起動をまたがず、レプリカ間でも共有されません。** ストアはプロセス内です。
 ロードバランサの後ろに3インスタンスあれば、独立したキャッシュが3つあり、それぞれがキーごと

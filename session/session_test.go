@@ -124,7 +124,7 @@ func defaultOptions(t *testing.T, now func() time.Time) Options {
 func accountRegistry(t *testing.T) *Registry {
 	t.Helper()
 	registry := NewRegistry()
-	if err := Register[payload](registry, "account", Private, nil); err != nil {
+	if err := registry.Register[payload]("account", Private, nil); err != nil {
 		t.Fatalf("Register: %v", err)
 	}
 	return registry
@@ -285,7 +285,7 @@ func TestServerOnlySlotReachesTheServerWhileAnonymous(t *testing.T) {
 	store := newMapStore()
 	c := &clock{now: time.Unix(1_700_000_000, 0)}
 	registry := NewRegistry()
-	if err := Register[payload](registry, "creds", ServerOnly, nil); err != nil {
+	if err := registry.Register[payload]("creds", ServerOnly, nil); err != nil {
 		t.Fatal(err)
 	}
 	manager := testManager(t, registry, store, defaultOptions(t, c.Now))
@@ -306,7 +306,7 @@ func TestServerOnlySlotReachesTheServerWhileAnonymous(t *testing.T) {
 
 func TestServerOnlySlotIsRefusedOnTheCookieBackend(t *testing.T) {
 	registry := NewRegistry()
-	if err := Register[payload](registry, "creds", ServerOnly, nil); err != nil {
+	if err := registry.Register[payload]("creds", ServerOnly, nil); err != nil {
 		t.Fatal(err)
 	}
 	c := &clock{now: time.Unix(1_700_000_000, 0)}
@@ -320,10 +320,10 @@ func TestCookiePlacedTiersCarryTheirOwnCookies(t *testing.T) {
 	store := newMapStore()
 	c := &clock{now: time.Unix(1_700_000_000, 0)}
 	registry := NewRegistry()
-	if err := Register[density](registry, "density", Shared, nil); err != nil {
+	if err := registry.Register[density]("density", Shared, nil); err != nil {
 		t.Fatal(err)
 	}
-	if err := Register[locale](registry, "locale", ReadOnly, nil); err != nil {
+	if err := registry.Register[locale]("locale", ReadOnly, nil); err != nil {
 		t.Fatal(err)
 	}
 	manager := testManager(t, registry, store, defaultOptions(t, c.Now))
@@ -368,10 +368,10 @@ func TestReadOnlySlotRejectsAClientEditAndSharedAcceptsIt(t *testing.T) {
 	store := newMapStore()
 	c := &clock{now: time.Unix(1_700_000_000, 0)}
 	registry := NewRegistry()
-	if err := Register[density](registry, "density", Shared, nil); err != nil {
+	if err := registry.Register[density]("density", Shared, nil); err != nil {
 		t.Fatal(err)
 	}
-	if err := Register[locale](registry, "locale", ReadOnly, nil); err != nil {
+	if err := registry.Register[locale]("locale", ReadOnly, nil); err != nil {
 		t.Fatal(err)
 	}
 	manager := testManager(t, registry, store, defaultOptions(t, c.Now))
@@ -399,10 +399,10 @@ func TestDestroyEndsEveryPlacement(t *testing.T) {
 	store := newMapStore()
 	c := &clock{now: time.Unix(1_700_000_000, 0)}
 	registry := NewRegistry()
-	if err := Register[payload](registry, "account", Private, nil); err != nil {
+	if err := registry.Register[payload]("account", Private, nil); err != nil {
 		t.Fatal(err)
 	}
-	if err := Register[locale](registry, "locale", ReadOnly, nil); err != nil {
+	if err := registry.Register[locale]("locale", ReadOnly, nil); err != nil {
 		t.Fatal(err)
 	}
 	manager := testManager(t, registry, store, defaultOptions(t, c.Now))
@@ -593,7 +593,7 @@ func TestManagerRejectsUnsafeOptions(t *testing.T) {
 
 func TestSharedOnlyRegistryNeedsNoKeyring(t *testing.T) {
 	registry := NewRegistry()
-	if err := Register[density](registry, "density", Shared, nil); err != nil {
+	if err := registry.Register[density]("density", Shared, nil); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := NewManager(registry, nil, Options{TTL: time.Hour}); err != nil {
@@ -617,19 +617,19 @@ func TestMalformedCookieNeverReachesTheStore(t *testing.T) {
 
 func TestRegistryRefusesDuplicates(t *testing.T) {
 	registry := NewRegistry()
-	if err := Register[payload](registry, "account", Private, nil); err != nil {
+	if err := registry.Register[payload]("account", Private, nil); err != nil {
 		t.Fatal(err)
 	}
-	if err := Register[payload](registry, "other", Private, nil); !errors.Is(err, ErrInvalidOptions) {
+	if err := registry.Register[payload]("other", Private, nil); !errors.Is(err, ErrInvalidOptions) {
 		t.Fatalf("duplicate type error = %v", err)
 	}
-	if err := Register[cart](registry, "account", Private, nil); !errors.Is(err, ErrInvalidOptions) {
+	if err := registry.Register[cart]("account", Private, nil); !errors.Is(err, ErrInvalidOptions) {
 		t.Fatalf("duplicate key error = %v", err)
 	}
-	if err := Register[cart](registry, "bad name", Private, nil); !errors.Is(err, ErrInvalidOptions) {
+	if err := registry.Register[cart]("bad name", Private, nil); !errors.Is(err, ErrInvalidOptions) {
 		t.Fatalf("invalid key error = %v", err)
 	}
-	if err := Register[cart](registry, "cart", Placement(0), nil); !errors.Is(err, ErrInvalidOptions) {
+	if err := registry.Register[cart]("cart", Placement(0), nil); !errors.Is(err, ErrInvalidOptions) {
 		t.Fatalf("invalid placement error = %v", err)
 	}
 }
@@ -638,7 +638,7 @@ func TestRegistrationAfterTheManagerIsRefused(t *testing.T) {
 	registry := accountRegistry(t)
 	c := &clock{now: time.Unix(1_700_000_000, 0)}
 	testManager(t, registry, newMapStore(), defaultOptions(t, c.Now))
-	if err := Register[cart](registry, "cart", Private, nil); !errors.Is(err, ErrInvalidOptions) {
+	if err := registry.Register[cart]("cart", Private, nil); !errors.Is(err, ErrInvalidOptions) {
 		t.Fatalf("late registration error = %v", err)
 	}
 }
@@ -658,7 +658,7 @@ func TestOversizedAnonymousPrivateWriteIsRefusedRatherThanSpilled(t *testing.T) 
 	store := newMapStore()
 	c := &clock{now: time.Unix(1_700_000_000, 0)}
 	registry := NewRegistry()
-	if err := Register[cart](registry, "cart", Private, nil); err != nil {
+	if err := registry.Register[cart]("cart", Private, nil); err != nil {
 		t.Fatal(err)
 	}
 	manager := testManager(t, registry, store, defaultOptions(t, c.Now))

@@ -321,13 +321,13 @@ func TestPagesServeServerAction(t *testing.T) {
 // is answered at the page's own URL and inherits everything that guards it.
 func TestPagesServeRedrawsAnAnnotatedComponent(t *testing.T) {
 	server := testutil.TestRun(t, fixtureMux(t), func(config *testutil.Config) {
-		testutil.Update[pw.HTMLConfig](config, func(html *pw.HTMLConfig) {
+		config.Update(func(html *pw.HTMLConfig) {
 			html.Update.Enabled = true
 			html.Update.ValidatorKey = "fixture-validator-key"
 		})
 		// The fixture registers no public filesystem, and startup refuses the
 		// endpoint without one.
-		testutil.Update[pw.ServerConfig](config, func(server *pw.ServerConfig) {
+		config.Update(func(server *pw.ServerConfig) {
 			server.Public.Enabled = false
 		})
 	})
@@ -377,11 +377,11 @@ func TestPagesServeRedrawsAnAnnotatedComponent(t *testing.T) {
 // not satisfy the constraint and this call would not build.
 func TestRedrawTakesThePageItself(t *testing.T) {
 	server := testutil.TestRun(t, pw.NewServeMux(), func(config *testutil.Config) {
-		testutil.Update[pw.HTMLConfig](config, func(html *pw.HTMLConfig) {
+		config.Update(func(html *pw.HTMLConfig) {
 			html.Update.Enabled = true
 			html.Update.ValidatorKey = "fixture-validator-key"
 		})
-		testutil.Update[pw.ServerConfig](config, func(server *pw.ServerConfig) {
+		config.Update(func(server *pw.ServerConfig) {
 			server.Public.Enabled = false
 		})
 	})

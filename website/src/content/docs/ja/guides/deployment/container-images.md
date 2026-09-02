@@ -8,7 +8,7 @@ sidebar:
 Go のプロジェクトなら、まずこう書くはずです。
 
 ```dockerfile
-FROM golang:1.26 AS build
+FROM golang:1.27 AS build
 COPY . .
 RUN CGO_ENABLED=0 go build -o /out/myapp ./cmd/myapp
 ```
@@ -30,7 +30,7 @@ Dockerfile はそこを飛ばしています。
 ## 生成される Dockerfile
 
 ```dockerfile
-FROM golang:1.26-trixie AS build
+FROM golang:1.27-trixie AS build
 WORKDIR /src
 
 COPY go.mod go.sum ./
@@ -107,7 +107,7 @@ TLS ハンドシェイクで落ち、しかもエラーは足りないファイ�
 からではなく埋め込みツリーから配信されます。
 
 両方のステージが Debian のリリース名を明示しています。ビルダーは
-`golang:1.26-trixie`、ランタイムは `static-debian13` です。素の `golang:1.26` は
+`golang:1.27-trixie`、ランタイムは `static-debian13` です。素の `golang:1.27` は
 新しい Debian stable が出たその日にベースが載せ替わります。ビルド環境が自分では
 なく Debian のスケジュールで変わるということで、distroless 側が追いつくまで
 二つのステージが別のリリースに乗ることにもなります。Debian を上げるときは、

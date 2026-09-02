@@ -82,14 +82,15 @@ func create(w http.ResponseWriter, r *http.Request) {
 
 // summary reaches the cache, which is what makes itemSummary a key type. The
 // key is the argument beside the result rather than a type argument, so nothing
-// here spells itemSummary in brackets.
+// here spells itemSummary in brackets, and the read is a method on the store
+// the handler resolved.
 func summary(w http.ResponseWriter, r *http.Request) {
 	store, err := pw.MemoStore(r, "upstream")
 	if err != nil {
 		pw.WriteProblem(w, r, pw.InternalServerError(err))
 		return
 	}
-	value, err := pw.Memo(r.Context(), store, itemSummary{ItemID: "a", Page: 1},
+	value, err := store.Get(r.Context(), itemSummary{ItemID: "a", Page: 1},
 		func(ctx context.Context) (response, error) { return response{ID: 1}, nil })
 	if err != nil {
 		pw.WriteProblem(w, r, pw.InternalServerError(err))

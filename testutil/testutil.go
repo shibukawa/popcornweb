@@ -35,15 +35,18 @@ type TestingT interface {
 }
 
 // Config is an isolated copy of all registered framework and application
-// configuration values.
+// configuration values. Its three operations are methods, so a test reads
+// config.Update rather than naming this package twice on one line.
 type Config struct {
 	values pwtestbridge.Configs
 }
 
-// Get returns one typed value from a copied configuration.
-func Get[T any](config *Config) T {
-	if config != nil {
-		if value, ok := config.values[reflect.TypeFor[T]()].(T); ok {
+// Get returns one typed value from a copied configuration. It is the one entry
+// with nothing to infer the type from, so the call site writes it:
+// config.Get[pw.ServerConfig](). A nil configuration answers the zero value.
+func (c *Config) Get[T any]() T {
+	if c != nil {
+		if value, ok := c.values[reflect.TypeFor[T]()].(T); ok {
 			return deepClone(value)
 		}
 	}
@@ -52,21 +55,22 @@ func Get[T any](config *Config) T {
 }
 
 // Set replaces one typed value in a copied configuration.
-func Set[T any](config *Config, value T) {
-	if config == nil {
+func (c *Config) Set[T any](value T) {
+	if c == nil {
 		panic("testutil: nil Config")
 	}
-	config.values[reflect.TypeFor[T]()] = deepClone(value)
+	c.values[reflect.TypeFor[T]()] = deepClone(value)
 }
 
-// Update edits one typed value in a copied configuration.
-func Update[T any](config *Config, edit func(*T)) {
+// Update edits one typed value in a copied configuration, inferring the type
+// from the edit's parameter.
+func (c *Config) Update[T any](edit func(*T)) {
 	if edit == nil {
 		return
 	}
-	value := Get[T](config)
+	value := c.Get[T]()
 	edit(&value)
-	Set(config, value)
+	c.Set(value)
 }
 
 type runSettings struct {
@@ -173,7 +177,7 @@ func TestRun(t TestingT, handler http.Handler, customize func(*Config), options 
 		return nil
 	}
 	config := &Config{values: cloneConfigs(snapshot)}
-	Update[pw.ServerConfig](config, func(server *pw.ServerConfig) {
+	config.Update(func(server *pw.ServerConfig) {
 		server.Port = -1
 	})
 	if customize != nil {
@@ -203,7 +207,7 @@ func TestRun(t TestingT, handler http.Handler, customize func(*Config), options 
 		t.Cleanup(func() { _ = idpServer.Close() })
 	}
 
-	serverConfig := Get[pw.ServerConfig](config)
+	serverConfig := config.Get[pw.ServerConfig]()
 	if serverConfig.Port < -1 || serverConfig.Port > 65535 {
 		t.Fatalf("listen for Popcorn Web TestRun: port must be -1 or between 0 and 65535")
 		return nil
@@ -219,7 +223,7 @@ func TestRun(t TestingT, handler http.Handler, customize func(*Config), options 
 	}
 	actualPort := listener.Addr().(*net.TCPAddr).Port
 	serverConfig.Port = actualPort
-	Set(config, serverConfig)
+	config.Set(serverConfig)
 
 	// The schema is installed inside Prepare, because extensions verify their
 	// own tables while the runtime handler is built.
@@ -232,7 +236,7 @@ func TestRun(t TestingT, handler http.Handler, customize func(*Config), options 
 		}
 		// The migrations run against the group that receives them, which is
 		// where the seeds and pw migrate also write.
-		dsn, err := Get[pw.MiddlewareConfig](config).RDB.MigrationDSN()
+		dsn, err := config.Get[pw.MiddlewareConfig]().RDB.MigrationDSN()
 		if err != nil {
 			return err
 		}

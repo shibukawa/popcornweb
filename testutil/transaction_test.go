@@ -108,10 +108,10 @@ func sharedDatabase(t *testing.T) (dsn string, committed func() int) {
 
 func sharedDatabaseConfig(dsn string) func(*Config) {
 	return func(config *Config) {
-		Update[pw.ServerConfig](config, func(value *pw.ServerConfig) {
+		config.Update(func(value *pw.ServerConfig) {
 			value.Public.Enabled = false
 		})
-		Update[pw.MiddlewareConfig](config, func(value *pw.MiddlewareConfig) {
+		config.Update(func(value *pw.MiddlewareConfig) {
 			value.RDB = pw.RDBConfig{
 				Enabled: true,
 				Connections: []pw.RDBConnectionConfig{{
@@ -191,10 +191,10 @@ func TestRunWithoutTransactionCommits(t *testing.T) {
 func TestRunTransactionRejectsUnknownEngine(t *testing.T) {
 	stub := &recordingT{TestingT: t}
 	TestRun(stub, notesHandler(t), func(config *Config) {
-		Update[pw.ServerConfig](config, func(value *pw.ServerConfig) {
+		config.Update(func(value *pw.ServerConfig) {
 			value.Public.Enabled = false
 		})
-		Update[pw.MiddlewareConfig](config, func(value *pw.MiddlewareConfig) {
+		config.Update(func(value *pw.MiddlewareConfig) {
 			value.RDB = pw.RDBConfig{
 				Enabled: true,
 				Connections: []pw.RDBConnectionConfig{{

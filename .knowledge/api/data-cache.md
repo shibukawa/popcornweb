@@ -6,12 +6,12 @@ title: Data Cache
 One generic function reaching requirement:data-result-cache through a store named in configuration, plus the store interface a backend implements.
 
 ```yaml
-status: built 2026-08-13 in pwruntime and re-exported from pw, so a build on either transport reaches it
+status: built 2026-08-13 in pwruntime and re-exported from pw, so a build on either transport reaches it; the operations became methods on the handle 2026-09-02 and the package-level functions were retired
 package: pw, with the stores of data:cache-store-set configured through api:runtime-configuration
 names_as_built:
   acquire: MemoStore
-  operate: Memo, MemoHas, MemoSet
-  invalidate: MemoInvalidate, MemoInvalidateScope, MemoInvalidateTag
+  operate: Get, Has and Set on the handle; Memo, MemoHas and MemoSet until 2026-09-02
+  invalidate: Invalidate, InvalidateScope and InvalidateTag on the handle; the Memo-prefixed functions until 2026-09-02
   observe: Stats on the handle, reporting hits, misses, coalesced waits, stale hits, and entry count together
   framing: none re-exported; a hand-written key frames its fields with cachekeybind directly, which is stdlib-only and whose helper set is wider than a copy here would stay in step with
 tags:
@@ -23,18 +23,19 @@ handle:
   holds: no request state, so one handle serves every request and may be resolved at setup or per call, per decision:memo-store-handle
   unknown_name: an error naming the configured stores, since a passthrough would let a project believe it caches
 entry_points:
-  read: Memo, generic over the key type and the result type, taking the context, the handle, the key, and the fetch
-  membership: MemoHas, generic over the key type, answering whether an entry is currently readable
-  overwrite: MemoSet, generic over the key type and the result type, writing an entry without consulting one
-  invalidate: by key, by scope, and by tag, each taking the handle
+  read: Get, a method on the handle generic over the key type and the result type, taking the context, the key, and the fetch
+  membership: Has, generic over the key type, answering whether an entry is currently readable
+  overwrite: Set, generic over the key type and the result type, writing an entry without consulting one
+  invalidate: by key, by scope, and by tag, each a method on the handle
   key_type: satisfies the one-method interface of decision:cache-key-interface, which is cachekeybind's own, so a generated key method needs no adapter
   fetch: takes a context and returns the result and an error
   fetch_takes_a_context_deliberately: a closure capturing the request context would pin the shared fetch of decision:data-cache-miss-coalescing to whichever caller happened to miss first, which is the coupling that decision removes; the context handed in is the detached one
   returns: the result and an error, so a call site reads like the call it replaced
-when_the_language_allows_generic_methods:
-  becomes: Get, Has, and Set on the handle, with the package-level generic functions retired
+generic_methods_landed_2026_09_02:
+  became: Get, Has, Set, Invalidate, InvalidateScope and InvalidateTag on the handle, once the module moved to go 1.27.0
   unchanged: the acquisition, the key interface, the store definitions, and every stored entry
-  why_it_is_only_a_move: decision:memo-store-handle
+  retired: the package-level functions, from pwruntime, pw and pwfast, rather than deprecated; each was a one-line stand-in and every caller is this framework's, per requirement:typed-api-method-convergence
+  why_it_was_only_a_move: decision:memo-store-handle
 membership_test:
   racy_by_nature: an entry may expire between the test and the read, so it answers a diagnostic or a decision to skip expensive work, never control flow assuming the next read hits
   anonymous_on_a_private_store: false, rather than testing a blank scope

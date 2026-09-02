@@ -5,7 +5,7 @@
 // An application declares each piece of state once, as a Go type with a
 // Placement, and reads it back by that type:
 //
-//	session.Register[Cart](registry, "cart", session.Private, nil)
+//	registry.Register[Cart]("cart", session.Private, nil)
 //	cart, ok := session.Load[Cart](ctx)
 //
 // The Placement states what the client may do with the value and where its

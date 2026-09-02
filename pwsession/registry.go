@@ -65,7 +65,7 @@ func RegisterStore[T any](key string, placement session.Placement, options ...se
 	slotState.Lock()
 	defer slotState.Unlock()
 	slotState.register = append(slotState.register, func(registry *session.Registry) error {
-		return session.Register[T](registry, key, placement, nil, options...)
+		return registry.Register[T](key, placement, nil, options...)
 	})
 }
 

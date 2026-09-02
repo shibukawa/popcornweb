@@ -140,11 +140,11 @@ func TestForgedAssertionIsRefused(t *testing.T) {
 func passkeyServer(t *testing.T, port int, origin string, overrides ...func(*testutil.Config)) *testutil.Server {
 	t.Helper()
 	return testutil.TestRun(t, Handlers(), func(config *testutil.Config) {
-		testutil.Update[pw.ServerConfig](config, func(server *pw.ServerConfig) {
+		config.Update(func(server *pw.ServerConfig) {
 			server.Port = port
 			server.Public.Enabled = false
 		})
-		testutil.Update[pw.MiddlewareConfig](config, func(middleware *pw.MiddlewareConfig) {
+		config.Update(func(middleware *pw.MiddlewareConfig) {
 			middleware.RDB = pw.RDBConfig{
 				Enabled: true,
 				Connections: []pw.RDBConnectionConfig{{
@@ -153,7 +153,7 @@ func passkeyServer(t *testing.T, port int, origin string, overrides ...func(*tes
 				}},
 			}
 		})
-		testutil.Update[pw.SecurityConfig](config, func(security *pw.SecurityConfig) {
+		config.Update(func(security *pw.SecurityConfig) {
 			// The pages carry a logout form, and a rendered form needs the
 			// token: the template emits a hidden field and the render fails
 			// rather than shipping an unprotected one.
@@ -163,7 +163,7 @@ func passkeyServer(t *testing.T, port int, origin string, overrides ...func(*tes
 			// and nothing parsed it on this path.
 			security.CSRF.Include = []string{"/**"}
 		})
-		testutil.Update[pw.SessionConfig](config, func(session *pw.SessionConfig) {
+		config.Update(func(session *pw.SessionConfig) {
 			session.Enabled = true
 			session.Backend = "rdb"
 			session.Retention = time.Hour
@@ -174,7 +174,7 @@ func passkeyServer(t *testing.T, port int, origin string, overrides ...func(*tes
 			// pass while a project with no secret configured could not start.
 			session.Keyring.Secret = base64.StdEncoding.EncodeToString(make([]byte, 32))
 		})
-		testutil.Update[auth.Config](config, func(settings *auth.Config) {
+		config.Update(func(settings *auth.Config) {
 			settings.Enabled = true
 			settings.Mode = auth.ModeOIDCPasskey
 			settings.PostLoginPath = "/"
@@ -206,7 +206,7 @@ func passkeyServer(t *testing.T, port int, origin string, overrides ...func(*tes
 		testutil.WithIdPConfig("../devidp.toml"),
 		testutil.WithLoginUser("hanako"),
 		testutil.WithIdPBinding(func(config *testutil.Config, idp testutil.IdPInfo) {
-			testutil.Update[auth.Config](config, func(settings *auth.Config) {
+			config.Update(func(settings *auth.Config) {
 				settings.OIDC.Issuer = idp.Issuer
 				settings.OIDC.ClientID = idp.ClientID
 				settings.OIDC.ClientSecret = idp.ClientSecret

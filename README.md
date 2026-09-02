@@ -60,7 +60,7 @@ Confirm the installation with `pw version`.
 
 ### The library
 
-Popcorn Web requires **Go 1.26 or later**. `pw init` writes a `go.mod` that
+Popcorn Web requires **Go 1.27 or later**. `pw init` writes a `go.mod` that
 already requires the framework; an existing module needs one step:
 
 ```sh

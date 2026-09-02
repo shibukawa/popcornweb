@@ -1,5 +1,3 @@
-//go:build go1.27
-
 package pwruntime
 
 import (
@@ -8,13 +6,12 @@ import (
 	"testing"
 )
 
-// Each method is one line delegating to its function, so what is worth testing
-// is that it delegates to the right one: a method wired to the wrong function
-// still compiles, still reads correctly, and would be found only in production.
-// Every assertion below therefore crosses the two spellings — the method writes
-// and the function reads, or the reverse.
+// The typed operations are methods on the store handle. The tests below cover
+// the surface a handler reaches through the handle it resolved: a read that
+// stores, a membership test that sees it, an overwrite the next read honours,
+// and the two coarse invalidations.
 
-func TestTheStoreMethodsReachTheEntriesTheFunctionsDo(t *testing.T) {
+func TestTheStoreMethodsShareOneEntrySet(t *testing.T) {
 	store := testStore(t, CacheStoreConfig{Scope: "public"})
 	ctx := context.Background()
 	var calls atomic.Int64
@@ -35,21 +32,18 @@ func TestTheStoreMethodsReachTheEntriesTheFunctionsDo(t *testing.T) {
 	if !store.Has(ctx, userKey{ID: "u1"}) {
 		t.Errorf("Has did not see the entry Get stored")
 	}
-	if !MemoHas(ctx, store, userKey{ID: "u1"}) {
-		t.Errorf("MemoHas did not see the entry the method stored")
-	}
 	if err := store.Set(ctx, userKey{ID: "u1"}, "written"); err != nil {
 		t.Fatalf("Set: %v", err)
 	}
-	got, err = Memo(ctx, store, userKey{ID: "u1"}, func(context.Context) (string, error) {
+	got, err = store.Get(ctx, userKey{ID: "u1"}, func(context.Context) (string, error) {
 		t.Error("the fetch ran despite the entry Set wrote")
 		return "", nil
 	})
 	if err != nil || got != "written" {
-		t.Errorf("Memo = %q, %v, want written", got, err)
+		t.Errorf("Get = %q, %v, want written", got, err)
 	}
 	store.Invalidate(ctx, userKey{ID: "u1"})
-	if MemoHas(ctx, store, userKey{ID: "u1"}) {
+	if store.Has(ctx, userKey{ID: "u1"}) {
 		t.Errorf("the entry survived Invalidate")
 	}
 }
@@ -87,27 +81,4 @@ func TestTheStoreMethodsInvalidateByScopeAndByTag(t *testing.T) {
 	if !public.Has(ctx, taggedKey{ID: "u2"}) {
 		t.Errorf("an entry the tag does not name was dropped")
 	}
-}
-
-// A disabled cache hands back no store, so the methods have to fall through the
-// way the functions do. Nothing in them branches on it: a nil pointer is a legal
-// receiver, and the check is in the body being called.
-func TestTheStoreMethodsFallThroughOnANilHandle(t *testing.T) {
-	var store *CacheStore
-	ctx := context.Background()
-	got, err := store.Get(ctx, userKey{ID: "u1"}, func(context.Context) (string, error) {
-		return "direct", nil
-	})
-	if err != nil || got != "direct" {
-		t.Errorf("Get = %q, %v, want direct", got, err)
-	}
-	if store.Has(ctx, userKey{ID: "u1"}) {
-		t.Errorf("a nil handle reported an entry")
-	}
-	if err := store.Set(ctx, userKey{ID: "u1"}, "x"); err != nil {
-		t.Errorf("Set on a nil handle: %v", err)
-	}
-	store.Invalidate(ctx, userKey{ID: "u1"})
-	store.InvalidateScope("alice")
-	store.InvalidateTag("user:u1")
 }

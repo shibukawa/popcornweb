@@ -62,7 +62,7 @@ pw version
 ```
 
 ```
-pw 0.1.0 (abc1234, darwin/arm64, go1.26.0)
+pw 0.1.0 (abc1234, darwin/arm64, go1.27.0)
 ```
 
 `pw help` はコマンドの一覧を出します。
@@ -92,7 +92,7 @@ Commands:
 
 ## ライブラリ
 
-Popcorn Web は **Go 1.26 以降**が必要です。
+Popcorn Web は **Go 1.27 以降**が必要です。
 
 新しいプロジェクトでは、[`pw init`](/ja/pw/project/init/) がフレームワークを require 済みの
 `go.mod` を書き出すため、手動の `go get` は不要です。既存モジュールには 1 つだけ手順を

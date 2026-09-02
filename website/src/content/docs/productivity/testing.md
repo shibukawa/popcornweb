@@ -16,7 +16,7 @@ hand-assembled approximation.
 ```go
 func TestHome(t *testing.T) {
 	server := testutil.TestRun(t, Handlers(), func(config *testutil.Config) {
-		testutil.Update[pw.MiddlewareConfig](config, func(middleware *pw.MiddlewareConfig) {
+		config.Update(func(middleware *pw.MiddlewareConfig) {
 			middleware.RDB = pw.RDBConfig{
 				Enabled: true,
 				Connections: []pw.RDBConnectionConfig{{
@@ -70,15 +70,17 @@ rendering fails at startup.
 
 | Call | Purpose |
 | --- | --- |
-| `testutil.Get[T](config)` | read a copied configuration struct |
-| `testutil.Set(config, value)` | replace one wholesale |
-| `testutil.Update[T](config, fn)` | edit one in place |
+| `config.Get[T]()` | read a copied configuration struct |
+| `config.Set(value)` | replace one wholesale |
+| `config.Update(fn)` | edit one in place |
 
-Each is generic over the configuration type, so framework and application
-settings are reached the same typed way:
+Each is a method generic over the configuration type, so framework and
+application settings are reached the same typed way. `Set` and `Update` infer
+the type from their argument; `Get` has nothing to infer it from and is written
+with it:
 
 ```go
-testutil.Update[AppConfig](config, func(app *AppConfig) {
+config.Update(func(app *AppConfig) {
 	app.EnvLabel = "test"
 })
 ```
@@ -154,7 +156,7 @@ server := testutil.TestRun(t, handlers.Handlers(), nil, testutil.WithIdentityPro
 	testutil.WithIdPConfig("../devidp.toml"),
 	testutil.WithLoginUser("admin"),
 	testutil.WithIdPBinding(func(config *testutil.Config, idp testutil.IdPInfo) {
-		testutil.Update[handlers.AuthConfig](config, func(auth *handlers.AuthConfig) {
+		config.Update(func(auth *handlers.AuthConfig) {
 			auth.Issuer, auth.ClientID, auth.ClientSecret = idp.Issuer, idp.ClientID, idp.ClientSecret
 		})
 	}),

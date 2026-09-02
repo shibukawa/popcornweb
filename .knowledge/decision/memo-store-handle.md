@@ -6,7 +6,7 @@ title: Resolve The Memo Store To A Handle Before The Methods Exist
 A caller resolves a named store of data:cache-store-set to a handle and passes that handle to the typed entry points, so the surface becomes methods without editing a call site once the language allows a method to take type parameters.
 
 ```yaml
-status: accepted and built 2026-08-13; the handle and the package-level operations both ship, and the methods wait on the language
+status: accepted and built 2026-08-13; the methods landed 2026-09-02 with the move to go 1.27.0, and the package-level functions were retired the same day
 owner: api:data-cache
 language_constraint: a Go method may not declare its own type parameters, so the typed operation cannot be a method on the store today whatever the design prefers
 same_constraint_elsewhere: requirement:typed-api-method-convergence collects every site this shapes, and this is the only one where the eventual move can be prepared for rather than merely waited on
@@ -17,6 +17,10 @@ later:
   acquire: unchanged, which is the whole point
   operate: methods on the handle, and the package-level functions are then retired
   contingent_on: the language gaining methods with type parameters, not on a particular release; the reminder to check is carried outside this catalog
+landed_2026_09_02:
+  operate: Get, Has, Set, Invalidate, InvalidateScope and InvalidateTag on the handle, per api:data-cache
+  acquire: unchanged, as planned; no call site that resolved a store changed its first line
+  retired: Memo, MemoHas, MemoSet, MemoInvalidate, MemoInvalidateScope and MemoInvalidateTag, from pwruntime, pw and pwfast, per requirement:typed-api-method-convergence
 why_the_handle_now:
   migration_is_additive: with the store named at each call, moving to methods would mean editing every call site to first obtain a handle; with the handle, the acquisition line is already written and the operation moves from a function to a method
   the_global_surface_stops_growing: every operation beside the read — a membership test, an overwrite, an invalidation — would otherwise need its own exported name in pw, each generic, each spelling the store parameter again; as methods they cost nothing at package scope

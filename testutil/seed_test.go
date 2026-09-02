@@ -24,10 +24,10 @@ func memberMigrationDir(t *testing.T) string {
 }
 
 func withMemberDatabase(config *Config) {
-	Update[pw.ServerConfig](config, func(value *pw.ServerConfig) {
+	config.Update(func(value *pw.ServerConfig) {
 		value.Public.Enabled = false
 	})
-	Update[pw.MiddlewareConfig](config, func(value *pw.MiddlewareConfig) {
+	config.Update(func(value *pw.MiddlewareConfig) {
 		value.RDB = pw.RDBConfig{
 			Enabled: true,
 			Connections: []pw.RDBConnectionConfig{{
@@ -123,10 +123,10 @@ func withMemberFileDatabase(t *testing.T) func(*Config) {
 	t.Helper()
 	dsn := "sqlite://" + filepath.Join(t.TempDir(), "member.db")
 	return func(config *Config) {
-		Update[pw.ServerConfig](config, func(value *pw.ServerConfig) {
+		config.Update(func(value *pw.ServerConfig) {
 			value.Public.Enabled = false
 		})
-		Update[pw.MiddlewareConfig](config, func(value *pw.MiddlewareConfig) {
+		config.Update(func(value *pw.MiddlewareConfig) {
 			value.RDB = pw.RDBConfig{
 				Enabled: true,
 				Connections: []pw.RDBConnectionConfig{{
@@ -268,10 +268,10 @@ func TestSeedAndAssertInsideTestTransaction(t *testing.T) {
 	dsn := "sqlite://" + filepath.Join(t.TempDir(), "shared.db")
 	migrationDir := memberMigrationDir(t)
 	sharedDatabase := func(config *Config) {
-		Update[pw.ServerConfig](config, func(value *pw.ServerConfig) {
+		config.Update(func(value *pw.ServerConfig) {
 			value.Public.Enabled = false
 		})
-		Update[pw.MiddlewareConfig](config, func(value *pw.MiddlewareConfig) {
+		config.Update(func(value *pw.MiddlewareConfig) {
 			value.RDB = pw.RDBConfig{
 				Enabled: true,
 				Connections: []pw.RDBConnectionConfig{{
@@ -327,10 +327,10 @@ func TestTestTransactionRollbackDiscardsSeededRows(t *testing.T) {
 	dsn := "sqlite://" + path
 	migrationDir := memberMigrationDir(t)
 	sharedDatabase := func(config *Config) {
-		Update[pw.ServerConfig](config, func(value *pw.ServerConfig) {
+		config.Update(func(value *pw.ServerConfig) {
 			value.Public.Enabled = false
 		})
-		Update[pw.MiddlewareConfig](config, func(value *pw.MiddlewareConfig) {
+		config.Update(func(value *pw.MiddlewareConfig) {
 			value.RDB = pw.RDBConfig{
 				Enabled: true,
 				Connections: []pw.RDBConnectionConfig{{

@@ -59,10 +59,10 @@ func TestRunMigratesAServerDatabase(t *testing.T) {
 				w.WriteHeader(http.StatusNoContent)
 			})
 			server := TestRun(t, handler, func(config *Config) {
-				Update[pw.ServerConfig](config, func(value *pw.ServerConfig) {
+				config.Update(func(value *pw.ServerConfig) {
 					value.Public.Enabled = false
 				})
-				Update[pw.MiddlewareConfig](config, func(value *pw.MiddlewareConfig) {
+				config.Update(func(value *pw.MiddlewareConfig) {
 					value.RDB = pw.RDBConfig{
 						Enabled: true,
 						Connections: []pw.RDBConnectionConfig{{
@@ -90,10 +90,10 @@ func TestRunMigratesAServerDatabase(t *testing.T) {
 			// Applying twice must be a no-op, which is what lets several
 			// TestRun calls share one prepared server database.
 			second := TestRun(t, handler, func(config *Config) {
-				Update[pw.ServerConfig](config, func(value *pw.ServerConfig) {
+				config.Update(func(value *pw.ServerConfig) {
 					value.Public.Enabled = false
 				})
-				Update[pw.MiddlewareConfig](config, func(value *pw.MiddlewareConfig) {
+				config.Update(func(value *pw.MiddlewareConfig) {
 					value.RDB = pw.RDBConfig{
 						Enabled: true,
 						Connections: []pw.RDBConnectionConfig{{

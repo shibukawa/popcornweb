@@ -9,12 +9,15 @@ A handler calls a currency service, an inventory API, a report endpoint. The
 answer is the same for a minute at a time, and the page is requested far more
 often than that. Every request pays the round trip anyway.
 
-`pw.Memo` stores what the call returned and replays it:
+`Get` on a store holds what the call returned and replays it:
 
 ```go
-quote, err := pw.Memo(r.Context(), store, QuoteKey{Pair: pair},
+quote, err := store.Get(r.Context(), QuoteKey{Pair: pair},
     func(ctx context.Context) (Quote, error) { return fetchQuote(ctx, pair) })
 ```
+
+The store is what `pw.MemoStore` resolved from the configuration, and every
+operation — `Get`, `Has`, `Set`, and the invalidations — is a method on it.
 
 There are two places to put a cache like this, and the other one is
 [Rendering Cache](/guides/frontend/rendering-cache/#caching-a-components-own-load).
@@ -25,7 +28,7 @@ first when it fits, because one annotation replaces everything on this page.
 It fits less often than it looks. A component's loader is a synchronous
 external, so it cannot report a failure; the component cache has a TTL and no
 stale window and no invalidation; and its entries live in the render store,
-sized for markup. Use `pw.Memo` when the load can fail and the reader must know,
+sized for markup. Use the data cache when the load can fail and the reader must know,
 when a write has to drop an entry before it expires, when an upstream outage
 should be survived rather than propagated, or when the value is wanted somewhere
 no component reaches.
@@ -83,7 +86,7 @@ func ShowQuote(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	pair := r.PathValue("pair")
-	quote, err := pw.Memo(r.Context(), store, QuoteKey{Pair: pair},
+	quote, err := store.Get(r.Context(), QuoteKey{Pair: pair},
 		func(ctx context.Context) (Quote, error) {
 			return fetchQuote(ctx, pair)
 		})
@@ -101,7 +104,7 @@ func fetchQuote(ctx context.Context, pair string) (Quote, error) {
 ```
 
 `pw generate` writes `QuoteKey`'s key method into `cachekey_pw_gen.go`. What
-makes it a key type is the `pw.Memo` call above: generation follows the call
+makes it a key type is the `store.Get` call above: generation follows the call
 site to the argument beside the result, so a marked struct nothing passes to the
 cache generates nothing.
 
@@ -111,7 +114,7 @@ fields are the *answer* — building a key out of those would mean assembling it
 from the value the lookup exists to avoid fetching. So you mark the query and
 leave the rest.
 
-Nothing in `fetchQuote` knows it is cached. `pw.Memo` wraps the call rather than
+Nothing in `fetchQuote` knows it is cached. `store.Get` wraps the call rather than
 replacing it, which is also how caching is removed later: delete the wrapper, or
 set `enabled = false` and every call site falls straight through to its own
 function without a single edit.
@@ -186,12 +189,12 @@ catch you:
 
 ```go
 // Right — the fetch uses the context it is handed.
-pw.Memo(r.Context(), store, key, func(ctx context.Context) (Quote, error) {
+store.Get(r.Context(), key, func(ctx context.Context) (Quote, error) {
     return fetchQuote(ctx, pair)
 })
 
 // Wrong — the fetch captures the request's context instead.
-pw.Memo(r.Context(), store, key, func(context.Context) (Quote, error) {
+store.Get(r.Context(), key, func(context.Context) (Quote, error) {
     return fetchQuote(r.Context(), pair)
 })
 ```
@@ -211,13 +214,12 @@ A TTL alone leaves open exactly the window the writer already knows is wrong.
 When your own handler is what made an entry stale, say so:
 
 ```go
-pw.MemoInvalidate(ctx, store, QuoteKey{Pair: pair})
+store.Invalidate(ctx, QuoteKey{Pair: pair})
 ```
 
 Two coarser forms exist for the cases one key cannot express.
-`pw.MemoInvalidateScope(store, subject)` drops everything one reader holds,
-which is what a sign-out or an account change wants. `pw.MemoInvalidateTag`
-drops everything a tag names, for a write that invalidates entries under several
+`store.InvalidateScope(subject)` drops everything one reader holds, which is
+what a sign-out or an account change wants. `store.InvalidateTag` drops everything a tag names, for a write that invalidates entries under several
 keys at once; a key type declares its tags by implementing `pw.CacheTagger`
 beside its `CacheKey` method.
 
@@ -250,10 +252,10 @@ first is obvious once stated; the second is not. A read inside a transaction is
 true only within that transaction, and storing it publishes a value the
 surrounding rollback was supposed to erase.
 
-**`pw.MemoHas` is racy by construction.** It answers whether an entry is fresh
+**`store.Has` is racy by construction.** It answers whether an entry is fresh
 *now*, and the entry can expire before the next line runs. Use it for a
 diagnostic or to decide whether to start expensive work, never as a guard that
-assumes the following `pw.Memo` will hit.
+assumes the following `store.Get` will hit.
 
 **Entries do not survive a restart, and replicas do not share them.** The store
 is in-process. Three instances behind a load balancer hold three independent

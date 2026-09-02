@@ -4,6 +4,7 @@ import "github.com/shibukawa/tinybind-go/generator"
 
 const (
 	pwPackage          = "github.com/shibukawa/popcornweb/pw"
+	pwruntimePackage   = "github.com/shibukawa/popcornweb/pwruntime"
 	pwConfigPackage    = "github.com/shibukawa/popcornweb/pwconfig"
 	pwRuntimePackage   = "github.com/shibukawa/popcornweb/pwruntime"
 	pwDynamoPackage    = "github.com/shibukawa/popcornweb/database/dynamo"
@@ -170,20 +171,22 @@ func Options(sqlDialect string) (generator.Options, error) {
 		),
 	}...)
 	// Every data cache entry that takes a key, so the key method is emitted for
-	// the types an application actually passes.
+	// the types an application actually passes. They are methods on the store
+	// handle, whose receiver is the pwruntime type behind the pw and pwfast
+	// aliases, so one pattern per method serves either transport.
 	//
 	// The key role reads the argument type rather than a type parameter: these
 	// calls are generic over the result being cached, and the key is the value
-	// beside it. Every one of them takes the context, the store handle, and then
-	// the key, so the index is the same for all four.
+	// beside it. Every one of them takes the context and then the key, so the
+	// index is the same for all four.
 	//
-	// Registering the reads alone would leave a key type discovered by Memo and
+	// Registering the reads alone would leave a key type discovered by Get and
 	// missed by the invalidation that has to produce the identical key, so all
 	// four are named.
-	for _, name := range []string{"Memo", "MemoHas", "MemoSet", "MemoInvalidate"} {
+	for _, name := range []string{"Get", "Has", "Set", "Invalidate"} {
 		patterns = append(patterns, generator.CacheKeyCall(
-			generator.Function(pwPackage, name),
-			generator.ArgumentType("key", 2),
+			generator.Method(pwruntimePackage, name, pwruntimePackage, "CacheStore"),
+			generator.ArgumentType("key", 1),
 		))
 	}
 	// Every remaining pw entry that takes the transport and names no model the

@@ -8,7 +8,7 @@ sidebar:
 Here is the Dockerfile almost every Go project starts from:
 
 ```dockerfile
-FROM golang:1.26 AS build
+FROM golang:1.27 AS build
 COPY . .
 RUN CGO_ENABLED=0 go build -o /out/myapp ./cmd/myapp
 ```
@@ -30,7 +30,7 @@ change it rather than only run it.
 ## The scaffolded Dockerfile
 
 ```dockerfile
-FROM golang:1.26-trixie AS build
+FROM golang:1.27-trixie AS build
 WORKDIR /src
 
 COPY go.mod go.sum ./
@@ -105,8 +105,8 @@ The `:nonroot` tag runs as uid 65532, which works because the listener is on
 8080 rather than a privileged port. The image needs no writable filesystem
 either: assets are served from the embedded tree, not from disk.
 
-Both stages name their Debian release: `golang:1.26-trixie` in the builder,
-`static-debian13` in the runtime. A bare `golang:1.26` rebases onto each new
+Both stages name their Debian release: `golang:1.27-trixie` in the builder,
+`static-debian13` in the runtime. A bare `golang:1.27` rebases onto each new
 Debian stable the day it releases, which changes your build environment on
 Debian's schedule rather than yours — and leaves the two stages on different
 releases until the distroless side catches up. When you move to a new Debian,

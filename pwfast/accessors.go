@@ -172,11 +172,11 @@ func LocalePathContext(ctx context.Context, locale Locale, path string) string {
 	return pwruntime.LocalePath(locale, pwruntime.LocaleModeContext(ctx), path)
 }
 
-// The data cache operations. Each takes the context rather than the request on
-// both transports — it is passed down to the fetch rather than only read from —
-// so none of them needs a call pattern. They exist here because a rewritten
-// handler resolving a store through MemoStore goes on to call these, and the
-// import rewrite sends every pw selector in that body to this package.
+// The data cache types. The operations are methods on the store handle, reached
+// through the CacheStore alias, so a rewritten handler resolving a store through
+// MemoStore goes on to call them on the value it holds; nothing here needs a
+// call pattern, and the key types they take are found through the pwruntime
+// method patterns pwgen registers.
 
 // CacheKey is the identity a cached result is stored under.
 type CacheKey = pwruntime.CacheKey
@@ -187,34 +187,3 @@ type CacheTagger = pwruntime.CacheTagger
 
 // CacheStats is what one store has answered.
 type CacheStats = pwruntime.CacheStats
-
-// Memo returns what fetch produced for this key, reusing a stored result while
-// it is fresh and coalescing concurrent misses onto one fetch.
-func Memo[K CacheKey, T any](ctx context.Context, store *CacheStore, key K, fetch func(context.Context) (T, error)) (T, error) {
-	return pwruntime.Memo[K, T](ctx, store, key, fetch)
-}
-
-// MemoHas reports whether this key currently has a fresh entry.
-func MemoHas[K CacheKey](ctx context.Context, store *CacheStore, key K) bool {
-	return pwruntime.MemoHas[K](ctx, store, key)
-}
-
-// MemoSet writes an entry without consulting one.
-func MemoSet[K CacheKey, T any](ctx context.Context, store *CacheStore, key K, value T) error {
-	return pwruntime.MemoSet[K, T](ctx, store, key, value)
-}
-
-// MemoInvalidate drops one entry, taking the key the read took.
-func MemoInvalidate[K CacheKey](ctx context.Context, store *CacheStore, key K) {
-	pwruntime.MemoInvalidate[K](ctx, store, key)
-}
-
-// MemoInvalidateScope drops everything one reader holds.
-func MemoInvalidateScope(store *CacheStore, scope string) {
-	pwruntime.MemoInvalidateScope(store, scope)
-}
-
-// MemoInvalidateTag drops everything a tag names.
-func MemoInvalidateTag(store *CacheStore, tag string) {
-	pwruntime.MemoInvalidateTag(store, tag)
-}

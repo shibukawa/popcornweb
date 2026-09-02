@@ -239,12 +239,19 @@ cachekeybind:
     opt_in_rather_than_default_include: refused with a reason this framework had not carried — the owner passes a storage entity as-is, whose fields are mostly the result, so default-include would build the key from the value the lookup exists to avoid fetching
     no_version_at_all: refused because a version is a number an author must remember to raise, and because the module states its cache runtime never invalidates, so a version is a deployment lever declared in a library
   correction_taken: the ask cited the dynamo tag as precedent for default-include; the module carries both polarities and firestorebind is opt-in, so the precedent decided nothing and the half named lost
-  discovery: usage-directed, so a key type is emitted for the types a registered call actually receives; this framework registers Memo, MemoHas, MemoSet, and MemoInvalidate with the key as argument index 2
+  discovery: usage-directed, so a key type is emitted for the types a registered call actually receives; this framework registers Get, Has, Set and Invalidate on pwruntime.CacheStore as method patterns with the key as argument index 1, since 2026-09-02, and registered the four Memo functions with the key at index 2 before that
   helper_home_resolved: cachekeybind frames its own rather than forwarding htmlbind's, which would have added a dependency to a shipped render runtime; the split also made its helper set wider on integer and float widths
 generic_methods_available_today:
   shipped: v0.5.9, the second ask of the same round
   what: Require on Builder, Bind and BindWrapper on Plan, each introducing no type parameter beyond its receiver's own
   old_forms: kept as deprecated wrappers, so nothing here had to move; this framework's remaining call sites are in tests
+generic_methods_migrated:
+  shipped: 2026-09-02 in the upstream working tree, against the deferred list this framework filed in requirement:typed-api-method-convergence, once Go 1.27 and TinyGo 0.42 were the baseline on both sides
+  what: Load, LoadAll, QueryPage, QueryKeysPage and Count on Tx; every On entry as a method on Handle in dynamobind and firestorebind, keyless ones included; For, ForCtx, Await, Live and Provide on Builder; ParseSlice, ParseMap and ParseArray on Parser; AppendValues on Builder
+  old_forms: kept as deprecated wrappers, each forwarding to its method, so no call site here has to move before it wants to
+  discovery: a Method pattern beside each Function pattern, so the handle spelling generates what the On spelling did, and tx.Load[T] what LoadTx[T] did
+  generated_output: unchanged; the emitter still writes the function forms
+  reaches_here: on the next release and go.mod bump; the storage guides here still show the On spelling until then
 value_binding:
   shipped: v0.5.10, answering the change request this framework filed 2026-08-14
   what: '{val name = expr}, a closerless directive scoped to the end of its enclosing block, in both .pw.html and .pw.sql'

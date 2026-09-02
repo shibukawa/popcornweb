@@ -95,7 +95,7 @@ func cookieOfName(recorder *httptest.ResponseRecorder, name string) *http.Cookie
 // than merely intended.
 func TestSessionStorageServesAnApplicationWithNoAuthentication(t *testing.T) {
 	registry := session.NewRegistry()
-	if err := session.Register[visitLocale](registry, "locale", session.ReadOnly, nil,
+	if err := registry.Register[visitLocale]("locale", session.ReadOnly, nil,
 		session.OutlivesSession(session.BrowserMax)); err != nil {
 		t.Fatal(err)
 	}
