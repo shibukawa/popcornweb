@@ -30,12 +30,12 @@ would have split the build rather than tidied it. Popcorn Web requires both
 since the module moved to `go 1.27.0`, and each of these operations is now the
 method it was always describing.
 
-**What moved is a call shape and nothing else.** Nothing stored, generated, or
-on the wire changed. For the entries this framework owns, the old package
-functions are gone: each was a one-line stand-in for its method, with the
-handle already in place, so the edit at a call site is mechanical and is shown
-below. For the entries that belong to tinybind, the old function stays as a
-deprecated wrapper, and a project moves call site by call site or not at all.
+**What moved is a call shape and nothing else.** Nothing stored or on the wire
+changed. The old package functions are gone on both sides: here, because each
+was a one-line stand-in for its method with the handle already in place, and in
+tinybind, because the deprecated wrappers would have doubled the documented
+surface for nothing. The edit at a call site is mechanical and is shown below,
+and generated code takes the new spelling on its next regeneration.
 
 ## The data cache
 
@@ -95,8 +95,7 @@ user, err := tx.Load[User](ctx, key)
 `Load`, `LoadAll` and `QueryPage` are the three typed reads, and `QueryKeysPage`
 and `Count` moved with them. What changed is more than the spelling: the
 transaction boundary stopped being an argument and became the receiver, so the
-call states what it is inside. `LoadTx` and its siblings remain as deprecated
-wrappers.
+call states what it is inside. `LoadTx` and its siblings are gone.
 
 Reaching a transactional read through the transaction value rather than through
 a context was a separate decision, and it survived the change untouched — a
@@ -133,8 +132,8 @@ Every `On` entry became a method of the same name without the suffix: `Load`,
 [DynamoDB](/guides/storage/dynamodb/) handle, and `Load`, `LoadAll`, `Store`,
 `StoreAll`, `Insert`, `InsertAll`, `Update`, `Remove`, `RemoveAll`, `QueryPage`
 and `Query` on the [Firestore](/guides/storage/firestore/) handle, along with
-its keyless entries. The `On` functions remain, deprecated. The
-context-resolving forms beside them — `dynamobind.Load[Note](ctx, …)` — are
+its keyless entries. The `On` functions are gone. The context-resolving forms
+beside them — `dynamobind.Load[Note](ctx, …)` — are
 exactly as they were, having no receiver by design, and generation reads all
 three spellings.
 
@@ -192,7 +191,8 @@ does not define. It stays a function however Go changes, and that is worth
 recording rather than rediscovering.
 
 The generated layers' entries moved upstream too — the HTML builder's loop,
-await, live and provider entries, the JSON parser's `ParseSlice` and `ParseMap`,
-and `sqlbind.AppendValues` — each keeping its function as a deprecated wrapper.
-Generated output still spells the function forms, so nothing an application
-holds regenerated on their account.
+value, await, live and provider entries, the JSON parser's `ParseSlice` and
+`ParseMap`, and `sqlbind.AppendValues` — with the old functions removed and the
+emitters writing the methods. That reaches an application only inside its
+`_pw_gen.go` files, which `pw generate` rewrites against the release that
+carries it.

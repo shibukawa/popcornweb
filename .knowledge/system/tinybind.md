@@ -248,9 +248,9 @@ generic_methods_available_today:
 generic_methods_migrated:
   shipped: 2026-09-02 in the upstream working tree, against the deferred list this framework filed in requirement:typed-api-method-convergence, once Go 1.27 and TinyGo 0.42 were the baseline on both sides
   what: Load, LoadAll, QueryPage, QueryKeysPage and Count on Tx; every On entry as a method on Handle in dynamobind and firestorebind, keyless ones included; For, ForCtx, Await, Live and Provide on Builder; ParseSlice, ParseMap and ParseArray on Parser; AppendValues on Builder
-  old_forms: kept as deprecated wrappers, each forwarding to its method, so no call site here has to move before it wants to
+  old_forms: removed, at the owner's instruction, because deprecated wrappers doubled the godoc; Require, Bind and BindWrapper went with them, and so did the Val family that had the same shape
   discovery: a Method pattern beside each Function pattern, so the handle spelling generates what the On spelling did, and tx.Load[T] what LoadTx[T] did
-  generated_output: unchanged; the emitter still writes the function forms
+  generated_output: the emitters write the method spelling, so the generated files here regenerate on the go.mod bump
   reaches_here: on the next release and go.mod bump; the storage guides here still show the On spelling until then
 value_binding:
   shipped: v0.5.10, answering the change request this framework filed 2026-08-14
