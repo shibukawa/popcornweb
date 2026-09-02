@@ -287,7 +287,7 @@ func (s *Credentials) UpdateOnAssertion(ctx context.Context, credentialID []byte
 	}
 	key := datastore.NameKey(DeclaredCredentialKind, keyName(credentialID))
 	err := firestorebind.Run(ctx, func(tx *firestorebind.Tx) error {
-		loaded, err := firestorebind.LoadTx[credentialEntity](ctx, tx, key)
+		loaded, err := tx.Load[credentialEntity](ctx, key)
 		if err != nil {
 			return err
 		}
@@ -324,7 +324,7 @@ func (s *Credentials) Delete(ctx context.Context, accountID string, credentialID
 	}
 	key := datastore.NameKey(DeclaredCredentialKind, keyName(credentialID))
 	err := firestorebind.Run(ctx, func(tx *firestorebind.Tx) error {
-		loaded, err := firestorebind.LoadTx[credentialEntity](ctx, tx, key)
+		loaded, err := tx.Load[credentialEntity](ctx, key)
 		if err != nil {
 			return err
 		}

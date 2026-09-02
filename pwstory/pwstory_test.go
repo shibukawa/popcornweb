@@ -31,7 +31,7 @@ var greetingPlan = &htmlbind.Plan[greetingParams]{
 	},
 }
 
-func greeting(p greetingParams) htmlbind.Fragment { return htmlbind.Bind(greetingPlan, p) }
+func greeting(p greetingParams) htmlbind.Fragment { return greetingPlan.Bind(p) }
 
 func register(t *testing.T) {
 	t.Helper()

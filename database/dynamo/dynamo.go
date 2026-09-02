@@ -12,7 +12,7 @@
 // itself, so its call sites stay context-only:
 //
 //	h, err := dynamo.Handle(ctx)
-//	reading, err := dynamobind.LoadOn(ctx, h, "reading", key)
+//	reading, err := h.Load[Reading](ctx, "reading", key)
 //	for reading, err := range records.ReadingsSince(ctx, sensor, from) { ... }
 //
 // The client is a deployment fact fixed for a process, so nothing is installed

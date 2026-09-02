@@ -14,10 +14,10 @@ import (
 // declared axis is the only thing separating it from staticFragment.
 func varyingFragment(markup string, axes ...string) HTMLFragment {
 	builder := htmlbind.Builder[struct{}]{}
-	return htmlbind.Bind(&htmlbind.Plan[struct{}]{
+	return (&htmlbind.Plan[struct{}]{
 		Vary: axes,
 		Ops:  []htmlbind.Op[struct{}]{builder.Static(markup)},
-	}, struct{}{})
+	}).Bind(struct{}{})
 }
 
 // varyHeader is every axis of a response as one string, because Vary is a list
@@ -58,7 +58,7 @@ func TestDocumentMergesTheAxesOfEveryChainMember(t *testing.T) {
 			builder.Static("</body>"),
 		},
 	}
-	layout := htmlbind.BindWrapper(plan, layoutParams{},
+	layout := plan.BindWrapper(layoutParams{},
 		func(params *layoutParams, children htmlbind.Fragment) { params.Children = children })
 
 	recorder := httptest.NewRecorder()

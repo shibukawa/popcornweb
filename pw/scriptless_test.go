@@ -180,7 +180,7 @@ func scriptlessShell() HTMLWrapper {
 		builder.Slot(func(params documentParams) htmlbind.Fragment { return params.Children }, nil),
 		builder.Static("</body></html>"),
 	}}
-	return htmlbind.BindWrapper(plan, documentParams{}, func(params *documentParams, children htmlbind.Fragment) {
+	return plan.BindWrapper(documentParams{}, func(params *documentParams, children htmlbind.Fragment) {
 		params.Children = children
 	})
 }

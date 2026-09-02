@@ -410,6 +410,7 @@
 {"context": "body", "path": ".knowledge/api/data-cache.md", "source": "api:data-cache", "target": "decision:memo-store-handle", "target_category": "constraint", "target_type": "decision"}
 {"context": "body", "path": ".knowledge/api/data-cache.md", "source": "api:data-cache", "target": "decision:cache-key-interface", "target_category": "constraint", "target_type": "decision"}
 {"context": "body", "path": ".knowledge/api/data-cache.md", "source": "api:data-cache", "target": "decision:data-cache-miss-coalescing", "target_category": "constraint", "target_type": "decision"}
+{"context": "body", "path": ".knowledge/api/data-cache.md", "source": "api:data-cache", "target": "requirement:typed-api-method-convergence", "target_category": "objective", "target_type": "requirement"}
 {"context": "body", "path": ".knowledge/api/data-cache.md", "source": "api:data-cache", "target": "decision:data-cache-entry-identity", "target_category": "constraint", "target_type": "decision"}
 {"context": "body", "path": ".knowledge/api/database-selection.md", "source": "api:database-selection", "target": "data:database-connection-set", "target_category": "structure", "target_type": "data"}
 {"context": "body", "path": ".knowledge/api/database-selection.md", "source": "api:database-selection", "target": "api:transaction-runner", "target_category": "interface", "target_type": "api"}
@@ -5978,10 +5979,10 @@
 {"context": "body", "path": ".knowledge/requirement/tutorial-page-tree-chapter.md", "source": "requirement:tutorial-page-tree-chapter", "target": "api:page-action-endpoint", "target_category": "interface", "target_type": "api"}
 {"context": "body", "path": ".knowledge/requirement/tutorial-page-tree-chapter.md", "source": "requirement:tutorial-page-tree-chapter", "target": "requirement:html-fragment-rendering", "target_category": "objective", "target_type": "requirement"}
 {"context": "body", "path": ".knowledge/requirement/tutorial-page-tree-chapter.md", "source": "requirement:tutorial-page-tree-chapter", "target": "concept:interaction-cost-ladder", "target_category": "concept", "target_type": "concept"}
+{"context": "body", "path": ".knowledge/requirement/typed-api-method-convergence.md", "source": "requirement:typed-api-method-convergence", "target": "system:tinybind", "target_category": "external", "target_type": "system"}
 {"context": "body", "path": ".knowledge/requirement/typed-api-method-convergence.md", "source": "requirement:typed-api-method-convergence", "target": "api:dynamo-package", "target_category": "interface", "target_type": "api"}
 {"context": "body", "path": ".knowledge/requirement/typed-api-method-convergence.md", "source": "requirement:typed-api-method-convergence", "target": "api:firestore-package", "target_category": "interface", "target_type": "api"}
 {"context": "body", "path": ".knowledge/requirement/typed-api-method-convergence.md", "source": "requirement:typed-api-method-convergence", "target": "decision:dynamodb-no-runtime-abstraction", "target_category": "constraint", "target_type": "decision"}
-{"context": "body", "path": ".knowledge/requirement/typed-api-method-convergence.md", "source": "requirement:typed-api-method-convergence", "target": "system:tinybind", "target_category": "external", "target_type": "system"}
 {"context": "body", "path": ".knowledge/requirement/typed-api-method-convergence.md", "source": "requirement:typed-api-method-convergence", "target": "decision:memo-store-handle", "target_category": "constraint", "target_type": "decision"}
 {"context": "body", "path": ".knowledge/requirement/typed-http-contract.md", "source": "requirement:typed-http-contract", "target": "api:html-response", "target_category": "interface", "target_type": "api"}
 {"context": "body", "path": ".knowledge/requirement/typed-http-contract.md", "source": "requirement:typed-http-contract", "target": "api:api-response", "target_category": "interface", "target_type": "api"}
@@ -6504,9 +6505,9 @@
 {"context": "body", "path": ".knowledge/system/tinybind.md", "source": "system:tinybind", "target": "requirement:template-formatting", "target_category": "objective", "target_type": "requirement"}
 {"context": "body", "path": ".knowledge/system/tinybind.md", "source": "system:tinybind", "target": "requirement:editor-formatting", "target_category": "objective", "target_type": "requirement"}
 {"context": "body", "path": ".knowledge/system/tinybind.md", "source": "system:tinybind", "target": "requirement:data-result-cache", "target_category": "objective", "target_type": "requirement"}
+{"context": "body", "path": ".knowledge/system/tinybind.md", "source": "system:tinybind", "target": "requirement:typed-api-method-convergence", "target_category": "objective", "target_type": "requirement"}
 {"context": "body", "path": ".knowledge/system/tinybind.md", "source": "system:tinybind", "target": "requirement:component-output-cache", "target_category": "objective", "target_type": "requirement"}
 {"context": "body", "path": ".knowledge/system/tinybind.md", "source": "system:tinybind", "target": "requirement:explicit-page-loading", "target_category": "objective", "target_type": "requirement"}
-{"context": "body", "path": ".knowledge/system/tinybind.md", "source": "system:tinybind", "target": "requirement:typed-api-method-convergence", "target_category": "objective", "target_type": "requirement"}
 {"context": "body", "path": ".knowledge/system/tinybind.md", "source": "system:tinybind", "target": "rule:page-directory-naming", "target_category": "constraint", "target_type": "rule"}
 {"context": "body", "path": ".knowledge/system/tinybind.md", "source": "system:tinybind", "target": "system:tinygodriver", "target_category": "external", "target_type": "system"}
 {"context": "body", "path": ".knowledge/system/tinybind.md", "source": "system:tinybind", "target": "decision:dynamodb-framework-scope", "target_category": "constraint", "target_type": "decision"}

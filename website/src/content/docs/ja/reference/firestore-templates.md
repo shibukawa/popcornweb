@@ -145,17 +145,17 @@ where (sensor == {sensor} or site == {site}) and at > {from}
 
 ```go
 h, err := firestore.Handle(ctx)
-key, err := firestorebind.StoreOn(ctx, h, value)
-key, err = firestorebind.InsertOn(ctx, h, value)
-value, err = firestorebind.LoadOn[Entity](ctx, h, key)
-err = firestorebind.UpdateOn(ctx, h, value)
-err = firestorebind.RemoveOn(ctx, h, value)
+key, err := h.Store(ctx, value)
+key, err = h.Insert(ctx, value)
+value, err = h.Load[Entity](ctx, key)
+err = h.Update(ctx, value)
+err = h.Remove(ctx, value)
 ```
 
 `Store` は upsert、`Insert` は未作成のエンティティ、`Update` は作成済みのエンティティに
 使います。不完全な数値キーを `Insert` に渡すと、サーバーが割り当てたキーが返ります。
 `firestore.Handle` は `database/firestore` が持つプロセスハンドルのアクセサです。
-トランザクションは `firestorebind.RunOn` と `*firestorebind.Tx` の各操作を使います。
+トランザクションはハンドルの `Run` と `*firestorebind.Tx` の各操作を使います。
 
 ドライバのエラーは失われません。構造化された Datastore エラーは
 `firestorebind.AsError`、not-found や precondition の判定は `errors.Is` を使います。

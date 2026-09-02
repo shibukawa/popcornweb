@@ -35,7 +35,7 @@ func packageScaffoldFiles(options initOptions) map[string]string {
 	name := moduleDirectory(module)
 	pkg := goPackageIdentifier(name)
 	files := map[string]string{
-		"go.mod": "module " + module + "\n\ngo 1.26.0\n\n" + frameworkModuleDirective(),
+		"go.mod": "module " + module + "\n\ngo 1.27.0\n\n" + frameworkModuleDirective(),
 		"popcornweb.toml": `# A package project. There is no project.main: the application that imports
 # this module owns the entry point, and this one produces no binary.
 [project]

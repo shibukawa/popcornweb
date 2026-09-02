@@ -906,7 +906,7 @@ func scaffoldFiles(options initOptions) map[string]string {
 		homeClasses = ` class="mx-auto max-w-3xl p-8 text-slate-900"`
 	}
 	files := map[string]string{
-		"go.mod": "module " + name + "\n\ngo 1.26.0\n\n" + moduleExtra,
+		"go.mod": "module " + name + "\n\ngo 1.27.0\n\n" + moduleExtra,
 		"popcornweb.toml": `[project]
 name = "` + name + `"
 main = "./cmd/` + name + `"
@@ -1375,7 +1375,7 @@ func StoreNote(ctx context.Context, note Note) error {
 	if err != nil {
 		return err
 	}
-	_, err = firestorebind.StoreOn(ctx, h, note)
+	_, err = h.Store(ctx, note)
 	return err
 }
 
@@ -1384,7 +1384,7 @@ func LoadNote(ctx context.Context, id string) (Note, error) {
 	if err != nil {
 		return Note{}, err
 	}
-	return firestorebind.LoadOn[Note](ctx, h, Note{ID: id}.EntityKey())
+	return h.Load[Note](ctx, Note{ID: id}.EntityKey())
 }
 `
 }
@@ -1444,7 +1444,7 @@ func StoreNote(ctx context.Context, note Note) error {
 	if err != nil {
 		return err
 	}
-	return dynamobind.StoreOn(ctx, h, "note", note)
+	return h.Store(ctx, "note", note)
 }
 
 func LoadNote(ctx context.Context, id string, createdAt time.Time) (Note, error) {
@@ -1452,7 +1452,7 @@ func LoadNote(ctx context.Context, id string, createdAt time.Time) (Note, error)
 	if err != nil {
 		return Note{}, err
 	}
-	return dynamobind.LoadOn[Note](ctx, h, "note", Note{ID: id, CreatedAt: createdAt}.ItemKey())
+	return h.Load[Note](ctx, "note", Note{ID: id, CreatedAt: createdAt}.ItemKey())
 }
 `
 }

@@ -19,23 +19,23 @@ type Error400Params struct{}
 
 // Error400 binds Error400 to its parameters, producing a renderable fragment.
 func Error400(params Error400Params) htmlbind.Fragment {
-	return htmlbind.Bind(planError400Plan, params)
+	return planError400Plan.Bind(params)
 }
 
 type memoRowParams struct{ Title string }
 
 func memoRow(params memoRowParams) htmlbind.Fragment {
-	return htmlbind.Bind(planMemoRowPlan, params)
+	return planMemoRowPlan.Bind(params)
 }
 
 type DocumentParams struct{ Children htmlbind.Fragment }
 
 func Document(params DocumentParams) htmlbind.Fragment {
-	return htmlbind.Bind(planDocumentPlan, params)
+	return planDocumentPlan.Bind(params)
 }
 
 func BindDocument(params DocumentParams) htmlbind.Wrapper {
-	return htmlbind.BindWrapper(planDocumentPlan, params, nil)
+	return planDocumentPlan.BindWrapper(params, nil)
 }
 
 func notATemplate(value string) string { return value }

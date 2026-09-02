@@ -153,18 +153,18 @@ The generated entity satisfies the interfaces used by `firestorebind`:
 
 ```go
 h, err := firestore.Handle(ctx)
-key, err := firestorebind.StoreOn(ctx, h, value)
-key, err = firestorebind.InsertOn(ctx, h, value)
-value, err = firestorebind.LoadOn[Entity](ctx, h, key)
-err = firestorebind.UpdateOn(ctx, h, value)
-err = firestorebind.RemoveOn(ctx, h, value)
+key, err := h.Store(ctx, value)
+key, err = h.Insert(ctx, value)
+value, err = h.Load[Entity](ctx, key)
+err = h.Update(ctx, value)
+err = h.Remove(ctx, value)
 ```
 
 `Store` is an upsert, `Insert` requires the entity to be absent, and `Update`
 requires it to exist. An incomplete numeric key is allowed for `Insert`, which
 returns the server-allocated key. `firestore.Handle` is
 `database/firestore`'s process handle accessor. Transactions use
-`firestorebind.RunOn` and the corresponding operations on `*firestorebind.Tx`.
+the handle's `Run` and the corresponding operations on `*firestorebind.Tx`.
 
 Driver errors remain visible. Use `firestorebind.AsError` for structured
 Datastore errors and `errors.Is` for the package's not-found and precondition

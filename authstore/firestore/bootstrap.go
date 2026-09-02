@@ -164,7 +164,7 @@ func (Bootstrap) RecordAttempt(ctx context.Context, loginID string) (int, error)
 	key := datastore.NameKey(DeclaredBootstrapKind, loginID)
 	remaining := 0
 	err := firestorebind.Run(ctx, func(tx *firestorebind.Tx) error {
-		loaded, err := firestorebind.LoadTx[bootstrapEntity](ctx, tx, key)
+		loaded, err := tx.Load[bootstrapEntity](ctx, key)
 		if err != nil {
 			return err
 		}
@@ -200,7 +200,7 @@ func (Bootstrap) Consume(ctx context.Context, loginID string, at time.Time) erro
 	key := datastore.NameKey(DeclaredBootstrapKind, loginID)
 
 	spend := func(tx *firestorebind.Tx) error {
-		loaded, err := firestorebind.LoadTx[bootstrapEntity](ctx, tx, key)
+		loaded, err := tx.Load[bootstrapEntity](ctx, key)
 		if err != nil {
 			return err
 		}

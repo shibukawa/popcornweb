@@ -16,12 +16,12 @@ import (
 // undeclared one is staticFragment, which is the shape most components have.
 func scopedFragment(markup string, private, public bool, source string) HTMLFragment {
 	builder := htmlbind.Builder[struct{}]{}
-	return htmlbind.Bind(&htmlbind.Plan[struct{}]{
+	return (&htmlbind.Plan[struct{}]{
 		DeclaresPrivate: private,
 		DeclaresPublic:  public,
 		PrivateSource:   source,
 		Ops:             []htmlbind.Op[struct{}]{builder.Static(markup)},
-	}, struct{}{})
+	}).Bind(struct{}{})
 }
 
 // scopedShell is a document shell carrying a scope declaration. A wrapper is
@@ -43,7 +43,7 @@ func scopedShell(private, public bool, source string) HTMLWrapper {
 			builder.Static("</body>"),
 		},
 	}
-	return htmlbind.BindWrapper(plan, shellParams{},
+	return plan.BindWrapper(shellParams{},
 		func(params *shellParams, children htmlbind.Fragment) { params.Children = children })
 }
 
@@ -181,7 +181,7 @@ func renderScopedGreeting(t *testing.T, subject, body string) string {
 		})
 	}
 	recorder := httptest.NewRecorder()
-	WriteHTMLChain(recorder, request.WithContext(ctx), nil, htmlbind.Bind(plan, greetingParams{Body: body}))
+	WriteHTMLChain(recorder, request.WithContext(ctx), nil, plan.Bind(greetingParams{Body: body}))
 	if recorder.Code != http.StatusOK {
 		t.Fatalf("status = %d for subject %q", recorder.Code, subject)
 	}

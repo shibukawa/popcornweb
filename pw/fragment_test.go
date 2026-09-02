@@ -19,19 +19,19 @@ import (
 // await block nor a head element.
 func staticFragment(markup string) HTMLFragment {
 	builder := htmlbind.Builder[struct{}]{}
-	return htmlbind.Bind(&htmlbind.Plan[struct{}]{
+	return (&htmlbind.Plan[struct{}]{
 		Ops: []htmlbind.Op[struct{}]{builder.Static(markup)},
-	}, struct{}{})
+	}).Bind(struct{}{})
 }
 
 // styledFragment carries the contributions a scoped style block folds into the
 // calling plan, which is what a fragment response has nowhere to put.
 func styledFragment() HTMLFragment {
 	builder := htmlbind.Builder[struct{}]{}
-	return htmlbind.Bind(&htmlbind.Plan[struct{}]{
+	return (&htmlbind.Plan[struct{}]{
 		Head: []string{`<style>.box_dwu687{color:red}</style>`},
 		Ops:  []htmlbind.Op[struct{}]{builder.Static(`<div class="box_dwu687">card</div>`)},
-	}, struct{}{})
+	}).Bind(struct{}{})
 }
 
 func TestWriteHTMLFragmentWritesTheTemplateAlone(t *testing.T) {
@@ -108,9 +108,9 @@ func TestWriteHTMLFragmentAnswersUnrecoveredBoundaryWithAProblem(t *testing.T) {
 	t.Cleanup(func() { RegisterHTMLErrorPage(previous) })
 	builder := htmlbind.Builder[Problem]{}
 	RegisterHTMLErrorPage(func(p Problem) HTMLFragment {
-		return htmlbind.Bind(&htmlbind.Plan[Problem]{Ops: []htmlbind.Op[Problem]{
+		return (&htmlbind.Plan[Problem]{Ops: []htmlbind.Op[Problem]{
 			builder.Static("<main data-error-page>failed</main>"),
-		}}, p)
+		}}).Bind(p)
 	})
 
 	recorder := httptest.NewRecorder()

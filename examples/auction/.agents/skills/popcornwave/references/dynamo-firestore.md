@@ -98,26 +98,26 @@ Variadic options reach the driver (`dynamodb.WithLimit`, `WithScanForward`, `Wit
 
 ### Item operations (dynamobind)
 
-Direct operations take the handle and a table name because they have no declaration to read one from:
+Direct operations are methods on the handle and take a table name because they have no declaration to read one from:
 
 ```go
 h, err := dynamo.Handle(ctx)
 
-LoadOn[T](ctx, h, table, key, opts...) (T, error)
-StoreOn(ctx, h, table, v, opts...) error
-RemoveOn(ctx, h, table, v, opts...) error
-UpdateOn(ctx, h, table, v, expression, opts...) error
+h.Load[T](ctx, table, key, opts...) (T, error)
+h.Store(ctx, table, v, opts...) error
+h.Remove(ctx, table, v, opts...) error
+h.Update(ctx, table, v, expression, opts...) error
 
-StoreReturningOn(ctx, h, table, v, opts...) (T, bool, error)
-RemoveReturningOn(ctx, h, table, v, opts...) (T, bool, error)
+h.StoreReturning(ctx, table, v, opts...) (T, bool, error)
+h.RemoveReturning(ctx, table, v, opts...) (T, bool, error)
 
-QueryPageOn[T](ctx, h, table, keyCond, opts...) (Page[T], error)
-ScanPageOn[T](ctx, h, table, opts...) (Page[T], error)
-QueryOn[T](ctx, h, table, keyCond, opts...) iter.Seq2[T, error]
-ScanOn[T](ctx, h, table, opts...) iter.Seq2[T, error]
+h.QueryPage[T](ctx, table, keyCond, opts...) (Page[T], error)
+h.ScanPage[T](ctx, table, opts...) (Page[T], error)
+h.Query[T](ctx, table, keyCond, opts...) iter.Seq2[T, error]
+h.Scan[T](ctx, table, opts...) iter.Seq2[T, error]
 
-StoreAllOn(ctx, h, table, vs) (unprocessed []T, err error)
-LoadAllOn[T](ctx, h, table, keys, opts...) (items []T, unprocessed []dynamodb.Key, err error)
+h.StoreAll(ctx, table, vs) (unprocessed []T, err error)
+h.LoadAll[T](ctx, table, keys, opts...) (items []T, unprocessed []dynamodb.Key, err error)
 ```
 
 The documented read pattern for one item is `Load(ctx, table, v.ItemKey())`. `Store` is `PutItem` (replaces the whole item); `Update` takes a DynamoDB update expression verbatim; `StoreReturning`/`RemoveReturning` ask for `ALL_OLD` and their bool is false when nothing was there (not an error). `StoreAll`/`LoadAll` chunk to the service limits (`MaxBatchWrite` 25, `MaxBatchGet` 100, both exported); the retry policy for `unprocessed` is yours. Running with the section disabled yields a named no-client error, not a panic. Miss detection: `errors.Is(err, dynamodb.ErrItemNotFound)`; structured driver errors via `errors.As` with `*dynamodb.Error`; decode failures via `dynamobind.AsError`.
@@ -239,14 +239,14 @@ Paging and projections: `start`/`end` take `datastore.Cursor` parameters — pre
 
 ```go
 h, err := firestore.Handle(ctx)
-key, err := firestorebind.StoreOn(ctx, h, value)   // upsert
-key, err = firestorebind.InsertOn(ctx, h, value)   // must be absent; returns allocated key
-value, err = firestorebind.LoadOn[Entity](ctx, h, key)
-err = firestorebind.UpdateOn(ctx, h, value)        // must exist
-err = firestorebind.RemoveOn(ctx, h, value)
+key, err := h.Store(ctx, value)   // upsert
+key, err = h.Insert(ctx, value)   // must be absent; returns allocated key
+value, err = h.Load[Entity](ctx, key)
+err = h.Update(ctx, value)        // must exist
+err = h.Remove(ctx, value)
 ```
 
-Transactions use `firestorebind.RunOn` and the operations on `*firestorebind.Tx`. Use `firestorebind.AsError` for structured Datastore errors and `errors.Is` for not-found and precondition errors. Declared queries resolve the process client themselves — call sites stay context-only.
+Transactions use the handle's `Run` and the operations on `*firestorebind.Tx`. Use `firestorebind.AsError` for structured Datastore errors and `errors.Is` for not-found and precondition errors. Declared queries resolve the process client themselves — call sites stay context-only.
 
 ### Schema and TTL
 
@@ -264,7 +264,7 @@ Sessions and auth can use this store via `sessionstore/firestore`, `authstore/fi
 | SQL path | DynamoDB / Firestore |
 | --- | --- |
 | Schema from `migrations/` (goose, versioned, `down`) | Dynamo: comparison-based `Plan`/`Migrate`, no versions, no `down`; Firestore: kinds appear on first write |
-| Connection groups, `pw.SelectDB`, `pw.Transaction` | Process handle (`dynamo.Handle` / `firestore.Handle`); no Dynamo transactions; Firestore uses `firestorebind.RunOn`/`Tx` |
+| Connection groups, `pw.SelectDB`, `pw.Transaction` | Process handle (`dynamo.Handle` / `firestore.Handle`); no Dynamo transactions; Firestore uses the handle's `Run`/`Tx` |
 | Result shape declared in `.pw.sql` `type` blocks | Result shape is the tagged Go struct itself |
 | Table named inside the SQL text | Dynamo: `table` clause in the declaration; Firestore: the entity type supplies the kind |
 | Seed data via `pw seed` | Not part of these stores |

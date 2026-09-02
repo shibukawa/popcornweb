@@ -179,9 +179,9 @@ func TestStaticResponseDoesNotVaryOnUserAgent(t *testing.T) {
 	request.Header.Set("User-Agent", "curl/8.7.1")
 
 	builder := htmlbind.Builder[struct{}]{}
-	page := htmlbind.Bind(&htmlbind.Plan[struct{}]{Ops: []htmlbind.Op[struct{}]{
+	page := (&htmlbind.Plan[struct{}]{Ops: []htmlbind.Op[struct{}]{
 		builder.Static("<main>static</main>"),
-	}}, struct{}{})
+	}}).Bind(struct{}{})
 
 	WriteHTML(recorder, request, page)
 	if strings.Contains(recorder.Header().Get("Vary"), "User-Agent") {

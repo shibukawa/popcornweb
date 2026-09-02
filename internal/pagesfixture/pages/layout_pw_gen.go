@@ -43,9 +43,9 @@ var planLayoutPlan = &htmlbind.Plan[LayoutParams]{
 }
 
 // Layout binds Layout to its parameters, producing a renderable fragment.
-func Layout(params LayoutParams) htmlbind.Fragment { return htmlbind.Bind(planLayoutPlan, params) }
+func Layout(params LayoutParams) htmlbind.Fragment { return planLayoutPlan.Bind(params) }
 
 // BindLayout binds Layout as a chain wrapper filling its unnamed slot.
 func BindLayout(params LayoutParams) htmlbind.Wrapper {
-	return htmlbind.BindWrapper(planLayoutPlan, params, func(target *LayoutParams, children htmlbind.Fragment) { target.Children = children })
+	return planLayoutPlan.BindWrapper(params, func(target *LayoutParams, children htmlbind.Fragment) { target.Children = children })
 }

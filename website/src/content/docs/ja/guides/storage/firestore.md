@@ -103,8 +103,8 @@ for note, err := range entities.NotesByAuthor(r.Context(), accountID) {
 ```
 
 エンティティを直接操作する場合は、まず `firestore.Handle(ctx)` でプロセスのハンドルを
-受け取り、`firestorebind.StoreOn`、`InsertOn`、`LoadOn`、`UpdateOn`、`RemoveOn` に
-渡します。クライアントはリクエストの context の値ではなくプロセス状態なので、呼び出し
+受け取り、そのハンドルの `Store`、`Insert`、`Load`、`Update`、`Remove` メソッドを
+呼びます。クライアントはリクエストの context の値ではなくプロセス状態なので、呼び出し
 ごとに context を探索するコストはありません。タグ、クエリの戻り値、生成されるシグネチャは
 [Firestore クエリフォーマット](/ja/reference/firestore-templates/)にまとめています。
 

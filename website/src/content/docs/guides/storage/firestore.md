@@ -105,8 +105,8 @@ for note, err := range entities.NotesByAuthor(r.Context(), accountID) {
 ```
 
 For direct entity operations, take the process handle once with
-`firestore.Handle(ctx)` and use `firestorebind.StoreOn`, `InsertOn`, `LoadOn`,
-`UpdateOn`, and `RemoveOn`. The client is held as process state rather than a
+`firestore.Handle(ctx)` and call `Store`, `Insert`, `Load`, `Update`, and
+`Remove` on it. The client is held as process state rather than a
 request context value, so nothing pays a context lookup per call. The
 [Firestore query format](/reference/firestore-templates/) lists the
 tags, query shapes, and generated signatures.

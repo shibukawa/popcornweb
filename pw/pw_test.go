@@ -83,11 +83,11 @@ func TestWriteHTMLBuffersAndWrites(t *testing.T) {
 	recorder := httptest.NewRecorder()
 	request := httptest.NewRequest(http.MethodGet, "/", nil)
 	builder := htmlbind.Builder[string]{}
-	leaf := htmlbind.Bind(&htmlbind.Plan[string]{Ops: []htmlbind.Op[string]{
+	leaf := (&htmlbind.Plan[string]{Ops: []htmlbind.Op[string]{
 		builder.Static("<h1>"),
 		builder.Text(func(value string) string { return value }),
 		builder.Static("</h1>"),
-	}}, "Hello")
+	}}).Bind("Hello")
 	WriteHTML(recorder, request, leaf)
 	if recorder.Code != http.StatusOK || recorder.Body.String() != "<h1>Hello</h1>" {
 		t.Fatalf("response = %d %q", recorder.Code, recorder.Body.String())
@@ -104,13 +104,13 @@ func TestWriteHTMLChainNestsWrappers(t *testing.T) {
 		documentBuilder.Slot(func(params documentParams) htmlbind.Fragment { return params.Children }, nil),
 		documentBuilder.Static("</body></html>"),
 	}}
-	document := htmlbind.BindWrapper(documentPlan, documentParams{}, func(params *documentParams, children htmlbind.Fragment) {
+	document := documentPlan.BindWrapper(documentParams{}, func(params *documentParams, children htmlbind.Fragment) {
 		params.Children = children
 	})
 	pageBuilder := htmlbind.Builder[struct{}]{}
-	page := htmlbind.Bind(&htmlbind.Plan[struct{}]{Ops: []htmlbind.Op[struct{}]{
+	page := (&htmlbind.Plan[struct{}]{Ops: []htmlbind.Op[struct{}]{
 		pageBuilder.Static("<main>page</main>"),
-	}}, struct{}{})
+	}}).Bind(struct{}{})
 
 	recorder := httptest.NewRecorder()
 	WriteHTMLChain(recorder, httptest.NewRequest(http.MethodGet, "/", nil), []htmlbind.Wrapper{document}, page)
@@ -130,7 +130,7 @@ func TestWriteHTMLUsesRegisteredDocument(t *testing.T) {
 		documentBuilder.Slot(func(params documentParams) htmlbind.Fragment { return params.Children }, nil),
 		documentBuilder.Static("</body>"),
 	}}
-	document := htmlbind.BindWrapper(documentPlan, documentParams{}, func(params *documentParams, children htmlbind.Fragment) {
+	document := documentPlan.BindWrapper(documentParams{}, func(params *documentParams, children htmlbind.Fragment) {
 		params.Children = children
 	})
 	previous := pwruntime.SwapHTMLDocument([]HTMLWrapper{document})
@@ -139,9 +139,9 @@ func TestWriteHTMLUsesRegisteredDocument(t *testing.T) {
 	})
 
 	pageBuilder := htmlbind.Builder[struct{}]{}
-	page := htmlbind.Bind(&htmlbind.Plan[struct{}]{Ops: []htmlbind.Op[struct{}]{
+	page := (&htmlbind.Plan[struct{}]{Ops: []htmlbind.Op[struct{}]{
 		pageBuilder.Static("<main>page</main>"),
-	}}, struct{}{})
+	}}).Bind(struct{}{})
 	recorder := httptest.NewRecorder()
 	WriteHTML(recorder, httptest.NewRequest(http.MethodGet, "/", nil), page)
 	if recorder.Body.String() != "<!doctype html><body><main>page</main></body>" {
@@ -151,9 +151,9 @@ func TestWriteHTMLUsesRegisteredDocument(t *testing.T) {
 
 func TestWriteHTMLPreservesConfiguredZstdCompression(t *testing.T) {
 	builder := htmlbind.Builder[struct{}]{}
-	leaf := htmlbind.Bind(&htmlbind.Plan[struct{}]{Ops: []htmlbind.Op[struct{}]{
+	leaf := (&htmlbind.Plan[struct{}]{Ops: []htmlbind.Op[struct{}]{
 		builder.Static("<main>compressed</main>"),
-	}}, struct{}{})
+	}}).Bind(struct{}{})
 	request := httptest.NewRequest(http.MethodGet, "/", nil)
 	request.Header.Set("Accept-Encoding", "zstd")
 	request = request.WithContext(pwruntime.WithResources(request.Context(), pwruntime.Resources{

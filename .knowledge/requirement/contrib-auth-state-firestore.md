@@ -31,7 +31,7 @@ put:
   rejection: an unexpired collision is ErrAlreadyExists, unchanged from the contract
   bounds: the encoded payload is bounded before the request, and a record over datastore.MaxEntityBytes is refused with the limit named
 take:
-  shape: Run with LoadTx then Tx.Remove, which reads the record and queues its delete
+  shape: Run with Tx.Load then Tx.Remove, which reads the record and queues its delete
   why_a_transaction: no commit returns a prior entity, so there is no counterpart to the DynamoDB delete that hands back what it removed, per decision:firestore-conditional-writes
   single_use: preserved; two concurrent takes cannot both commit, and the loser re-runs, finds nothing, and returns ErrNotFound
   cost: two round trips, since the lazy transaction start of system:tinygodriver-firestore folds the begin into the read

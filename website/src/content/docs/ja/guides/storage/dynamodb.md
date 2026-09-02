@@ -101,7 +101,7 @@ func store(ctx context.Context, note Note) error {
 	if err != nil {
 		return err
 	}
-	return dynamobind.StoreOn(ctx, h, "note", note)
+	return h.Store(ctx, "note", note)
 }
 
 func load(ctx context.Context, id string, createdAt time.Time) (Note, error) {
@@ -109,7 +109,7 @@ func load(ctx context.Context, id string, createdAt time.Time) (Note, error) {
 	if err != nil {
 		return Note{}, err
 	}
-	return dynamobind.LoadOn[Note](ctx, h, "note", Note{ID: id, CreatedAt: createdAt}.ItemKey())
+	return h.Load[Note](ctx, "note", Note{ID: id, CreatedAt: createdAt}.ItemKey())
 }
 ```
 

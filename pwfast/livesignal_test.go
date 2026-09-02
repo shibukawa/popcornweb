@@ -20,7 +20,7 @@ import (
 func liveSignalPage(steps ...any) HTMLFragment {
 	outer := htmlbind.Builder[struct{}]{}
 	primary := htmlbind.Builder[string]{}
-	op := htmlbind.Live(
+	op := outer.Live(
 		func(ctx context.Context, _ struct{}) []htmlbind.LiveBinding[string] {
 			return []htmlbind.LiveBinding[string]{
 				func(deliver func(func(*string), error) bool) error {
@@ -44,11 +44,11 @@ func liveSignalPage(steps ...any) HTMLFragment {
 		[]htmlbind.Op[struct{}]{outer.Static("<p>waiting</p>")},
 		nil,
 	)
-	return htmlbind.Bind(&htmlbind.Plan[struct{}]{
+	return (&htmlbind.Plan[struct{}]{
 		HasAwaitBlock: true,
 		HasLiveBlock:  true,
 		Ops:           []htmlbind.Op[struct{}]{outer.Static("<main>"), op, outer.Static("</main>")},
-	}, struct{}{})
+	}).Bind(struct{}{})
 }
 
 func liveSignalScript(ctx context.Context, steps ...any) iter.Seq2[string, error] {

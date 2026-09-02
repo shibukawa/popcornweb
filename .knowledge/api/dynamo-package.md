@@ -3,7 +3,7 @@ id: api:dynamo-package
 type: api
 title: database/dynamo Package
 ---
-Importing github.com/shibukawa/popcornweb/database/dynamo registers the DynamoDB configuration binding and opens the client into process state; operations are system:tinybind's "On" entries taking the handle the package exposes, and generated queries resolve the same handle themselves.
+Importing github.com/shibukawa/popcornweb/database/dynamo registers the DynamoDB configuration binding and opens the client into process state; operations are system:tinybind's methods on the handle the package exposes, and generated queries resolve the same handle themselves.
 
 ```yaml
 import: github.com/shibukawa/popcornweb/database/dynamo
@@ -26,9 +26,9 @@ surface:
   - WithTableResolver(fn) as a startup option, for a deployment rule:dynamodb-table-naming configuration cannot express
 deliberately_absent:
   table_accessor: the resolver runs inside the runtime entry via the handle, so no call site resolves a name
-  operation_wrappers: none, per decision:dynamodb-no-runtime-abstraction, which is why the On entries an application calls are covered by requirement:typed-api-method-convergence rather than by anything reshapeable here
+  operation_wrappers: none, per decision:dynamodb-no-runtime-abstraction, which is why the handle methods an application calls are covered by requirement:typed-api-method-convergence rather than by anything reshapeable here
 usage:
-  item: "h, err := dynamo.Handle(ctx); dynamobind.LoadOn[Reading](ctx, h, \"reading\", r.ItemKey())"
+  item: "h, err := dynamo.Handle(ctx); h.Load[Reading](ctx, \"reading\", r.ItemKey())"
   query: "records.ReadingsSince(ctx, sensor, from), whose generated body resolves Handle through the DynamoHandleResolver generation option"
   parity: a declared query takes context and its parameters, exactly as a flow:sql-generation function does
   remaining_argument: an item operation still names a table, because it has no declaration to read one from; a declared query names neither

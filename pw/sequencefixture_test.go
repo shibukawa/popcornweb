@@ -94,7 +94,7 @@ var (
 			panelOps.If(func(p panelParams) bool { return len(p.Rows) > 0 },
 				[]htmlbind.Op[panelParams]{
 					panelOps.Static("<ul>"),
-					htmlbind.For(
+					panelOps.For(
 						func(p panelParams) []string { return p.Rows },
 						func(p panelParams, item string, index int) rowScope {
 							return rowScope{Outer: p, Item: item, Index: index}
@@ -104,7 +104,7 @@ var (
 							rowScopeOps.Text(func(s rowScope) string { return s.Item }),
 							rowScopeOps.Static(" "),
 							rowScopeOps.Component(func(s rowScope) htmlbind.Fragment {
-								return htmlbind.Bind(badgePlan, badgeParams{Label: strconv.Itoa(s.Index)})
+								return badgePlan.Bind(badgeParams{Label: strconv.Itoa(s.Index)})
 							}),
 							rowScopeOps.Static("</li>"),
 						}),
@@ -133,7 +133,7 @@ func buildSequenceFixtures(t *testing.T) []sequenceFixture {
 		// An empty known manifest makes every boundary a replacement, which is
 		// what carries a sequence and its values.
 		diff, err := delta.RenderDelta([]byte("fixture-key"), delta.Manifest{}, nil,
-			htmlbind.Bind(panelPlan, one.params),
+			panelPlan.Bind(one.params),
 			htmlbind.WithBoundaryPrefix(UpdateAttributePrefix), htmlbind.WithValidatorTag("fixture"))
 		if err != nil {
 			t.Fatalf("%s: %v", one.name, err)

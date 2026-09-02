@@ -155,7 +155,7 @@ func HelperCallingHandler(w http.ResponseWriter, r *http.Request) {
 
 func fragment(markup string) pw.HTMLFragment {
 	builder := htmlbind.Builder[struct{}]{}
-	return htmlbind.Bind(&htmlbind.Plan[struct{}]{
+	return (&htmlbind.Plan[struct{}]{
 		Ops: []htmlbind.Op[struct{}]{builder.Static(markup)},
-	}, struct{}{})
+	}).Bind(struct{}{})
 }

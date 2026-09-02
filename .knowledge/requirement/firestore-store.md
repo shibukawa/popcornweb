@@ -40,7 +40,7 @@ upstream_dependency:
   state_on_2026_08_05: released
   minimum_versions: tinybind-go v0.3.7 and system:tinygodriver-firestore v1.1.9, which is what v0.3.7 itself requires, so the two move together
   retired: the tinygodriver v1.1.3 requirement this repository carried before this
-  what_this_repository_needs_from_it: WithClient, WithNamespace, Load, Store, Insert, Update, Remove, LoadAll, QueryPage, QueryKeysPage, Run, LoadTx and the Tx write methods; nothing generated, per the scope split above
+  what_this_repository_needs_from_it: WithClient, WithNamespace, Load, Store, Insert, Update, Remove, LoadAll, QueryPage, QueryKeysPage, Run, Tx.Load and the Tx write methods; nothing generated, per the scope split above
   no_fallback_needed: the earlier plan to carry our own context key if the package slipped is withdrawn, since the package exists
   asks_answered: every one, per the upstream_requests of system:tinygodriver-firestore, so RemoveKeys, KeyFor and the Expirer contract exist and none of the code they replace had to be written
 bounded_by_the_stack:

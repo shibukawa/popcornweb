@@ -56,7 +56,7 @@ func asyncPage(params asyncPageParams) htmlbind.Fragment {
 		},
 		Ops: []htmlbind.Op[asyncPageParams]{
 			outer.Static("<main>"),
-			htmlbind.Await(
+			outer.Await(
 				func(ctx context.Context, p asyncPageParams) (string, error) { return p.Body.Wait(ctx) },
 				func(_ asyncPageParams, err AsyncError) AsyncError { return err },
 				[]htmlbind.Op[string]{
@@ -74,7 +74,7 @@ func asyncPage(params asyncPageParams) htmlbind.Fragment {
 			outer.Static("</main>"),
 		},
 	}
-	return htmlbind.Bind(plan, params)
+	return plan.Bind(params)
 }
 
 func TestWriteHTMLStreamsAwaitBoundaries(t *testing.T) {
@@ -115,9 +115,9 @@ func TestWriteHTMLStreamsAwaitBoundaries(t *testing.T) {
 func TestWriteHTMLBuffersWithoutAwaitBlock(t *testing.T) {
 	recorder := httptest.NewRecorder()
 	builder := htmlbind.Builder[struct{}]{}
-	page := htmlbind.Bind(&htmlbind.Plan[struct{}]{Ops: []htmlbind.Op[struct{}]{
+	page := (&htmlbind.Plan[struct{}]{Ops: []htmlbind.Op[struct{}]{
 		builder.Static("<main>static</main>"),
-	}}, struct{}{})
+	}}).Bind(struct{}{})
 
 	WriteHTML(recorder, httptest.NewRequest(http.MethodGet, "/", nil), page)
 	if recorder.Body.String() != "<main>static</main>" {
@@ -362,7 +362,7 @@ func noRecoverPage(params asyncPageParams) htmlbind.Fragment {
 		HasAwaitBlock: true,
 		Ops: []htmlbind.Op[asyncPageParams]{
 			outer.Static("<main>"),
-			htmlbind.Await(
+			outer.Await(
 				func(ctx context.Context, p asyncPageParams) (string, error) { return p.Body.Wait(ctx) },
 				func(_ asyncPageParams, err AsyncError) AsyncError { return err },
 				[]htmlbind.Op[string]{primary.Text(func(value string) string { return value })},
@@ -372,7 +372,7 @@ func noRecoverPage(params asyncPageParams) htmlbind.Fragment {
 			outer.Static("</main>"),
 		},
 	}
-	return htmlbind.Bind(plan, params)
+	return plan.Bind(params)
 }
 
 // TestStreamedUnrecoveredBoundaryReplacesDocument is the point of the whole
@@ -433,11 +433,11 @@ func TestBufferedUnrecoveredBoundaryKeepsItsStatus(t *testing.T) {
 func TestBufferedUnrecoveredBoundaryRendersTheErrorPage(t *testing.T) {
 	builder := htmlbind.Builder[Problem]{}
 	RegisterHTMLErrorPage(func(p Problem) HTMLFragment {
-		return htmlbind.Bind(&htmlbind.Plan[Problem]{Ops: []htmlbind.Op[Problem]{
+		return (&htmlbind.Plan[Problem]{Ops: []htmlbind.Op[Problem]{
 			builder.Static("<section id=app-error>"),
 			builder.Text(func(p Problem) string { return p.Title }),
 			builder.Static("</section>"),
-		}}, p)
+		}}).Bind(p)
 	})
 	t.Cleanup(func() { RegisterHTMLErrorPage(nil) })
 
@@ -466,11 +466,11 @@ func TestBufferedUnrecoveredBoundaryRendersTheErrorPage(t *testing.T) {
 func TestStreamedErrorPageNeverLeaksTheCause(t *testing.T) {
 	builder := htmlbind.Builder[Problem]{}
 	RegisterHTMLErrorPage(func(p Problem) HTMLFragment {
-		return htmlbind.Bind(&htmlbind.Plan[Problem]{Ops: []htmlbind.Op[Problem]{
+		return (&htmlbind.Plan[Problem]{Ops: []htmlbind.Op[Problem]{
 			builder.Static("<section id=app-error>"),
 			builder.Text(func(p Problem) string { return p.Message }),
 			builder.Static("</section>"),
-		}}, p)
+		}}).Bind(p)
 	})
 	t.Cleanup(func() { RegisterHTMLErrorPage(nil) })
 
@@ -492,11 +492,11 @@ func TestStreamedErrorPageNeverLeaksTheCause(t *testing.T) {
 func TestRegisteredErrorPageReplacesTheBuiltin(t *testing.T) {
 	builder := htmlbind.Builder[Problem]{}
 	RegisterHTMLErrorPage(func(p Problem) HTMLFragment {
-		return htmlbind.Bind(&htmlbind.Plan[Problem]{Ops: []htmlbind.Op[Problem]{
+		return (&htmlbind.Plan[Problem]{Ops: []htmlbind.Op[Problem]{
 			builder.Static("<section id=app-error>"),
 			builder.Text(func(p Problem) string { return p.Title }),
 			builder.Static("</section>"),
-		}}, p)
+		}}).Bind(p)
 	})
 	t.Cleanup(func() { RegisterHTMLErrorPage(nil) })
 
