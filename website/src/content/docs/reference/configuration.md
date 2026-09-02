@@ -287,8 +287,8 @@ whichever is busier evict the other.
 
 `enabled` is off where `html.cache.enabled` is on, because the opt-in is not
 symmetrical. A component asks to be cached in its own annotation, so the render
-store can be on and idle. A data cache has no annotation to read: `pw.Memo` is
-an ordinary call in a handler, and turning the section on is the only statement
+store can be on and idle. A data cache has no annotation to read: a store's
+`Get` is an ordinary call in a handler, and turning the section on is the only statement
 that any of them should store anything. With it off, every call runs its fetch
 and returns, which is also how caching is withdrawn from a deployment without
 editing code.

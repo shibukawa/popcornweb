@@ -119,8 +119,8 @@ func Setup(ctx context.Context) (*session.Manager, error) {
 	// an init so that a project with the check off carries no slot and needs no
 	// keyring on its account.
 	if pwruntime.ResolveConfig[pwconfig.SecurityConfig](ctx).CSRF.Enabled {
-		if err := session.Register[middlewares.CSRFSecret](
-			registry, middlewares.CSRFSecretSlot, session.Private, nil,
+		if err := registry.Register[middlewares.CSRFSecret](
+			middlewares.CSRFSecretSlot, session.Private, nil,
 			session.ResetOnRotate()); err != nil {
 			return nil, err
 		}

@@ -63,15 +63,15 @@ func TestRunCopiesAndCustomizesArbitraryConfig(t *testing.T) {
 		_, _ = w.Write([]byte(config.Name + ":" + strings.Join(config.Labels, ",") + ":" +
 			strconv.Itoa(runtimeServer.Port) + ":" + strconv.Itoa(value)))
 	}), func(config *Config) {
-		sawDefaultPort = Get[pw.ServerConfig](config).Port == -1
-		Update[fixtureConfig](config, func(value *fixtureConfig) {
+		sawDefaultPort = config.Get[pw.ServerConfig]().Port == -1
+		config.Update(func(value *fixtureConfig) {
 			value.Name = "copied"
 			value.Labels[0] = "isolated"
 		})
-		Update[pw.ServerConfig](config, func(value *pw.ServerConfig) {
+		config.Update(func(value *pw.ServerConfig) {
 			value.Public.Enabled = false
 		})
-		Update[pw.MiddlewareConfig](config, func(value *pw.MiddlewareConfig) {
+		config.Update(func(value *pw.MiddlewareConfig) {
 			value.RDB = pw.RDBConfig{
 				Enabled: true,
 				Connections: []pw.RDBConnectionConfig{{
@@ -96,7 +96,7 @@ func TestRunCopiesAndCustomizesArbitraryConfig(t *testing.T) {
 		t.Fatal(err)
 	}
 	body := string(buffer)
-	actualPort := Get[pw.ServerConfig](server.Config).Port
+	actualPort := server.Config.Get[pw.ServerConfig]().Port
 	want := "copied:isolated:" + strconv.Itoa(actualPort) + ":7"
 	if body != want {
 		t.Fatalf("body = %q, want %q", body, want)

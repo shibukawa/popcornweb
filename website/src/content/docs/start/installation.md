@@ -64,7 +64,7 @@ pw version
 ```
 
 ```
-pw 0.1.0 (abc1234, darwin/arm64, go1.26.0)
+pw 0.1.0 (abc1234, darwin/arm64, go1.27.0)
 ```
 
 `pw help` lists every command:
@@ -93,7 +93,7 @@ Commands:
 
 ## The library
 
-Popcorn Web requires **Go 1.26 or later**.
+Popcorn Web requires **Go 1.27 or later**.
 
 For a new project, [`pw init`](/pw/project/init/) writes a `go.mod` that already
 requires the framework; no manual `go get` is needed. An existing module needs

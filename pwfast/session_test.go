@@ -19,7 +19,7 @@ type visitCount struct {
 func newManager(t *testing.T) *session.Manager {
 	t.Helper()
 	registry := session.NewRegistry()
-	if err := session.Register[visitCount](registry, "visits", session.ServerOnly, nil); err != nil {
+	if err := registry.Register[visitCount]("visits", session.ServerOnly, nil); err != nil {
 		t.Fatal(err)
 	}
 	keys, err := session.NewKeyring(make([]byte, 32))

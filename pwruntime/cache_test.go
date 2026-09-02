@@ -88,7 +88,7 @@ func TestAHitDoesNotRunTheFetch(t *testing.T) {
 		return "value", nil
 	}
 	for range 3 {
-		got, err := Memo(ctx, store, userKey{ID: "u1", Page: 1}, fetch)
+		got, err := store.Get(ctx, userKey{ID: "u1", Page: 1}, fetch)
 		if err != nil {
 			t.Fatalf("Memo: %v", err)
 		}
@@ -110,10 +110,10 @@ func TestADifferentKeyIsADifferentEntry(t *testing.T) {
 	fetch := func(value string) func(context.Context) (string, error) {
 		return func(context.Context) (string, error) { return value, nil }
 	}
-	if _, err := Memo(ctx, store, userKey{ID: "u1", Page: 1}, fetch("first")); err != nil {
+	if _, err := store.Get(ctx, userKey{ID: "u1", Page: 1}, fetch("first")); err != nil {
 		t.Fatal(err)
 	}
-	got, err := Memo(ctx, store, userKey{ID: "u1", Page: 2}, fetch("second"))
+	got, err := store.Get(ctx, userKey{ID: "u1", Page: 2}, fetch("second"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -127,12 +127,12 @@ func TestADifferentKeyIsADifferentEntry(t *testing.T) {
 func TestTwoKeyTypesWithEqualFieldsDoNotCollide(t *testing.T) {
 	store := testStore(t, CacheStoreConfig{Scope: "public"})
 	ctx := context.Background()
-	if _, err := Memo(ctx, store, userKey{ID: "1", Page: 1}, func(context.Context) (string, error) {
+	if _, err := store.Get(ctx, userKey{ID: "1", Page: 1}, func(context.Context) (string, error) {
 		return "user", nil
 	}); err != nil {
 		t.Fatal(err)
 	}
-	got, err := Memo(ctx, store, orderKey{ID: "1", Page: 1}, func(context.Context) (string, error) {
+	got, err := store.Get(ctx, orderKey{ID: "1", Page: 1}, func(context.Context) (string, error) {
 		return "order", nil
 	})
 	if err != nil {
@@ -153,11 +153,11 @@ func TestAnExpiredEntryIsAMiss(t *testing.T) {
 		calls.Add(1)
 		return "value", nil
 	}
-	if _, err := Memo(ctx, store, userKey{ID: "u1"}, fetch); err != nil {
+	if _, err := store.Get(ctx, userKey{ID: "u1"}, fetch); err != nil {
 		t.Fatal(err)
 	}
 	now = now.Add(2 * time.Minute)
-	if _, err := Memo(ctx, store, userKey{ID: "u1"}, fetch); err != nil {
+	if _, err := store.Get(ctx, userKey{ID: "u1"}, fetch); err != nil {
 		t.Fatal(err)
 	}
 	if calls.Load() != 2 {
@@ -181,7 +181,7 @@ func TestConcurrentMissesRunTheFetchOnce(t *testing.T) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			value, err := Memo(ctx, store, userKey{ID: "hot"}, fetch)
+			value, err := store.Get(ctx, userKey{ID: "hot"}, fetch)
 			if err != nil {
 				t.Errorf("Memo: %v", err)
 				return
@@ -222,7 +222,7 @@ func TestACancelledWaiterDoesNotStopTheFetch(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	done := make(chan error, 1)
 	go func() {
-		_, err := Memo(ctx, store, userKey{ID: "hot"}, fetch)
+		_, err := store.Get(ctx, userKey{ID: "hot"}, fetch)
 		done <- err
 	}()
 	<-started
@@ -235,7 +235,7 @@ func TestACancelledWaiterDoesNotStopTheFetch(t *testing.T) {
 	close(release)
 	var calls atomic.Int64
 	waitFor(t, func() bool {
-		value, err := Memo(context.Background(), store, userKey{ID: "hot"}, func(context.Context) (string, error) {
+		value, err := store.Get(context.Background(), userKey{ID: "hot"}, func(context.Context) (string, error) {
 			calls.Add(1)
 			return "refetched", nil
 		})
@@ -251,10 +251,10 @@ func TestAPrivateStoreKeysPerReader(t *testing.T) {
 	fetch := func(value string) func(context.Context) (string, error) {
 		return func(context.Context) (string, error) { return value, nil }
 	}
-	if _, err := Memo(signedIn("alice"), store, userKey{ID: "shared"}, fetch("alice")); err != nil {
+	if _, err := store.Get(signedIn("alice"), userKey{ID: "shared"}, fetch("alice")); err != nil {
 		t.Fatal(err)
 	}
-	got, err := Memo(signedIn("bob"), store, userKey{ID: "shared"}, fetch("bob"))
+	got, err := store.Get(signedIn("bob"), userKey{ID: "shared"}, fetch("bob"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -274,15 +274,15 @@ func TestAPrivateStoreStoresNothingForAnAnonymousRequest(t *testing.T) {
 		return "value", nil
 	}
 	for range 2 {
-		if _, err := Memo(ctx, store, userKey{ID: "u1"}, fetch); err != nil {
+		if _, err := store.Get(ctx, userKey{ID: "u1"}, fetch); err != nil {
 			t.Fatal(err)
 		}
 	}
 	if calls.Load() != 2 {
 		t.Errorf("fetch ran %d times, want 2; an anonymous request wrote an entry", calls.Load())
 	}
-	if MemoHas(ctx, store, userKey{ID: "u1"}) {
-		t.Errorf("MemoHas reported an entry for an anonymous reader")
+	if store.Has(ctx, userKey{ID: "u1"}) {
+		t.Errorf("Has reported an entry for an anonymous reader")
 	}
 }
 
@@ -293,10 +293,10 @@ func TestAPublicStoreSharesOneEntry(t *testing.T) {
 		calls.Add(1)
 		return "shared", nil
 	}
-	if _, err := Memo(signedIn("alice"), store, userKey{ID: "u1"}, fetch); err != nil {
+	if _, err := store.Get(signedIn("alice"), userKey{ID: "u1"}, fetch); err != nil {
 		t.Fatal(err)
 	}
-	got, err := Memo(signedIn("bob"), store, userKey{ID: "u1"}, fetch)
+	got, err := store.Get(signedIn("bob"), userKey{ID: "u1"}, fetch)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -319,14 +319,14 @@ func TestAStaleEntryAnswersAndRevalidates(t *testing.T) {
 	ctx := context.Background()
 	value := "first"
 	fetch := func(context.Context) (string, error) { return value, nil }
-	if _, err := Memo(ctx, store, userKey{ID: "u1"}, fetch); err != nil {
+	if _, err := store.Get(ctx, userKey{ID: "u1"}, fetch); err != nil {
 		t.Fatal(err)
 	}
 	mu.Lock()
 	now = now.Add(2 * time.Minute)
 	mu.Unlock()
 	value = "second"
-	got, err := Memo(ctx, store, userKey{ID: "u1"}, fetch)
+	got, err := store.Get(ctx, userKey{ID: "u1"}, fetch)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -339,7 +339,7 @@ func TestAStaleEntryAnswersAndRevalidates(t *testing.T) {
 	// The revalidation runs detached, so the refreshed value appears without
 	// any caller having waited for it.
 	waitFor(t, func() bool {
-		got, err := Memo(ctx, store, userKey{ID: "u1"}, fetch)
+		got, err := store.Get(ctx, userKey{ID: "u1"}, fetch)
 		return err == nil && got == "second"
 	})
 }
@@ -348,12 +348,12 @@ func TestAFailedFetchIsNeverStored(t *testing.T) {
 	store := testStore(t, CacheStoreConfig{Scope: "public"})
 	ctx := context.Background()
 	wanted := errors.New("upstream down")
-	if _, err := Memo(ctx, store, userKey{ID: "u1"}, func(context.Context) (string, error) {
+	if _, err := store.Get(ctx, userKey{ID: "u1"}, func(context.Context) (string, error) {
 		return "", wanted
 	}); !errors.Is(err, wanted) {
 		t.Fatalf("got %v, want the fetch error", err)
 	}
-	got, err := Memo(ctx, store, userKey{ID: "u1"}, func(context.Context) (string, error) {
+	got, err := store.Get(ctx, userKey{ID: "u1"}, func(context.Context) (string, error) {
 		return "recovered", nil
 	})
 	if err != nil || got != "recovered" {
@@ -367,11 +367,11 @@ func TestInvalidationDropsAnEntry(t *testing.T) {
 	fetch := func(value string) func(context.Context) (string, error) {
 		return func(context.Context) (string, error) { return value, nil }
 	}
-	if _, err := Memo(ctx, store, userKey{ID: "u1"}, fetch("before")); err != nil {
+	if _, err := store.Get(ctx, userKey{ID: "u1"}, fetch("before")); err != nil {
 		t.Fatal(err)
 	}
-	MemoInvalidate(ctx, store, userKey{ID: "u1"})
-	got, err := Memo(ctx, store, userKey{ID: "u1"}, fetch("after"))
+	store.Invalidate(ctx, userKey{ID: "u1"})
+	got, err := store.Get(ctx, userKey{ID: "u1"}, fetch("after"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -386,15 +386,15 @@ func TestScopeInvalidationDropsOneReader(t *testing.T) {
 		return func(context.Context) (string, error) { return value, nil }
 	}
 	for _, subject := range []string{"alice", "bob"} {
-		if _, err := Memo(signedIn(subject), store, userKey{ID: "u1"}, fetch(subject)); err != nil {
+		if _, err := store.Get(signedIn(subject), userKey{ID: "u1"}, fetch(subject)); err != nil {
 			t.Fatal(err)
 		}
 	}
-	MemoInvalidateScope(store, "alice")
-	if MemoHas(signedIn("alice"), store, userKey{ID: "u1"}) {
+	store.InvalidateScope("alice")
+	if store.Has(signedIn("alice"), userKey{ID: "u1"}) {
 		t.Errorf("alice's entry survived a scope invalidation")
 	}
-	if !MemoHas(signedIn("bob"), store, userKey{ID: "u1"}) {
+	if !store.Has(signedIn("bob"), userKey{ID: "u1"}) {
 		t.Errorf("bob's entry was dropped by alice's scope invalidation")
 	}
 }
@@ -404,15 +404,15 @@ func TestTagInvalidationDropsEveryEntryTheTagNames(t *testing.T) {
 	ctx := context.Background()
 	fetch := func(context.Context) (string, error) { return "value", nil }
 	for _, id := range []string{"u1", "u2"} {
-		if _, err := Memo(ctx, store, taggedKey{ID: id}, fetch); err != nil {
+		if _, err := store.Get(ctx, taggedKey{ID: id}, fetch); err != nil {
 			t.Fatal(err)
 		}
 	}
-	MemoInvalidateTag(store, "user:u1")
-	if MemoHas(ctx, store, taggedKey{ID: "u1"}) {
+	store.InvalidateTag("user:u1")
+	if store.Has(ctx, taggedKey{ID: "u1"}) {
 		t.Errorf("the tagged entry survived")
 	}
-	if !MemoHas(ctx, store, taggedKey{ID: "u2"}) {
+	if !store.Has(ctx, taggedKey{ID: "u2"}) {
 		t.Errorf("an entry the tag does not name was dropped")
 	}
 }
@@ -444,29 +444,29 @@ func TestTagInvalidationUntagsTheOtherTags(t *testing.T) {
 	store := testStore(t, CacheStoreConfig{Scope: "public"})
 	ctx := context.Background()
 	fetch := func(context.Context) (string, error) { return "value", nil }
-	if _, err := Memo(ctx, store, groupedKey{ID: "u1"}, fetch); err != nil {
+	if _, err := store.Get(ctx, groupedKey{ID: "u1"}, fetch); err != nil {
 		t.Fatal(err)
 	}
-	MemoInvalidateTag(store, "group:a")
-	if MemoHas(ctx, store, groupedKey{ID: "u1"}) {
+	store.InvalidateTag("group:a")
+	if store.Has(ctx, groupedKey{ID: "u1"}) {
 		t.Fatal("the group invalidation missed the entry")
 	}
-	if _, err := Memo(ctx, store, regroupedKey{ID: "u1"}, fetch); err != nil {
+	if _, err := store.Get(ctx, regroupedKey{ID: "u1"}, fetch); err != nil {
 		t.Fatal(err)
 	}
-	MemoInvalidateTag(store, "user:u1")
-	if !MemoHas(ctx, store, regroupedKey{ID: "u1"}) {
+	store.InvalidateTag("user:u1")
+	if !store.Has(ctx, regroupedKey{ID: "u1"}) {
 		t.Errorf("an entry never tagged user:u1 was dropped by that tag")
 	}
 }
 
-func TestMemoSetWritesWithoutAFetch(t *testing.T) {
+func TestSetWritesWithoutAFetch(t *testing.T) {
 	store := testStore(t, CacheStoreConfig{Scope: "public"})
 	ctx := context.Background()
-	if err := MemoSet(ctx, store, userKey{ID: "u1"}, "written"); err != nil {
+	if err := store.Set(ctx, userKey{ID: "u1"}, "written"); err != nil {
 		t.Fatal(err)
 	}
-	got, err := Memo(ctx, store, userKey{ID: "u1"}, func(context.Context) (string, error) {
+	got, err := store.Get(ctx, userKey{ID: "u1"}, func(context.Context) (string, error) {
 		t.Error("the fetch ran despite a written entry")
 		return "", nil
 	})
@@ -479,21 +479,23 @@ func TestMemoSetWritesWithoutAFetch(t *testing.T) {
 // through so that removing caching edits no call site.
 func TestANilStoreFallsThroughToTheFetch(t *testing.T) {
 	ctx := context.Background()
-	got, err := Memo(ctx, nil, userKey{ID: "u1"}, func(context.Context) (string, error) {
+	// A nil pointer is a legal receiver, and the check is in each method.
+	var store *CacheStore
+	got, err := store.Get(ctx, userKey{ID: "u1"}, func(context.Context) (string, error) {
 		return "direct", nil
 	})
 	if err != nil || got != "direct" {
 		t.Errorf("got %q, %v, want direct", got, err)
 	}
-	if MemoHas(ctx, nil, userKey{ID: "u1"}) {
+	if store.Has(ctx, userKey{ID: "u1"}) {
 		t.Errorf("a nil store reported an entry")
 	}
-	if err := MemoSet(ctx, nil, userKey{ID: "u1"}, "x"); err != nil {
-		t.Errorf("MemoSet on a nil store: %v", err)
+	if err := store.Set(ctx, userKey{ID: "u1"}, "x"); err != nil {
+		t.Errorf("Set on a nil store: %v", err)
 	}
-	MemoInvalidate(ctx, nil, userKey{ID: "u1"})
-	MemoInvalidateScope(nil, "alice")
-	MemoInvalidateTag(nil, "user:u1")
+	store.Invalidate(ctx, userKey{ID: "u1"})
+	store.InvalidateScope("alice")
+	store.InvalidateTag("user:u1")
 }
 
 func TestAStructuredValueSurvivesTheRoundTrip(t *testing.T) {
@@ -505,12 +507,12 @@ func TestAStructuredValueSurvivesTheRoundTrip(t *testing.T) {
 	store := testStore(t, CacheStoreConfig{Scope: "public"})
 	ctx := context.Background()
 	want := summary{Name: "alice", Tags: []string{"a", "b"}, Count: 3}
-	if _, err := Memo(ctx, store, userKey{ID: "u1"}, func(context.Context) (summary, error) {
+	if _, err := store.Get(ctx, userKey{ID: "u1"}, func(context.Context) (summary, error) {
 		return want, nil
 	}); err != nil {
 		t.Fatal(err)
 	}
-	got, err := Memo(ctx, store, userKey{ID: "u1"}, func(context.Context) (summary, error) {
+	got, err := store.Get(ctx, userKey{ID: "u1"}, func(context.Context) (summary, error) {
 		t.Error("the fetch ran on what should have been a hit")
 		return summary{}, nil
 	})
@@ -526,7 +528,7 @@ func TestTheEntryCapEvicts(t *testing.T) {
 	store := testStore(t, CacheStoreConfig{Scope: "public", MaxEntries: 4})
 	ctx := context.Background()
 	for page := range 10 {
-		if _, err := Memo(ctx, store, userKey{ID: "u1", Page: page}, func(context.Context) (string, error) {
+		if _, err := store.Get(ctx, userKey{ID: "u1", Page: page}, func(context.Context) (string, error) {
 			return "value", nil
 		}); err != nil {
 			t.Fatal(err)

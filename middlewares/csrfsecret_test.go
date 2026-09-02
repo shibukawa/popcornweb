@@ -15,7 +15,7 @@ import (
 func csrfDeployment(t *testing.T) *session.Manager {
 	t.Helper()
 	registry := session.NewRegistry()
-	if err := session.Register[CSRFSecret](registry, CSRFSecretSlot, session.Private, nil,
+	if err := registry.Register[CSRFSecret](CSRFSecretSlot, session.Private, nil,
 		session.ResetOnRotate()); err != nil {
 		t.Fatal(err)
 	}

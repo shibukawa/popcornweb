@@ -143,7 +143,7 @@ follow, which is the right trade for a card on a listing page and the wrong one
 for the primary content of a page nobody revisits.
 
 When either condition fails, leave the fetch in the handler and cache it there
-with [`pw.Memo`](/guides/backend/data-cache/). That store also has what this one
+with [the data cache](/guides/backend/data-cache/). That store also has what this one
 does not: a stale window that keeps answering through an upstream outage, and
 explicit invalidation for a write that you know made an entry wrong. `@cache`
 has a TTL and nothing else, so an entry is wrong until it expires.

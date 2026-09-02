@@ -393,16 +393,22 @@ func (s *CacheStore) revalidate(ctx context.Context, key string, tags []string, 
 	go s.do(context.WithoutCancel(ctx), key, tags, fetch) //nolint:errcheck // nobody is waiting on a revalidation
 }
 
-// Memo returns what fetch produced for this key, reusing a stored result while
+// Get returns what fetch produced for this key, reusing a stored result while
 // it is fresh and coalescing concurrent misses onto one fetch.
 //
 // A nil store, or a private store reached by an anonymous request, calls fetch
-// and returns. No call site branches on whether caching is on.
-func Memo[K CacheKey, T any](ctx context.Context, store *CacheStore, key K, fetch func(context.Context) (T, error)) (T, error) {
-	if store == nil {
+// and returns. No call site branches on whether caching is on: a nil pointer is
+// a legal receiver, and the check is here.
+//
+// The fetch receives a context detached from every waiter, which is what lets
+// one request's cancellation leave the shared work alone. Do not capture the
+// request context inside the closure instead: that would pin the fetch to
+// whichever caller happened to miss first.
+func (s *CacheStore) Get[K CacheKey, T any](ctx context.Context, key K, fetch func(context.Context) (T, error)) (T, error) {
+	if s == nil {
 		return fetch(ctx)
 	}
-	stored, ok := store.key(ctx, key)
+	stored, ok := s.key(ctx, key)
 	if !ok {
 		return fetch(ctx)
 	}
@@ -416,26 +422,26 @@ func Memo[K CacheKey, T any](ctx context.Context, store *CacheStore, key K, fetc
 		}
 		return json.Marshal(value)
 	}
-	if entry, found := store.get(stored); found {
-		if store.now().Before(entry.fresh) {
+	if entry, found := s.get(stored); found {
+		if s.now().Before(entry.fresh) {
 			if value, err := decodeCached[T](entry.value); err == nil {
-				store.hits.Add(1)
+				s.hits.Add(1)
 				return value, nil
 			}
 			// A value this build cannot read came from another one. Treat it as
 			// a miss rather than as an error the caller has to handle.
-			store.delete(stored)
+			s.delete(stored)
 		} else {
 			if value, err := decodeCached[T](entry.value); err == nil {
-				store.staleHits.Add(1)
-				store.revalidate(ctx, stored, tags, encode)
+				s.staleHits.Add(1)
+				s.revalidate(ctx, stored, tags, encode)
 				return value, nil
 			}
-			store.delete(stored)
+			s.delete(stored)
 		}
 	}
-	store.misses.Add(1)
-	encoded, err := store.do(ctx, stored, tags, encode)
+	s.misses.Add(1)
+	encoded, err := s.do(ctx, stored, tags, encode)
 	if err != nil {
 		var zero T
 		return zero, err
@@ -443,76 +449,76 @@ func Memo[K CacheKey, T any](ctx context.Context, store *CacheStore, key K, fetc
 	return decodeCached[T](encoded)
 }
 
-// MemoHas reports whether this key currently has a fresh entry. A stale one
+// Has reports whether this key currently has a fresh entry. A stale one
 // answers false, because the useful question here is whether the held value is
 // current rather than whether a read would block.
 //
 // It is racy by nature — the entry may expire between the answer and the next
 // read — so it answers a diagnostic or a decision to skip expensive work, never
 // control flow that assumes the following read hits.
-func MemoHas[K CacheKey](ctx context.Context, store *CacheStore, key K) bool {
-	if store == nil {
+func (s *CacheStore) Has[K CacheKey](ctx context.Context, key K) bool {
+	if s == nil {
 		return false
 	}
-	stored, ok := store.key(ctx, key)
+	stored, ok := s.key(ctx, key)
 	if !ok {
 		return false
 	}
-	entry, found := store.get(stored)
-	return found && store.now().Before(entry.fresh)
+	entry, found := s.get(stored)
+	return found && s.now().Before(entry.fresh)
 }
 
-// MemoSet writes an entry without consulting one, which is how a writer
-// refreshes what it just made wrong.
+// Set writes an entry without consulting one, which is how a writer refreshes
+// what it just made wrong.
 //
 // It bypasses the fetch and with it the coalescing, so not storing an error is
 // the caller's to keep here. The lifetime comes from the store, so a call
 // cannot mint a longer-lived entry than the configuration allows.
-func MemoSet[K CacheKey, T any](ctx context.Context, store *CacheStore, key K, value T) error {
-	if store == nil {
+func (s *CacheStore) Set[K CacheKey, T any](ctx context.Context, key K, value T) error {
+	if s == nil {
 		return nil
 	}
-	stored, ok := store.key(ctx, key)
+	stored, ok := s.key(ctx, key)
 	if !ok {
 		return nil
 	}
 	encoded, err := json.Marshal(value)
 	if err != nil {
-		return fmt.Errorf("cache %s: encode: %w", store.name, err)
+		return fmt.Errorf("cache %s: encode: %w", s.name, err)
 	}
-	store.put(stored, encoded, cacheTagsOf(key))
+	s.put(stored, encoded, cacheTagsOf(key))
 	return nil
 }
 
-// MemoInvalidate drops one entry, taking the key the read took.
-func MemoInvalidate[K CacheKey](ctx context.Context, store *CacheStore, key K) {
-	if store == nil {
+// Invalidate drops one entry, taking the key the read took.
+func (s *CacheStore) Invalidate[K CacheKey](ctx context.Context, key K) {
+	if s == nil {
 		return
 	}
-	if stored, ok := store.key(ctx, key); ok {
-		store.delete(stored)
+	if stored, ok := s.key(ctx, key); ok {
+		s.delete(stored)
 	}
 }
 
-// MemoInvalidateScope drops everything one reader holds, which the prepended
+// InvalidateScope drops everything one reader holds, which the prepended
 // scope makes a prefix rather than a scan.
-func MemoInvalidateScope(store *CacheStore, scope string) {
-	if store == nil || !store.scoped {
+func (s *CacheStore) InvalidateScope(scope string) {
+	if s == nil || !s.scoped {
 		return
 	}
-	store.deletePrefix(store.scopePrefix(scope))
+	s.deletePrefix(s.scopePrefix(scope))
 }
 
-// MemoInvalidateTag drops everything a tag names.
+// InvalidateTag drops everything a tag names.
 //
 // It is the axis a prefix cannot serve: the scope comes first, so every entry
 // of one key type across all readers is not a range. A tag is the reverse index
 // that answers it.
-func MemoInvalidateTag(store *CacheStore, tag string) {
-	if store == nil {
+func (s *CacheStore) InvalidateTag(tag string) {
+	if s == nil {
 		return
 	}
-	store.deleteTag(tag)
+	s.deleteTag(tag)
 }
 
 func cacheTagsOf(key any) []string {

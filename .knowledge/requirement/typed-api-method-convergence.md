@@ -6,9 +6,9 @@ title: Typed API Method Convergence
 Every typed operation a project writes as a package function only because a Go method cannot take type parameters becomes a method once the language allows, and this is where that intent and its upstream requests are held.
 
 ```yaml
-status: the available-today half shipped upstream in v0.5.9; the three sites built here are written behind a go1.27 build tag; the upstream ones wait on the language
-constraint: a Go method may not declare its own type parameters, so an operation needing one is a package function whatever the design prefers
-expected: hoped for Go 1.27, roughly 2027-02 given 1.26 in 2026-08; not a committed language feature, so the release notes decide and nothing here breaks if it slips
+status: landed on both sides 2026-09-02; the module moved to go 1.27.0, the three sites built here dropped their build tags and their functions, and system:tinybind carries the requested five as methods with the old functions kept as deprecated wrappers
+constraint: until Go 1.27 a method could not declare its own type parameters, so an operation needing one was a package function whatever the design preferred
+expected: was Go 1.27 with TinyGo 0.42, and that is what shipped; both are the baseline since 2026-09-02
 why_it_is_held_here:
   the_surface_is_this_framework_s: api:dynamo-package and api:firestore-package wrap no operation, per decision:dynamodb-no-runtime-abstraction, so an upstream package function is literally what an application author writes
   the_flow: this catalog carries the intent, the priority, and the shape; the upstream change is requested from here when the work is taken, the way system:tinybind already records input offered and taken
@@ -23,6 +23,21 @@ written_ahead_behind_a_build_tag:
   the_tag_names_a_release_rather_than_the_feature: if 1.27 arrives without methods taking type parameters the tag has to move to the release that does carry them, because a consumer building on 1.27 would otherwise take a file that does not compile
   how_it_was_checked: no toolchain parses the syntax yet, so each file was mechanically lowered — the receiver becomes the first argument — and its tests run in that form; the delegation is verified and the syntax is not
   what_the_release_still_costs: the functions keep the bodies and the documentation, so the flip moves each body onto its method, marks the function deprecated, and updates the public page, which still describes all of this as waiting
+  retired: 2026-09-02; the tagged files were folded into the files they extended and the tags removed, and the functions went rather than staying deprecated, see below
+landed_2026_09_02:
+  module_line: go 1.27.0, which is what let the tagged files stop being tagged; a consumer building on an older Go is refused at the module line rather than at a method declaration
+  here:
+    memo: Get, Has, Set, Invalidate, InvalidateScope and InvalidateTag on *pwruntime.CacheStore carry the bodies; Memo, MemoHas, MemoSet, MemoInvalidate, MemoInvalidateScope and MemoInvalidateTag are deleted from pwruntime, pw and pwfast
+    test_configuration: Get, Set and Update on *testutil.Config carry the bodies and the functions are deleted; Update infers its type from the edit's parameter, Set from its value, and Get still writes it
+    session_registry: Register on *session.Registry carries the body and the function is deleted; pw.RegisterStore, which every application goes through, calls the method and changed no signature
+    discovery: pwgen registers the four cache methods as Method patterns on pwruntime.CacheStore with the key at argument index 1, replacing the four Function patterns on pw with the key at index 2; the wrappers fixture calls store.Get and still yields the key type
+    why_deleted_rather_than_deprecated: each function was a one-line delegation to a method that already existed behind the tag, so nothing could drift, and every call site in the module is this framework's own; the migration_shape above was written for the upstream half, where a caller is another project
+  upstream:
+    shipped: the transaction reads on Tx, the On entries on Handle, For, ForCtx, Await, Live and Provide on Builder, ParseSlice, ParseMap and ParseArray on Parser, and AppendValues on Builder, each with the old function kept as a deprecated wrapper, per system:tinybind
+    extra: the keyless firestorebind twins and the two keyless transaction reads moved with their generic siblings, for the reason InvalidateScope moved here
+    generated_output: unchanged upstream; a generated <Name>Tx twin, plan, decoder or SQL still spells the function form, so nothing here regenerated
+    reaches_this_framework: on the next tinybind release and go.mod bump; until then the storage guides here describe the spelling that release will carry
+  public_page: website appendix road-to-v1 rewritten from waiting to landed, in both languages, with the data cache, testutil and session sections showing the removed spelling beside the current one
 sites:
   firestore_transaction:
     priority: first, and the only one whose value is more than tidiness

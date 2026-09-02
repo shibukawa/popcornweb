@@ -106,7 +106,10 @@ func (s jarSlot[T]) clear(carrier Carrier) { s.jar.ClearFrom(carrier) }
 //
 // key is the browser cookie name for a cookie-placed slot, and the field name
 // inside the session record for a server-placed one. codec may be nil, which
-// uses JSONCodec[T].
+// uses JSONCodec[T]. The type is inferred from a non-nil codec; a slot taking
+// the default codec passes nil and writes the type:
+//
+//	registry.Register[Account]("account", session.Private, nil)
 //
 // Call it from main, after every package init has run, exactly as
 // RegisterConfig requires: the registry must be complete before the first
@@ -115,7 +118,7 @@ func (s jarSlot[T]) clear(carrier Carrier) { s.jar.ClearFrom(carrier) }
 //
 // A duplicate Go type and a duplicate key are each an error rather than a
 // silent replacement.
-func Register[T any](registry *Registry, key string, placement Placement, codec Codec[T], options ...SlotOption) error {
+func (registry *Registry) Register[T any](key string, placement Placement, codec Codec[T], options ...SlotOption) error {
 	if registry == nil {
 		return fmt.Errorf("%w: nil registry", ErrInvalidOptions)
 	}

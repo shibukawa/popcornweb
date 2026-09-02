@@ -16,7 +16,7 @@ import (
 
 func TestHomeRendersNestedDocumentAndIncrementsCounter(t *testing.T) {
 	server := testutil.TestRun(t, Handlers(), func(config *testutil.Config) {
-		testutil.Update[pw.MiddlewareConfig](config, func(middleware *pw.MiddlewareConfig) {
+		config.Update(func(middleware *pw.MiddlewareConfig) {
 			middleware.RDB = pw.RDBConfig{
 				Enabled: true,
 				Connections: []pw.RDBConnectionConfig{{

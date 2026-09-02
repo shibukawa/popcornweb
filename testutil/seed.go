@@ -119,7 +119,7 @@ func applySeed(config *Config, exec dbseed.Executor, inTransaction bool, directo
 }
 
 func resolveSeed(config *Config, directory string, files []string) (dbseed.Dialect, []string, error) {
-	middleware := Get[pw.MiddlewareConfig](config)
+	middleware := config.Get[pw.MiddlewareConfig]()
 	if !middleware.RDB.Enabled {
 		return "", nil, fmt.Errorf("configured RDB is disabled")
 	}

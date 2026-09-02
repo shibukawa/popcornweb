@@ -15,7 +15,7 @@ sidebar:
 ```go
 func TestHome(t *testing.T) {
 	server := testutil.TestRun(t, Handlers(), func(config *testutil.Config) {
-		testutil.Update[pw.MiddlewareConfig](config, func(middleware *pw.MiddlewareConfig) {
+		config.Update(func(middleware *pw.MiddlewareConfig) {
 			middleware.RDB = pw.RDBConfig{
 				Enabled: true,
 				Connections: []pw.RDBConnectionConfig{{
@@ -69,15 +69,16 @@ import (
 
 | 呼び出し | 用途 |
 | --- | --- |
-| `testutil.Get[T](config)` | コピーされた設定構造体を読む |
-| `testutil.Set(config, value)` | まるごと置き換える |
-| `testutil.Update[T](config, fn)` | その場で編集する |
+| `config.Get[T]()` | コピーされた設定構造体を読む |
+| `config.Set(value)` | まるごと置き換える |
+| `config.Update(fn)` | その場で編集する |
 
-いずれも設定の型に対してジェネリックなので、フレームワークの設定もアプリケーションの
-設定も同じ型付きの方法で扱えます。
+いずれも設定の型に対してジェネリックなメソッドなので、フレームワークの設定も
+アプリケーションの設定も同じ型付きの方法で扱えます。`Set` と `Update` は引数から型を
+推論し、推論元のない `Get` だけ型を書きます。
 
 ```go
-testutil.Update[AppConfig](config, func(app *AppConfig) {
+config.Update(func(app *AppConfig) {
 	app.EnvLabel = "test"
 })
 ```
@@ -151,7 +152,7 @@ server := testutil.TestRun(t, handlers.Handlers(), nil, testutil.WithIdentityPro
 	testutil.WithIdPConfig("../devidp.toml"),
 	testutil.WithLoginUser("admin"),
 	testutil.WithIdPBinding(func(config *testutil.Config, idp testutil.IdPInfo) {
-		testutil.Update[handlers.AuthConfig](config, func(auth *handlers.AuthConfig) {
+		config.Update(func(auth *handlers.AuthConfig) {
 			auth.Issuer, auth.ClientID, auth.ClientSecret = idp.Issuer, idp.ClientID, idp.ClientSecret
 		})
 	}),

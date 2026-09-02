@@ -161,7 +161,7 @@ func TestWithIdentityProviderNeedsExactlyOneRosterSource(t *testing.T) {
 // disablePublicAssets keeps these tests focused on the login flow; the
 // fixture application registers no public filesystem.
 func disablePublicAssets(config *Config) {
-	Update[pw.ServerConfig](config, func(value *pw.ServerConfig) { value.Public.Enabled = false })
+	config.Update(func(value *pw.ServerConfig) { value.Public.Enabled = false })
 }
 
 func decodeJSONString(raw json.RawMessage, into *string) error {

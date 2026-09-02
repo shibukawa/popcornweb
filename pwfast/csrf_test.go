@@ -16,7 +16,7 @@ import (
 func csrfChain(t *testing.T, config CSRFConfig) fasthttp.RequestHandler {
 	t.Helper()
 	registry := session.NewRegistry()
-	if err := session.Register[CSRFSecret](registry, CSRFSecretSlot,
+	if err := registry.Register[CSRFSecret](CSRFSecretSlot,
 		session.Private, nil, session.ResetOnRotate()); err != nil {
 		t.Fatal(err)
 	}

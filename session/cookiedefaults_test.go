@@ -35,7 +35,7 @@ func TestCookiePolicyDefaultsToSecureHTTPOnly(t *testing.T) {
 func TestPartialRecordCookieInheritsThePolicy(t *testing.T) {
 	c := &clock{now: time.Unix(1_700_000_000, 0)}
 	registry := NewRegistry()
-	if err := Register[locale](registry, "locale", Private, nil); err != nil {
+	if err := registry.Register[locale]("locale", Private, nil); err != nil {
 		t.Fatal(err)
 	}
 	options := defaultOptions(t, c.Now)

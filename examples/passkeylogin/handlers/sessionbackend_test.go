@@ -34,7 +34,7 @@ func TestPasskeyWorksOnACookieBackedSession(t *testing.T) {
 		t.Fatal(err)
 	}
 	server := passkeyServer(t, port, origin, func(config *testutil.Config) {
-		testutil.Update[pw.SessionConfig](config, func(session *pw.SessionConfig) {
+		config.Update(func(session *pw.SessionConfig) {
 			// The cookie backend needs no import: it stores nothing, so there
 			// is no storage plugin to link.
 			session.Backend = pw.SessionBackendCookie

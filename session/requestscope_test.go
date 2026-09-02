@@ -16,7 +16,7 @@ type authScopes struct {
 func requestScopeRegistry(t *testing.T) *Registry {
 	t.Helper()
 	registry := NewRegistry()
-	if err := Register[authScopes](registry, "scopes", RequestScope, nil); err != nil {
+	if err := registry.Register[authScopes]("scopes", RequestScope, nil); err != nil {
 		t.Fatalf("Register: %v", err)
 	}
 	return registry
@@ -26,7 +26,7 @@ func TestRequestScopeLivesForOneRequestOnly(t *testing.T) {
 	store := newMapStore()
 	c := &clock{now: time.Unix(1_700_000_000, 0)}
 	registry := requestScopeRegistry(t)
-	if err := Register[payload](registry, "account", Private, nil); err != nil {
+	if err := registry.Register[payload]("account", Private, nil); err != nil {
 		t.Fatalf("Register: %v", err)
 	}
 	manager := testManager(t, registry, store, defaultOptions(t, c.Now))
@@ -126,7 +126,7 @@ func TestRequestScopeSurvivesRotateAndDestroyWithinTheRequest(t *testing.T) {
 	store := newMapStore()
 	c := &clock{now: time.Unix(1_700_000_000, 0)}
 	registry := requestScopeRegistry(t)
-	if err := Register[payload](registry, "account", Private, nil); err != nil {
+	if err := registry.Register[payload]("account", Private, nil); err != nil {
 		t.Fatalf("Register: %v", err)
 	}
 	manager := testManager(t, registry, store, defaultOptions(t, c.Now))
@@ -168,7 +168,7 @@ func TestRequestScopeRefusesEveryLifetimeOption(t *testing.T) {
 		"ResetOnRotate":   ResetOnRotate(),
 	} {
 		registry := NewRegistry()
-		err := Register[authScopes](registry, "scopes", RequestScope, nil, option)
+		err := registry.Register[authScopes]("scopes", RequestScope, nil, option)
 		if !errors.Is(err, ErrInvalidOptions) {
 			t.Errorf("%s on RequestScope: err = %v, want ErrInvalidOptions", name, err)
 		}
@@ -183,7 +183,7 @@ func TestRequestScopeIsNeverReadFromAStoredRecord(t *testing.T) {
 	c := &clock{now: time.Unix(1_700_000_000, 0)}
 
 	before := NewRegistry()
-	if err := Register[authScopes](before, "scopes", ServerOnly, nil); err != nil {
+	if err := before.Register[authScopes]("scopes", ServerOnly, nil); err != nil {
 		t.Fatalf("Register: %v", err)
 	}
 	writer := testManager(t, before, store, defaultOptions(t, c.Now))

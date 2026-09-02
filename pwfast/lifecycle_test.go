@@ -341,7 +341,7 @@ func TestTheChainInstallsSessionAndCSRFWhenConfigured(t *testing.T) {
 			FormField: "_csrf", Header: pwruntime.CSRFHeaderName, CookieName: pwruntime.CSRFCookieName},
 	})
 	registry := session.NewRegistry()
-	if err := session.Register[CSRFSecret](registry, CSRFSecretSlot,
+	if err := registry.Register[CSRFSecret](CSRFSecretSlot,
 		session.Private, nil, session.ResetOnRotate()); err != nil {
 		t.Fatal(err)
 	}
