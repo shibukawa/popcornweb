@@ -44,7 +44,7 @@ placement_per_store:
     why_the_two_steps: the uncontended case is the common one and costs one commit; the transaction is paid only by an actual key collision, which is rare and is the case that needs the predicate
   authstate_take:
     dynamodb: one DeleteItem returning the item it removed
-    firestore: Run with LoadTx then Tx.Remove, because no commit returns a prior entity
+    firestore: Run with Tx.Load then Tx.Remove, because no commit returns a prior entity
     single_use_guarantee: preserved; two concurrent takes cannot both commit, and the loser re-runs, finds nothing, and reports the contract miss
     alternative_rejected: read outside a transaction and delete with WithBaseVersion, which is two round trips instead of three and returns the same answer; declined because a delete whose precondition fails is indistinguishable from a delete of an already-absent key, so the loser of the race cannot tell that it lost
   credential_sign_count:

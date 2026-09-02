@@ -17,7 +17,7 @@
 // same handle itself, so its call sites stay context-only:
 //
 //	h, err := firestore.Handle(ctx)
-//	reading, err := firestorebind.LoadOn[Reading](ctx, h, datastore.NameKey("Reading", id))
+//	reading, err := h.Load[Reading](ctx, datastore.NameKey("Reading", id))
 //
 // The client is a deployment fact fixed for a process, so nothing is installed
 // into request contexts: no context.Value stands between a call site and the
@@ -134,7 +134,7 @@ func EnsureClient(ctx context.Context) (context.Context, bool) {
 // wrap.
 //
 // Reach for this only when calling the driver directly, and pass keys through
-// firestorebind.KeyForOn when you do — the client applies no namespace of its
+// the handle's KeyFor when you do — the client applies no namespace of its
 // own. Everything firestorebind wraps takes the whole Handle instead.
 func Client(ctx context.Context) (*datastore.Client, error) {
 	handle, err := Handle(ctx)

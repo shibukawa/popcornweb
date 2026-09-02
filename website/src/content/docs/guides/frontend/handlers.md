@@ -54,7 +54,7 @@ func Handlers() *pw.ServeMux { return mux }
 
 On ordinary Go builds, `pw.ServeMux` **is** `net/http`'s `ServeMux`: a type
 alias, not a wrapper. Its patterns, wildcards, and precedence are therefore the
-standard library's. TinyGo does have a `ServeMux`, but as of TinyGo 0.41 it
+standard library's. TinyGo does have a `ServeMux`, but as of TinyGo 0.42 it
 predates the Go 1.22 pattern syntax — method prefixes and path parameters are
 not available — so TinyGo builds receive a separate implementation with the
 same semantics.

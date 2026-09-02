@@ -924,7 +924,7 @@ func TestScaffoldedStoresCallWhatGenerationDiscovers(t *testing.T) {
 	if !ok {
 		t.Fatal("no dynamo record was scaffolded")
 	}
-	for _, want := range []string{`dynamobind.StoreOn(ctx, h, "note", note)`, "dynamobind.LoadOn[Note](ctx, h,", "dynamo.Handle(ctx)"} {
+	for _, want := range []string{`h.Store(ctx, "note", note)`, "h.Load[Note](ctx, \"note\",", "dynamo.Handle(ctx)"} {
 		if !strings.Contains(record, want) {
 			t.Errorf("records/note.go does not carry %q:\n%s", want, record)
 		}
@@ -942,7 +942,7 @@ func TestScaffoldedStoresCallWhatGenerationDiscovers(t *testing.T) {
 	if !ok {
 		t.Fatal("no firestore entity was scaffolded")
 	}
-	for _, want := range []string{"firestorebind.StoreOn(ctx, h, note)", "firestorebind.LoadOn[Note](ctx, h,", "firestore.Handle(ctx)"} {
+	for _, want := range []string{"h.Store(ctx, note)", "h.Load[Note](ctx,", "firestore.Handle(ctx)"} {
 		if !strings.Contains(entity, want) {
 			t.Errorf("entities/note.go does not carry %q:\n%s", want, entity)
 		}

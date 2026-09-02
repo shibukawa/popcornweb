@@ -152,4 +152,4 @@ var slotPlan = &htmlbind.Plan[slotParams]{
 	},
 }
 
-func slotFragment(string) htmlbind.Fragment { return htmlbind.Bind(slotPlan, slotParams{}) }
+func slotFragment(string) htmlbind.Fragment { return slotPlan.Bind(slotParams{}) }

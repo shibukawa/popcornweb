@@ -30,7 +30,7 @@ var planPagePlan = &htmlbind.Plan[PageParams]{
 }
 
 // Page binds Page to its parameters, producing a renderable fragment.
-func Page(params PageParams) htmlbind.Fragment { return htmlbind.Bind(planPagePlan, params) }
+func Page(params PageParams) htmlbind.Fragment { return planPagePlan.Bind(params) }
 
 var planCardOps = htmlbind.Builder[CardParams]{}
 
@@ -82,7 +82,7 @@ var planCardPlan = &htmlbind.Plan[CardParams]{
 }
 
 // Card binds Card to its parameters, producing a renderable fragment.
-func Card(params CardParams) htmlbind.Fragment { return htmlbind.Bind(planCardPlan, params) }
+func Card(params CardParams) htmlbind.Fragment { return planCardPlan.Bind(params) }
 
 // PwReloadables is every reloadable component Card can render, itself included
 // when it is one. It is what Redraw reads, so a handler names the page and

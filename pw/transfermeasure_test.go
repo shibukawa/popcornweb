@@ -120,7 +120,7 @@ var (
 			resultsOps.Attr("value", func(p resultsParams) (string, bool) { return htmlbind.Escape(p.Query), true }),
 			resultsOps.Static(`><button class="results__submit" type="submit">Go</button></form>`),
 			resultsOps.Static(`<table class="results__table"><tbody class="results__body">`),
-			htmlbind.For(
+			resultsOps.For(
 				func(p resultsParams) []resultRow { return p.Rows },
 				func(p resultsParams, item resultRow, index int) rowScopeParams {
 					return rowScopeParams{Outer: p, Item: item, Index: index}
@@ -167,14 +167,14 @@ func measureRows(count int, seed string) []resultRow {
 
 func measureChain(section string, results resultsParams) ([]HTMLWrapper, HTMLFragment) {
 	wrappers := []HTMLWrapper{
-		htmlbind.BindWrapper(shellPlan, shellParams{}, func(target *shellParams, children htmlbind.Fragment) {
+		shellPlan.BindWrapper(shellParams{}, func(target *shellParams, children htmlbind.Fragment) {
 			target.Children = children
 		}),
-		htmlbind.BindWrapper(navPlan, navParams{Section: section}, func(target *navParams, children htmlbind.Fragment) {
+		navPlan.BindWrapper(navParams{Section: section}, func(target *navParams, children htmlbind.Fragment) {
 			target.Children = children
 		}),
 	}
-	return wrappers, htmlbind.Bind(resultsPlan, results)
+	return wrappers, resultsPlan.Bind(results)
 }
 
 // measureConfig turns on everything a deployment measuring this would have on.

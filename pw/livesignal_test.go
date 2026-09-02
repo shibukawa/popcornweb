@@ -60,7 +60,7 @@ func livePageWithRecover(source func(context.Context) iter.Seq2[string, error]) 
 	outer := htmlbind.Builder[struct{}]{}
 	primary := htmlbind.Builder[string]{}
 	recovered := htmlbind.Builder[AsyncError]{}
-	op := htmlbind.Live(
+	op := outer.Live(
 		func(ctx context.Context, _ struct{}) []htmlbind.LiveBinding[string] {
 			return []htmlbind.LiveBinding[string]{
 				func(deliver func(func(*string), error) bool) error {
@@ -84,11 +84,11 @@ func livePageWithRecover(source func(context.Context) iter.Seq2[string, error]) 
 		[]htmlbind.Op[struct{}]{outer.Static("<p>waiting</p>")},
 		[]htmlbind.Op[AsyncError]{recovered.Static("<p>RECOVERED</p>")},
 	)
-	return htmlbind.Bind(&htmlbind.Plan[struct{}]{
+	return (&htmlbind.Plan[struct{}]{
 		HasAwaitBlock: true,
 		HasLiveBlock:  true,
 		Ops:           []htmlbind.Op[struct{}]{outer.Static("<main>"), op, outer.Static("</main>")},
-	}, struct{}{})
+	}).Bind(struct{}{})
 }
 
 // A signal is not a failure, so the loop that used to end on any error must keep

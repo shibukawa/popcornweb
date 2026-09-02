@@ -3,7 +3,7 @@ id: api:firestore-package
 type: api
 title: database/firestore Package
 ---
-Importing github.com/shibukawa/popcornweb/database/firestore registers the Firestore configuration binding and opens the client into process state; operations are system:tinybind firestorebind's "On" entries taking the handle this package exposes, and generated queries resolve the same handle themselves.
+Importing github.com/shibukawa/popcornweb/database/firestore registers the Firestore configuration binding and opens the client into process state; operations are system:tinybind firestorebind's methods on the handle this package exposes, and generated queries resolve the same handle themselves.
 
 ```yaml
 import: github.com/shibukawa/popcornweb/database/firestore
@@ -23,22 +23,22 @@ surface:
   - EnsureClient(context.Context) (context.Context, bool), for code handing a context to something still calling context-form firestorebind entries
   - Kinds() []KindInfo, the linked framework kinds and the timestamp property each expiry policy points at, read from the firestorebind Expirer each store type implements rather than from a list maintained beside them
 binding_entries_the_stores_use:
-  reads: [LoadOn, LoadAllOn, QueryPage, QueryKeysPage, CountOn]
-  writes: [StoreOn, InsertOn, UpdateOn, RemoveOn]
-  transactions: [RunOn, LoadTx, Tx.Store, Tx.Insert, Tx.Remove]
-  handle: each store resolves Handle once per operation and hands it to the On entry, so no context value is read
+  reads: [Load, LoadAll, QueryPage, QueryKeysPage, Count]
+  writes: [Store, Insert, Update, Remove]
+  transactions: [Run, Tx.Load, Tx.Store, Tx.Insert, Tx.Remove]
+  handle: each store resolves Handle once per operation and calls the method on it, so no context value is read
   what_this_asks_of_a_store_type: EncodeEntity, DecodeEntity and EntityKey on the internal record type, hand-written since these types are not generated; a version field adds EntityVersion and makes a conditional write automatic
   why_not_the_driver_directly: the typed entries stamp the resolved namespace onto every key, and the driver does not
 escape_hatch_hazard:
   what: firestorebind ClientFromContext returns the client with no namespace applied
   effect: a store reaching the driver through it writes into the default namespace, which decision:firestore-namespace-isolation depends on not happening
-  answered: firestorebind v0.3.6 exports KeyFor and KeysFor, with On forms taking the handle, which stamp the resolved namespace and leave an explicitly placed key alone
+  answered: firestorebind v0.3.6 exports KeyFor and KeysFor, with handle forms (methods on Handle since v0.5.28) which stamp the resolved namespace and leave an explicitly placed key alone
   rule_here: a call site on the driver path passes its keys through KeyFor rather than reimplementing the resolver, and this package writes no helper of its own for it
   where_it_still_bites: nowhere in these five stores, since RemoveKeys removed the one operation that had no typed form
 deliberately_absent:
   migrate_and_plan: there is nothing to apply, per decision:firestore-no-schema-application
   register_kind: nothing has to be enumerated for a migrator to find, so decision:dynamodb-table-registry has no counterpart; Kinds reports what is linked for the guide and the CLI to print, and no code reads it back
-  operation_wrappers: none, on the reasoning of decision:dynamodb-no-runtime-abstraction, which is why the On entries and the transactional reads an application calls are covered by requirement:typed-api-method-convergence rather than by anything reshapeable here
+  operation_wrappers: none, on the reasoning of decision:dynamodb-no-runtime-abstraction, which is why the handle methods and the transactional reads an application calls are covered by requirement:typed-api-method-convergence rather than by anything reshapeable here
   transaction_surface: none of its own; the firestorebind wrapper of system:tinybind binds the driver's
 why_ensure_client_is_here_and_was_added_late_for_dynamo:
   fact: requirement:dynamodb-auth-backend found that a store reading its client from the setup context never gets one, because setup carries no request

@@ -221,7 +221,7 @@ func cardComponent(kind string) htmlupdate.Reloadable {
 	return htmlupdate.Reloadable{
 		KindID: kind,
 		Render: func(_ context.Context, instanceID string, values url.Values) (htmlbind.Fragment, error) {
-			return htmlbind.Bind(cardPlan, cardParams{ID: instanceID, Page: values.Get("page")}), nil
+			return cardPlan.Bind(cardParams{ID: instanceID, Page: values.Get("page")}), nil
 		},
 	}
 }
@@ -320,7 +320,7 @@ func formComponent(kind string) htmlupdate.Reloadable {
 	return htmlupdate.Reloadable{
 		KindID: kind,
 		Render: func(_ context.Context, instanceID string, values url.Values) (htmlbind.Fragment, error) {
-			return htmlbind.Bind(plan, cardParams{ID: instanceID, Page: values.Get("page")}), nil
+			return plan.Bind(cardParams{ID: instanceID, Page: values.Get("page")}), nil
 		},
 	}
 }

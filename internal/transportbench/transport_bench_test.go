@@ -283,9 +283,9 @@ func dialer(listener net.Listener) *fasthttp.Client {
 
 func staticFragment(markup string) htmlbind.Fragment {
 	builder := htmlbind.Builder[struct{}]{}
-	return htmlbind.Bind(&htmlbind.Plan[struct{}]{
+	return (&htmlbind.Plan[struct{}]{
 		Ops: []htmlbind.Op[struct{}]{builder.Static(markup)},
-	}, struct{}{})
+	}).Bind(struct{}{})
 }
 
 func documentWrapper(open, close string) htmlbind.Wrapper {
@@ -296,7 +296,7 @@ func documentWrapper(open, close string) htmlbind.Wrapper {
 		builder.Slot(func(p params) htmlbind.Fragment { return p.Children }, nil),
 		builder.Static(close),
 	}}
-	return htmlbind.BindWrapper(plan, params{}, func(p *params, children htmlbind.Fragment) {
+	return plan.BindWrapper(params{}, func(p *params, children htmlbind.Fragment) {
 		p.Children = children
 	})
 }

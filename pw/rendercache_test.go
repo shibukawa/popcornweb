@@ -36,7 +36,7 @@ func cachedPage(id string, runs *atomic.Int64, name string) HTMLFragment {
 			builder.Static("</main>"),
 		},
 	}
-	return htmlbind.Bind(plan, cachedPageParams{Name: name})
+	return plan.Bind(cachedPageParams{Name: name})
 }
 
 // resetRenderCache drops the process store, because it is keyed on the

@@ -50,7 +50,7 @@ var planPagePlan = &htmlbind.Plan[PageParams]{
 	Assets:      []htmlbind.Asset{{ID: "page.script.564ef8d0adbe", Type: "text/javascript", URL: "/public/generated/page.script.564ef8d0adbe.js", Scope: "id_.page.Page"}},
 	Boundary:    planPageBoundary,
 	Ops: []htmlbind.Op[PageParams]{
-		htmlbind.ValErrCtx(
+		planPageOps.ValErrCtx(
 			func(ctx context.Context, p PageParams) (View, error) { return LoadUser(ctx, p.Id, p.Page) },
 			func(p PageParams, value View) planPageOpsVal1 { return planPageOpsVal1{Outer: p, View: value} },
 			[]htmlbind.Op[planPageOpsVal1]{
@@ -68,4 +68,4 @@ var planPagePlan = &htmlbind.Plan[PageParams]{
 }
 
 // Page binds Page to its parameters, producing a renderable fragment.
-func Page(params PageParams) htmlbind.Fragment { return htmlbind.Bind(planPagePlan, params) }
+func Page(params PageParams) htmlbind.Fragment { return planPagePlan.Bind(params) }

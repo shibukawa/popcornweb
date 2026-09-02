@@ -879,11 +879,14 @@ func TestDynamoScaffoldNamesTheRegisteredTable(t *testing.T) {
 		if !ok || len(call.Args) < 2 {
 			return true
 		}
-		if !strings.Contains(source[call.Fun.Pos()-1:call.Fun.End()-1], "dynamobind.") {
+		// The context form is a dynamobind function and the handle form the
+		// scaffold uses is a method on the h it resolved.
+		callee := source[call.Fun.Pos()-1 : call.Fun.End()-1]
+		if !strings.Contains(callee, "dynamobind.") && !strings.HasPrefix(callee, "h.") {
 			return true
 		}
-		// The table is the first string literal: Args[1] in the context form
-		// and Args[2] in the handle-taking On form the scaffold now uses.
+		// The table is the first string literal, which is Args[1] in both forms
+		// now that the handle is the receiver rather than an argument.
 		var literal *ast.BasicLit
 		for _, arg := range call.Args {
 			if candidate, ok := arg.(*ast.BasicLit); ok && candidate.Kind == token.STRING {

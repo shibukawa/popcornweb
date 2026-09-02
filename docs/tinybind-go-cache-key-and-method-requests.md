@@ -3,7 +3,7 @@
 **From:** Popcorn Web (`github.com/shibukawa/popcornweb`)
 **Against:** `github.com/shibukawa/tinybind-go` v0.5.8
 **Date:** 2026-08-13
-**Status:** answered in v0.5.9 — Ask 1 implemented as `cachekeybind` with two changes, Ask 2 implemented, Ask 3 filed unacted as requested. Integrated downstream 2026-08-13.
+**Status:** answered in v0.5.9 — Ask 1 implemented as `cachekeybind` with two changes, Ask 2 implemented, Ask 3 filed unacted as requested. Integrated downstream 2026-08-13. Ask 3 then landed in v0.5.28 on 2026-09-02, once Go 1.27 and TinyGo 0.42 shipped, with the function forms removed rather than deprecated; integrated downstream the same day.
 
 ## Division of responsibility
 
@@ -239,6 +239,6 @@ Ask 1 shipped as `cachekeybind`, with two decisions that went against this docum
 - **No version at all.** All three spellings offered here share the defect the third was rejected for: a number someone has to remember to raise. The module also states that its cache runtime never invalidates, so a version is a deployment lever declared in a library. The build identity already covers the common case.
 - **A precedent cited here was half-checked.** `dynamo` is default-include, but `firestore` — the sibling not named — is opt-in. The module already carried both polarities, so the precedent decided nothing, and the half named lost anyway.
 
-Also shipped: Ask 2, with the old functions kept as deprecated wrappers. Ask 3 was filed and untouched, as requested.
+Also shipped: Ask 2, with the old functions kept as deprecated wrappers. Ask 3 was filed and untouched, as requested, and shipped in v0.5.28 on 2026-09-02 with the function forms removed rather than deprecated.
 
 One safeguard added beyond the ask: a struct reached as a key with no marked field is a generation error, since an identity-only key would give every instance of one type a single shared entry.

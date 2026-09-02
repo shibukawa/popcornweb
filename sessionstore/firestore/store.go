@@ -235,7 +235,7 @@ func (store *Store) Put(ctx context.Context, keyHash string, record session.RawR
 	if err != nil {
 		return storeError(err)
 	}
-	if _, err := firestorebind.StoreOn(ctx, handle, entity{
+	if _, err := handle.Store(ctx, entity{
 		kind:    store.kind,
 		keyHash: keyHash,
 		record:  record,
@@ -300,7 +300,7 @@ func (store *Store) Touch(ctx context.Context, keyHash string, lastSeenAt, idleE
 	if err != nil {
 		return storeError(err)
 	}
-	if _, err := firestorebind.StoreOn(ctx, handle, *loaded); err != nil {
+	if _, err := handle.Store(ctx, *loaded); err != nil {
 		if errors.Is(err, datastore.ErrFailedPrecondition) {
 			// The entity moved under the read: rotated, deleted, or renewed by
 			// another request. Either way the contract says this renewal must
@@ -322,7 +322,7 @@ func (store *Store) Delete(ctx context.Context, keyHash string) error {
 	if err != nil {
 		return storeError(err)
 	}
-	if err := firestorebind.RemoveOn(ctx, handle, entity{kind: store.kind, keyHash: keyHash}); err != nil {
+	if err := handle.Remove(ctx, entity{kind: store.kind, keyHash: keyHash}); err != nil {
 		return storeError(err)
 	}
 	return nil
@@ -335,7 +335,7 @@ func (store *Store) load(ctx context.Context, keyHash string) (*entity, error) {
 	if err != nil {
 		return nil, storeError(err)
 	}
-	loaded, err := firestorebind.LoadOn[entity](ctx, handle, key)
+	loaded, err := handle.Load[entity](ctx, key)
 	switch {
 	case errors.Is(err, datastore.ErrNoSuchEntity):
 		return nil, session.ErrNotFound

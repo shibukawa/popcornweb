@@ -56,9 +56,9 @@ func decodeGzip(t *testing.T, encoded []byte) string {
 
 func staticLeaf(markup string) htmlbind.Fragment {
 	builder := htmlbind.Builder[struct{}]{}
-	return htmlbind.Bind(&htmlbind.Plan[struct{}]{Ops: []htmlbind.Op[struct{}]{
+	return (&htmlbind.Plan[struct{}]{Ops: []htmlbind.Op[struct{}]{
 		builder.Static(markup),
-	}}, struct{}{})
+	}}).Bind(struct{}{})
 }
 
 // TestWriteHTMLNegotiatesTheConfiguredOrder is the point of the whole change: a

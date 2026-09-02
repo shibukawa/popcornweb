@@ -16,13 +16,13 @@ import (
 // form: the hidden field is the first child, and no author wrote it.
 func formFragment() HTMLFragment {
 	builder := htmlbind.Builder[struct{}]{}
-	return htmlbind.Bind(&htmlbind.Plan[struct{}]{
+	return (&htmlbind.Plan[struct{}]{
 		Ops: []htmlbind.Op[struct{}]{
 			builder.Static(`<form method="post" action="/orders">`),
 			builder.CSRFField("_csrf"),
 			builder.Static(`<button>buy</button></form>`),
 		},
-	}, struct{}{})
+	}).Bind(struct{}{})
 }
 
 var hiddenValue = regexp.MustCompile(`name="_csrf" value="([^"]*)"`)

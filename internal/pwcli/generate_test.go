@@ -234,7 +234,7 @@ export component Gauge(id: string): html {
 	if !strings.Contains(strings.Join(strings.Fields(gauge), " "), "HasLiveBlock: true") {
 		t.Errorf("generated plan does not carry the live flag:\n%s", gauge)
 	}
-	if !strings.Contains(gauge, "htmlbind.Live(") {
+	if !strings.Contains(gauge, "Ops.Live(") {
 		t.Errorf("generated plan does not open a live boundary:\n%s", gauge)
 	}
 	// The leading context is mandatory for a live source, because a source with

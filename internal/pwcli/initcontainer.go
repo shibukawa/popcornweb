@@ -59,7 +59,7 @@ func dockerfileScaffold(options initOptions) string {
 # rebases onto each new stable Debian the day it releases, and the runtime
 # stage below names its Debian release explicitly, so an unpinned builder
 # would let the two drift apart on someone else's schedule.
-FROM golang:1.26-trixie AS build
+FROM golang:1.27-trixie AS build
 WORKDIR /src
 
 # The module files come first so the download layer survives a source edit.

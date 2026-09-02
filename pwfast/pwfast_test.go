@@ -96,9 +96,9 @@ func isClosed(err error) bool {
 
 func staticFragment(markup string) HTMLFragment {
 	builder := htmlbind.Builder[struct{}]{}
-	return htmlbind.Bind(&htmlbind.Plan[struct{}]{
+	return (&htmlbind.Plan[struct{}]{
 		Ops: []htmlbind.Op[struct{}]{builder.Static(markup)},
-	}, struct{}{})
+	}).Bind(struct{}{})
 }
 
 func TestWriteHTMLChainRendersThroughTheTransport(t *testing.T) {
@@ -247,7 +247,7 @@ func documentWrapper(open, close string) HTMLWrapper {
 		builder.Slot(func(p params) htmlbind.Fragment { return p.Children }, nil),
 		builder.Static(close),
 	}}
-	return htmlbind.BindWrapper(plan, params{}, func(p *params, children htmlbind.Fragment) {
+	return plan.BindWrapper(params{}, func(p *params, children htmlbind.Fragment) {
 		p.Children = children
 	})
 }

@@ -43,19 +43,19 @@ wasm_panic_recovery:
   handling: a wasm build must treat a panicking external as fatal, so the code behind one belongs under the same review as any other unrecoverable path
 unsupported_runtime_packages:
   net/http_client_timeouts:
-    behavior: the TinyGo client dials and then reads with no deadline, marked TINYGO TODO handle timeouts in its own source at 0.41.1
+    behavior: the TinyGo client dials and then reads with no deadline, marked TINYGO TODO handle timeouts in its own source at 0.41.1; 0.42.0 grew timeout fields on Transport that nothing reads yet, so the behavior stands
     consequence: the context deadlines requirement:contrib-oidc and requirement:contrib-jwt set around discovery, token exchange, and JWKS fetches bound nothing, so a slow or hanging IdP holds the request until the peer closes
     surface: a login or a bearer verification, both of which run on a request handler
     handling: contrib/internal/authn EnforceDeadlines wraps the transport under the tinygo tag and is identity on host Go; both clients apply it themselves rather than leaving it to the application, because they accept a RequestTimeout and therefore promise one
     residual: the round trip beneath cannot be cancelled, since that runtime offers nowhere to cancel it, so a hung peer costs a goroutine and a connection until the socket fails rather than a stalled handler; the abandoned response is drained and closed
     not_reproducible_under: decision:force-tinygo-logic, which selects the TinyGo code paths while still linking the host net/http, so this is one of the few behaviours that has to be tested on the real toolchain
-    verified: tinygo test of contrib/internal/authn on 0.41.1 darwin/arm64, found by security review on 2026-08-05
+    verified: tinygo test of contrib/internal/authn on 0.41.1 darwin/arm64, found by security review on 2026-08-05, and again on 0.42.0 with Go 1.27.0 on 2026-09-02
     kind: availability rather than admission; nothing is accepted that would otherwise be refused
   os/signal:
     behavior: registering a handler replaces the default disposition but never delivers to the channel
     consequence: the process stops responding to Ctrl+C and SIGTERM
     handling: api:application-lifecycle installs no handler under the tinygo build tag
-    verified: TinyGo 0.41.1 darwin/arm64
+    verified: TinyGo 0.41.1 darwin/arm64, and 0.42.0 on 2026-09-02 with a self-sent SIGTERM undelivered after three seconds
 netdev_registration:
   file: tinygohelper.go in the project root, package publicassets
   constraint: //go:build tinygo
@@ -63,8 +63,8 @@ netdev_registration:
   linkage: concept:project-layout bootstrap generator blank-imports the root package
   symptom_when_missing: the binary builds and then exits at startup with "Netdev not set"
 baseline_evidence:
-  httpbind_go_verified_tinygo: 0.40.1
-  compatible_go_range_for_that_baseline: 1.19-1.25
+  httpbind_go_verified_tinygo: 0.42.0, the floor tinybind-go v0.5.28 declares
+  compatible_go_range_for_that_baseline: 1.27, its go directive since v0.5.28
   source: https://github.com/shibukawa/httpbind-go#tinygo
 verification: api:cli-build and package target tests
 ```

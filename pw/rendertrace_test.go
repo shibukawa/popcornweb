@@ -175,9 +175,9 @@ func TestBufferedRenderOpensNoInitialBuild(t *testing.T) {
 func TestFragmentRenderOpensItsOwnSpan(t *testing.T) {
 	request, recorder := tracedRequest(t, "/", HTMLConfig{Streaming: true}, renderTracing())
 	builder := htmlbind.Builder[struct{}]{}
-	fragment := htmlbind.Bind(&htmlbind.Plan[struct{}]{Ops: []htmlbind.Op[struct{}]{
+	fragment := (&htmlbind.Plan[struct{}]{Ops: []htmlbind.Op[struct{}]{
 		builder.Static("<li>row</li>"),
-	}}, struct{}{})
+	}}).Bind(struct{}{})
 
 	WriteHTMLFragment(httptest.NewRecorder(), request, fragment)
 	render := recorder.one(t, "render fragment")
@@ -275,13 +275,13 @@ func TestBoundarySpansFollowTheirOwnSwitch(t *testing.T) {
 func TestRenderSpanParentsTheWorkInsideIt(t *testing.T) {
 	request, recorder := tracedRequest(t, "/", HTMLConfig{Streaming: true}, renderTracing())
 	builder := htmlbind.Builder[struct{}]{}
-	page := htmlbind.Bind(&htmlbind.Plan[struct{}]{Ops: []htmlbind.Op[struct{}]{
+	page := (&htmlbind.Plan[struct{}]{Ops: []htmlbind.Op[struct{}]{
 		builder.RawCtx(func(ctx context.Context, _ struct{}) string {
 			_, span := StartSpanContext(ctx, "load")
 			span.End()
 			return "<main>ok</main>"
 		}),
-	}}, struct{}{})
+	}}).Bind(struct{}{})
 
 	WriteHTML(httptest.NewRecorder(), request, page)
 	render := recorder.one(t, "render buffered")

@@ -21,7 +21,7 @@ import (
 // livePage builds the shape generation emits for a component whose await clause
 // binds a live source: the same boundary, with a binding that keeps delivering.
 func livePage(source func(context.Context) iter.Seq2[string, error]) htmlbind.Fragment {
-	return htmlbind.Bind(livePlan(source, "<main>", "</main>"), struct{}{})
+	return livePlan(source, "<main>", "</main>").Bind(struct{}{})
 }
 
 func livePlan(source func(context.Context) iter.Seq2[string, error], open, close string) *htmlbind.Plan[struct{}] {
@@ -40,7 +40,7 @@ func livePlan(source func(context.Context) iter.Seq2[string, error], open, close
 func liveOp(source func(context.Context) iter.Seq2[string, error]) htmlbind.Op[struct{}] {
 	outer := htmlbind.Builder[struct{}]{}
 	primary := htmlbind.Builder[string]{}
-	return htmlbind.Live(
+	return outer.Live(
 		func(ctx context.Context, _ struct{}) []htmlbind.LiveBinding[string] {
 			return []htmlbind.LiveBinding[string]{
 				func(deliver func(func(*string), error) bool) error {
@@ -306,7 +306,7 @@ func TestLiveResponseStopsAtItsBoundaryBound(t *testing.T) {
 	}
 
 	recorder := httptest.NewRecorder()
-	WriteHTML(recorder, request, htmlbind.Bind(plan, struct{}{}))
+	WriteHTML(recorder, request, plan.Bind(struct{}{}))
 
 	lines := recordLines(t, recorder.Body.String())
 	ids := map[string]bool{}
@@ -832,7 +832,7 @@ func TestLiveHeadRecordCarriesTheChainsTags(t *testing.T) {
 	plan.HeadSources = []string{"LivePage"}
 
 	recorder := httptest.NewRecorder()
-	WriteHTML(recorder, liveRequest("/"), htmlbind.Bind(plan, struct{}{}))
+	WriteHTML(recorder, liveRequest("/"), plan.Bind(struct{}{}))
 
 	lines := recordLines(t, recorder.Body.String())
 	if len(lines) == 0 {

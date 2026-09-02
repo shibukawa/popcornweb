@@ -53,7 +53,7 @@ func cardComponent(kind string) pwruntime.UpdateReloadable {
 	return pwruntime.UpdateReloadable{
 		KindID: kind,
 		Render: func(_ context.Context, instanceID string, values url.Values) (htmlbind.Fragment, error) {
-			return htmlbind.Bind(cardPlan, cardParams{ID: instanceID, Page: values.Get("page")}), nil
+			return cardPlan.Bind(cardParams{ID: instanceID, Page: values.Get("page")}), nil
 		},
 	}
 }
