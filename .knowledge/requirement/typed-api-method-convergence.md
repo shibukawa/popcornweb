@@ -6,7 +6,7 @@ title: Typed API Method Convergence
 Every typed operation a project writes as a package function only because a Go method cannot take type parameters becomes a method once the language allows, and this is where that intent and its upstream requests are held.
 
 ```yaml
-status: landed on both sides 2026-09-02; the module moved to go 1.27.0, the three sites built here dropped their build tags and their functions, and system:tinybind carries the requested five as methods with the old functions kept as deprecated wrappers
+status: landed on both sides 2026-09-02; the module moved to go 1.27.0, the three sites built here dropped their build tags and their functions, and system:tinybind carries the requested five as methods with the old functions removed and its emitters moved
 constraint: until Go 1.27 a method could not declare its own type parameters, so an operation needing one was a package function whatever the design preferred
 expected: was Go 1.27 with TinyGo 0.42, and that is what shipped; both are the baseline since 2026-09-02
 why_it_is_held_here:
@@ -33,9 +33,9 @@ landed_2026_09_02:
     discovery: pwgen registers the four cache methods as Method patterns on pwruntime.CacheStore with the key at argument index 1, replacing the four Function patterns on pw with the key at index 2; the wrappers fixture calls store.Get and still yields the key type
     why_deleted_rather_than_deprecated: each function was a one-line delegation to a method that already existed behind the tag, so nothing could drift, and every call site in the module is this framework's own; the migration_shape above was written for the upstream half, where a caller is another project
   upstream:
-    shipped: the transaction reads on Tx, the On entries on Handle, For, ForCtx, Await, Live and Provide on Builder, ParseSlice, ParseMap and ParseArray on Parser, and AppendValues on Builder, each with the old function kept as a deprecated wrapper, per system:tinybind
+    shipped: the transaction reads on Tx, the On entries on Handle, For, ForCtx, Await, Live, Provide and the Val family on Builder, ParseSlice, ParseMap and ParseArray on Parser, and AppendValues on Builder, with the old functions removed at the owner's instruction, per system:tinybind
     extra: the keyless firestorebind twins and the two keyless transaction reads moved with their generic siblings, for the reason InvalidateScope moved here
-    generated_output: unchanged upstream; a generated <Name>Tx twin, plan, decoder or SQL still spells the function form, so nothing here regenerated
+    generated_output: moved upstream the same day; a generated <Name>Tx twin, plan, decoder or SQL spells the method, so every _pw_gen.go here regenerates on the go.mod bump
     reaches_this_framework: on the next tinybind release and go.mod bump; until then the storage guides here describe the spelling that release will carry
   public_page: website appendix road-to-v1 rewritten from waiting to landed, in both languages, with the data cache, testutil and session sections showing the removed spelling beside the current one
 sites:
