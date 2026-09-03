@@ -37,6 +37,9 @@ const (
 	// BackendRedis counts in a shared server, which is what a deployment
 	// running more than one replica needs.
 	BackendRedis = pwruntime.RateLimitBackendRedis
+	// BackendCloudflareKV counts in a Workers KV namespace, which only a
+	// Cloudflare Worker has; the count is an estimate there.
+	BackendCloudflareKV = pwruntime.RateLimitBackendCloudflareKV
 	// DefaultKeyPrefix namespaces the keys this limiter owns.
 	DefaultKeyPrefix = pwruntime.DefaultRateLimitKeyPrefix
 )

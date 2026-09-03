@@ -58,7 +58,7 @@ unsupported_runtime_packages:
     verified: TinyGo 0.41.1 darwin/arm64, and 0.42.0 on 2026-09-02 with a self-sent SIGTERM undelivered after three seconds
 netdev_registration:
   file: tinygohelper.go in the project root, package publicassets
-  constraint: //go:build tinygo
+  constraint: //go:build tinygo && !pwcloudflare, because requirement:cloudflare-workers-build-target compiles with TinyGo for a host that owns no socket, and the driver's OS calls do not exist on the wasm target; a project scaffolded with the older tinygo-only constraint has its staged copy rewritten by that build
   import: _ "github.com/shibukawa/tinygodriver/netdev"
   linkage: concept:project-layout bootstrap generator blank-imports the root package
   symptom_when_missing: the binary builds and then exits at startup with "Netdev not set"

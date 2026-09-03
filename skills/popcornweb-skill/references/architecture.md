@@ -106,7 +106,7 @@ Rules that matter in practice:
 - Exactly one `generate.templates` entry holds the document shell; a second `document.pw.html` anywhere fails generation.
 - A `generate.pages` entry is a whole tree and must not be listed under (or nested with) `templates` or `handlers`.
 
-Besides declaration files, generation reads Go source for call sites: `pw.Parse[T]`, `pw.WriteAPI[T]`, `pw.WriteStatus[T]`, `pw.WriteStream[T]`, `pw.WebSocket[In, Out]`, `pw.Memo` (its key type), `pw.ServerAction`, `pw.RegisterConfig[T]`, `pw.RegisterSubCommand[T]`, and the error constructors (`pw.BadRequest` etc.). It also reads the Go implementations of declared `external`s, to see which take a leading `context.Context` and which return a trailing `error`. Most of the same evidence feeds one OpenAPI 3.1 fragment per package, merged deterministically at build time.
+Besides declaration files, generation reads Go source for call sites: `pw.Parse[T]`, `pw.WriteAPI[T]`, `pw.WriteStatus[T]`, `pw.WriteStream[T]`, `pw.WebSocket[In, Out]`, the memo store's `Get`, `Has`, `Set` and `Invalidate` (their key type), `pw.ServerAction`, `pw.RegisterConfig[T]`, `pw.RegisterSubCommand[T]`, and the error constructors (`pw.BadRequest` etc.). It also reads the Go implementations of declared `external`s, to see which take a leading `context.Context` and which return a trailing `error`. Most of the same evidence feeds one OpenAPI 3.1 fragment per package, merged deterministically at build time.
 
 Two purposes not listed in `[generate]`: message catalogs are read from `i18n.catalog` (default `messages/`) and compiled into a typed Go package, and the page tree is a single purpose covering both its templates and its route registrations.
 

@@ -71,6 +71,16 @@ schema:
       input: assets/app.css
       output: public/generated/app.css
       minify: true for api:cli-build
+  deploy:
+    cloudflare:
+      compiler: tinygo or go, defaulting to project.toolchain, per requirement:cloudflare-workers-build-target
+      name: the Worker name written into wrangler.jsonc, defaulting to project.name
+      compatibility_date: the Wrangler compatibility date, defaulting to the date the pw release pins
+      d1: an array of tables naming the D1 databases behind the d1:// bindings config.prod.toml uses, per requirement:cloudflare-d1-engine; each element carries binding, database_name and database_id
+      r2:
+        binding: the bucket binding the external public tree is served from, per requirement:cloudflare-r2-storage
+        bucket_name: the R2 bucket's name, defaulting to the binding in lower case
+      kv: an array of tables naming the KV namespaces behind the bindings config.prod.toml uses, per requirement:cloudflare-kv-backends; each element carries binding and id
 optional_extensions:
   - generated output rules
   - generated test policy
@@ -129,6 +139,10 @@ rules:
   - missing config is an error except for api:cli-init
   - server, session, security, middleware, and observability runtime values are forbidden, and so is a database connection value; project.database names an engine, never a DSN or a credential
   - enabled Tailwind validates requirement:tailwind-css-integration and decision:tailwind-host-toolchain
+  - deploy.cloudflare is read by api:cli-build --target cloudflare-workers only; deploy.cloudflare.compiler rejects any value but tinygo or go, and a missing table means every default
+  - deploy.cloudflare.compiler = tinygo is refused when project.toolchain is go, because such a project routes through the standard ServeMux, whose method patterns TinyGo does not match; go under a tinygo project is accepted
+  - deploy.cloudflare.compatibility_date is a YYYY-MM-DD date, because Wrangler rejects anything else at deploy time rather than at build time
+  - a deploy.cloudflare.d1 element names its binding, names each binding once, and carries no key but binding, database_name and database_id; a binding the production configuration uses and the table does not name still reaches wrangler.jsonc under a derived name
   - Tailwind plugins and their options belong to the CSS entry through requirement:tailwind-plugin-integration
   - the CLI must already be available from the entered Devbox environment
 runtime_configuration:

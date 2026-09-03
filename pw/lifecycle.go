@@ -11,6 +11,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/shibukawa/popcornweb/middlewares"
 	"github.com/shibukawa/popcornweb/pwconfig"
 	tinybind "github.com/shibukawa/tinybind-go"
 	"github.com/shibukawa/tinygodriver/httpserver"
@@ -21,6 +22,20 @@ type Option func(*lifecycleOptions) error
 
 type lifecycleOptions struct {
 	publicFS fs.FS
+}
+
+// WithExternalAssets reads the external public tree from a store instead of
+// the directory beside the process, per requirement:cloudflare-r2-storage.
+// The generated Cloudflare Workers entry passes the bucket binding here; a
+// process host, which has the directory, passes nothing.
+func WithExternalAssets(source middlewares.ExternalAssetSource) Option {
+	return func(*lifecycleOptions) error {
+		if source == nil {
+			return errors.New("popcornweb: nil external asset source")
+		}
+		middlewares.RegisterExternalAssetSource(source)
+		return nil
+	}
 }
 
 // WithPublicFS supplies the embedded public tree, rooted at its public directory.

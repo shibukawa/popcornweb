@@ -91,6 +91,11 @@ const (
 	sqliteDriverPackage   = "github.com/shibukawa/popcornweb/database/sqlite"
 	postgresDriverPackage = "github.com/shibukawa/popcornweb/database/postgres"
 	mysqlDriverPackage    = "github.com/shibukawa/popcornweb/database/mysql"
+	// d1DriverPackage is linked by the generated Cloudflare Workers entry, so
+	// an application naming a d1:// connection needs no import of its own;
+	// the table still names it, for a project that reads the report on the
+	// host.
+	d1DriverPackage = "github.com/shibukawa/popcornweb/database/d1"
 )
 
 // sessionBackendPackage names the plugin that registers a backend, or "" for a
@@ -114,6 +119,7 @@ var driverPackages = map[string]string{
 	"postgres":   postgresDriverPackage,
 	"postgresql": postgresDriverPackage,
 	"mysql":      mysqlDriverPackage,
+	"d1":         d1DriverPackage,
 }
 
 // configPrefixOwners maps a configuration prefix to the package that must be

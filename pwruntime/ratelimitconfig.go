@@ -20,6 +20,9 @@ const (
 	// RateLimitBackendRedis counts in a shared server, which is what a deployment
 	// running more than one replica needs.
 	RateLimitBackendRedis = "redis"
+	// RateLimitBackendCloudflareKV counts in a Workers KV namespace, as an
+	// estimate, per requirement:cloudflare-kv-backends.
+	RateLimitBackendCloudflareKV = "cloudflarekv"
 )
 
 // DefaultRateLimitKeyPrefix namespaces the keys this limiter owns.
@@ -34,7 +37,7 @@ const DefaultRateLimitKeyPrefix = "pw:ratelimit:"
 // normal deployment already sells.
 type RateLimitConfig struct {
 	Enabled bool   `default:"false"`
-	Backend string `default:"memory" enum:"memory,redis" dependon:".enabled" help:"counter storage: memory or redis"`
+	Backend string `default:"memory" enum:"memory,redis,cloudflarekv" dependon:".enabled" help:"counter storage: memory, redis, or cloudflarekv"`
 	// Window is the period every count below is measured over. It is also the
 	// burst granularity, because the algorithm is a fixed window, and it is
 	// what X-RateLimit-Reset reports.
@@ -58,6 +61,17 @@ type RateLimitConfig struct {
 	// reports no counter server. Backend already answers to Enabled, so the
 	// switch is not repeated here.
 	Redis RateLimitRedisConfig `dependon:".backend=redis"`
+	// CloudflareKV names the KV namespace binding a Worker counts in, per
+	// requirement:cloudflare-kv-backends. The count is an estimate there: KV
+	// has no atomic increment and propagates in tens of seconds, which is the
+	// precision a rate limit tolerates and a session does not.
+	CloudflareKV RateLimitCloudflareKVConfig `key:"cloudflarekv" dependon:".backend=cloudflarekv"`
+}
+
+// RateLimitCloudflareKVConfig addresses the KV namespace a Worker counts in.
+type RateLimitCloudflareKVConfig struct {
+	Binding   string `help:"KV namespace binding the Worker env carries"`
+	KeyPrefix string `default:"pw:ratelimit:" help:"key space this limiter owns"`
 }
 
 // RedisConfig addresses the shared counter server.
@@ -87,9 +101,9 @@ func (c RateLimitConfig) Validate() error {
 		return nil
 	}
 	switch c.Backend {
-	case "", RateLimitBackendMemory, RateLimitBackendRedis:
+	case "", RateLimitBackendMemory, RateLimitBackendRedis, RateLimitBackendCloudflareKV:
 	default:
-		return fmt.Errorf("ratelimit.backend %q is not memory or redis", c.Backend)
+		return fmt.Errorf("ratelimit.backend %q is not memory, redis, or cloudflarekv", c.Backend)
 	}
 	if c.Window <= 0 {
 		return errors.New("ratelimit.window must be positive")

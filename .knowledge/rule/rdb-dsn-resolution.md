@@ -33,6 +33,11 @@ engines:
     opener: the package Open function, because the package registers no driver name
     handoff: the whole configured string, which is already a libpq URL
     dialect: postgres
+  d1:
+    engine: requirement:cloudflare-d1-engine
+    opener: sql.Open with the d1 driver system:syumai-workers registers, inside a Worker only; the host build of database/d1 registers the scheme with an opener that refuses
+    handoff: the remainder after the scheme, which is the wrangler binding name
+    dialect: sqlite, so every dialect-keyed rule takes the SQLite path and only the opener differs
   mysql:
     engine: requirement:contrib-mysql
     opener: sql.Open with the registered mysql driver name

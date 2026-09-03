@@ -6,7 +6,7 @@ situation. Two independent axes:
 
 ```sh
 pw build [--debug] [--backend nethttp|fasthttp]
-         [--target lambda|azure-functions|google-cloud-run-functions|vercel-go]
+         [--target lambda|azure-functions|google-cloud-run-functions|vercel-go|cloudflare-workers]
 ```
 
 `--backend` selects the HTTP implementation (default `nethttp`); `--target`
@@ -178,7 +178,7 @@ provider-specific event.
 | HTTP-forwarding custom handler | Azure Functions | `--target=azure-functions`, HTTP-only functions |
 | Exported Go handler, remotely built | Vercel Go, Cloud Run functions | `--target=vercel-go`, `--target=google-cloud-run-functions` |
 | Provider event function | DigitalOcean Functions, non-HTTP triggers | deferred |
-| Fetch-event Wasm | Cloudflare Workers | targeted; blocked on adapter build compatibility |
+| Fetch-event Wasm | Cloudflare Workers | `--target=cloudflare-workers`, `nethttp` only; compiler from `[deploy.cloudflare]`; a `d1://BINDING` connection in `config.prod.toml` uses D1 as the SQLite-dialect database, with `[[deploy.cloudflare.d1]]` naming the database; migrations are staged for `wrangler d1 migrations apply`; process-state settings (memo store, memory rate limit, dev session stores, non-d1 rdb) are refused at build and startup; `[deploy.cloudflare.r2]` serves `public-external` from a bucket (stage has `r2-upload.sh`); `ratelimit.backend = "cloudflarekv"` counts in a KV namespace named by `[[deploy.cloudflare.kv]]` |
 | Component-model Wasm | Fastly Compute, WASI HTTP hosts | deferred |
 
 Container services are not a separate runtime: they start the scaffolded image

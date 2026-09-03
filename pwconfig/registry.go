@@ -28,10 +28,14 @@ var configState = struct {
 	hooks    Hooks
 }{
 	entries: make(map[reflect.Type]configEntry),
-	options: configbind.LoadOptions{
-		Vendor:   "popcornweb",
-		FileName: "config.toml",
-	},
+	options: defaultLoadOptions,
+}
+
+// defaultLoadOptions is what a process loads with when nothing customized it,
+// and what SetLoadOptions falls back to field by field.
+var defaultLoadOptions = configbind.LoadOptions{
+	Vendor:   "popcornweb",
+	FileName: "config.toml",
 }
 
 // configEntries is the entry table published for the serving path. Every
@@ -104,11 +108,22 @@ func Register[T any](prefix string) {
 }
 
 // SetLoadOptions customizes configbind loading before Parse.
+//
+// A field the caller left empty keeps the framework's default rather than
+// becoming empty: a caller that supplies only Environ, the way a generated
+// Worker entry does, is overriding the environment and not withdrawing the
+// vendor name the configuration search needs.
 func SetLoadOptions(options configbind.LoadOptions) {
 	configState.Lock()
 	defer configState.Unlock()
 	if configState.parsed {
 		panic("popcornweb: config options changed after ParseConfig")
+	}
+	if options.Vendor == "" {
+		options.Vendor = defaultLoadOptions.Vendor
+	}
+	if options.FileName == "" {
+		options.FileName = defaultLoadOptions.FileName
 	}
 	configState.options = options
 }
@@ -154,6 +169,14 @@ func Parse() error {
 	result, err := configbind.Load(options)
 	configState.parseErr = err
 	if err != nil {
+		return err
+	}
+	if err := applyConnectionsEnv(options.Environ); err != nil {
+		configState.parseErr = err
+		return err
+	}
+	if err := applyBucketsEnv(options.Environ); err != nil {
+		configState.parseErr = err
 		return err
 	}
 	DeriveExportEnabled(result, boundConfig[ObservabilityConfig]())

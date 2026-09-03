@@ -10,7 +10,7 @@ import (
 )
 
 // buildUsage shows the shared backend axis and build's deployment axis.
-var buildUsage = "usage: pw build [--debug] [--backend nethttp|fasthttp] [--target lambda|azure-functions|google-cloud-run-functions|vercel-go]"
+var buildUsage = "usage: pw build [--debug] [--backend nethttp|fasthttp] [--target lambda|azure-functions|google-cloud-run-functions|vercel-go|cloudflare-workers]"
 
 // generateUsage is the other half of the same option set. The two commands share
 // it because pw build is defined as pw generate plus the compiler.
@@ -99,6 +99,7 @@ const (
 	targetAzureFunctions          = "azure-functions"
 	targetGoogleCloudRunFunctions = "google-cloud-run-functions"
 	targetVercelGo                = "vercel-go"
+	targetCloudflareWorkers       = "cloudflare-workers"
 )
 
 var deploymentTargets = map[string]bool{
@@ -106,6 +107,7 @@ var deploymentTargets = map[string]bool{
 	targetAzureFunctions:          true,
 	targetGoogleCloudRunFunctions: true,
 	targetVercelGo:                true,
+	targetCloudflareWorkers:       true,
 }
 
 // buildOptions are how a build was invoked. Backend selects the HTTP
@@ -137,6 +139,12 @@ func (o buildOptions) check(config projectConfig) error {
 	if o.backend == backendFastHTTP && !config.FastHTTP {
 		return fmt.Errorf("--backend %s needs project.fasthttp = true in popcornweb.toml; "+
 			"without it nothing generates the half that build compiles", backendFastHTTP)
+	}
+	// The Worker adapter serves an http.Handler, and the fasthttp fork has
+	// not been verified under js/wasm, so the target takes the one backend
+	// that was.
+	if o.target == targetCloudflareWorkers && o.backend != backendNetHTTP {
+		return fmt.Errorf("--target %s builds the %s backend only", targetCloudflareWorkers, backendNetHTTP)
 	}
 	return nil
 }

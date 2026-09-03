@@ -65,6 +65,7 @@
 {"category": "interface", "id": "api:session-manager", "path": ".knowledge/api/session-manager.md", "role": "primary", "title": "Session Manager API", "type": "api"}
 {"category": "interface", "id": "api:session-registry", "path": ".knowledge/api/session-registry.md", "role": "primary", "title": "Typed Session Storage Registry", "type": "api"}
 {"category": "interface", "id": "api:session-store", "path": ".knowledge/api/session-store.md", "role": "primary", "title": "Session Store Contract", "type": "api"}
+{"category": "interface", "id": "api:storage-package", "path": ".knowledge/api/storage-package.md", "role": "primary", "title": "storage Package", "type": "api"}
 {"category": "interface", "id": "api:subcommands", "path": ".knowledge/api/subcommands.md", "role": "primary", "title": "Application Subcommands", "type": "api"}
 {"category": "interface", "id": "api:test-run", "path": ".knowledge/api/test-run.md", "role": "primary", "title": "Isolated TestRun", "type": "api"}
 {"category": "interface", "id": "api:test-seed", "path": ".knowledge/api/test-seed.md", "role": "primary", "title": "Test Seeding and Assertion", "type": "api"}
@@ -164,6 +165,7 @@
 {"category": "constraint", "id": "decision:cache-key-interface", "path": ".knowledge/decision/cache-key-interface.md", "role": "supporting", "title": "A Cache Key Is An Interface, Not A Shape", "type": "decision"}
 {"category": "constraint", "id": "decision:canonical-popcornweb-skill-source", "path": ".knowledge/decision/canonical-popcornweb-skill-source.md", "role": "supporting", "title": "Canonical Popcorn Web Skill Source", "type": "decision"}
 {"category": "constraint", "id": "decision:cli-release-pipeline", "path": ".knowledge/decision/cli-release-pipeline.md", "role": "supporting", "title": "Hand-written CLI Release Pipeline", "type": "decision"}
+{"category": "constraint", "id": "decision:cloudflare-bindings-placement", "path": ".knowledge/decision/cloudflare-bindings-placement.md", "role": "supporting", "title": "Cloudflare Bindings Placement", "type": "decision"}
 {"category": "constraint", "id": "decision:committed-package-artifacts", "path": ".knowledge/decision/committed-package-artifacts.md", "role": "supporting", "title": "Committed Package Artifacts", "type": "decision"}
 {"category": "constraint", "id": "decision:component-handler-namespace", "path": ".knowledge/decision/component-handler-namespace.md", "role": "supporting", "title": "Component Handler Namespace", "type": "decision"}
 {"category": "constraint", "id": "decision:component-parameter-disclosure", "path": ".knowledge/decision/component-parameter-disclosure.md", "role": "supporting", "title": "Component Parameter Disclosure", "type": "decision"}
@@ -248,8 +250,10 @@
 {"category": "constraint", "id": "decision:migration-execution-split", "path": ".knowledge/decision/migration-execution-split.md", "role": "supporting", "title": "Migration Execution Split", "type": "decision"}
 {"category": "constraint", "id": "decision:navigable-answer-hub", "path": ".knowledge/decision/navigable-answer-hub.md", "role": "supporting", "title": "Manual Bootstrap Edits an Answer Hub", "type": "decision"}
 {"category": "constraint", "id": "decision:nix-flake-packaging", "path": ".knowledge/decision/nix-flake-packaging.md", "role": "supporting", "title": "In-repository Nix Flake Packaging", "type": "decision"}
+{"category": "constraint", "id": "decision:object-storage-in-framework", "path": ".knowledge/decision/object-storage-in-framework.md", "role": "supporting", "title": "Object Storage Abstraction In The Framework", "type": "decision"}
 {"category": "constraint", "id": "decision:otlp-config-through-configbind", "path": ".knowledge/decision/otlp-config-through-configbind.md", "role": "supporting", "title": "OTLP Exporter Configuration Has One Route, Through configbind", "type": "decision"}
 {"category": "constraint", "id": "decision:outbound-trace-propagation", "path": ".knowledge/decision/outbound-trace-propagation.md", "role": "supporting", "title": "traceparent Is Injected By Whatever Opened The Client Span", "type": "decision"}
+{"category": "constraint", "id": "decision:owned-wasm-loader", "path": ".knowledge/decision/owned-wasm-loader.md", "role": "supporting", "title": "Owned Wasm Loader", "type": "decision"}
 {"category": "constraint", "id": "decision:package-contract-split", "path": ".knowledge/decision/package-contract-split.md", "role": "supporting", "title": "Package Contract Split", "type": "decision"}
 {"category": "constraint", "id": "decision:page-render-binding", "path": ".knowledge/decision/page-render-binding.md", "role": "supporting", "title": "Page Render Binding", "type": "decision"}
 {"category": "constraint", "id": "decision:page-router-scaffold-choice", "path": ".knowledge/decision/page-router-scaffold-choice.md", "role": "supporting", "title": "Page Router Scaffold Choice", "type": "decision"}
@@ -435,6 +439,12 @@
 {"category": "objective", "id": "requirement:cli-generate-check-rename", "path": ".knowledge/requirement/cli-generate-check-rename.md", "role": "primary", "title": "pw generate And pw check Renaming", "type": "requirement"}
 {"category": "objective", "id": "requirement:client-behaviour-adoption", "path": ".knowledge/requirement/client-behaviour-adoption.md", "role": "primary", "title": "Client Behaviour Adoption", "type": "requirement"}
 {"category": "objective", "id": "requirement:client-signal-registry", "path": ".knowledge/requirement/client-signal-registry.md", "role": "primary", "title": "Client Signal Registry", "type": "requirement"}
+{"category": "objective", "id": "requirement:cloudflare-cache-memo-store", "path": ".knowledge/requirement/cloudflare-cache-memo-store.md", "role": "primary", "title": "Cloudflare Cache Memo Store", "type": "requirement"}
+{"category": "objective", "id": "requirement:cloudflare-d1-engine", "path": ".knowledge/requirement/cloudflare-d1-engine.md", "role": "primary", "title": "Cloudflare D1 Engine", "type": "requirement"}
+{"category": "objective", "id": "requirement:cloudflare-kv-backends", "path": ".knowledge/requirement/cloudflare-kv-backends.md", "role": "primary", "title": "Cloudflare KV Backends", "type": "requirement"}
+{"category": "objective", "id": "requirement:cloudflare-process-state-refusal", "path": ".knowledge/requirement/cloudflare-process-state-refusal.md", "role": "primary", "title": "Cloudflare Process State Refusal", "type": "requirement"}
+{"category": "objective", "id": "requirement:cloudflare-r2-storage", "path": ".knowledge/requirement/cloudflare-r2-storage.md", "role": "primary", "title": "Cloudflare R2 Storage", "type": "requirement"}
+{"category": "objective", "id": "requirement:cloudflare-workers-build-target", "path": ".knowledge/requirement/cloudflare-workers-build-target.md", "role": "primary", "title": "Cloudflare Workers Build Target", "type": "requirement"}
 {"category": "objective", "id": "requirement:cloudflare-workers-hosting", "path": ".knowledge/requirement/cloudflare-workers-hosting.md", "role": "primary", "title": "Cloudflare Workers Hosting", "type": "requirement"}
 {"category": "objective", "id": "requirement:component-asset-extraction", "path": ".knowledge/requirement/component-asset-extraction.md", "role": "primary", "title": "Component Asset Extraction", "type": "requirement"}
 {"category": "objective", "id": "requirement:component-output-cache", "path": ".knowledge/requirement/component-output-cache.md", "role": "primary", "title": "Component Output Cache", "type": "requirement"}
@@ -554,6 +564,7 @@
 {"category": "objective", "id": "requirement:navigation-delta-rendering", "path": ".knowledge/requirement/navigation-delta-rendering.md", "role": "primary", "title": "Navigation Delta Rendering", "type": "requirement"}
 {"category": "objective", "id": "requirement:nested-html-templates", "path": ".knowledge/requirement/nested-html-templates.md", "role": "primary", "title": "Nested HTML Templates", "type": "requirement"}
 {"category": "objective", "id": "requirement:network-error-logging", "path": ".knowledge/requirement/network-error-logging.md", "role": "primary", "title": "Network Error Logging", "type": "requirement"}
+{"category": "objective", "id": "requirement:object-storage", "path": ".knowledge/requirement/object-storage.md", "role": "primary", "title": "Object Storage", "type": "requirement"}
 {"category": "objective", "id": "requirement:oidc-device-authorization", "path": ".knowledge/requirement/oidc-device-authorization.md", "role": "primary", "title": "OIDC Device Authorization", "type": "requirement"}
 {"category": "objective", "id": "requirement:package-asset-delivery", "path": ".knowledge/requirement/package-asset-delivery.md", "role": "primary", "title": "Package Asset Delivery", "type": "requirement"}
 {"category": "objective", "id": "requirement:package-component-assets", "path": ".knowledge/requirement/package-component-assets.md", "role": "primary", "title": "A Distributed Component Must Carry Its Own Assets", "type": "requirement"}
@@ -652,6 +663,7 @@
 {"category": "external", "id": "system:localotelviewer", "path": ".knowledge/system/localotelviewer.md", "role": "supporting", "title": "LocalOtelViewer", "type": "system"}
 {"category": "external", "id": "system:oidcld", "path": ".knowledge/system/oidcld.md", "role": "supporting", "title": "OIDCLD", "type": "system"}
 {"category": "external", "id": "system:pw-cli", "path": ".knowledge/system/pw-cli.md", "role": "supporting", "title": "pw CLI", "type": "system"}
+{"category": "external", "id": "system:syumai-workers", "path": ".knowledge/system/syumai-workers.md", "role": "supporting", "title": "syumai/workers", "type": "system"}
 {"category": "external", "id": "system:tinybind-websocket", "path": ".knowledge/system/tinybind-websocket.md", "role": "supporting", "title": "TinyBind Typed WebSocket", "type": "system"}
 {"category": "external", "id": "system:tinybind", "path": ".knowledge/system/tinybind.md", "role": "supporting", "title": "TinyBind", "type": "system"}
 {"category": "external", "id": "system:tinygodriver-dynamodb", "path": ".knowledge/system/tinygodriver-dynamodb.md", "role": "supporting", "title": "tinygodriver DynamoDB Client", "type": "system"}

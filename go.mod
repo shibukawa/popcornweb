@@ -17,6 +17,7 @@ require (
 	github.com/shibukawa/localotelviewer v1.0.2
 	github.com/shibukawa/tinybind-go v0.5.28
 	github.com/shibukawa/tinygodriver v1.2.11
+	github.com/syumai/workers v0.33.0
 	golang.org/x/mod v0.40.0
 	golang.org/x/tools v0.49.0
 )

@@ -24,7 +24,7 @@ emission:
   restarted: once per process is once per rebuild under api:cli-dev, so the loop captures the summary and replaces it per requirement:dev-reload-summary; nothing here knows that happened
 selection:
   key: observability.boot_log
-  auto: tree when stderr is a character device, otherwise record
+  auto: tree when stderr is a character device, otherwise record; off under the pwcloudflare build tag, because requirement:cloudflare-workers-build-target's host runs main per request and a summary per request is noise rather than a summary
   tree: banner, configuration grouped as a tree, and the listening URL, written to stderr
   record: one api:logger record named "popcornweb started"
   off: nothing

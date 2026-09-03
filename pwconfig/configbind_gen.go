@@ -20,6 +20,7 @@ func init() {
 	registerMiddlewareConfigDefinition5()
 	registerHTMLConfigDefinition6()
 	registerCacheConfigDefinition7()
+	registerStorageConfigDefinition8()
 }
 
 func registerServerConfigDefinition0() {
@@ -605,33 +606,38 @@ func registerRateLimitConfigDefinition2() {
 			"ratelimit.redis.dsn",
 			"ratelimit.redis.key_prefix",
 			"ratelimit.redis.connect_timeout",
+			"ratelimit.cloudflarekv.binding",
+			"ratelimit.cloudflarekv.key_prefix",
 		},
 		Defaults: map[string]string{
-			"ratelimit.enabled":               "false",
-			"ratelimit.backend":               "memory",
-			"ratelimit.window":                "1m",
-			"ratelimit.per_subject":           "600",
-			"ratelimit.per_address":           "300",
-			"ratelimit.process":               "0",
-			"ratelimit.redis.key_prefix":      "pw:ratelimit:",
-			"ratelimit.redis.connect_timeout": "5s",
+			"ratelimit.enabled":                 "false",
+			"ratelimit.backend":                 "memory",
+			"ratelimit.window":                  "1m",
+			"ratelimit.per_subject":             "600",
+			"ratelimit.per_address":             "300",
+			"ratelimit.process":                 "0",
+			"ratelimit.redis.key_prefix":        "pw:ratelimit:",
+			"ratelimit.redis.connect_timeout":   "5s",
+			"ratelimit.cloudflarekv.key_prefix": "pw:ratelimit:",
 		},
 		DependsOn: map[string][]configbind.Dependency{
-			"ratelimit.backend":               {{Key: "ratelimit.enabled"}},
-			"ratelimit.window":                {{Key: "ratelimit.enabled"}},
-			"ratelimit.per_subject":           {{Key: "ratelimit.enabled"}},
-			"ratelimit.per_address":           {{Key: "ratelimit.enabled"}},
-			"ratelimit.process":               {{Key: "ratelimit.enabled"}},
-			"ratelimit.redis.dsn":             {{Key: "ratelimit.backend", Op: "=", Values: []string{"redis"}}},
-			"ratelimit.redis.key_prefix":      {{Key: "ratelimit.backend", Op: "=", Values: []string{"redis"}}},
-			"ratelimit.redis.connect_timeout": {{Key: "ratelimit.backend", Op: "=", Values: []string{"redis"}}},
+			"ratelimit.backend":                 {{Key: "ratelimit.enabled"}},
+			"ratelimit.window":                  {{Key: "ratelimit.enabled"}},
+			"ratelimit.per_subject":             {{Key: "ratelimit.enabled"}},
+			"ratelimit.per_address":             {{Key: "ratelimit.enabled"}},
+			"ratelimit.process":                 {{Key: "ratelimit.enabled"}},
+			"ratelimit.redis.dsn":               {{Key: "ratelimit.backend", Op: "=", Values: []string{"redis"}}},
+			"ratelimit.redis.key_prefix":        {{Key: "ratelimit.backend", Op: "=", Values: []string{"redis"}}},
+			"ratelimit.redis.connect_timeout":   {{Key: "ratelimit.backend", Op: "=", Values: []string{"redis"}}},
+			"ratelimit.cloudflarekv.binding":    {{Key: "ratelimit.backend", Op: "=", Values: []string{"cloudflarekv"}}},
+			"ratelimit.cloudflarekv.key_prefix": {{Key: "ratelimit.backend", Op: "=", Values: []string{"cloudflarekv"}}},
 		},
 		Secrets: map[string]string{
 			"ratelimit.redis.dsn": "mask",
 		},
 		FlagMetas: []cliparser.FieldMeta{
 			{Prefix: "ratelimit", Key: "enabled", Kind: cliparser.KindBool},
-			{Prefix: "ratelimit", Key: "backend", Help: "counter storage: memory or redis", Enum: []string{"memory", "redis"}},
+			{Prefix: "ratelimit", Key: "backend", Help: "counter storage: memory, redis, or cloudflarekv", Enum: []string{"memory", "redis", "cloudflarekv"}},
 			{Prefix: "ratelimit", Key: "window", Help: "period every count is measured over"},
 			{Prefix: "ratelimit", Key: "per_subject", Help: "requests one authenticated subject may make in a window; zero disables"},
 			{Prefix: "ratelimit", Key: "per_address", Help: "requests one caller with no session may make in a window"},
@@ -639,11 +645,13 @@ func registerRateLimitConfigDefinition2() {
 			{Prefix: "ratelimit", Key: "redis.dsn", Env: "RATELIMIT_REDIS_DSN", Help: "redis:// or rediss:// counter server"},
 			{Prefix: "ratelimit", Key: "redis.key_prefix", Help: "key space this limiter owns"},
 			{Prefix: "ratelimit", Key: "redis.connect_timeout", Help: "bounds the startup ping and per-command deadlines"},
+			{Prefix: "ratelimit", Key: "cloudflarekv.binding", Help: "KV namespace binding the Worker env carries"},
+			{Prefix: "ratelimit", Key: "cloudflarekv.key_prefix", Help: "key space this limiter owns"},
 		},
 		Apply: applyRateLimitConfigDefinition2,
 		Scaffold: []configbind.ScaffoldField{
 			{Key: "enabled", Kind: configbind.ScaffoldBool, Default: "false"},
-			{Key: "backend", Kind: configbind.ScaffoldString, Default: "memory", Help: "counter storage: memory or redis", Enum: []string{"memory", "redis"}},
+			{Key: "backend", Kind: configbind.ScaffoldString, Default: "memory", Help: "counter storage: memory, redis, or cloudflarekv", Enum: []string{"memory", "redis", "cloudflarekv"}},
 			{Key: "window", Kind: configbind.ScaffoldDuration, Default: "1m", Help: "period every count is measured over"},
 			{Key: "per_subject", Kind: configbind.ScaffoldInt, Default: "600", Help: "requests one authenticated subject may make in a window; zero disables"},
 			{Key: "per_address", Kind: configbind.ScaffoldInt, Default: "300", Help: "requests one caller with no session may make in a window"},
@@ -651,6 +659,8 @@ func registerRateLimitConfigDefinition2() {
 			{Key: "redis.dsn", Kind: configbind.ScaffoldString, Env: "RATELIMIT_REDIS_DSN", Help: "redis:// or rediss:// counter server"},
 			{Key: "redis.key_prefix", Kind: configbind.ScaffoldString, Default: "pw:ratelimit:", Help: "key space this limiter owns"},
 			{Key: "redis.connect_timeout", Kind: configbind.ScaffoldDuration, Default: "5s", Help: "bounds the startup ping and per-command deadlines"},
+			{Key: "cloudflarekv.binding", Kind: configbind.ScaffoldString, Help: "KV namespace binding the Worker env carries"},
+			{Key: "cloudflarekv.key_prefix", Kind: configbind.ScaffoldString, Default: "pw:ratelimit:", Help: "key space this limiter owns"},
 		},
 	})
 }
@@ -671,9 +681,9 @@ func applyRateLimitConfigDefinition2(dst any, o *configbind.Overlay) error {
 	}
 	if v, ok := o.GetString("ratelimit.backend"); ok {
 		switch v {
-		case "memory", "redis":
+		case "memory", "redis", "cloudflarekv":
 		default:
-			return fmt.Errorf("configbind: ratelimit.backend: %q must be one of: memory, redis", v)
+			return fmt.Errorf("configbind: ratelimit.backend: %q must be one of: memory, redis, cloudflarekv", v)
 		}
 		p.Backend = v
 	} else {
@@ -731,6 +741,14 @@ func applyRateLimitConfigDefinition2(dst any, o *configbind.Overlay) error {
 		p.Redis.ConnectTimeout = d
 	} else {
 		p.Redis.ConnectTimeout = 5000000000 // 5s
+	}
+	if v, ok := o.GetString("ratelimit.cloudflarekv.binding"); ok {
+		p.CloudflareKV.Binding = v
+	}
+	if v, ok := o.GetString("ratelimit.cloudflarekv.key_prefix"); ok {
+		p.CloudflareKV.KeyPrefix = v
+	} else {
+		p.CloudflareKV.KeyPrefix = "pw:ratelimit:"
 	}
 	return nil
 }
@@ -2103,6 +2121,115 @@ func applyCacheConfigDefinition7(dst any, o *configbind.Overlay) error {
 				p.Stores[i1].FetchTimeout = d
 			} else {
 				p.Stores[i1].FetchTimeout = 30000000000 // 30s
+			}
+		}
+	}
+	return nil
+}
+
+func registerStorageConfigDefinition8() {
+	configbind.Register[StorageConfig](configbind.Definition{
+		TypeName: "github.com/shibukawa/popcornweb/pwconfig.StorageConfig",
+		Prefix:   "storage",
+		Doc:      "StorageConfig names the object storage buckets an application addresses, per requirement:object-storage",
+		KnownKeys: []string{
+			"storage.enabled",
+			"storage.buckets",
+		},
+		Defaults: map[string]string{
+			"storage.enabled": "false",
+		},
+		DependsOn: map[string][]configbind.Dependency{
+			"storage.buckets": {{Key: "storage.enabled"}},
+		},
+		Secrets: map[string]string{
+			"storage.buckets.access_key_id":     "mask",
+			"storage.buckets.secret_access_key": "mask",
+		},
+		FlagMetas: []cliparser.FieldMeta{
+			{Prefix: "storage", Key: "enabled", Help: "open the configured object storage buckets", Kind: cliparser.KindBool},
+		},
+		Apply: applyStorageConfigDefinition8,
+		Scaffold: []configbind.ScaffoldField{
+			{Key: "enabled", Kind: configbind.ScaffoldBool, Default: "false", Help: "open the configured object storage buckets"},
+			{Key: "buckets", Kind: configbind.ScaffoldTableArray, Help: "bucket set, one element per bucket", Nested: []configbind.ScaffoldField{
+				{Key: "name", Kind: configbind.ScaffoldString, Help: "name this bucket is addressed by"},
+				{Key: "backend", Kind: configbind.ScaffoldString, Default: "local", Help: "where objects live: local, s3, or r2", Enum: []string{"local", "s3", "r2"}},
+				{Key: "directory", Kind: configbind.ScaffoldString, Help: "local: directory objects are kept in"},
+				{Key: "endpoint", Kind: configbind.ScaffoldString, Help: "s3: endpoint URL"},
+				{Key: "region", Kind: configbind.ScaffoldString, Help: "s3: signing region"},
+				{Key: "bucket", Kind: configbind.ScaffoldString, Help: "s3: bucket name at the endpoint"},
+				{Key: "access_key_id", Kind: configbind.ScaffoldString, Help: "s3: access key id"},
+				{Key: "secret_access_key", Kind: configbind.ScaffoldString, Help: "s3: secret access key"},
+				{Key: "path_style", Kind: configbind.ScaffoldBool, Default: "false", Help: "s3: put the bucket in the path rather than the host"},
+				{Key: "binding", Kind: configbind.ScaffoldString, Help: "r2: bucket binding the Worker env carries"},
+			}},
+		},
+	})
+}
+
+func applyStorageConfigDefinition8(dst any, o *configbind.Overlay) error {
+	p, ok := dst.(*StorageConfig)
+	if !ok || p == nil {
+		return fmt.Errorf("configbind: apply StorageConfig: bad destination")
+	}
+	if v, ok := o.GetString("storage.enabled"); ok {
+		bb, err := strconv.ParseBool(v)
+		if err != nil {
+			return fmt.Errorf("configbind: storage.enabled: %w", err)
+		}
+		p.Enabled = bb
+	} else {
+		p.Enabled = false
+	}
+	if ta1, ok := o.Get("storage.buckets"); ok {
+		if !ta1.IsTables {
+			return fmt.Errorf("configbind: storage.buckets: expected an array of tables ([[storage.buckets]])")
+		}
+		p.Buckets = make([]StorageBucketConfig, len(ta1.Tables))
+		for i1 := range ta1.Tables {
+			if v, ok := ta1.Tables[i1].GetString("name"); ok {
+				p.Buckets[i1].Name = v
+			}
+			if v, ok := ta1.Tables[i1].GetString("backend"); ok {
+				switch v {
+				case "local", "s3", "r2":
+				default:
+					return fmt.Errorf("configbind: storage.buckets[%d].backend: %q must be one of: local, s3, r2", i1, v)
+				}
+				p.Buckets[i1].Backend = v
+			} else {
+				p.Buckets[i1].Backend = "local"
+			}
+			if v, ok := ta1.Tables[i1].GetString("directory"); ok {
+				p.Buckets[i1].Directory = v
+			}
+			if v, ok := ta1.Tables[i1].GetString("endpoint"); ok {
+				p.Buckets[i1].Endpoint = v
+			}
+			if v, ok := ta1.Tables[i1].GetString("region"); ok {
+				p.Buckets[i1].Region = v
+			}
+			if v, ok := ta1.Tables[i1].GetString("bucket"); ok {
+				p.Buckets[i1].Bucket = v
+			}
+			if v, ok := ta1.Tables[i1].GetString("access_key_id"); ok {
+				p.Buckets[i1].AccessKeyID = v
+			}
+			if v, ok := ta1.Tables[i1].GetString("secret_access_key"); ok {
+				p.Buckets[i1].SecretAccessKey = v
+			}
+			if v, ok := ta1.Tables[i1].GetString("path_style"); ok {
+				bb, err := strconv.ParseBool(v)
+				if err != nil {
+					return fmt.Errorf("configbind: storage.buckets[%d].path_style: %w", i1, err)
+				}
+				p.Buckets[i1].PathStyle = bb
+			} else {
+				p.Buckets[i1].PathStyle = false
+			}
+			if v, ok := ta1.Tables[i1].GetString("binding"); ok {
+				p.Buckets[i1].Binding = v
 			}
 		}
 	}

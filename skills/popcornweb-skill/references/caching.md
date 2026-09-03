@@ -1,7 +1,7 @@
 # Caching: rendered output and fetched data
 
 Two stores, both in-process, both keyed with a **private default that is a
-security boundary**. `@cache` on a component stores rendered bytes; `pw.Memo`
+security boundary**. `@cache` on a component stores rendered bytes; `store.Get`
 stores what an upstream call returned. The same annotation also decides what the
 response tells caches in front of you.
 
@@ -61,7 +61,7 @@ Two conditions decide whether a component can be written this way.
   you traded first-paint latency for the hits that follow — right for a card on a
   listing page, wrong for the primary content of a page nobody revisits.
 
-When either fails, leave the fetch in the handler and cache it with `pw.Memo`,
+When either fails, leave the fetch in the handler and cache it with the memo store,
 which has the stale window and the explicit invalidation `@cache` does not.
 
 ### `scope` — who the output belongs to
@@ -165,7 +165,7 @@ Before putting a CDN in front of a public site: nothing is shared until a shell
 declares it, so a marketing page passes straight through the edge until you write
 the annotation.
 
-## `pw.Memo` — what a fetch returned
+## The memo store — what a fetch returned
 
 ```toml
 [cache]
@@ -197,7 +197,7 @@ func ShowQuote(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	pair := pw.PathValue(r, "pair")
-	quote, err := pw.Memo(r.Context(), store, QuoteKey{Pair: pair},
+	quote, err := store.Get(r.Context(), QuoteKey{Pair: pair},
 		func(ctx context.Context) (Quote, error) { return fetchQuote(ctx, pair) })
 	if err != nil {
 		pw.WriteProblem(w, r, err)
@@ -208,7 +208,7 @@ func ShowQuote(w http.ResponseWriter, r *http.Request) {
 ```
 
 `pw generate` writes `QuoteKey`'s key method into `cachekey_pw_gen.go`. What makes
-it a key type is the `pw.Memo` call site — a marked struct nothing passes to the
+it a key type is the `store.Get` call site — a marked struct nothing passes to the
 cache generates nothing. Marking is **opt-in**, the opposite of the `json` tags
 beside it: the struct you hand the cache is often the entity you already have,
 where most fields are the answer.
@@ -224,12 +224,12 @@ editing code.
 
 | Call | What it does |
 | --- | --- |
-| `pw.Memo(ctx, store, key, fetch)` | return the entry, or run `fetch` and store it |
-| `pw.MemoSet(ctx, store, key, value)` | store a value you already have |
-| `pw.MemoHas(ctx, store, key)` | whether an entry is fresh **now** — racy by construction |
-| `pw.MemoInvalidate(ctx, store, key)` | drop one entry |
-| `pw.MemoInvalidateScope(store, subject)` | drop everything one reader holds |
-| `pw.MemoInvalidateTag(store, tag)` | drop everything a tag names (`pw.CacheTagger`) |
+| `store.Get(ctx, key, fetch)` | return the entry, or run `fetch` and store it |
+| `store.Set(ctx, key, value)` | store a value you already have |
+| `store.Has(ctx, key)` | whether an entry is fresh **now** — racy by construction |
+| `store.Invalidate(ctx, key)` | drop one entry |
+| `store.InvalidateScope(subject)` | drop everything one reader holds |
+| `store.InvalidateTag(tag)` | drop everything a tag names (`pw.CacheTagger`) |
 
 Nothing is invalidated implicitly: the framework does not know which read a write
 contradicts.
@@ -258,12 +258,12 @@ has one consequence at the call site:
 
 ```go
 // Right — the fetch uses the context it is handed.
-pw.Memo(r.Context(), store, key, func(ctx context.Context) (Quote, error) {
+store.Get(r.Context(), key, func(ctx context.Context) (Quote, error) {
 	return fetchQuote(ctx, pair)
 })
 
 // Wrong — the fetch captures the request's context instead.
-pw.Memo(r.Context(), store, key, func(context.Context) (Quote, error) {
+store.Get(r.Context(), key, func(context.Context) (Quote, error) {
 	return fetchQuote(r.Context(), pair)
 })
 ```
@@ -295,7 +295,7 @@ store carries `fetch_timeout`.
 
 Reach for `@cache` on a component that takes an identifier and loads its own
 record: one annotation covers the load and the markup with no store to configure.
-Reach for `pw.Memo` when the load can fail and the reader must know, when a write
+Reach for the memo store when the load can fail and the reader must know, when a write
 has to drop an entry before it expires, when an upstream outage should be
 survived rather than propagated, or when the value is wanted somewhere no
 component reaches.

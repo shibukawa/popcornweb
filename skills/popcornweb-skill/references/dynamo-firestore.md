@@ -271,7 +271,7 @@ Sessions and auth can use this store via `sessionstore/firestore`, `authstore/fi
 | Query diagnostics under `[observability.query]` | SQL-only |
 | Batching via `pgx.Batch` / `CopyFrom` (references/sql.md) | Dynamo: `StoreAll`/`LoadAll` chunked to service limits; Firestore: none |
 
-Both stores are reachable from `pw.Memo` like any other upstream — see references/caching.md. `pw fmt --stdin=dynamo` formats a `.pw.dynamo` declaration read from standard input.
+Both stores are reachable from a memo store's `Get` like any other upstream — see references/caching.md. `pw fmt --stdin=dynamo` formats a `.pw.dynamo` declaration read from standard input.
 
 ## Common mistakes
 

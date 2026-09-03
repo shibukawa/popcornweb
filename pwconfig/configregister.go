@@ -14,5 +14,6 @@ func init() {
 	Register[MiddlewareConfig]("middleware")
 	Register[HTMLConfig]("html")
 	Register[CacheConfig]("cache")
+	Register[StorageConfig]("storage")
 	Seed(defaultHTMLConfig)
 }

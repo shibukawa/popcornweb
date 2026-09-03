@@ -232,6 +232,13 @@ type CacheConfig = pwruntime.CacheConfig
 // CacheStoreConfig is one store of the data cache set.
 type CacheStoreConfig = pwruntime.CacheStoreConfig
 
+// StorageConfig names the object storage buckets an application addresses,
+// per requirement:object-storage.
+type StorageConfig = pwruntime.StorageConfig
+
+// StorageBucketConfig is one bucket of the set.
+type StorageBucketConfig = pwruntime.StorageBucketConfig
+
 // PublicConfig controls the framework-owned static asset endpoint.
 type PublicConfig = middlewares.PublicAssetConfig
 
