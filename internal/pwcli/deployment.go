@@ -29,15 +29,29 @@ type deploymentManifest struct {
 	Backend    string `json:"backend"`
 	Artifact   string `json:"artifact"`
 	Entrypoint string `json:"entrypoint,omitempty"`
+	// Compiler names the toolchain that produced the artifact where the
+	// target lets the project choose one, per requirement:cloudflare-workers-build-target.
+	Compiler string `json:"compiler,omitempty"`
 }
 
 func buildDeployment(ctx context.Context, root string, config projectConfig, options buildOptions, progress *progressRegion, stdout, stderr io.Writer) error {
 	stage := filepath.Join(root, ".pw", "build", options.target, options.backend)
+	// wrangler dev keeps its local D1, R2 and KV state under the stage, and a
+	// rebuild that emptied it would take every locally applied migration and
+	// uploaded object with it. The state is kept aside while the stage is
+	// cleared, so a rebuild is a rebuild of the Worker and not of its data.
+	preserved, keepErr := keepWranglerState(stage, options.target)
+	if keepErr != nil {
+		return keepErr
+	}
 	if err := os.RemoveAll(stage); err != nil {
 		return fmt.Errorf("clear deployment staging: %w", err)
 	}
 	if err := os.MkdirAll(stage, 0o755); err != nil {
 		return fmt.Errorf("create deployment staging: %w", err)
+	}
+	if err := restoreWranglerState(stage, preserved); err != nil {
+		return err
 	}
 
 	var manifest deploymentManifest
@@ -49,6 +63,8 @@ func buildDeployment(ctx context.Context, root string, config projectConfig, opt
 	case targetGoogleCloudRunFunctions, targetVercelGo:
 		progress.Phase("staging function source")
 		manifest, err = buildSourceDeployment(ctx, root, stage, config, options, stdout, stderr)
+	case targetCloudflareWorkers:
+		manifest, err = buildCloudflareDeployment(ctx, root, stage, config, options, progress, stdout, stderr)
 	default:
 		err = fmt.Errorf("unsupported deployment target %q", options.target)
 	}
@@ -64,6 +80,41 @@ func buildDeployment(ctx context.Context, root string, config projectConfig, opt
 		return fmt.Errorf("write deployment manifest: %w", err)
 	}
 	fmt.Fprintf(stdout, "deployment: %s\n", stage)
+	return nil
+}
+
+// wranglerStateDir is where wrangler dev keeps a stage's local state.
+const wranglerStateDir = ".wrangler"
+
+// keepWranglerState moves the Cloudflare stage's local state out of the way
+// before the stage is cleared, returning where it went, or nothing when the
+// target is another provider or no state exists.
+func keepWranglerState(stage, target string) (string, error) {
+	if target != targetCloudflareWorkers {
+		return "", nil
+	}
+	state := filepath.Join(stage, wranglerStateDir)
+	if _, err := os.Stat(state); err != nil {
+		return "", nil
+	}
+	kept := stage + ".wrangler-state"
+	if err := os.RemoveAll(kept); err != nil {
+		return "", err
+	}
+	if err := os.Rename(state, kept); err != nil {
+		return "", fmt.Errorf("keep wrangler state: %w", err)
+	}
+	return kept, nil
+}
+
+// restoreWranglerState puts kept state back under the rebuilt stage.
+func restoreWranglerState(stage, kept string) error {
+	if kept == "" {
+		return nil
+	}
+	if err := os.Rename(kept, filepath.Join(stage, wranglerStateDir)); err != nil {
+		return fmt.Errorf("restore wrangler state: %w", err)
+	}
 	return nil
 }
 
@@ -140,7 +191,11 @@ func buildSourceDeployment(ctx context.Context, root, stage string, config proje
 	if err != nil {
 		return deploymentManifest{}, err
 	}
-	if err := writeFunctionModule(stage, modulePath, goVersion, filepath.Join(applicationRoot, "go.mod"), options.target == targetGoogleCloudRunFunctions); err != nil {
+	var requires []moduleRequirement
+	if options.target == targetGoogleCloudRunFunctions {
+		requires = append(requires, moduleRequirement{path: "github.com/GoogleCloudPlatform/functions-framework-go", version: functionsFrameworkVersion})
+	}
+	if err := writeFunctionModule(stage, modulePath, goVersion, filepath.Join(applicationRoot, "go.mod"), requires); err != nil {
 		return deploymentManifest{}, err
 	}
 	for _, name := range []string{"go.sum", "config.prod.toml"} {
@@ -480,10 +535,16 @@ func normalizeApplicationModule(root, path string) (string, string, error) {
 	return module.Module.Mod.Path, goVersion, nil
 }
 
-func writeFunctionModule(stage, applicationModule, goVersion, applicationGoMod string, withFunctionsFramework bool) error {
+// moduleRequirement is one provider library the staged module pins beside the
+// application, per requirement:serverless-source-entrypoints dependencies.
+type moduleRequirement struct {
+	path, version string
+}
+
+func writeFunctionModule(stage, applicationModule, goVersion, applicationGoMod string, requires []moduleRequirement) error {
 	source := "module " + applicationModule + "/popcornweb-serverless\n\ngo " + goVersion + "\n\nrequire " + applicationModule + " v0.0.0\n"
-	if withFunctionsFramework {
-		source += "require github.com/GoogleCloudPlatform/functions-framework-go " + functionsFrameworkVersion + "\n"
+	for _, requirement := range requires {
+		source += "require " + requirement.path + " " + requirement.version + "\n"
 	}
 	source += "\nreplace " + applicationModule + " => ./app\n"
 	module, err := modfile.Parse("go.mod", []byte(source), nil)

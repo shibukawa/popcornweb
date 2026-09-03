@@ -279,6 +279,11 @@ type projectConfig struct {
 	Migration migrationConfig
 	Seed      seedConfig
 	Tailwind  tailwindConfig
+	// Cloudflare is the deploy.cloudflare table: what pw build --target
+	// cloudflare-workers compiles with and writes into wrangler.jsonc, per
+	// requirement:cloudflare-workers-build-target. Every value has a default
+	// drawn from the rest of the project, so the table is optional.
+	Cloudflare cloudflareConfig
 	// Assets is the build-time conversion set. Every field defaults to off, so
 	// a project that declares nothing embeds a copy of its authored tree and
 	// serves exactly what it served before any of this existed.
@@ -389,6 +394,9 @@ func loadProjectConfig(root string) (projectConfig, error) {
 		"assets.css.minify", "assets.images.enabled", "assets.images.quality",
 		"assets.images.avif", "assets.scripts.enabled",
 		"assets.verify.enabled", "assets.verify.svg_scan", "assets.verify.allow",
+		"deploy.cloudflare.compiler", "deploy.cloudflare.name", "deploy.cloudflare.compatibility_date",
+		"deploy.cloudflare.d1", "deploy.cloudflare.r2.binding", "deploy.cloudflare.r2.bucket_name",
+		"deploy.cloudflare.kv",
 	}
 	known = append(known,
 		"i18n.locales", "i18n.default_locale", "i18n.catalog", "i18n.missing", "i18n.prefix_default",
@@ -452,6 +460,10 @@ func loadProjectConfig(root string) (projectConfig, error) {
 		if err != nil {
 			return projectConfig{}, fmt.Errorf("popcornweb.toml: project.fasthttp: %w", err)
 		}
+	}
+	config.Cloudflare, err = cloudflareSettings(document, config)
+	if err != nil {
+		return projectConfig{}, err
 	}
 	config.Generate, err = generationSources(document, root)
 	if err != nil {

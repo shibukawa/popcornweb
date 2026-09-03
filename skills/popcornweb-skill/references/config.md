@@ -259,11 +259,11 @@ Every `live_` key depends on `streaming`. `cache.enabled` is on where everything
 
 ### `[cache]` and `[[cache.stores]]`
 
-The data cache `pw.Memo` reads, sized separately from the render cache above because the two fill at different rates from different sources.
+The data cache the memo store reads, sized separately from the render cache above because the two fill at different rates from different sources.
 
 ```toml
 [cache]
-enabled = false        # off by design: pw.Memo has no annotation to opt in with
+enabled = false        # off by design: a memo store has no annotation to opt in with
 
 [[cache.stores]]
 name = "rates"         # the name a call site addresses this store by

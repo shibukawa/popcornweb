@@ -1144,14 +1144,17 @@ func PublicFS() fs.FS {
 		files["migrations/00001_init.sql"] = engineFor(options.Engine).Schema
 	}
 	if options.TinyGo {
-		files["tinygohelper.go"] = `//go:build tinygo
+		files["tinygohelper.go"] = `//go:build tinygo && !pwcloudflare
 
 package publicassets
 
 // TinyGo's net package routes every socket through a Netdever that the program
 // has to register itself; without one the server dies at startup with
 // "Netdev not set". The blank import registers the host OS driver during init.
-// Standard Go builds skip this file and use the real net package.
+// Standard Go builds skip this file and use the real net package, and so does
+// a Cloudflare Workers build (pw build --target cloudflare-workers, which sets
+// the pwcloudflare tag): a Worker owns no socket, and the host driver does not
+// compile for the wasm target.
 import _ "github.com/shibukawa/tinygodriver/netdev"
 `
 	}

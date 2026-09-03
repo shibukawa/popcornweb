@@ -236,6 +236,7 @@ var shipped = map[string]string{
 	"postgres":   "github.com/shibukawa/popcornweb/database/postgres",
 	"postgresql": "github.com/shibukawa/popcornweb/database/postgres",
 	"mysql":      "github.com/shibukawa/popcornweb/database/mysql",
+	"d1":         "github.com/shibukawa/popcornweb/database/d1",
 }
 
 func remedy(scheme string) string {

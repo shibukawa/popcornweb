@@ -57,5 +57,7 @@ tls_backends:
   darwin: Secure Transport, with mbedTLS under -tags darwinstarttlswith13
   windows: Schannel
 not_consumed:
-  storage/s3: an S3 client for targets where aws-sdk-go-v2 does not build; no Popcorn Web requirement depends on it
+  storage/s3: an S3 client for targets where aws-sdk-go-v2 does not build; requirement:object-storage wraps it as the s3 backend since 2026-09-03
+requests_from_here:
+  - docs/tinygodriver-s3-presign-request.md, filed 2026-09-03: a Presign method on the storage/s3 client for requirement:object-storage, with multipart upload filed as a later option
 ```

@@ -286,7 +286,7 @@ func TestScaffoldFilesWithTinyGoUsesPwServeMux(t *testing.T) {
 	}
 	helper := files["tinygohelper.go"]
 	for _, want := range []string{
-		"//go:build tinygo\n",
+		"//go:build tinygo && !pwcloudflare\n",
 		"package publicassets",
 		`import _ "github.com/shibukawa/tinygodriver/netdev"`,
 	} {

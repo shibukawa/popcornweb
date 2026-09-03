@@ -95,6 +95,7 @@ func resolveRegistrations(graph importGraph) []string {
 		{sqliteDriverPackage, "sqlite driver"},
 		{postgresDriverPackage, "postgres driver"},
 		{mysqlDriverPackage, "mysql driver"},
+		{d1DriverPackage, "d1 driver"},
 	}
 	var linked []string
 	for _, entry := range known {

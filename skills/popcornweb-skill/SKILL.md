@@ -44,7 +44,7 @@ Routing stays on `pw.ServeMux`, a type alias compatible with
    pass secrets as `${ENV_VAR}` references, never literals. `popcornweb.toml`
    is build configuration and holds no runtime setting at all.
 6. **A cache scope defaults to private, and that default is a security
-   boundary.** `@cache` and `pw.Memo` both key per reader unless you write
+   boundary.** `@cache` and the memo store both key per reader unless you write
    `scope: "public"`. Promote only output that is a function of its declared
    parameters and nothing else — see [references/caching.md](references/caching.md).
 
@@ -110,7 +110,7 @@ development. `pw migrate status` shows where you are.
 | Page trees (discovered routing), async/partial/live rendering, forms | [references/rendering.md](references/rendering.md) |
 | Server actions, component scripts, `on-<event>` handlers, signals | [references/interactivity.md](references/interactivity.md) |
 | Handlers, request binding, responses, streams, WebSockets, middleware, sessions, auth | [references/handlers.md](references/handlers.md) |
-| `@cache` on components, `pw.Memo` on fetched data, cache scope | [references/caching.md](references/caching.md) |
+| `@cache` on components, the memo store (`store.Get`) on fetched data, cache scope | [references/caching.md](references/caching.md) |
 | Message catalogs, `{t}`, locale routing, the language switcher | [references/i18n.md](references/i18n.md) |
 | `.pw.sql` queries, migrations, seed data, batching, the pgx escape hatch | [references/sql.md](references/sql.md) |
 | DynamoDB and Firestore stores | [references/dynamo-firestore.md](references/dynamo-firestore.md) |

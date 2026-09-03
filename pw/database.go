@@ -2,10 +2,12 @@ package pw
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 
 	"github.com/shibukawa/popcornweb/pwdatabase"
 	"github.com/shibukawa/popcornweb/pwruntime"
+	"github.com/shibukawa/popcornweb/storage"
 )
 
 func validateConfiguredRuntime() error {
@@ -22,6 +24,16 @@ func validateConfiguredRuntime() error {
 	// anywhere else.
 	if err := validateSessionConfig(ConfigContext[SessionConfig](nil), Env(), Development()); err != nil {
 		return err
+	}
+	storageConfig, _ := pwruntime.RegisteredConfig[pwruntime.StorageConfig]()
+	if err := storage.Validate(storageConfig); err != nil {
+		return fmt.Errorf("popcornweb: %w", err)
+	}
+	if hostRunsPerRequest {
+		cache, _ := pwruntime.RegisteredConfig[pwruntime.CacheConfig]()
+		if err := refuseWorkerProcessState(cache, ConfigContext[SessionConfig](nil), ConfigContext[RateLimitConfig](nil), ConfigContext[MiddlewareConfig](nil).RDB, storageConfig); err != nil {
+			return err
+		}
 	}
 	return validateHTMLConfig(ConfigContext[HTMLConfig](nil))
 }

@@ -67,7 +67,7 @@ The console is compiled under the `pwdev` build tag: `pw build` does not link an
 ```go
 func TestHome(t *testing.T) {
 	server := testutil.TestRun(t, Handlers(), func(config *testutil.Config) {
-		testutil.Update[pw.MiddlewareConfig](config, func(middleware *pw.MiddlewareConfig) {
+		config.Update(func(middleware *pw.MiddlewareConfig) {
 			middleware.RDB = pw.RDBConfig{
 				Enabled: true,
 				Connections: []pw.RDBConnectionConfig{{
@@ -94,7 +94,7 @@ import (
 )
 ```
 
-Configuration customisers: `testutil.Get[T](config)`, `testutil.Set(config, value)`, `testutil.Update[T](config, fn)` — typed, and they reach framework and application config the same way.
+Configuration customisers are methods on the config: `config.Get[T]()`, `config.Set(value)`, `config.Update(fn)` — typed, and they reach framework and application config the same way.
 
 Options:
 
@@ -108,7 +108,7 @@ server := testutil.TestRun(t, handlers.Handlers(), nil, testutil.WithIdentityPro
 	testutil.WithIdPConfig("../devidp.toml"),
 	testutil.WithLoginUser("admin"),
 	testutil.WithIdPBinding(func(config *testutil.Config, idp testutil.IdPInfo) {
-		testutil.Update[handlers.AuthConfig](config, func(auth *handlers.AuthConfig) {
+		config.Update(func(auth *handlers.AuthConfig) {
 			auth.Issuer, auth.ClientID, auth.ClientSecret = idp.Issuer, idp.ClientID, idp.ClientSecret
 		})
 	}),

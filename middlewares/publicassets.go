@@ -107,7 +107,17 @@ func PublicAssets(config PublicAssetConfig, embedded fs.FS) (Middleware, error) 
 			// win here for the same reason it wins there: an author shadowing
 			// a file must not see one answer in the loop and the other after a
 			// deploy.
-			if external, ok := externalAssetPath(name); ok {
+			if source := registeredExternalSource(); source != nil {
+				mediaType := mime.TypeByExtension(path.Ext(name))
+				if mediaType != "" {
+					w.Header().Set("Content-Type", mediaType)
+				}
+				addSVGSandbox(w.Header(), mediaType, config.SVGSandbox)
+				if serveExternalFromSource(w, r, source, name) {
+					return
+				}
+				w.Header().Del("Content-Type")
+			} else if external, ok := externalAssetPath(name); ok {
 				mediaType := mime.TypeByExtension(path.Ext(name))
 				if mediaType != "" {
 					w.Header().Set("Content-Type", mediaType)
@@ -237,6 +247,16 @@ const externalPublicRoot = "public-external"
 // adds the ones that come from the file itself and writes the status, so
 // nothing may be written before it.
 func serveExternalRepresentation(w http.ResponseWriter, r *http.Request, representation AssetRepresentation) {
+	if source := registeredExternalSource(); source != nil {
+		if serveExternalFromSource(w, r, source, representation.Path) {
+			return
+		}
+		// The manifest named an object the store does not hold: the same
+		// disagreement as a missing file, answered the same way.
+		reportMissingExternal(r.Context(), representation.Path)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
 	resolved, _, found, _ := safeLocalPath(filepath.FromSlash(externalPublicRoot), representation.Path)
 	if !found {
 		// The manifest named a file the deployment did not carry, which means

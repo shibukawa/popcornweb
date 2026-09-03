@@ -141,6 +141,9 @@ func resolveBootLogFormat(setting string) string {
 	case BootLogOff:
 		return BootLogOff
 	}
+	if bootLogAutoOff {
+		return BootLogOff
+	}
 	if isTerminal(os.Stderr) {
 		return BootLogTree
 	}
