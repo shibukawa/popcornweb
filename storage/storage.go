@@ -21,6 +21,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net/url"
 	"sort"
 	"strings"
 	"sync"
@@ -81,14 +82,42 @@ type ListPage struct {
 	NextCursor string
 }
 
+// PresignOptions describe the request a presigned URL authorizes.
+type PresignOptions struct {
+	// Method is GET, PUT, HEAD or DELETE; empty means GET.
+	Method string
+	// Expires bounds the URL's life; zero takes the backend's default, and
+	// more than a backend accepts is an error rather than a clamp.
+	Expires time.Duration
+	// ContentType, when set, is signed on a PUT, so the sender must send
+	// exactly it.
+	ContentType string
+	// Headers are further request headers the sender must reproduce, such
+	// as Content-Disposition on a PUT.
+	Headers map[string]string
+}
+
+// ErrPresignUnavailable reports a bucket that cannot issue a presigned URL as
+// configured; the message names what it lacks.
+var ErrPresignUnavailable = errors.New("storage: presigned URLs are unavailable for this bucket")
+
 // Bucket is one configured bucket. Every method takes a context, and every
 // backend answers ErrNotFound for a missing key.
+//
+// Presign returns a URL a client may use for one request against key
+// without the application's credentials, for a bounded time. The S3 and R2
+// backends sign it with SigV4 query parameters, so the client talks to the
+// store directly; the local backend answers with a path under
+// SignedPathPrefix that the application serves itself, which is also what a
+// deployment that exposes no bucket gets. A backend that cannot issue one as
+// configured wraps ErrPresignUnavailable.
 type Bucket interface {
 	Get(ctx context.Context, key string) (*Object, error)
 	Head(ctx context.Context, key string) (*ObjectInfo, error)
 	Put(ctx context.Context, key string, body io.Reader, options PutOptions) error
 	Delete(ctx context.Context, key string) error
 	List(ctx context.Context, options ListOptions) (*ListPage, error)
+	Presign(ctx context.Context, key string, options PresignOptions) (*url.URL, error)
 }
 
 // Factory opens a bucket from its configuration. It is called once per
@@ -165,8 +194,12 @@ var opened struct {
 // later calls return the same value; a name the configuration does not
 // carry is an error naming the configured set, so a typo fails at the call
 // rather than at the store.
+func registeredStorageConfig() (pwruntime.StorageConfig, bool) {
+	return pwruntime.RegisteredConfig[pwruntime.StorageConfig]()
+}
+
 func Open(ctx context.Context, name string) (Bucket, error) {
-	config, _ := pwruntime.RegisteredConfig[pwruntime.StorageConfig]()
+	config, _ := registeredStorageConfig()
 	if !config.Enabled {
 		return nil, errors.New("storage: storage.enabled is false")
 	}

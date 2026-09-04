@@ -36,6 +36,7 @@ const (
 	SlotPublicAssets     = pwruntime.SlotPublicAssets
 	SlotOperational      = pwruntime.SlotOperational
 	SlotStorage          = pwruntime.SlotStorage
+	SlotSignedStorage    = pwruntime.SlotSignedStorage
 	SlotSession          = pwruntime.SlotSession
 	SlotAuthentication   = pwruntime.SlotAuthentication
 	SlotRateLimit        = pwruntime.SlotRateLimit

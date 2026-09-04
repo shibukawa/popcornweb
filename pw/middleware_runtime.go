@@ -2,10 +2,12 @@ package pw
 
 import (
 	"context"
+	"github.com/shibukawa/popcornweb/storage"
 	"io"
 	"io/fs"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/shibukawa/popcornweb/middlewares"
 	"github.com/shibukawa/popcornweb/pwconfig"
@@ -86,6 +88,21 @@ func buildRuntimeHandler(handler http.Handler, server ServerConfig, security Sec
 			return nil, err
 		}
 		frames = append(frames, chainFrame{slot: SlotPublicAssets, name: "public_assets", middleware: assets})
+	}
+	// A local storage bucket presigns URLs that point back here, so the
+	// route that serves them is mounted only when such a bucket is
+	// configured; a deployment on S3 or R2 hands out URLs to the store.
+	if storage.SelfServed(context.Background()) {
+		signed := storage.SignedHandler()
+		frames = append(frames, chainFrame{slot: SlotSignedStorage, name: "signed_storage", middleware: func(next http.Handler) http.Handler {
+			return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if strings.HasPrefix(r.URL.Path, storage.SignedPathPrefix) {
+					signed.ServeHTTP(w, r)
+					return
+				}
+				next.ServeHTTP(w, r)
+			})
+		}})
 	}
 	// The probes stay above everything that authenticates, and the
 	// documentation endpoints go beneath the guard, so the session and the

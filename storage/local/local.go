@@ -10,18 +10,25 @@ package local
 
 import (
 	"context"
+	"crypto/hmac"
+	"crypto/rand"
 	"crypto/sha256"
+	"crypto/subtle"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"io/fs"
+	"net/http"
+	"net/url"
 	"os"
 	"path"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/shibukawa/popcornweb/pwruntime"
 	"github.com/shibukawa/popcornweb/storage"
@@ -49,22 +56,28 @@ func open(ctx context.Context, config pwruntime.StorageBucketConfig) (storage.Bu
 	if err != nil {
 		return nil, err
 	}
-	return &Bucket{root: root}, nil
+	secret := make([]byte, 32)
+	if _, err := rand.Read(secret); err != nil {
+		return nil, err
+	}
+	return &Bucket{root: root, name: config.Name, secret: secret}, nil
 }
 
 // Bucket is one directory of objects.
 type Bucket struct {
 	root string
+	// name is what the configuration calls the bucket, which a signed URL
+	// carries so the handler can find its way back here.
+	name string
+	// secret signs the URLs Presign issues; it is generated per process, so
+	// a URL outlives neither the process nor its expiry.
+	secret []byte
 }
 
-// New opens a directory as a bucket, for a caller building one outside the
-// configuration, such as a test.
-func New(directory string) (*Bucket, error) {
-	return openDirectory(directory)
-}
-
-func openDirectory(directory string) (*Bucket, error) {
-	bucket, err := open(context.Background(), pwruntime.StorageBucketConfig{Directory: directory})
+// New opens a directory as a bucket named name, for a caller building one
+// outside the configuration, such as a test.
+func New(name, directory string) (*Bucket, error) {
+	bucket, err := open(context.Background(), pwruntime.StorageBucketConfig{Name: name, Directory: directory})
 	if err != nil {
 		return nil, err
 	}
@@ -233,4 +246,54 @@ func (b *Bucket) List(ctx context.Context, options storage.ListOptions) (*storag
 		page.Objects = append(page.Objects, *info)
 	}
 	return page, nil
+}
+
+// Presign returns a path under storage.SignedPathPrefix that the application
+// serves itself, signed with a key this process generated when the bucket
+// opened. The URL is relative: the page that hands it to a browser is on the
+// same origin, and the backend does not know the host it is served on. It
+// lives for options.Expires, or storage.DefaultPresignExpiry, and dies with
+// the process, which is what a development loop wants.
+func (b *Bucket) Presign(ctx context.Context, key string, options storage.PresignOptions) (*url.URL, error) {
+	if _, err := b.resolve(key); err != nil {
+		return nil, err
+	}
+	method := options.Method
+	if method == "" {
+		method = http.MethodGet
+	}
+	expires := options.Expires
+	if expires <= 0 {
+		expires = storage.DefaultPresignExpiry
+	}
+	deadline := time.Now().Add(expires).Unix()
+	query := url.Values{}
+	query.Set("exp", strconv.FormatInt(deadline, 10))
+	query.Set("sig", b.signature(method, key, deadline))
+	return &url.URL{Path: storage.SignedPathPrefix + b.name + "/" + key, RawQuery: query.Encode()}, nil
+}
+
+// VerifySignedRequest is the storage.SelfServing half of Presign: the
+// signature covers the method, the key and the expiry, so a URL signed for
+// a GET does not authorize a PUT and one past its expiry authorizes nothing.
+func (b *Bucket) VerifySignedRequest(r *http.Request, key string) (string, error) {
+	expiry, err := strconv.ParseInt(r.URL.Query().Get("exp"), 10, 64)
+	if err != nil || time.Now().Unix() > expiry {
+		return "", storage.ErrBadSignature
+	}
+	method := r.Method
+	if method == http.MethodHead {
+		method = http.MethodGet
+	}
+	expected := b.signature(method, key, expiry)
+	if subtle.ConstantTimeCompare([]byte(expected), []byte(r.URL.Query().Get("sig"))) != 1 {
+		return "", storage.ErrBadSignature
+	}
+	return method, nil
+}
+
+func (b *Bucket) signature(method, key string, expiry int64) string {
+	mac := hmac.New(sha256.New, b.secret)
+	mac.Write([]byte(method + "\n" + b.name + "\n" + key + "\n" + strconv.FormatInt(expiry, 10)))
+	return hex.EncodeToString(mac.Sum(nil))
 }

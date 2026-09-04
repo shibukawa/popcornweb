@@ -14,18 +14,51 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net/url"
 	"strings"
 	"time"
 
 	"github.com/shibukawa/popcornweb/middlewares"
 	"github.com/shibukawa/popcornweb/pwruntime"
 	"github.com/shibukawa/popcornweb/storage"
+	tinys3 "github.com/shibukawa/tinygodriver/storage/s3"
 	cfr2 "github.com/syumai/workers/cloudflare/r2"
 )
 
 func init() {
 	storage.RegisterBackend(pwruntime.StorageBackendR2, func(ctx context.Context, config pwruntime.StorageBucketConfig) (storage.Bucket, error) {
-		return Open(config.Binding)
+		bucket, err := Open(config.Binding)
+		if err != nil {
+			return nil, err
+		}
+		// The binding has no presign of its own; Cloudflare's own guidance
+		// is a SigV4 URL against the S3 API with an R2 access key. When the
+		// configuration carries one beside the binding, the S3 client's
+		// signer is used; presigning makes no request, so the client is
+		// never dialed from here.
+		if config.AccessKeyID != "" || config.SecretAccessKey != "" {
+			name := config.Bucket
+			if name == "" {
+				name = strings.ToLower(config.Binding)
+			}
+			options := []tinys3.Option{
+				tinys3.WithPathStyle(true),
+				tinys3.WithRegion("auto"),
+				tinys3.WithCredentials(tinys3.Credentials{AccessKeyID: config.AccessKeyID, SecretAccessKey: config.SecretAccessKey}),
+			}
+			if config.Endpoint != "" {
+				options = append(options, tinys3.WithEndpoint(config.Endpoint))
+			}
+			if config.Region != "" {
+				options = append(options, tinys3.WithRegion(config.Region))
+			}
+			signer, err := tinys3.New(options...)
+			if err != nil {
+				return nil, fmt.Errorf("popcornweb/cloudflare/r2: presign signer: %w", err)
+			}
+			bucket.signer, bucket.signerBucket = signer, name
+		}
+		return bucket, nil
 	})
 }
 
@@ -35,6 +68,10 @@ const defaultPageSize = 1000
 // Bucket is one R2 bucket binding.
 type Bucket struct {
 	binding string
+	// signer presigns against the S3 API when the configuration carried an
+	// access key; nil otherwise, and then Presign refuses by name.
+	signer       *tinys3.Client
+	signerBucket string
 }
 
 // Open names a bucket by its binding. The binding is looked up per call
@@ -148,6 +185,23 @@ func (b *Bucket) List(ctx context.Context, options storage.ListOptions) (*storag
 		page.Objects = append(page.Objects, info(object.Key, object))
 	}
 	return page, nil
+}
+
+// Presign returns a SigV4 query-signed URL against R2's S3 endpoint, when
+// the bucket was configured with an access key beside its binding. Without
+// one it wraps storage.ErrPresignUnavailable naming what is missing, since
+// the binding itself cannot sign a URL.
+func (b *Bucket) Presign(ctx context.Context, key string, options storage.PresignOptions) (*url.URL, error) {
+	if b.signer == nil {
+		return nil, fmt.Errorf("%w: bucket binding %s has no access_key_id and secret_access_key beside it, and R2 presigns only through its S3 API", storage.ErrPresignUnavailable, b.binding)
+	}
+	signed, err := b.signer.Presign(ctx, b.signerBucket, key, tinys3.PresignOptions{
+		Method: options.Method, Expires: options.Expires, ContentType: options.ContentType, Headers: options.Headers,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("popcornweb/cloudflare/r2: presign: %w", err)
+	}
+	return signed, nil
 }
 
 // ExternalAssets serves the external public tree from the bucket: the build

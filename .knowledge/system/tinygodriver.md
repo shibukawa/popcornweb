@@ -59,5 +59,5 @@ tls_backends:
 not_consumed:
   storage/s3: an S3 client for targets where aws-sdk-go-v2 does not build; requirement:object-storage wraps it as the s3 backend since 2026-09-03
 requests_from_here:
-  - docs/tinygodriver-s3-presign-request.md, filed 2026-09-03: a Presign method on the storage/s3 client for requirement:object-storage, with multipart upload filed as a later option
+  - docs/tinygodriver-s3-presign-request.md, filed 2026-09-03 and answered in v1.2.12: Presign on the storage/s3 client, and multipart upload with it; requirement:object-storage uses the first and leaves the second to an application that needs it
 ```

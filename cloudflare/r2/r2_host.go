@@ -10,6 +10,7 @@ package r2
 import (
 	"context"
 	"errors"
+	"net/url"
 
 	"github.com/shibukawa/popcornweb/middlewares"
 	"github.com/shibukawa/popcornweb/pwruntime"
@@ -28,6 +29,11 @@ func init() {
 
 // Bucket is one R2 bucket binding.
 type Bucket struct{ binding string }
+
+// Presign is unavailable on this host, like every other operation.
+func (b *Bucket) Presign(context.Context, string, storage.PresignOptions) (*url.URL, error) {
+	return nil, ErrOutsideWorker
+}
 
 // Open names a bucket by its binding; on this host it fails.
 func Open(binding string) (*Bucket, error) { return nil, ErrOutsideWorker }

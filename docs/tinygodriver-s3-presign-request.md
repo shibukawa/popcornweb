@@ -3,7 +3,7 @@
 **From:** Popcorn Web (`github.com/shibukawa/popcornweb`)
 **Against:** `github.com/shibukawa/tinygodriver` v1.2.11
 **Date:** 2026-09-03
-**Status:** filed; not yet answered.
+**Status:** answered in v1.2.12 — Ask 1 implemented as `(*Client).Presign` with `PresignOptions` carrying Method, Expires, ContentType, Headers and Query, and Ask 2 implemented as well. Integrated downstream 2026-09-04: `storage.Bucket.Presign` on every backend, with the R2 binding presigning through the same signer when it has an access key.
 
 ## Division of responsibility
 

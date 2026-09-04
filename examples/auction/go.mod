@@ -26,7 +26,7 @@ require (
 	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect
 	github.com/shibukawa/configdir v0.0.0-20170330084843-e180dbdc8da0 // indirect
 	github.com/shibukawa/dbtestify v0.5.0 // indirect
-	github.com/shibukawa/tinygodriver v1.2.11 // indirect
+	github.com/shibukawa/tinygodriver v1.2.12 // indirect
 	github.com/stretchr/testify v1.11.1 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.69.0 // indirect
 	go.opentelemetry.io/otel/trace v1.44.0 // indirect

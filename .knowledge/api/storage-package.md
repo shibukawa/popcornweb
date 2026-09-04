@@ -12,10 +12,12 @@ bucket: Get, Head, Put, Delete and List, each taking a context
 object: ObjectInfo carries key, size, ETag, media type, last modified and user metadata; Object adds the body as a stream the caller closes; ReadAll reads a body whole and closes it
 put: PutOptions carries the media type, which is required, the length when known, and metadata
 list: ListOptions carries prefix, limit and cursor; ListPage carries the objects and the next cursor
+presign: Presign(ctx, key, PresignOptions) returns a URL a client uses for one request without the application's credentials; PresignOptions carries method, expiry, media type and signed headers; a backend that cannot issue one wraps ErrPresignUnavailable
+signed_route: SignedPathPrefix, SelfServing, SignedHandler and SelfServed are the self-served half: a backend whose URLs point back at the application implements SelfServing, and the runtime mounts SignedHandler at SlotSignedStorage when one is configured
 errors: ErrNotFound for a missing key on every backend; every other failure carries the backend's error
 registry: RegisterBackend(name, factory) from a backend package's init; Backends lists the names; Validate is the startup check api:application-lifecycle runs, naming the blank import a configured backend is missing
 backends:
-  local: storage/local, a directory with a sidecar per object for the media type and metadata; the api:cli-dev default
+  local: storage/local, a directory with a sidecar per object for the media type and metadata; the api:cli-dev default, and the one SelfServing backend
   s3: storage/s3, a thin adapter over system:tinygodriver storage/s3, including R2 through its S3 API from a process host
   r2: cloudflare/r2 over the Worker binding, compiled under js && wasm, with the host build registering a refusing factory
 configuration:
