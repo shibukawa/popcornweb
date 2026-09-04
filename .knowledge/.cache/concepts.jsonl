@@ -227,6 +227,7 @@
 {"category": "constraint", "id": "decision:grouped-database-connections", "path": ".knowledge/decision/grouped-database-connections.md", "role": "supporting", "title": "Grouped Database Connections", "type": "decision"}
 {"category": "constraint", "id": "decision:homebrew-tap-channel", "path": ".knowledge/decision/homebrew-tap-channel.md", "role": "supporting", "title": "Homebrew Own-Tap Channel", "type": "decision"}
 {"category": "constraint", "id": "decision:host-side-diagnostic-analysis", "path": ".knowledge/decision/host-side-diagnostic-analysis.md", "role": "supporting", "title": "Host-Side Diagnostic Analysis", "type": "decision"}
+{"category": "constraint", "id": "decision:host-state-fit-severity", "path": ".knowledge/decision/host-state-fit-severity.md", "role": "supporting", "title": "Host State Fit Severity", "type": "decision"}
 {"category": "constraint", "id": "decision:host-tools-target-runtime", "path": ".knowledge/decision/host-tools-target-runtime.md", "role": "supporting", "title": "Host Tools and Target Runtime Split", "type": "decision"}
 {"category": "constraint", "id": "decision:implicit-document-shell", "path": ".knowledge/decision/implicit-document-shell.md", "role": "supporting", "title": "Implicit Document Shell", "type": "decision"}
 {"category": "constraint", "id": "decision:import-registered-session-plugins", "path": ".knowledge/decision/import-registered-session-plugins.md", "role": "supporting", "title": "Import-Registered Session Plugins", "type": "decision"}
@@ -594,6 +595,7 @@
 {"category": "objective", "id": "requirement:second-build-feature-parity", "path": ".knowledge/requirement/second-build-feature-parity.md", "role": "primary", "title": "Feature Parity For The fasthttp Second Build", "type": "requirement"}
 {"category": "objective", "id": "requirement:serverless-http-hosting", "path": ".knowledge/requirement/serverless-http-hosting.md", "role": "primary", "title": "Serverless HTTP Hosting", "type": "requirement"}
 {"category": "objective", "id": "requirement:serverless-source-entrypoints", "path": ".knowledge/requirement/serverless-source-entrypoints.md", "role": "primary", "title": "Serverless Source Entrypoints", "type": "requirement"}
+{"category": "objective", "id": "requirement:serverless-state-advisories", "path": ".knowledge/requirement/serverless-state-advisories.md", "role": "primary", "title": "Serverless State Advisories", "type": "requirement"}
 {"category": "objective", "id": "requirement:session-assurance-levels", "path": ".knowledge/requirement/session-assurance-levels.md", "role": "primary", "title": "Graded Session Assurance", "type": "requirement"}
 {"category": "objective", "id": "requirement:shared-web-runtime", "path": ".knowledge/requirement/shared-web-runtime.md", "role": "primary", "title": "Shared Web Runtime", "type": "requirement"}
 {"category": "objective", "id": "requirement:signal-forwarding-seam", "path": ".knowledge/requirement/signal-forwarding-seam.md", "role": "primary", "title": "Signal Forwarding Seam", "type": "requirement"}
