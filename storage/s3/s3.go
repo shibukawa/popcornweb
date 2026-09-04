@@ -12,6 +12,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net/url"
 	"strings"
 
 	"github.com/shibukawa/popcornweb/pwruntime"
@@ -109,6 +110,18 @@ func (b *Bucket) Delete(ctx context.Context, key string) error {
 		return nil
 	}
 	return err
+}
+
+// Presign returns a SigV4 query-signed URL against the endpoint, from the
+// client's own signer.
+func (b *Bucket) Presign(ctx context.Context, key string, options storage.PresignOptions) (*url.URL, error) {
+	signed, err := b.client.Presign(ctx, b.bucket, key, tinys3.PresignOptions{
+		Method: options.Method, Expires: options.Expires, ContentType: options.ContentType, Headers: options.Headers,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("storage/s3: presign: %w", err)
+	}
+	return signed, nil
 }
 
 // List returns one page of keys under a prefix.

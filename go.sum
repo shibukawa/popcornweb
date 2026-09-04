@@ -183,8 +183,8 @@ github.com/shibukawa/localotelviewer v1.0.2 h1:bwIj/Wy/fiW0eTC4S9a1eDUx8IYtjmOGF
 github.com/shibukawa/localotelviewer v1.0.2/go.mod h1:4uHkRUebfefDmDaY1xgu4ZRpe+TVxbdDerJrFXImD4o=
 github.com/shibukawa/tinybind-go v0.5.28 h1:afpCd+ZKJS76+foRTWavTvUrYjEBFD0Pe5Wt9V5Tg+g=
 github.com/shibukawa/tinybind-go v0.5.28/go.mod h1:mUZJogdVp6jt4LcDld/Hm1EFZz2Iz7y+CmApZK4X8F4=
-github.com/shibukawa/tinygodriver v1.2.11 h1:2H9tkXXTEStHTVkGTX2Nm4gIo5tPd5TsZI4vb8vb6Z8=
-github.com/shibukawa/tinygodriver v1.2.11/go.mod h1:BHF2120Trf0Np+CO1uxsmtd2G/gfslLuMl5zaA0T7ik=
+github.com/shibukawa/tinygodriver v1.2.12 h1:uFWjJo1Xk32PD5rOmTJUWIP3MjjpQqZ1MkgPrFNTFs4=
+github.com/shibukawa/tinygodriver v1.2.12/go.mod h1:BHF2120Trf0Np+CO1uxsmtd2G/gfslLuMl5zaA0T7ik=
 github.com/shirou/gopsutil/v4 v4.26.6 h1:Mzr/npDtQC/xpeEuQKHZt8Zo9CmPvhTj8nkR8w5TLDs=
 github.com/shirou/gopsutil/v4 v4.26.6/go.mod h1:LZ6ewCSkBqUpvSOf+LsTGnRinC6iaNUNMGBtDkJBaLQ=
 github.com/sirupsen/logrus v1.9.3 h1:dueUQJ1C2q9oE3F7wvmSGAaVtTmUizReu6fjN8uqzbQ=

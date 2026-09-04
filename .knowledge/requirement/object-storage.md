@@ -45,14 +45,16 @@ development:
   api:cli-dev: the local backend by default, so a scaffolded upload handler works before any bucket exists
   parity: the same handler runs against s3 and r2 without a change, which is what the interface is for
 presigned_urls:
-  status: designed, waiting on system:tinygodriver; the request is docs/tinygodriver-s3-presign-request.md
+  status: implemented 2026-09-04 on system:tinygodriver v1.2.12, which answered docs/tinygodriver-s3-presign-request.md with Presign and multipart together
   interface: Presign(ctx, key, PresignOptions) on Bucket, returning a URL a browser may GET or PUT for a bounded time
   s3: the client's SigV4 query-string signer, once it exists there, so one signer serves every host and the redirect re-signing it already has keeps it right
   r2: the same signer against the R2 S3 endpoint, when the bucket's configuration carries an access key beside the binding; without one, refused by name, because the binding has no presign of its own
-  local: a URL the application serves itself under an HMAC, which is also the fallback for a deployment that exposes no bucket
+  local: a relative path under storage.SignedPathPrefix that the application serves through storage.SignedHandler, mounted at SlotSignedStorage when a local bucket is configured; the signature is an HMAC over method, bucket, key and expiry with a key generated per process, so a URL outlives neither
+  route: GET streams the object with its media type and ETag, PUT stores the body under the signed key, DELETE removes it; a signature for another method, another key or a past expiry is 403
   why_not_built_here: cloud/aws exports the canonical helpers, but the signing key and canonical request are that library's, and a presign that disagreed with its header signer by one encoding rule would be a SignatureDoesNotMatch no test here catches
 non_goals:
   - a second SigV4 implementation here
+  - multipart in the interface, although system:tinygodriver storage/s3 now has it; it waits for an application above the single-Put limit
   - multipart upload, until an application needs an object the single Put limit refuses
   - a typed object binding in system:tinybind; the interface carries bytes and metadata
   - S3 through system:tinygodriver from inside a Worker; the binding is the Worker's client

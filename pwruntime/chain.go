@@ -61,6 +61,10 @@ const (
 	SlotMaxRequestBody Slot = 80
 	// SlotPublicAssets answers static files before anything authenticates.
 	SlotPublicAssets Slot = 90
+	// SlotSignedStorage serves the URLs a self-serving storage backend
+	// presigns, per requirement:object-storage, ahead of anything that
+	// authenticates: the signature is the authorization.
+	SlotSignedStorage Slot = 95
 	// SlotOperational answers the framework assets and the two probes.
 	SlotOperational Slot = 100
 	// SlotStorage opens request-scoped storage.

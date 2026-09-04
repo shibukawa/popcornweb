@@ -22,7 +22,11 @@ HTTP プロセスを起動するのか、export されたハンドラーを要�
 
 コンテナサービスは別ランタイムではありません。生成済みイメージを起動して `PORT` を
 設定するだけで、[`pw.Run`](/ja/reference/runtime/) がそのポートを listen します。
-コンテナをゼロまで scale down するサービスも同じです。
+コンテナをゼロまで scale down するサービスも同じです。コンテナホストが使えるなら、それが第一候補です。
+以下の target はどれも、コールドスタート、レスポンスのバッファリング、リクエスト単位の寿命といった
+何かと引き換えに「そこでしか動かせない場所」で動かすものです。ポートの背後のプロセスで済む
+サービスにその引き換えは要りません。全体の並びは[プラットフォーム一覧](/ja/guides/architecture/platform/)に
+まとめています。
 
 build には独立した二つの軸があります。`--target` はデプロイ先、`--backend` は
 `nethttp` または `fasthttp` を選択します。`pw dev` の動作は変わりません。
@@ -191,7 +195,7 @@ D1 ドライバにはトランザクションがないため、D1 接続では `
 
 ### 外部 public ツリーのための R2
 
-Worker には隣接ディレクトリがないため、[外部 public ツリー](/ja/guides/frontend/public-assets/)は
+Worker には隣接ディレクトリがないため、[外部 public ツリー](/ja/guides/frontend/static-assets/)は
 代わりに R2 バケットから配信します。バケットの binding を名指しすれば残りは build が行います。
 生成エントリはバケットからツリーを読み、`wrangler.jsonc` は binding を宣言し、stage にはツリーの
 コピーと、各ファイルを URL パス・メディアタイプ付きでアップロードするスクリプトが置かれます。
@@ -212,7 +216,7 @@ sh r2-upload.sh --remote   # デプロイ先のバケット
 マウントはバケットの ETag で応答し、一致すれば `304`、Range リクエストには `206` を返します。
 各オブジェクトはリクエストごとに丸ごと読むので、このツリーは「埋め込むには大きすぎるが Worker が
 メモリに載せられる」アセット向けです。アプリケーション自身のファイルは
-[ストレージインターフェース](/ja/guides/backend/object-storage/)で `backend = "r2"` と binding を
+[ストレージインターフェース](/ja/guides/storage/object-storage/)で `backend = "r2"` と binding を
 使います。build はそうした binding をすべて `wrangler.jsonc` に宣言し、Worker が届かない `local` と
 `s3` バックエンドを拒否します。
 

@@ -1,140 +1,43 @@
 ---
 title: オブジェクトストレージ
-description: TinyGo でも動く tinygodriver の S3 クライアントで、アップロードを S3 互換ストレージに保存する。
+description: アップロードなどのファイルを 1 つのバケットインターフェースで扱い、開発・プロセスホスト・Worker で背後のストアだけを切り替える。
 sidebar:
   order: 3
 ---
 
-アップロードされたファイルの置き場所は、データベースでもコンテナのディスクでも
-ありません。そして保存先のほとんどが話す言葉が S3 API です。AWS S3、Cloudflare
-R2、MinIO、RustFS、Wasabi のいずれも同じ API を持ちます。Go からこれを叩くのは
-本来なら解決済みの問題です。
-
-解決済みでなくなるのは TinyGo です。`aws-sdk-go-v2` は `net/http.Transport` の
-API 全体を必要としますが、TinyGo ではこの型は空の構造体として宣言されています。
-さらにトランスポート層が `net/http/httputil` を import しており、こちらは TinyGo
-ではコンパイルすら通りません。`minio-go` はもっと手前の `net/http/cookiejar` で
-失敗します。そのためオブジェクトストレージも、フレームワークのデータベースや TLS
-と同じ経路をたどります。[`tinygodriver`](https://github.com/shibukawa/tinygodriver)
-の `storage/s3` パッケージが S3 の REST API を直接話し、SigV4 で署名します。
-
-```sh
-go get github.com/shibukawa/tinygodriver/storage/s3@latest
-```
-
-このパッケージは TinyGo 専用ではありません。通常の Go ビルドでは `net/http` と
-`crypto/tls` の上で動作し、アプリケーション側のコードは 2 つのターゲットの間で
-変わりません。
-
-## 設定
-
-エンドポイント、リージョン、バケットはデプロイ時の設定なので、ほかの設定と同じく
-登録した構造体に置きます。[アプリケーション設定](/ja/guides/architecture/configuration/)を参照してください。
+アップロードの置き場はデータベースでもコンテナのディスクでもありません。置くべき先はほぼすべて
+S3 API を話します。AWS S3、Cloudflare R2、MinIO、RustFS、Wasabi。一方 Cloudflare Worker は R2 に
+binding 経由で到達します。どれか 1 つに向けて書いたハンドラーはそこに縛られます。Popcorn Web は
+ハンドラーに 1 つのインターフェースを渡し、バイト列の行き先は設定に語らせます。同じソースが
+ラップトップでも、コンテナでも、エッジでも動くように。
 
 ```go
-package storage
-
-import "github.com/shibukawa/popcornweb/pw"
-
-type Config struct {
-	Endpoint string `help:"S3 endpoint URL; empty selects the AWS regional endpoint"`
-	Region   string `help:"signing region"`
-	Bucket   string `default:"uploads" help:"bucket that holds uploaded objects"`
-}
-
-func RegisterConfig() { pw.RegisterConfig[Config]("storage") }
-```
-
-```toml
-[storage]
-endpoint = "http://127.0.0.1:9000"
-region = "us-east-1"
-bucket = "uploads"
-```
-
-例外は認証情報です。これはファイルに書きません。`s3.New` が環境変数を読むから
-です。`AWS_ACCESS_KEY_ID`、`AWS_SECRET_ACCESS_KEY`、`AWS_SESSION_TOKEN` に加えて、
-`AWS_REGION`（または `AWS_DEFAULT_REGION`）と `AWS_ENDPOINT_URL_S3`（または
-`AWS_ENDPOINT_URL`）を参照します。AWS CLI 用に設定済みのシェルならオプションは
-1 つも要りませんし、認証情報を環境変数で注入するデプロイなら、コミットしうる
-設定ファイルから認証情報を締め出せます。
-
-下のクライアントが空でない設定にだけオプションを適用しているのもそのためです。
-空文字列を渡すと、環境変数の値を「何もない」で上書きしてしまいます。
-
-## プロセスにひとつのクライアント
-
-`s3.Client` は並行利用しても安全で、内部に `http.Client` を持ちます。リクエストは
-毎回組み立てるのではなく、すでにあるものを受け取るべきです。
-
-```go
-package storage
+package handlers
 
 import (
-	"context"
-	"sync"
+	"bytes"
+	"crypto/rand"
+	"net/http"
+	"path"
 
 	"github.com/shibukawa/popcornweb/pw"
-	"github.com/shibukawa/tinygodriver/storage/s3"
+	"github.com/shibukawa/popcornweb/storage"
+	"github.com/shibukawa/tinybind-go"
 )
 
-var (
-	once      sync.Once
-	client    *s3.Client
-	clientErr error
-)
-
-// Client returns the process-wide client, built from [storage] on first use.
-func Client(ctx context.Context) (*s3.Client, error) {
-	once.Do(func() {
-		config := pw.ConfigContext[Config](ctx)
-		var options []s3.Option
-		if config.Endpoint != "" {
-			options = append(options, s3.WithEndpoint(config.Endpoint))
-		}
-		if config.Region != "" {
-			options = append(options, s3.WithRegion(config.Region))
-		}
-		client, clientErr = s3.New(options...)
-	})
-	return client, clientErr
-}
-
-// Bucket names the configured bucket.
-func Bucket(ctx context.Context) string { return pw.ConfigContext[Config](ctx).Bucket }
-```
-
-`s3.New` はネットワーク I/O を行わず、認証情報・リージョン・エンドポイントを検証
-するだけです。したがって設定ミスは、最初の 1 バイトが流れるときではなく、
-ストレージに触れる最初のリクエストで表面化します。認証情報の欠落は
-`s3.ErrNoCredentials`、リージョンの欠落は `s3.ErrNoRegion` で、どちらも通信が
-プロセスの外に出る前に返ります。
-
-| オプション | 効果 |
-| --- | --- |
-| `WithEndpoint` | エンドポイント URL。S3 互換サーバー向け |
-| `WithRegion` | 署名リージョン |
-| `WithCredentials` | 静的な認証情報 |
-| `WithCredentialsFromEnv` | 環境変数から認証情報を読む |
-| `WithPathStyle` | `bucket.endpoint/key` ではなく `endpoint/bucket/key` |
-| `WithUnsignedPayload` | ヘッダーのみ署名し、大きなストリームをバッファしない |
-| `WithTimeout` | リクエストごとのタイムアウト。既定は 60 秒 |
-| `WithHTTPClient` | `http.Client` を渡す |
-
-アドレッシングは `amazonaws.com` のエンドポイントでは仮想ホスト形式、それ以外では
-パス形式が既定です。S3 互換サーバーが期待するのは後者です。
-
-## アップロードを保存する
-
-multipart のフィールドは、ほかの入力と同じように `httpbind.File` にバインドされます
-（[ハンドラ](/ja/guides/frontend/handlers/)を参照）。`Content` はすでにメモリ上にあるので、
-`bytes.NewReader` は `Put` に巻き戻せるボディを渡せます。
-
-```go
 type uploadInput struct {
 	Title string        `payload:"title" check:"required,maxlen=80"`
-	File  httpbind.File `payload:"file" check:"required"`
+	File  tinybind.File `payload:"file" check:"required"`
 }
+
+type uploadResult struct {
+	Key string `json:"key"`
+}
+
+func init() { mux.HandleFunc("POST /uploads", upload) }
+
+// newObjectID is a random key segment; the client's file name never becomes one.
+func newObjectID() string { return rand.Text() }
 
 func upload(w http.ResponseWriter, r *http.Request) {
 	input, err := pw.Parse[uploadInput](r)
@@ -142,173 +45,134 @@ func upload(w http.ResponseWriter, r *http.Request) {
 		pw.WriteProblem(w, r, pw.BadRequest(err))
 		return
 	}
-	client, err := storage.Client(r.Context())
+	bucket, err := storage.Open(r.Context(), "uploads")
 	if err != nil {
-		pw.WriteProblem(w, r, err)
+		pw.WriteProblem(w, r, pw.InternalServerError(err))
 		return
 	}
-
-	// The client controls Filename, so it travels as metadata, never as a key.
-	key := "uploads/" + newObjectID() + path.Ext(input.File.Filename)
-
-	if _, err := client.Put(r.Context(), storage.Bucket(r.Context()), key,
-		bytes.NewReader(input.File.Content),
-		s3.WithContentType(input.File.ContentType),
-		s3.WithMetadata(map[string]string{
-			"title":    input.Title,
-			"filename": input.File.Filename,
-		}),
-	); err != nil {
-		pw.WriteProblem(w, r, storageProblem(err))
+	// Filename はクライアントが決めるので、metadata として運び、キーには使わない。
+	key := "u1/" + newObjectID() + path.Ext(input.File.Filename)
+	err = bucket.Put(r.Context(), key, bytes.NewReader(input.File.Content), storage.PutOptions{
+		ContentType:   input.File.ContentType,
+		ContentLength: int64(len(input.File.Content)),
+		Metadata:      map[string]string{"title": input.Title, "filename": input.File.Filename},
+	})
+	if err != nil {
+		pw.WriteProblem(w, r, pw.InternalServerError(err))
 		return
 	}
 	pw.WriteAPI(w, r, uploadResult{Key: key})
 }
 ```
 
-巻き戻せることは些細な話ではありません。SigV4 はペイロードのハッシュに署名するため、
-`Put` はボディを 2 回読みます。`io.Seeker` を実装したボディ（`*bytes.Reader` や
-`*os.File`）はハッシュを取ってから巻き戻され、それ以外はいったんメモリに
-バッファされます。`WithUnsignedPayload` を使えばストリームのまま送れますが、署名が
-ボディを覆わなくなる代償を払います。使うのは https の上だけにし、あわせて
-`s3.WithContentLength(n)` を渡してください。長さの分からないボディは chunked で
-送出され、AWS は chunked な `PutObject` を拒否します。
+`storage.Open` は設定で付けた名前でバケットを解決します。返る値には `Get`、`Head`、`Put`、`Delete`、
+`List`、`Presign` があります。body は呼び出し側が閉じるストリーム、一覧はカーソルでページングされ、
+存在しないキーはどのバックエンドでも `storage.ErrNotFound` なので、`errors.Is` 1 つで済みます。
 
-オブジェクトがクライアントに届くより前に、2 つの上限が効きます。
-`server.max_request_body`（既定 10 MiB）と、multipart のボディ上限
-`httpbind.SetMaxMultipartBodyBytes`（既定 1 MiB）です。実ファイルを受け付けるなら
-両方を引き上げます。
+バイト列がバケットに届く前に 2 つの上限が効きます。`server.max_request_body`（既定 10 MiB）と
+multipart body の上限です。本物のファイルを受けるエンドポイントでは両方を上げてください。そして
+`ContentType` が意味を持つのはアップロード時ではなくダウンロード時です。ストアは送られた値を
+オブジェクトの `Content-Type` としてあとで返すので、オブジェクトをブラウザに返すアプリケーションは
+part のヘッダーを信じずに型を自分で決めます。
 
-`WithContentType` が効くのはアップロード時ではなくダウンロード時です。S3 は送られた
-値を保存し、後でオブジェクトの `Content-Type` として返します。ここでその値はクライアント
-由来です。保存したオブジェクトをブラウザに返すアプリケーションは、パートのヘッダーを
-信用せず、自分で型を決めるべきです。
+## 3 つのバックエンド、1 つの設定の形
 
-## 取り出して返す
+```toml
+[storage]
+enabled = true
 
-```go
-object, err := client.Get(r.Context(), storage.Bucket(r.Context()), key)
-if err != nil {
-	pw.WriteProblem(w, r, storageProblem(err))
-	return
-}
-defer object.Body.Close()
-
-if object.ContentType != "" {
-	w.Header().Set("Content-Type", object.ContentType)
-}
-if object.Size >= 0 {
-	w.Header().Set("Content-Length", strconv.FormatInt(object.Size, 10))
-}
-if object.ETag != "" {
-	w.Header().Set("ETag", object.ETag)
-}
-if _, err := io.Copy(w, object.Body); err != nil {
-	pw.Logger(r).Error("download interrupted", pw.String("key", key), pw.Err(err))
-}
+# config.dev.toml — プロジェクト内のディレクトリ。何も起動しない
+[[storage.buckets]]
+name = "uploads"
+backend = "local"
+directory = "uploads"
 ```
 
-`Get` はレスポンスヘッダーが届いた時点で戻るので、ボディはハンドラの中に溜まるので
-はなく通り抜けていきます。`Head` は転送なしで同じメタデータを取得し、
-`GetRange(ctx, bucket, key, offset, length)` は一部だけを要求します。`length` が
-0 以下なら末尾まで読みます。
-
-```go
-object, err := client.GetRange(r.Context(), bucket, key, 0, 1<<20)
+```toml
+# プロセスホストの config.prod.toml — S3、MinIO、あるいは S3 API 経由の R2
+[[storage.buckets]]
+name = "uploads"
+backend = "s3"
+endpoint = "https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com"
+region = "auto"
+bucket = "myapp-uploads"
+access_key_id = "${R2_ACCESS_KEY_ID}"
+secret_access_key = "${R2_SECRET_ACCESS_KEY}"
 ```
 
-このパッケージはリクエストに署名しますが、署名付き URL は発行しません。したがって
-ブラウザがダウンロードするバイトはすべてアプリケーションを通ります。公開バケットを
-CDN の背後に置くのが回避策で、そのリダイレクトはアプリケーション側で書きます。
-
-## 一覧する
-
-`List` が返すのは 1 ページです。切り詰められたページは `NextToken` を持ち、
-`WithContinuationToken` でそれを戻します。
-
-```go
-var keys []string
-for token := ""; ; {
-	page, err := client.List(r.Context(), bucket,
-		s3.WithPrefix("uploads/"),
-		s3.WithMaxKeys(1000),
-		s3.WithContinuationToken(token),
-	)
-	if err != nil {
-		return err
-	}
-	for _, object := range page.Objects {
-		keys = append(keys, object.Key)
-	}
-	if !page.IsTruncated {
-		break
-	}
-	token = page.NextToken
-}
+```toml
+# Cloudflare Worker の config.prod.toml — バケット binding
+[[storage.buckets]]
+name = "uploads"
+backend = "r2"
+binding = "UPLOADS"
 ```
 
-`WithDelimiter("/")` を渡すと、一覧をツリーとしてたどれます。現在のプレフィックス
-直下のキーは `Objects` に、その下のプレフィックスは `CommonPrefixes` に入ります。
-`WithStartAfter` は既知のキーの続きから再開します。
+アプリケーションは使うバックエンドをデータベースエンジンと同じく blank import でリンクします。
+`storage/local`、`storage/s3`、`cloudflare/r2` です。まず `local` から始めてください。何も起動せず、
+各オブジェクトをファイルとして保ち、メディアタイプと metadata は sidecar に置きます。`pw dev` と
+テストスイートはこれで動かすものです。プロセスホストでは `s3` に移ります。プロバイダー間で違う設定は
+endpoint だけで、アドレッシングは `amazonaws.com` なら virtual-host 形式、それ以外は path 形式が既定です。
+S3 互換サーバーが期待するのはそちらだからです。Worker の build は `cloudflare/r2` を自分でリンクし、
+`local` と `s3` をビルド時と起動時に拒否します。ディレクトリもソケットも届かないからです。同じファイルの
+それらのバックエンドはプロセスホストでは正しい設定です。
 
-## エラー
+資格情報は `${NAME}` 参照で書き、直接は書きません。この配列は `STORAGE_BUCKETS` という 1 つの環境変数に
+JSON として載せて Worker に届きます。`pw build --target cloudflare-workers` が `config.prod.toml` から
+書き出し、どのホストでも手で設定できます。
 
-S3 のエラーコードはセンチネルに対応づけられているので、ハンドラは文字列ではなく
-`errors.Is` で分岐できます。
+## presigned URL
 
-```go
-func storageProblem(err error) error {
-	switch {
-	case errors.Is(err, s3.ErrNoSuchKey):
-		return pw.NotFound("no such object")
-	case errors.Is(err, s3.ErrInvalidRange):
-		return pw.Problem{
-			Status:  http.StatusRequestedRangeNotSatisfiable,
-			Title:   "Range Not Satisfiable",
-			Code:    "range_not_satisfiable",
-			Message: "the requested byte range lies outside the object",
-		}
-	default:
-		// 5xx detail is logged in full and never reaches the client.
-		return err
-	}
-}
-```
-
-default 節は意図的です。`ErrAccessDenied`、`ErrBadCredentials`、接続拒否はクライアント
-の間違いではなく運用側の問題であり、`pw.WriteProblem` は認識できないエラーを
-500 に変換して、内容は全文をログに残し、クライアントには `internal error` として
-返します。[レスポンス](/ja/guides/frontend/responses/)を参照してください。
-
-| センチネル | 発生元 |
-| --- | --- |
-| `ErrNoSuchKey` | 存在しないオブジェクト、および 404 全般 |
-| `ErrNoSuchBucket` | 存在しないバケット |
-| `ErrAccessDenied` | 拒否されたリクエスト、および 403 全般 |
-| `ErrBucketExists`, `ErrBucketNotEmpty` | `CreateBucket`, `DeleteBucket` |
-| `ErrInvalidRange` | オブジェクトの範囲外のレンジ |
-| `ErrBadCredentials` | 署名またはキーの拒否 |
-| `ErrNoCredentials`, `ErrNoRegion` | `s3.New`。リクエストの前 |
-| `ErrTooManyRedirect` | エンドポイントの設定ミス |
-
-センチネルの背後にある詳細は `*s3.Error` が運びます。ステータス、コード、メッセージ、
-そしてストレージの提供元が問い合わせ時に求めるリクエスト ID です。
+大きなアップロードをアプリケーション経由で流すべきではなく、ダウンロードも同じです。`Presign` は
+ブラウザが直接使う URL を、メソッドと有効期限を限って返します。
 
 ```go
-var storageErr *s3.Error
-if errors.As(err, &storageErr) {
-	pw.LoggerContext(ctx).Error("s3 failed",
-		pw.String("op", storageErr.Op), pw.String("code", storageErr.Code),
-		pw.Int("status", storageErr.StatusCode), pw.String("request_id", storageErr.RequestID))
-}
+put, err := bucket.Presign(r.Context(), key, storage.PresignOptions{
+	Method:      http.MethodPut,
+	Expires:     15 * time.Minute,
+	ContentType: "image/png", // 署名対象。ブラウザはこれをそのまま送る必要がある
+})
+get, err := bucket.Presign(r.Context(), key, storage.PresignOptions{})
 ```
 
-なお `Delete` は存在しないキーに対しても成功します。これは S3 自体の挙動です。
+`s3` では endpoint に対する SigV4 のクエリ署名付き URL で、クライアント自身の署名器が作ります。
+`r2` では同じ署名器を R2 の S3 API に対して使います。binding には presign がないからです。バケットに
+`binding` と並べて `endpoint`、`access_key_id`、`secret_access_key` を与えてください。なければ
+`Presign` は足りないものを名指しします。`local` では `/_storage/` 配下の相対パスを返し、アプリケーション
+自身がプロセスごとに生成した鍵で検証して配信します。PUT は body を保存し、GET は読み返し、URL は
+プロセスか有効期限とともに消えます。この経路は local バケットが設定されているときだけマウントされ、
+バケットを外に見せたくないデプロイが取る形でもあります。
+
+## クライアントに直接触る
+
+`s3` バックエンドは [tinygodriver](https://github.com/shibukawa/tinygodriver) の `storage/s3` です。
+S3 REST API を自分で話して SigV4 で署名するクライアントで、`aws-sdk-go-v2` と `minio-go` が TinyGo で
+コンパイルできないために存在します。TinyGo 専用の部分はありません。インターフェースが運ばない操作、
+つまり `GetRange` によるバイト範囲、multipart アップロード、ハッシュするには大きすぎるストリーム向けの
+`WithUnsignedPayload` が要るときは、同じ設定からクライアントを組んでインターフェースの先へ行きます。
+
+```go
+client, err := s3.New(s3.WithEndpoint(endpoint), s3.WithRegion(region),
+	s3.WithCredentials(s3.Credentials{AccessKeyID: id, SecretAccessKey: secret}))
+object, err := client.GetRange(ctx, "myapp-uploads", key, 0, 1<<20)
+```
+
+インターフェース越しでも知っておく価値のある癖が 1 つあります。SigV4 はペイロードのハッシュに署名する
+ので、`Put` は body を 2 回読みます。`io.Seeker` を実装する body（`*bytes.Reader`、`*os.File`）はハッシュ
+してから巻き戻され、それ以外は先にメモリへバッファされます。できる限り seek できるものを `Put` に
+渡してください。
+
+インターフェース経由のエラーは `storage.ErrNotFound` か、それ以外はバックエンド自身のエラーです。S3 の
+センチネル（`s3.ErrAccessDenied`、`s3.ErrBadCredentials`、`s3.ErrNoSuchBucket`）と request ID を持つ
+`*s3.Error` には、ログ用に `errors.Is` と `errors.As` で到達できます。`pw.WriteProblem` は知らないエラーを
+全文ログ付きの 500 にして `internal error` と報告します。存在しないキー以外のすべてにとって、それが
+正しい答えです。
 
 ## ローカル開発
 
-S3 互換サーバーであれば何でも動き、本番との違いはエンドポイントの設定だけです。
-[RustFS](https://rustfs.com/) はコマンド 1 つで起動します。
+`local` バックエンドが既定の答えです。テストが S3 経路そのものを証明しなければならないときは、
+S3 互換サーバーならどれでも動き、本番との違いは endpoint の設定だけです。[RustFS](https://rustfs.com/)
+はコマンド 1 つで起動します。
 
 ```sh
 docker run -d --name rustfs -p 9000:9000 \
@@ -316,67 +180,11 @@ docker run -d --name rustfs -p 9000:9000 \
   -e RUSTFS_VOLUMES=/data rustfs/rustfs
 ```
 
-```toml
-# config.dev.toml
-[storage]
-endpoint = "http://127.0.0.1:9000"
-region = "us-east-1"
-bucket = "uploads"
-```
+## 使わない場面
 
-```sh
-AWS_ACCESS_KEY_ID=rustfsadmin AWS_SECRET_ACCESS_KEY=rustfsadmin pw dev
-```
-
-バケットは `client.CreateBucket(ctx, bucket)` で作れます。`ErrBucketExists` は前回の
-実行がすでに作ったという意味なので、起動時のブートストラップを毎回実行しても
-安全です。
-
-コンテナを必要としないテストでは、クライアントを `httptest.Server` に向けます。
-ほかと変わらないエンドポイントであり、AWS 以外のホストではパス形式が既定です。
-
-```go
-client, err := s3.New(
-	s3.WithEndpoint(server.URL),
-	s3.WithRegion("us-east-1"),
-	s3.WithCredentials(s3.Credentials{AccessKeyID: "id", SecretAccessKey: "secret"}),
-)
-```
-
-## TinyGo では
-
-署名、リクエスト構築、XML デコードは共通のコードです。ビルドによって変わるのは、
-リクエストがネットワークに届く経路だけです。
-
-| ビルド | HTTP スタック（`s3.Backend`） |
-| --- | --- |
-| 通常の Go | `net/http` と `crypto/tls` |
-| TinyGo、または `-tags force_tinygo_logic` | `tinygodriver/https`。TLS は OS 側 |
-
-2 行目こそが、`crypto/tls` がスタブである TinyGo でこのパッケージが動く理由です。
-TLS は OS が担当します。macOS では Network.framework、Windows では Schannel、Linux
-では同梱の mbedTLS で、インストールすべきライブラリも同梱すべき証明書バンドルも
-ありません。それ以外の TinyGo ターゲットは `https.ErrPlatformNotSupported` を返します。
-`force_tinygo_logic` タグはホストの Go で同じ経路を選ぶもので、TinyGo ツールチェーン
-なしにこの経路を試すための手段です。
-
-どちらのビルドも `http.Client` にリダイレクトを追わせません。リダイレクト先は別の
-ホストであり、署名は署名時のホストを含むからです。クライアントが自分でリダイレクトを
-追い、ホップごとに署名し直すため、別リージョンのバケットも両方のターゲットで同じ
-ように扱えます。
-
-## このパッケージがやらないこと
-
-| 制約 | 帰結 |
-| --- | --- |
-| マルチパートアップロードなし | `Put` は 1 リクエストで送るため、エンドポイントの単一リクエスト上限が適用される（AWS では 5 GiB） |
-| 署名付き URL なし | ダウンロードはアプリケーション経由、または公開バケットの前段の CDN 経由 |
-| 認証情報は静的な値か環境変数 | 共有認証情報ファイル、SSO、IMDS には非対応 |
-| TinyGo では接続を再利用しない | `https` トランスポートはリクエストごとに接続を開くため、毎回 TLS ハンドシェイクを払う |
-| オブジェクト全体の操作のみ | バージョニング、ACL、タグ、ライフサイクルの API はない |
-
-設計を左右することが多いのは 1 つめです。任意の大きさのファイルを受け付けたい
-アプリケーションが求めるのはブラウザからストレージへの直接アップロードで、それには
-署名付き URL が必要になり、通常の Go でしかビルドできない別のクライアントを選ぶ
-ことになります。あるいは、1 リクエストで収まる程度のアップロード上限を、正直に
-掲げることです。
+アプリケーションと一緒に出荷するファイルは public ツリー（埋め込みまたは
+[外部](/ja/guides/frontend/static-assets/)）に置くべきで、build がバリデータを計算し、マウントが
+キャッシュヘッダー付きで配信します。リクエストごとに読む値は[データキャッシュ](/ja/guides/backend/data-cache/)か
+データベースの領分で、リクエストごとのバケット往復はこのインターフェースが隠そうとしない遅い経路です。
+multipart アップロードはインターフェースにありません。単発 `Put` の上限を超えるオブジェクトは、上のように
+クライアントへ直接届きます。

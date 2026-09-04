@@ -22,7 +22,13 @@ HTTP adapters to it without changing application code.
 
 Container services are not a separate runtime. They start the scaffolded image
 and set `PORT`; [`pw.Run`](/reference/runtime/) already binds it. This includes
-platforms that scale the container to zero.
+platforms that scale the container to zero. If a container host is available
+to you, it is the one to take: every target below trades something — a cold
+start, a buffered response, a per-request lifetime — for running where the
+application would not otherwise run, and none of those trades is worth making
+for a service that could simply be a process behind a port. The
+[platform overview](/guides/architecture/platform/) lays the whole set side
+by side.
 
 Builds have two independent axes. `--target` selects the deployment host and
 `--backend` selects `nethttp` or `fasthttp`; `pw dev` remains unchanged.
@@ -206,7 +212,7 @@ pool either, and the pool settings have no effect.
 ### R2 for the external public tree
 
 The Worker has no directory beside it, so the
-[external public tree](/guides/frontend/public-assets/) is served from an R2
+[external public tree](/guides/frontend/static-assets/#when-a-file-should-not-be-in-the-binary) is served from an R2
 bucket instead. Name the bucket binding and the build does the rest: the
 generated entry reads the tree from the bucket, `wrangler.jsonc` declares the
 binding, and the stage holds a copy of the tree with a script that uploads
@@ -229,7 +235,7 @@ The mount answers with the bucket's ETag, `304` on a match, and `206` for a
 Range request. Each object is read whole per request, so the tree is for the
 assets that are too large to embed and not so large that a Worker cannot hold
 one in memory. An application's own files go through the
-[storage interface](/guides/backend/object-storage/) with `backend = "r2"`
+[storage interface](/guides/storage/object-storage/) with `backend = "r2"`
 and a binding; the build declares every such binding in `wrangler.jsonc` and
 refuses the `local` and `s3` backends, which a Worker cannot reach.
 

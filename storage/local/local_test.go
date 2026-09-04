@@ -11,7 +11,7 @@ import (
 )
 
 func TestLocalBucketRoundTrip(t *testing.T) {
-	bucket, err := New(t.TempDir())
+	bucket, err := New("uploads", t.TempDir())
 	if err != nil {
 		t.Fatal(err)
 	}
