@@ -25,6 +25,7 @@ emission:
 selection:
   key: observability.boot_log
   auto: tree when stderr is a character device, otherwise record; off under the pwcloudflare build tag, because requirement:cloudflare-workers-build-target's host runs main per request and a summary per request is noise rather than a summary
+  function_hosts: once per process is once per warm instance on the targets of decision:serverless-target-scope, which is one summary per cold start, the record an operator wants; nothing is switched off there, per decision:host-state-fit-severity
   tree: banner, configuration grouped as a tree, and the listening URL, written to stderr
   record: one api:logger record named "popcornweb started"
   off: nothing

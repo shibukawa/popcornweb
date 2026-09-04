@@ -20,6 +20,7 @@ where:
   build: api:cli-build --target cloudflare-workers already reads config.prod.toml to write wrangler vars, so it refuses the same keys before compiling; this is where a person sees it first
   startup: validateConfiguredRuntime under the pwcloudflare build tag, because wrangler vars can change after the build; under the host this is every request answering 500 with the reason in the log, per the startup race of decision:owned-wasm-loader
 message: names the key, the value, and the backend to use instead, so the refusal is an instruction rather than a wall
+scope_of_refusal: this host only, per decision:host-state-fit-severity; the function targets get requirement:serverless-state-advisories, because the same stores are legitimate there for reasons the framework cannot see
 non_goals:
   - refusing on the host build; the same configuration is correct for a process
   - a warning rather than an error for the cache; a cache that is always cold is worse than none, and the setting is one line to remove
