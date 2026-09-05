@@ -25,6 +25,9 @@ package costs one configuration binding.
   login.
 - `passkey_only` bootstraps the first passkey from an administrator-issued
   one-time credential.
+- `oauth_only` signs a person in through a provider that speaks OAuth 2.0 and
+  issues no ID Token, such as X. See [Provider login without an ID
+  Token](#provider-login-without-an-id-token).
 - `jwt_only` verifies an access token from `Authorization: Bearer …` on every
   request. It mounts no login endpoint and creates no session or cookie. This
   is the API-server mode.
@@ -40,7 +43,8 @@ migration `MigrationSQL` publishes, which a project carries under
 `MigrationName` at whatever version was free when the file was written:
 
 - `popcornweb_authstate` — single-use state, nonce, and PKCE verifier of a
-  pending login, consumed by the callback
+  pending login, consumed by the callback; each provider flow keeps its records
+  under its own namespace
 - `popcornweb_auth_allowlist` — identities registered before their first
   login, consulted only under `registered` admission
 
@@ -51,6 +55,10 @@ rather than during a login.
 
 ## Flow
 
+This is the OIDC flow. `oauth_only` mounts the same paths and differs at one
+step; see [Provider login without an ID
+Token](#provider-login-without-an-id-token).
+
 `GET /auth/login` begins authorization and stores the opaque transaction key in
 a short-lived cookie scoped to the callback path. The state, nonce, and PKCE
 verifier never reach the browser.
@@ -60,16 +68,84 @@ the ID Token, applies admission, resolves the account, and rotates the session.
 Every admission failure produces one response shape, so the endpoint does not
 report whether an account exists.
 
-`POST /auth/logout` revokes the stored session, expires the cookie, and then
-ends the provider session through RP-initiated logout. It requires a
-same-origin submission. Clearing only the local cookie would leave the provider
-signed in, so the next login returns the same user without asking and the sign
-out appears to have done nothing. `auth.oidc.provider_logout = false` keeps the
-logout local, for a provider shared with applications that must stay signed in.
+`POST /auth/logout` revokes the stored session and expires the cookie. It
+requires a same-origin submission. What it then does to the provider session is
+`auth.oidc.logout_scope`: `reconfirm`, the default, sends the provider nothing
+and marks the next authorization request to carry `prompt`, so the provider
+still demands proof while every other relying party sharing it is untouched;
+`global` additionally ends the provider session through RP-initiated logout.
+There is no local-only scope — clearing only the local cookie leaves the next
+login silent, which is the failure `reconfirm` exists to fix. A mode reaching no
+provider session refuses a typed scope rather than binding it inert.
 
 Discovery runs on the first login rather than at startup, so the application
 starts even when the provider is not up yet, and a failed discovery is not
 cached.
+
+## Provider login without an ID Token
+
+`oauth_only` is the mode for a provider that authenticates people but never
+issues an ID Token. It states one provider name, which selects the endpoints,
+the scopes, and the shape of the account response together:
+
+```toml
+[auth]
+enabled = true
+mode = "oauth_only"
+
+[auth.oauth]
+provider = "x"
+redirect_url = "https://app.example/auth/callback"
+```
+
+`AUTH_OAUTH_CLIENT_ID` and `AUTH_OAUTH_CLIENT_SECRET` carry the credentials.
+`contrib/oauthprofile` holds the provider definitions; `x` is the only one
+today.
+
+It serves the same `login_path` and `callback_path` the OIDC mode does, and one
+step differs. The callback receives an access token addressed to the provider's
+own API rather than a signed assertion about a person, so who signed in is
+settled by asking the provider over one request carrying that token. Everything
+after that point — admission, the account resolver, rotation, the landing path
+— is the OIDC flow's, unchanged.
+
+The access token is not stored. It answers one question during the callback and
+is dropped, so the mode asks for no `offline.access` scope and keeps no
+credential it has no reader for.
+
+The session carries the provider account beside the local one: `Provider` names
+the provider, `Subject` is that provider's own identifier — the X user id — and
+`Username` and `AvatarURL` are copies taken at login for display. `DisplayName`
+and `Email` come from the account resolver, as they do after an OIDC login; the
+default resolver reads the provider's name, and X reports no address.
+
+```go
+if data, ok := auth.Session(ctx); ok && data.Provider == "x" {
+	// data.Subject is the X user id; data.Username is the handle.
+}
+```
+
+`auth.oauth.identity_claim` selects the account link, defaulting to `sub`. A
+handle is the tempting alternative and the wrong one: X lets a handle be
+renamed, and lets a released one be claimed by somebody else, so an account
+linked to a handle eventually becomes somebody else's account. A claim name the
+provider definition does not report is refused at startup, naming the ones it
+does, so a name copied out of the provider's own API reference fails there
+rather than at every login.
+
+Three things this mode does not have, because the protocol does not:
+
+- **A global sign-out.** There is no end session endpoint, so `logout_path`
+  revokes the local session and stops. The provider stays signed in, and the
+  next login may be answered from that session without a word.
+- **Step-up re-authentication.** Re-proof is `max_age` going out and a verified
+  `auth_time` coming back, and a provider issuing no ID Token reports neither.
+  `auth.Confirmed` and a zero window answer 503 and log the mode rather than
+  redirecting into a login that cannot converge. `auth.MaxAge`, measured from
+  the login, works normally.
+- **`auth.shared_device`.** It couples a global sign-out with a login the
+  provider may not answer silently, and neither exists here, so it is refused
+  rather than half-honored.
 
 ## Which claim identifies an account
 

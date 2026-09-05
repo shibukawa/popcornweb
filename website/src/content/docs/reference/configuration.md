@@ -572,7 +572,8 @@ imports nothing authentication-related has no `[auth]` prefix to configure.
 | `claim.values` | `[]` | accepted values |
 | `claim.match` | `"any"` | `any` or `all` |
 | `registered_claims` | `[]` | claims compared against the allowlist; defaults to `identity_claim` |
-| `provider_logout` | `true` | also end the provider session on logout |
+| `logout_scope` | `"reconfirm"` | `reconfirm` revokes the local session and makes the next authorization carry `prompt`; `global` also ends the provider session through its `end_session_endpoint` |
+| `allow_global_logout_request` | `false` | let a same-origin logout form escalate to `global` by posting `scope=global`; a request may only escalate |
 | `allow_loopback_http` | `false` | permit an `http` loopback issuer and a request-derived loopback redirect during development |
 
 `identity_claim` becomes the account link, so whatever it names must be stable
@@ -581,12 +582,58 @@ value hands one person another person's account. A deployment that provisions
 users in advance usually cannot know a subject yet and points this at its own
 directory identifier, such as an employee number.
 
+There is deliberately no local-only scope. Revoking the local session alone
+leaves the next login silent, so the sign-out reads as having done nothing —
+which is the failure `reconfirm` exists to fix. `auth.shared_device` requires
+`global`, and a mode that reaches no provider session at all — `passkey_only`,
+`oauth_only` — refuses a typed `logout_scope` rather than binding it inert. The
+key that used to spell this, `provider_logout`, is removed: a configuration
+still carrying `true` is refused at startup with `logout_scope` named.
+
 An enabled OIDC mode with an empty `issuer`, `client_id`, or `client_secret`
 fails at startup rather than at the first login, and the error names both the
 missing keys and their environment variables. That is why a project scaffolded
 for the local emulator carries no provider values at all —
 [`pw dev`](/pw/project/dev/) injects them. See
 [Authentication](/guides/backend/authentication/).
+
+### `[auth.oauth]`
+
+These keys are read by `auth.mode = "oauth_only"`, the login through a provider
+that authenticates people and issues no ID Token. `provider` selects a built-in
+definition that supplies the authorization, token, and account endpoints, the
+minimum scopes, and the claim names — a deployment configures none of them.
+
+| Key | Default | Meaning |
+| --- | --- | --- |
+| `provider` | *(empty)* | **required**; `x` is the only definition |
+| `client_id` | *(empty)* | **required**; `AUTH_OAUTH_CLIENT_ID` |
+| `client_secret` | *(empty)* | **required**; `AUTH_OAUTH_CLIENT_SECRET` (masked in the startup summary) |
+| `redirect_url` | *(empty)* | absolute deployed callback; empty or a rooted path is derived from the request origin only with `allow_loopback_http` and a loopback `Host` |
+| `scopes` | `[]` | replaces the provider's minimum login set rather than adding to it; one scope token per entry |
+| `identity_claim` | `"sub"` | the profile claim that identifies a local account; refused unless the provider reports it |
+| `admission` | `"authenticated"` | `authenticated`, `claim`, `registered`, or `existing` |
+| `auto_provision` | `true` | let an unknown profile create an account through the resolver |
+| `claim.path` | *(empty)* | JSON Pointer into the profile claims, for `admission = "claim"` |
+| `claim.values` | `[]` | accepted values |
+| `claim.match` | `"any"` | `any` or `all` |
+| `registered_claims` | `[]` | claims compared against the allowlist; defaults to `identity_claim` |
+| `allow_loopback_http` | `false` | permit a request-derived loopback redirect during development |
+
+The `x` provider reports `sub` — the X user id — plus `preferred_username`,
+`name`, and `picture`. X's own spellings are renamed on the way in, so
+`identity_claim = "username"` is refused at startup with the reported names
+listed, rather than refusing every login afterwards.
+
+`identity_claim` becomes the account link and defaults to the provider's own
+identifier. Pointing it at a handle links accounts to a value the provider lets
+people rename and release, which eventually hands one person another person's
+account.
+
+This mode refuses `auth.shared_device` and a typed `auth.oidc.logout_scope`, and
+a guard requiring a fresh confirmation answers `503`: neither a global sign-out
+nor a verifiable re-proof exists in plain OAuth. See
+[Signing in with X](/guides/backend/authentication/#signing-in-with-x).
 
 ### `[auth.jwt]`
 
@@ -630,7 +677,8 @@ See [JWT-only API servers](/guides/backend/authentication/#jwt-only-api-servers)
 ## A key you set that the startup summary does not show
 
 Many keys above answer to a parent switch. `server.api_doc_path` depends on
-`server.api_doc`; every `[auth.oidc]` key depends on `auth.enabled`;
+`server.api_doc`; every `[auth.oidc]` and `[auth.oauth]` key depends on
+`auth.enabled`;
 `observability.otel.endpoint` depends on `otel.enabled`.
 
 When the parent is empty or false, the summary omits the dependents and keeps

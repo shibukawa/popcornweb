@@ -6,7 +6,17 @@ import "net/http"
 
 // enforceDeadlines wraps the client's transport so a done context returns to
 // the caller even though the underlying round trip cannot be cancelled.
+//
+// It is idempotent. A client can pass through two packages that both promise a
+// request timeout — contrib/oidc builds one and hands it to contrib/oauth — and
+// a second wrapper would cost a goroutine and a select per request to enforce a
+// deadline the first one already enforces.
 func enforceDeadlines(client *http.Client) *http.Client {
+	if client != nil {
+		if _, wrapped := client.Transport.(deadlineTransport); wrapped {
+			return client
+		}
+	}
 	copied := &http.Client{}
 	if client != nil {
 		*copied = *client

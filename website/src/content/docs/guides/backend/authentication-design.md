@@ -1,30 +1,31 @@
 ---
 title: Authentication design
-description: What the four modes actually separate, how to choose one, and the assurance a session carries once the login is over.
+description: What the five modes actually separate, how to choose one, and the assurance a session carries once the login is over.
 sidebar:
   order: 0
 ---
 
-`auth.mode` has four values. Three of them describe a person signing in with a
+`auth.mode` has five values. Four of them describe a person signing in with a
 browser, and they do not merely select OpenID Connect, passkeys, or a
 combination of the two. In `oidc_passkey` mode, for example, people normally
 sign in with a passkey; the OIDC provider returns only for recovery.
 
-Choose among those three by looking at account creation and recovery authority,
-not only at the daily sign-in screen. The fourth, `jwt_only`, is not on that
+Choose among those four by looking at account creation and recovery authority,
+not only at the daily sign-in screen. The fifth, `jwt_only`, is not on that
 axis at all — it serves an API where nobody signs in.
 
 ## What the modes separate
 
 A passkey cannot create an account. The reason is plain: there is nothing for the first credential to attach to. A public key arrives, and unless something else can say whose it is, the service has nothing to do with it.
 
-Every mode therefore has to answer one question before anybody signs in at all: what brought this account into existence? The modes are four answers.
+Every mode therefore has to answer one question before anybody signs in at all: what brought this account into existence? The modes are five answers.
 
 | `auth.mode` | Where an account comes from | Daily sign-in | Recovery authority |
 | --- | --- | --- | --- |
 | `oidc_only` | The provider | The provider | The provider |
 | `oidc_passkey` | The provider | A passkey | The provider |
 | `passkey_only` | A login ID and one-time secret an administrator issues | A passkey | An administrator, or another passkey |
+| `oauth_only` | A provider that issues no ID Token, such as X | That provider | That provider |
 | `jwt_only` | The authorization server that mints the tokens | None — a bearer token on every request | Not this application's, and not a question it can be asked |
 
 That last column carries the most operational weight, and the last row is where it stops applying.
@@ -52,6 +53,16 @@ No provider exists. An administrator creates the account and hands the person a 
 **What you get.** No external dependency and no shared secret in storage. It works on a closed network, and it works for an organization that has no identity provider at all.
 
 **What you take on.** Recovery, entirely. Knowing an email address is not grounds for recovery — anyone can know one, which is why it is forbidden by default. What remains is another enrolled passkey, an administrator reissuing a credential, or a verified mechanism the application provides itself.
+
+### `oauth_only`
+
+The provider authenticates people and never issues an ID Token. X works this way, and so does most of what the industry calls social login. Read that row of the table again and it looks identical to `oidc_only` — same account origin, same daily sign-in, same recovery authority — because on those three axes it is. What separates the two is not who holds the authority but how much of it this application can act on.
+
+**What you get.** The shortest possible distance to a working sign-in, for the audience that already has an account with the provider and would rather not make another. The application writes no protocol code, and the session it ends up with is the ordinary one: the guard, the account resolver, and admission behave exactly as they do after an ID Token.
+
+**What you take on.** Three capabilities that plain OAuth cannot express. Sign-out reaches your session and not the provider's, so a shared browser keeps the visitor one click from the previous visitor's account — which is why `auth.shared_device` is refused here rather than half-honored. Step-up re-authentication cannot run at all: proving an identity twice means sending `max_age` and reading a verified `auth_time` back, and neither exists, so `auth.Confirmed` answers `503` instead of looping. And the profile the login rests on is unsigned; the trust is that the token came from an exchange this deployment started and the answer arrived from the provider over TLS.
+
+That is the ordinary basis for social login. It is weaker than an ID Token, and the three refusals above are how the framework declines to pretend otherwise. [Signing in with X](/guides/backend/authentication/#signing-in-with-x) has the configuration.
 
 ### `jwt_only`
 
@@ -90,6 +101,14 @@ A reception desk, a line-side station, a till. The browser does not correspond t
 Set `auth.shared_device = true`. It couples three settings, and **any one of them alone accomplishes nothing**. Clear the local memory while the provider session stays alive and the next visitor still reads the previous person's name — out of the provider's own account picker, because the provider is what supplies the name.
 
 The common end of a session on a shared terminal is not a sign-out but abandonment, so enable `auth.assurance.presence` alongside it. More on that below.
+
+### Consumer products whose users arrive from X
+
+The audience already has an X account and no reason to create another. Use `oauth_only` with `provider = "x"`, admission `authenticated`, and `auto_provision = true`.
+
+Link accounts on the X user id, which `identity_claim = "sub"` already selects. The handle is the readable field and the wrong one to link on: X lets a handle be renamed, and lets a released one be claimed by somebody else, so an account linked to `@example` eventually belongs to whoever holds `@example` next.
+
+Do not reach for this mode on a shared terminal, and do not reach for it if any operation in the application needs a fresh confirmation before it runs. Both want capabilities the protocol does not have, and startup refuses the first while the guard answers `503` on the second.
 
 ### Closed internal systems
 

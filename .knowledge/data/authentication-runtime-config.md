@@ -3,14 +3,14 @@ id: data:authentication-runtime-config
 type: data
 title: Authentication Runtime Config
 ---
-The `[auth]` binding selects OIDC and passkey bootstrap, login, linking, registration, and recovery policy through shared dotted prefixes.
+The `[auth]` binding selects the login method — OIDC, passkey, plain OAuth provider, or bearer token — and the bootstrap, linking, registration, and recovery policy around it, through shared dotted prefixes.
 
 ```yaml
 registration: popcornweb/plugin/auth registers this binding when imported
 fields:
   enabled: bool
   backend: rdb or dynamo, default rdb, selecting the storage of all four framework-owned authentication stores, per decision:auth-backend-selection
-  mode: oidc_passkey, oidc_only, passkey_only, or jwt_only
+  mode: oidc_passkey, oidc_only, passkey_only, oauth_only, or jwt_only
   login_path: path
   callback_path: path
   protection.include: path pattern list
@@ -44,6 +44,19 @@ fields:
   oidc.provider_logout: removed; a configuration still carrying it fails startup, because configbind would otherwise ignore it silently
   logout_path: path
   post_login_path: path
+  oauth.provider: name of a requirement:contrib-oauthprofile definition, no default, per decision:oauth-provider-definitions-are-built-in
+  oauth.client_id: string
+  oauth.client_secret: secret
+  oauth.redirect_url: URL
+  oauth.scopes: string list; empty asks for the provider's own minimum login set, and a stated list replaces rather than extends it
+  oauth.identity_claim: claim name, default sub, refused unless the provider definition reports it
+  oauth.admission: existing, claim, registered, or authenticated, default authenticated
+  oauth.auto_provision: bool, default true
+  oauth.claim.path: JSON Pointer
+  oauth.claim.values: string list
+  oauth.claim.match: any or all
+  oauth.registered_claims: string list, each refused unless the provider definition reports it
+  oauth.allow_loopback_http: bool, development only, permitting a request-relative redirect URL on loopback
   passkey.path: base path of api:passkey-endpoints
   passkey.rp_id: domain
   passkey.rp_name: string
@@ -89,6 +102,14 @@ mode_validation:
     required_bootstrap: bootstrap.issue_ttl, bootstrap.enrollment_ttl, and bootstrap.max_attempts when registration.policy is administrator or invite
     bootstrap_naming: issue_ttl rather than credential_ttl, because the two durations bound consecutive phases and the name should say which; a leading noun also kept it out of the secret-redaction match
     refused: every oidc field, so a leftover AUTH_OIDC_ISSUER cannot suggest a provider is in the loop
+  oauth_only:
+    flow: flow:oauth-provider-login
+    required: oauth.provider, oauth.client_id, oauth.client_secret, and oauth.redirect_url unless oauth.allow_loopback_http
+    claim_names: oauth.identity_claim and oauth.registered_claims are checked against the provider definition, because a definition reports a fixed claim set and a name that will never arrive would refuse every login instead of failing at startup
+    scopes: each entry must be an RFC 6749 scope token, so a space-separated list written as one string is refused rather than sent as one scope no provider grants
+    admission: policy:oauth-admission
+    refused: every oidc and passkey field, shared_device, which couples a global sign-out and a non-silent login that this protocol has neither of, and a typed logout_scope or allow_global_logout_request, per policy:provider-session-scope
+    logout: reaches the local session only; what the mode does at runtime is flow:oauth-provider-login
   jwt_only:
     requirement: requirement:jwt-only-api-authentication, reachable only by writing this section, per decision:jwt-only-mode-not-scaffolded
     required: jwt.issuer, a non-empty jwt.audience, jwt.algorithms, jwt.admission, jwt.max_token_lifetime, and jwt.revocation.mode
@@ -111,7 +132,7 @@ mode_validation:
     - recent_auth_max_age must be positive whenever enrollment is reachable
 implemented:
   package: popcornweb/plugin/auth registered through api:framework-extension
-  mode: oidc_only, oidc_passkey, and passkey_only
+  mode: oidc_only, oidc_passkey, passkey_only, and oauth_only
   endpoints: login_path begins authorization, callback_path completes it, logout_path revokes the local session and ends the provider session
   logout_method: POST only, same-origin checked, because a logout reachable by link or prefetch is a denial-of-service surface
   correlation: the opaque transaction key rides a short-lived cookie scoped to callback_path
@@ -149,6 +170,7 @@ development_injection:
   issuer_scheme: oidc.allow_loopback_http is required, because the development issuer is loopback http
 rules:
   - one mode per application; a browser login and jwt_only are not combined, because two ways to become authenticated make every guard ambiguous
+  - validate and read only the section the selected mode uses; the oidc, oauth, and jwt sections declare the same admission settings, so one accessor resolves which one is in force
   - decision:authentication-bootstrap-strategy defines mode behavior
   - policy:authenticated-path-protection defines pattern matching and middleware behavior
   - redirect response targets the local login_path
@@ -166,6 +188,7 @@ rules:
   - administrator registration and recovery require bounded bootstrap settings
 flows:
   - flow:oidc-account-login
+  - flow:oauth-provider-login
   - flow:passkey-enrollment
   - flow:passkey-login
   - flow:passkey-only-registration
@@ -174,6 +197,7 @@ security:
   - policy:account-recovery
   - policy:bootstrap-credential-security
   - policy:oidc-admission
+  - policy:oauth-admission
   - policy:authenticated-path-protection
   - policy:access-token-verification
   - policy:bearer-admission

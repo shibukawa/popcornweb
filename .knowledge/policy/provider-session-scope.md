@@ -23,6 +23,7 @@ modes:
     intent_storage: a short-lived cookie set by logout and consumed by the login endpoint
     intent_integrity: none required, because prompt can only add interaction; a forged intent costs the user a redundant confirmation and grants nothing
   global:
+    availability: the OIDC modes only; flow:oauth-provider-login has no end session endpoint to send the request to
     action: RP-initiated logout against the discovered end_session_endpoint of requirement:contrib-oidc
     effect: ends the provider session, and the provider notifies every other relying party through its registered logout mechanisms
     fits: a deployment that defines sign-out as leaving everything, and every deployment under policy:shared-device-mode, which fixes this mode
@@ -69,7 +70,8 @@ per_request:
 rules:
   - a logout revokes the local session first and unconditionally, whatever the selected mode does afterward
   - a provider that advertises no end_session_endpoint degrades global to reconfirm, never to a silent logout that leaves the next login unchallenged
-  - logout_scope is refused entirely under passkey_only, where no provider session exists, per the mode_validation principle of data:authentication-runtime-config
+  - a typed logout_scope or allow_global_logout_request is refused under every mode that reaches no provider session — passkey_only, which has none, and oauth_only, whose provider offers no way to end the one it holds — per the mode_validation principle of data:authentication-runtime-config
+  - the default is not refused there, because every mode binds it; only a value somebody typed is, which is what makes the refusal legible
   - the reconfirmation intent survives only until the next completed authorization, and never becomes a permanent setting
   - a mode is a deployment choice, and an application handler never selects one
   - audit the selected mode with the logout event, without tokens or cookie values

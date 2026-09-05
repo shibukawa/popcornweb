@@ -18,6 +18,7 @@ packages:
   - requirement:contrib-otel
   - requirement:contrib-jwt
   - requirement:contrib-oauth
+  - requirement:contrib-oauthprofile
   - requirement:contrib-oidc
   - requirement:contrib-html-template
 upstreamed_packages:

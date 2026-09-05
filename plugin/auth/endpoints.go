@@ -106,8 +106,8 @@ func (rt *runtime) endpoints(x Exchange, next func()) {
 		x.Problem(pwruntime.BadRequest())
 		return
 	}
-	// A ceremony path is claimed before the OIDC paths so that a mode without a
-	// provider never falls through to a login it cannot serve.
+	// A ceremony path is claimed before the provider paths so that a mode without
+	// a provider never falls through to a login it cannot serve.
 	if suffix, mounted := rt.passkeyPaths[path]; mounted {
 		rt.handlePasskey(x, suffix)
 		return
@@ -117,6 +117,10 @@ func (rt *runtime) endpoints(x Exchange, next func()) {
 		rt.handleLogin(x)
 	case rt.config.usesOIDC() && path == rt.config.CallbackPath:
 		rt.handleCallback(x)
+	case rt.config.usesOAuth() && path == rt.config.LoginPath:
+		rt.handleOAuthLogin(x)
+	case rt.config.usesOAuth() && path == rt.config.CallbackPath:
+		rt.handleOAuthCallback(x)
 	case path == rt.config.LogoutPath:
 		rt.handleLogout(x)
 	case rt.hint != nil && path == rt.forgetPath():
@@ -364,7 +368,16 @@ func (rt *runtime) handleLogout(x Exchange) {
 	// authorization request carries prompt, which is what stops the provider
 	// from answering silently from a single sign-on session this logout could
 	// not reach.
-	rt.markReconfirm(x)
+	//
+	// Only OIDC can say it. A plain OAuth authorization request has no prompt
+	// parameter, so ModeOAuthOnly writes no cookie here rather than one nothing
+	// will read, and its logout is local by nature: the provider session
+	// survives, and the next login may well be answered from it without a word.
+	// That is the mode's cost, and it is stated in the guide rather than papered
+	// over here.
+	if rt.config.usesOIDC() {
+		rt.markReconfirm(x)
+	}
 	rt.redirect(x, "/")
 }
 
@@ -398,6 +411,11 @@ func (rt *runtime) handleForget(x Exchange) {
 // a forced downgrade would leave the provider session alive after the user
 // asked to leave it.
 func (rt *runtime) logoutScope(x Exchange) string {
+	if !rt.config.usesOIDC() {
+		// Only an OIDC provider advertises a way to end its own session. Every
+		// other mode's logout reaches the local session and stops there.
+		return LogoutScopeReconfirm
+	}
 	if rt.config.OIDC.LogoutScope == LogoutScopeGlobal {
 		return LogoutScopeGlobal
 	}
@@ -480,22 +498,27 @@ func (rt *runtime) oidcClient(x Exchange) (*oidc.Client, error) {
 // oidcRedirectURI returns the configured absolute URL, or derives one from the
 // request authority in the explicitly enabled loopback development mode.
 func (rt *runtime) oidcRedirectURI(x Exchange) (string, error) {
-	return resolveOIDCRedirectURI(rt.config.OIDC.RedirectURL, rt.config.CallbackPath,
-		rt.config.OIDC.AllowLoopbackHTTP, rt.scheme(x), x.Host())
+	return resolveProviderRedirectURI(rt.config.OIDC.RedirectURL, rt.config.CallbackPath,
+		rt.config.OIDC.AllowLoopbackHTTP, rt.scheme(x), x.Host(), "auth.oidc")
 }
 
-func resolveOIDCRedirectURI(raw, callbackPath string, allowLoopbackHTTP bool, scheme, host string) (string, error) {
+// resolveProviderRedirectURI is shared by both provider flows. What may stand in
+// for a registered redirect URL is one rule, and two copies of it would be two
+// chances for one of them to accept a host the other refuses.
+//
+// setting names the configuration prefix so the error says which key to fix.
+func resolveProviderRedirectURI(raw, callbackPath string, allowLoopbackHTTP bool, scheme, host, setting string) (string, error) {
 	if parsed, err := url.Parse(raw); err == nil && parsed.IsAbs() {
 		return raw, nil
 	}
 	if !allowLoopbackHTTP {
-		return "", errors.New("request-relative OIDC redirect requires auth.oidc.allow_loopback_http")
+		return "", fmt.Errorf("request-relative redirect requires %s.allow_loopback_http", setting)
 	}
 	authority, err := url.Parse("//" + host)
 	if err != nil || authority.Host == "" || authority.Host != host || authority.User != nil ||
 		authority.Path != "" || authority.RawQuery != "" || authority.Fragment != "" ||
 		!isLoopbackHost(strings.ToLower(authority.Hostname())) {
-		return "", fmt.Errorf("request-relative OIDC redirect requires a loopback Host, got %q", host)
+		return "", fmt.Errorf("request-relative %s redirect requires a loopback Host, got %q", setting, host)
 	}
 	path := raw
 	if path == "" {

@@ -12,9 +12,9 @@ packages='
 ./authstate/memory
 ./authstate/redis
 ./contrib/internal/authn
-./contrib/cbor
 ./contrib/jwt
 ./contrib/oauth
+./contrib/oauthprofile
 ./contrib/oidc
 ./contrib/passkey'
 

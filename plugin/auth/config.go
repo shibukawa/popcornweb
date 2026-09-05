@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/shibukawa/popcornweb/contrib/oauthprofile"
 	"github.com/shibukawa/popcornweb/internal/pathpattern"
 	"github.com/shibukawa/popcornweb/internal/requestorigin"
 	"github.com/shibukawa/popcornweb/session"
@@ -26,6 +27,7 @@ const (
 	ModeOIDCOnly    = "oidc_only"
 	ModeOIDCPasskey = "oidc_passkey"
 	ModePasskeyOnly = "passkey_only"
+	ModeOAuthOnly   = "oauth_only"
 	ModeJWTOnly     = "jwt_only"
 )
 
@@ -151,7 +153,7 @@ type Config struct {
 	// is what makes those sections' conditions checkable: a mistyped mode there
 	// would hide a whole subtree from the startup summary silently and forever,
 	// and generation rejects a value that is not listed here.
-	Mode string `default:"oidc_only" enum:"oidc_only,oidc_passkey,passkey_only,jwt_only" dependon:".enabled" help:"oidc_only, oidc_passkey, passkey_only, or jwt_only"`
+	Mode string `default:"oidc_only" enum:"oidc_only,oidc_passkey,passkey_only,oauth_only,jwt_only" dependon:".enabled" help:"oidc_only, oidc_passkey, passkey_only, oauth_only, or jwt_only"`
 	// LoginPath starts the provider flow.
 	LoginPath    string `default:"/auth/login" dependon:".enabled" help:"path that starts the provider flow"`
 	CallbackPath string `default:"/auth/callback" dependon:".enabled"`
@@ -186,7 +188,12 @@ type Config struct {
 	// predicates decide what is built, and these decide what is reported, so
 	// the two have to agree. The enabled switch is not repeated: Mode answers
 	// to it, and a condition on Mode inherits that gate transitively.
-	OIDC    OIDCConfig    `dependon:".mode=oidc_only,oidc_passkey" help:"The three login-method sections name the modes they belong to, so a summary reports the methods this deployment offers rather than all of them. The lists restate usesOIDC, usesPasskey, and usesJWT below; those predicates decide what is built, and these decide what is reported, so the two have to agree. The enabled switch is not repeated: Mode answers to it, and a condition on Mode inherits that gate transitively"`
+	OIDC OIDCConfig `dependon:".mode=oidc_only,oidc_passkey" help:"The three login-method sections name the modes they belong to, so a summary reports the methods this deployment offers rather than all of them. The lists restate usesOIDC, usesPasskey, and usesJWT below; those predicates decide what is built, and these decide what is reported, so the two have to agree. The enabled switch is not repeated: Mode answers to it, and a condition on Mode inherits that gate transitively"`
+	// The key tag is load-bearing. Generation derives a TOML key from the field
+	// name and splits it at every lower-to-upper boundary, which turns OAuth
+	// into o_auth — OIDC survives only because it is all caps. The setting a
+	// deployment writes is [auth.oauth].
+	OAuth   OAuthConfig   `key:"oauth" dependon:".mode=oauth_only" help:"The key tag is load-bearing. Generation derives a TOML key from the field name and splits it at every lower-to-upper boundary, which turns OAuth into o_auth — OIDC survives only because it is all caps. The setting a deployment writes is [auth.oauth]"`
 	Passkey PasskeyConfig `dependon:".mode=oidc_passkey,passkey_only"`
 	JWT     JWTConfig     `dependon:".mode=jwt_only"`
 }
@@ -438,6 +445,64 @@ type OIDCConfig struct {
 	AllowLoopbackHTTP bool `default:"false" help:"permit an http loopback issuer during development"`
 }
 
+// OAuthConfig is the [auth.oauth] binding of ModeOAuthOnly: a login through a
+// provider that authenticates a person over plain OAuth 2.0 and issues no ID
+// Token at all.
+//
+// The difference from OIDCConfig is what is missing rather than what is added.
+// There is no issuer to discover, because such a provider publishes no metadata
+// document; there is no token to verify, because the only thing the callback
+// receives is an access token addressed to the provider's own API; and there is
+// no logout scope, because the provider offers no way to end the session it
+// holds. What the deployment states instead is one provider name, which selects
+// the endpoints, the scopes, and the shape of the account response together.
+//
+// Who the access token belongs to is settled by asking the provider, over a
+// request that carries the token and nothing else. That is one round trip more
+// than OIDC needs and one signature fewer to check, and it is the whole of the
+// protocol difference between the two modes.
+type OAuthConfig struct {
+	// Provider names the built-in definition. It has no default: a provider is
+	// the one thing this mode cannot infer, and defaulting to whichever one
+	// happened to be written first would make the choice for a deployment that
+	// never made it.
+	Provider     string `enum:"x" help:"OAuth login provider; x is X, formerly Twitter"`
+	ClientID     string `env:"AUTH_OAUTH_CLIENT_ID"`
+	ClientSecret string `secret:"mask" env:"AUTH_OAUTH_CLIENT_SECRET"`
+	// RedirectURL is the absolute callback URL registered with the provider.
+	RedirectURL string `help:"RedirectURL is the absolute callback URL registered with the provider"`
+	// Scopes replaces the provider's own defaults rather than adding to them,
+	// so a deployment that states this list owns it. Empty asks for exactly
+	// what the provider needs to report an account and nothing more, which is
+	// what a login should ask for.
+	Scopes []string `help:"scopes to request; empty asks for the provider's minimum login set"`
+	// IdentityClaim names the claim of the fetched profile that identifies a
+	// local account, and defaults to "sub", which every provider definition
+	// fills with that provider's own stable identifier.
+	//
+	// A handle is the tempting alternative and the wrong one. X lets a handle
+	// be renamed, and lets a released one be claimed by somebody else, so an
+	// account linked to a handle eventually becomes somebody else's account.
+	// Only a name the provider definition actually emits is accepted, so a
+	// claim copied out of the provider's own API reference is refused at
+	// startup rather than at every login.
+	IdentityClaim string `default:"sub" help:"profile claim that identifies a local account; sub is the provider's own identifier"`
+	Admission     string `default:"authenticated" help:"authenticated, claim, registered, or existing"`
+	// AutoProvision permits an unknown profile to create an account through the
+	// registered account resolver.
+	AutoProvision bool `default:"true" help:"permit an unknown profile to create an account through the registered account resolver"`
+	// Claim is the admission rule applied when Admission is claim.
+	Claim ClaimConfig `help:"admission rule applied when admission is claim"`
+	// RegisteredClaims names the profile claims compared against the allowlist
+	// table under AdmissionRegistered, and defaults to IdentityClaim alone.
+	RegisteredClaims []string `help:"claims compared against the allowlist; defaults to identity_claim"`
+	// AllowLoopbackHTTP permits a request-relative redirect URL on loopback, so
+	// a developer can run the login against the real provider from localhost
+	// without registering a URL per machine. The provider endpoints themselves
+	// stay https whatever this says.
+	AllowLoopbackHTTP bool `default:"false" help:"permit an http loopback redirect URL during development"`
+}
+
 // AssuranceConfig holds the named freshness windows a handler requires by
 // name, so the same handler code serves a consumer deployment with a long
 // window and an internal one with a short window.
@@ -534,10 +599,10 @@ func (c Config) validate() error { return c.validateShape() }
 // security.
 func (c Config) validateShape() error {
 	switch c.Mode {
-	case ModeOIDCOnly, ModeOIDCPasskey, ModePasskeyOnly, ModeJWTOnly:
+	case ModeOIDCOnly, ModeOIDCPasskey, ModePasskeyOnly, ModeOAuthOnly, ModeJWTOnly:
 	default:
-		return fmt.Errorf("auth.mode must be %q, %q, %q, or %q",
-			ModeOIDCOnly, ModeOIDCPasskey, ModePasskeyOnly, ModeJWTOnly)
+		return fmt.Errorf("auth.mode must be %q, %q, %q, %q, or %q",
+			ModeOIDCOnly, ModeOIDCPasskey, ModePasskeyOnly, ModeOAuthOnly, ModeJWTOnly)
 	}
 	// An unknown backend names what is linked rather than what exists, because
 	// the difference between the two is an import line a deployment can add.
@@ -592,6 +657,9 @@ func (c Config) validateShape() error {
 	if err := c.validateOIDCUse(); err != nil {
 		return err
 	}
+	if err := c.validateOAuthUse(); err != nil {
+		return err
+	}
 	if err := c.validatePasskeyUse(); err != nil {
 		return err
 	}
@@ -628,6 +696,32 @@ func (c Config) validateAssurance() error {
 	if c.SharedDevice && c.usesOIDC() && c.OIDC.LogoutScope != LogoutScopeGlobal {
 		return fmt.Errorf("auth.shared_device requires auth.oidc.logout_scope %q, got %q",
 			LogoutScopeGlobal, c.OIDC.LogoutScope)
+	}
+	if !c.usesOIDC() && !c.usesJWT() {
+		// Only the OIDC login can reach the session a provider holds. A mode
+		// that cannot is refused the settings that say it will, rather than
+		// binding them inert: a configuration reading "sign out everywhere"
+		// while the logout stops at the local session is the silently ignored
+		// security setting the mode rules exist to prevent.
+		//
+		// The default is not refused, because every mode binds it. Only a value
+		// somebody typed is, which is what makes the refusal legible.
+		if c.OIDC.LogoutScope == LogoutScopeGlobal {
+			return fmt.Errorf("auth.mode %q reaches no provider session, so auth.oidc.logout_scope = %q cannot be honored; leave it at %q",
+				c.Mode, LogoutScopeGlobal, LogoutScopeReconfirm)
+		}
+		if c.OIDC.AllowGlobalLogoutRequest {
+			return fmt.Errorf("auth.mode %q reaches no provider session, so auth.oidc.allow_global_logout_request has nothing to escalate to", c.Mode)
+		}
+	}
+	if c.SharedDevice && c.usesOAuth() {
+		// The mode couples the settings that hide one user from the next, and
+		// the load-bearing half of that is what happens at the provider: a
+		// global sign-out, and a login the provider may not answer silently.
+		// Plain OAuth offers neither, so the local half alone would leave the
+		// next visitor one click from the previous visitor's account while the
+		// configuration read as a shared-device deployment.
+		return fmt.Errorf("auth.shared_device is not available under auth.mode %q: a plain OAuth provider offers no global sign-out and no way to demand a fresh login, so only the local half of the mode could be honored", ModeOAuthOnly)
 	}
 	if c.SharedDevice && c.Assurance.Hint.Enabled {
 		return errors.New("auth.shared_device forbids auth.assurance.hint.enabled: remembering the last user is what the mode exists to prevent")
@@ -682,7 +776,35 @@ func (h HintConfig) validate() error {
 
 func (c Config) usesOIDC() bool    { return c.Mode == ModeOIDCOnly || c.Mode == ModeOIDCPasskey }
 func (c Config) usesPasskey() bool { return c.Mode == ModeOIDCPasskey || c.Mode == ModePasskeyOnly }
+func (c Config) usesOAuth() bool   { return c.Mode == ModeOAuthOnly }
 func (c Config) usesJWT() bool     { return c.Mode == ModeJWTOnly }
+
+// admission is the admission policy of the selected mode. It exists so that
+// nothing outside it has to know which section a mode reads: the three sections
+// declare the same four settings, and a caller reaching for one of them by name
+// would silently apply the OIDC policy in an OAuth deployment.
+func (c Config) admission() admissionRule {
+	switch {
+	case c.usesJWT():
+		return c.JWT.admissionRule()
+	case c.usesOAuth():
+		return c.OAuth.admissionRule()
+	default:
+		return c.OIDC.admissionRule()
+	}
+}
+
+// reprovable reports whether this mode can prove an identity a second time
+// during a session, which is what a zero-window or confirmed assurance
+// requirement rests on.
+//
+// Only the OIDC login can. Re-proof is not the redirect: it is max_age going
+// out and a verified auth_time coming back, and a provider that issues no ID
+// Token reports neither. Sending the browser round such a provider would return
+// it authorized, unable to say whether anybody was asked anything, and treating
+// that as a confirmation would be the guard admitting on a redirect. A mode that
+// cannot answer says so, per decision:assurance-scope-oidc-only.
+func (c Config) reprovable() bool { return c.usesOIDC() }
 
 // trustedOrigins are the origins the state-changing endpoints of this package
 // accept besides the one they reconstruct from the request itself.
@@ -698,8 +820,10 @@ func (c Config) usesJWT() bool     { return c.Mode == ModeJWTOnly }
 // the browser reports https, and the origin it declared is the one that matches.
 func (c Config) trustedOrigins() map[string]bool {
 	origins := append([]string(nil), c.Passkey.Origins...)
-	if c.OIDC.RedirectURL != "" {
-		origins = append(origins, c.OIDC.RedirectURL)
+	for _, redirect := range []string{c.OIDC.RedirectURL, c.OAuth.RedirectURL} {
+		if redirect != "" {
+			origins = append(origins, redirect)
+		}
 	}
 	return requestorigin.Set(origins...)
 }
@@ -780,6 +904,61 @@ func (c Config) validateOIDCRedirect() error {
 	}
 	if raw != c.CallbackPath {
 		return fmt.Errorf("auth.oidc.redirect_url path %q must match auth.callback_path %q", raw, c.CallbackPath)
+	}
+	return nil
+}
+
+// validateOAuthUse validates the provider login of ModeOAuthOnly, and refuses
+// every one of its settings in a mode that mounts no such login: a provider
+// credential a running deployment ignores reads as configured security.
+func (c Config) validateOAuthUse() error {
+	if c.usesOAuth() {
+		if err := c.OAuth.validate(); err != nil {
+			return err
+		}
+		return c.validateOAuthRedirect()
+	}
+	for key, value := range map[string]string{
+		"auth.oauth.provider":      c.OAuth.Provider,
+		"auth.oauth.client_id":     c.OAuth.ClientID,
+		"auth.oauth.client_secret": c.OAuth.ClientSecret,
+		"auth.oauth.redirect_url":  c.OAuth.RedirectURL,
+	} {
+		if value != "" {
+			return fmt.Errorf("auth.mode %q reads no OAuth setting, but %s is set", c.Mode, key)
+		}
+	}
+	return nil
+}
+
+// validateOAuthRedirect accepts a request-relative redirect only under the
+// explicit loopback development allowance, exactly as the OIDC one does. The
+// callback path is mounted separately, so a path-only redirect must name that
+// same endpoint.
+func (c Config) validateOAuthRedirect() error {
+	raw := c.OAuth.RedirectURL
+	if raw == "" {
+		if !c.OAuth.AllowLoopbackHTTP {
+			return errors.New("auth.oauth.redirect_url may be omitted only when auth.oauth.allow_loopback_http is set")
+		}
+		return nil
+	}
+	parsed, err := url.Parse(raw)
+	if err != nil {
+		return fmt.Errorf("auth.oauth.redirect_url is invalid: %w", err)
+	}
+	if parsed.IsAbs() {
+		return nil
+	}
+	if !c.OAuth.AllowLoopbackHTTP {
+		return errors.New("a path-only auth.oauth.redirect_url requires auth.oauth.allow_loopback_http")
+	}
+	if parsed.Path != raw || !strings.HasPrefix(raw, "/") || strings.Contains(raw, "//") ||
+		strings.ContainsAny(raw, "\\\x00") {
+		return fmt.Errorf("auth.oauth.redirect_url must be an absolute URL or a rooted local path, got %q", raw)
+	}
+	if raw != c.CallbackPath {
+		return fmt.Errorf("auth.oauth.redirect_url path %q must match auth.callback_path %q", raw, c.CallbackPath)
 	}
 	return nil
 }
@@ -974,6 +1153,94 @@ func (o OIDCConfig) validate() error {
 			AdmissionAuthenticated, AdmissionClaim, AdmissionRegistered, AdmissionExisting)
 	}
 	return nil
+}
+
+// validate checks the provider login of ModeOAuthOnly.
+//
+// The claim names are checked against the provider definition rather than only
+// for shape, which the OIDC side cannot do: an issuer's claim set is whatever
+// that issuer decides to put in a token, while a provider definition here emits
+// a fixed list. Where the list is known, a claim that will never arrive is a
+// configuration error, and finding it at startup is the difference between a
+// deployment that does not start and one that refuses every login.
+func (o OAuthConfig) validate() error {
+	if o.Provider == "" {
+		return fmt.Errorf("auth.oauth.provider must be set; the providers this build defines are %s",
+			strings.Join(oauthprofile.Names(), ", "))
+	}
+	provider, ok := oauthprofile.Lookup(o.Provider)
+	if !ok {
+		return fmt.Errorf("auth.oauth.provider %q is not defined; the providers this build defines are %s",
+			o.Provider, strings.Join(oauthprofile.Names(), ", "))
+	}
+	if o.ClientID == "" || o.ClientSecret == "" {
+		return fmt.Errorf("auth.oauth requires client_id and client_secret for provider %q", o.Provider)
+	}
+	for _, scope := range o.Scopes {
+		if !validOAuthScope(scope) {
+			return fmt.Errorf("auth.oauth.scopes contains %q, which is not a scope token; list each scope separately rather than as one space-separated string", scope)
+		}
+	}
+	if err := providerClaim("auth.oauth.identity_claim", o.IdentityClaim, provider); err != nil {
+		return err
+	}
+	switch o.Admission {
+	case AdmissionAuthenticated:
+	case AdmissionRegistered:
+		for _, claim := range o.RegisteredClaims {
+			if err := providerClaim("auth.oauth.registered_claims", claim, provider); err != nil {
+				return err
+			}
+		}
+	case AdmissionExisting:
+		if o.AutoProvision {
+			return fmt.Errorf("auth.oauth.admission %q requires auto_provision = false", AdmissionExisting)
+		}
+	case AdmissionClaim:
+		if o.Claim.Path == "" || len(o.Claim.Values) == 0 {
+			return fmt.Errorf("auth.oauth.admission %q requires claim.path and claim.values", AdmissionClaim)
+		}
+		if o.Claim.Match != MatchAny && o.Claim.Match != MatchAll {
+			return fmt.Errorf("auth.oauth.claim.match must be %q or %q", MatchAny, MatchAll)
+		}
+	default:
+		return fmt.Errorf("auth.oauth.admission must be %q, %q, %q, or %q",
+			AdmissionAuthenticated, AdmissionClaim, AdmissionRegistered, AdmissionExisting)
+	}
+	return nil
+}
+
+// providerClaim refuses a claim name the selected provider never emits, and
+// names the ones it does. The list is short enough to print, and printing it is
+// what turns a rejected login into a corrected line of configuration.
+func providerClaim(key, claim string, provider oauthprofile.Provider) error {
+	if !validClaimName(claim) {
+		return fmt.Errorf("%s %q is not a usable claim name", key, claim)
+	}
+	reported := provider.Claims()
+	if slices.Contains(reported, claim) {
+		return nil
+	}
+	return fmt.Errorf("%s %q is not reported by provider %q, whose profile carries %s",
+		key, claim, provider.Name, strings.Join(reported, ", "))
+}
+
+// validOAuthScope accepts the RFC 6749 scope-token grammar, which excludes the
+// space that separates two of them. A deployment writing "users.read tweet.read"
+// as one list entry would otherwise have it percent-encoded into a single scope
+// no provider grants, and see the failure at the provider rather than here.
+func validOAuthScope(scope string) bool {
+	if scope == "" || len(scope) > 256 {
+		return false
+	}
+	for index := range len(scope) {
+		char := scope[index]
+		if char == 0x21 || (char >= 0x23 && char <= 0x5b) || (char >= 0x5d && char <= 0x7e) {
+			continue
+		}
+		return false
+	}
+	return true
 }
 
 // validClaimName accepts the shape of a top-level claim name. A claim compared

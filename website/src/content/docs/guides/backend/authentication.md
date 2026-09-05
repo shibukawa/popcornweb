@@ -60,7 +60,7 @@ client_id = "..."
 client_secret = "..."
 redirect_url = "https://app.example/auth/callback"
 identity_claim = "sub"   # the verified claim that identifies an account
-provider_logout = true   # also sign out of the provider
+logout_scope = "reconfirm"  # what a logout does to the provider session
 ```
 
 `pw init --auth=oidc` writes both. With the relational backend it also writes
@@ -96,7 +96,7 @@ The `[auth]` keys decide what the framework mounts and what it protects:
 | --- | --- | --- |
 | `enabled` | `false` | the endpoints and the guard exist only when true |
 | `backend` | `"rdb"` | ceremony, allowlist, credential, and bootstrap storage: `rdb`, `dynamo`, or `firestore` |
-| `mode` | `"oidc_only"` | `oidc_only`, `oidc_passkey`, `passkey_only`, or API-oriented `jwt_only`; see [Modes](#modes) |
+| `mode` | `"oidc_only"` | `oidc_only`, `oidc_passkey`, `passkey_only`, `oauth_only`, or API-oriented `jwt_only`; see [Modes](#modes) |
 | `login_path` | `"/auth/login"` | rooted local path that starts the provider flow |
 | `callback_path` | `"/auth/callback"` | rooted local path the provider returns to |
 | `logout_path` | `"/auth/logout"` | rooted local path; `POST` only |
@@ -124,7 +124,8 @@ The `[auth.oidc]` keys describe the relying party and decide who is admitted:
 | `claim.values` | `[]` | accepted values at that pointer |
 | `claim.match` | `"any"` | `any` or `all` |
 | `registered_claims` | *(empty)* | claims compared against the allowlist; defaults to `identity_claim` |
-| `provider_logout` | `true` | also end the provider session on logout |
+| `logout_scope` | `"reconfirm"` | what a logout does to the provider session: `reconfirm` or `global` |
+| `allow_global_logout_request` | `false` | let a logout form escalate to `global` |
 | `allow_loopback_http` | `false` | permit an `http` loopback issuer during development |
 
 Supply the three secrets through `AUTH_OIDC_ISSUER`, `AUTH_OIDC_CLIENT_ID`, and
@@ -157,6 +158,136 @@ Whichever rule admits, the account link is the issuer plus the claim named by
 `identity_claim` — never the email address, which providers reassign. Change
 `identity_claim` only to something the directory guarantees is stable and
 unique for the life of an account.
+
+## Signing in with X
+
+X authenticates people over OAuth 2.0 and issues no ID Token. Neither does
+GitHub, or most of what the industry calls social login. `oidc_only` has nothing
+to work with there: it exists to verify a signed assertion about a person, and
+these providers never send one. `auth.mode = "oauth_only"` is that login.
+
+A deployment states one provider name. The endpoints, the scopes, and the shape
+of the account response all follow from it:
+
+```toml
+[session]
+enabled = true
+backend = "rdb"
+
+[auth]
+enabled = true
+backend = "rdb"
+mode = "oauth_only"
+protection.include = ["/mypage"]
+
+[auth.oauth]
+provider = "x"
+redirect_url = "https://app.example/auth/callback"
+```
+
+`AUTH_OAUTH_CLIENT_ID` and `AUTH_OAUTH_CLIENT_SECRET` carry the credentials from
+X's developer portal, where the same callback URL must be registered. The
+storage imports and the entry point are the ones under [Turning it
+on](#turning-it-on); nothing else about the application changes, because the
+endpoints, the guard, and the session are the ones every browser mode uses.
+
+One step inside the callback is different, and everything else follows from it.
+Where the OIDC flow verifies a token, this flow asks X who its own access token
+belongs to — one request to `/2/users/me`, carrying the token and nothing else.
+That answer is not signed. What stands behind it is that the token came from a
+PKCE-bound exchange this deployment started, and that the reply arrived from X
+over TLS. Admission, the account resolver, session rotation, and the landing
+path then run exactly as they do after an ID Token.
+
+The access token is discarded there. It answered the only question the login had
+for it, so nothing stores it, the mode asks for no `offline.access` scope, and
+the session that results carries no credential to X. An application that wants
+to post on the user's behalf runs its own authorization flow and owns that token.
+
+### Reading the X account
+
+The session carries the provider account beside the local one:
+
+```go
+func home(w http.ResponseWriter, r *http.Request) {
+	user, signedIn := auth.User(r.Context())
+	if signedIn && user.Provider == "x" {
+		// user.Subject   — the X user id, and the account link
+		// user.Username  — the handle, without the @
+		// user.AvatarURL — the profile image
+		// user.DisplayName
+	}
+}
+```
+
+`Username` and `AvatarURL` are copies taken at login. They go stale the moment
+the user renames themselves, which is fine for a greeting and wrong for anything
+that has to keep matching. `DisplayName` and `Email` come from the account
+resolver, exactly as they do after an OIDC login — the default resolver reads
+the provider's name, and X reports no address.
+
+The account link is `Subject`, the numeric id. The handle is the tempting
+alternative because it is the readable one, and it is unsafe: X lets a handle be
+renamed, and lets a released handle be claimed by somebody else. An account
+linked to `@example` eventually belongs to whoever holds `@example` next.
+`identity_claim` defaults to `sub` for that reason, and a claim name the
+provider does not report — X's own `username`, say, rather than
+`preferred_username` — is refused at startup with the reported names listed,
+rather than refusing every login later.
+
+### The `[auth.oauth]` keys
+
+| Key | Default | Meaning |
+| --- | --- | --- |
+| `provider` | *(empty)* | **required**; `x` is the only definition today |
+| `client_id` | *(empty)* | **required**; `AUTH_OAUTH_CLIENT_ID` |
+| `client_secret` | *(empty)* | **required**; `AUTH_OAUTH_CLIENT_SECRET`, masked in the startup summary |
+| `redirect_url` | *(empty)* | absolute deployed callback; in loopback development, empty derives `callback_path` from the request origin |
+| `scopes` | `[]` | replaces the provider's minimum login set rather than adding to it; one scope per entry |
+| `identity_claim` | `"sub"` | the claim that identifies a local account; must be one the provider reports |
+| `admission` | `"authenticated"` | `authenticated`, `claim`, `registered`, or `existing`, exactly as under [Who gets in](#who-gets-in) |
+| `auto_provision` | `true` | let an unknown profile create an account |
+| `claim.path` | *(empty)* | JSON Pointer into the profile claims; required by `admission = "claim"` |
+| `claim.values` | `[]` | accepted values at that pointer |
+| `claim.match` | `"any"` | `any` or `all` |
+| `registered_claims` | *(empty)* | claims compared against the allowlist; defaults to `identity_claim` |
+| `allow_loopback_http` | `false` | permit a request-relative redirect URL on loopback during development |
+
+X reports four claims: `sub`, `preferred_username`, `name`, and `picture`. Its
+own spellings — `id`, `username`, `profile_image_url` — are renamed on the way
+in, so admission has one name per value to be configured against.
+
+Leaving `scopes` empty asks for `users.read tweet.read`, which is what
+`/2/users/me` needs and all it needs. Stating the key takes ownership of the
+list, and each entry is one scope: `["users.read tweet.read"]` is a single
+malformed scope, and startup says so.
+
+### What this mode gives up
+
+Three things are missing because the protocol has no way to express them, and
+each fails loudly rather than quietly.
+
+**Sign-out is local.** There is no end session endpoint, so `logout_path`
+revokes the session here and stops, and writing `auth.oidc.logout_scope =
+"global"` is refused at startup rather than bound to nothing. X stays signed in,
+and the next login may be answered from that session without asking the user
+anything. On a personal
+device that is what people expect. On a shared one it is a disclosure, which is
+why `auth.shared_device` is refused under this mode instead of half-honored:
+that mode's guarantee is a global sign-out plus a login the provider may not
+answer silently, and neither exists here.
+
+**Step-up re-authentication cannot run.** Proving an identity a second time
+means sending `max_age` and getting a verified `auth_time` back, and a provider
+that issues no ID Token reports neither. `auth.Confirmed` and a zero window
+therefore answer `503` and log the mode rather than redirecting into a login
+that could never converge. `auth.MaxAge`, measured from the login itself, works
+normally — so guard a sensitive page with a freshness window, and put anything
+that needs a fresh confirmation behind a different mode.
+
+**Nothing here is signed.** The trust is transport trust. That is the ordinary
+basis for social login and it is weaker than an ID Token; if a deployment needs
+cryptographic proof of who authenticated, it needs an OIDC provider.
 
 ## JWT-only API servers
 
@@ -256,11 +387,21 @@ sign-out would become a denial-of-service surface. A `GET` therefore receives
 Cross-origin logout is refused: the session cookie is `SameSite=Lax`, and the
 endpoint additionally rejects a mismatched `Origin`.
 
-By default, logout also ends the **provider** session. Removing only the local
-cookie leaves the user signed in upstream; the next login can return the same
-account immediately, making sign-out appear ineffective. The endpoint therefore
-redirects through the provider's RP-initiated logout with `client_id` and a
-`post_logout_redirect_uri` pointing back to this origin:
+Ending the local session and ending the **provider** session are separate acts,
+and `auth.oidc.logout_scope` decides how far the logout reaches. Removing only
+the local cookie is not one of the choices: the user stays signed in upstream,
+the next login returns the same account without asking, and the sign-out appears
+to have done nothing.
+
+`reconfirm`, the default, revokes the local session and asks the provider for
+nothing at all. What it changes is the *next* authorization request, which
+carries `prompt` so the provider must show its account picker and demand proof
+rather than answering silently from a single sign-on session this logout could
+not reach. No specification lets a relying party end its own slice of a provider
+session, so this is the closest thing to a per-application sign-out that exists.
+
+`global` additionally redirects through the provider's RP-initiated logout,
+which signs the user out of every application sharing that provider:
 
 ```
 POST /auth/logout
@@ -268,10 +409,22 @@ POST /auth/logout
   → 302 back to your post-logout page
 ```
 
-Set `auth.oidc.provider_logout = false` to keep the logout local — appropriate
-when the provider is shared with other applications that should stay signed in.
-A provider that advertises no `end_session_endpoint` falls back to the local
-logout automatically.
+Take `reconfirm` unless sign-out is supposed to mean leaving everything — a
+shared terminal, or a deployment whose provider serves only it. `auth.shared_device`
+requires `global` for that reason. A provider that advertises no
+`end_session_endpoint` degrades `global` to `reconfirm`, never to a silent
+logout.
+
+To offer both controls in one application, set
+`auth.oidc.allow_global_logout_request = true` and post `scope=global` from the
+sign-out-everywhere button. A request may only escalate: a form cannot force a
+narrower scope than the deployment configured, because that would leave the
+provider session alive after the user asked to leave it.
+
+The key that used to spell this, `auth.oidc.provider_logout`, is gone. A
+configuration still carrying `true` is refused at startup with `logout_scope`
+named — silently downgrading it would have left the file reading as a global
+sign-out while the deployment ran something narrower.
 
 After login the browser lands on `auth.post_login_path`, or on the path it was
 originally trying to reach. Only a rooted same-site path is accepted, so a login
@@ -304,16 +457,17 @@ authorization remains in the application.
 
 ## Modes
 
-The three browser modes differ in what establishes an account before one
-exists. A passkey alone cannot do that because there is nothing to attach the
-first credential to. JWT-only sits outside that lifecycle: the authorization
-server has already issued a credential to an API caller.
+The browser modes differ in what establishes an account before one exists. A
+passkey alone cannot do that because there is nothing to attach the first
+credential to. JWT-only sits outside that lifecycle: the authorization server
+has already issued a credential to an API caller.
 
 | `auth.mode` | Account comes from | Everyday login |
 | --- | --- | --- |
 | `oidc_only` | the provider | the provider |
 | `oidc_passkey` | the provider | a passkey, with the provider as recovery |
 | `passkey_only` | a login ID and one-time secret an administrator issues | a passkey |
+| `oauth_only` | a provider that issues no ID Token, such as X | that provider |
 | `jwt_only` | the authorization server that minted the access token | a bearer token on every API request |
 
 A mode reads only its own settings and refuses one it cannot honor, so a

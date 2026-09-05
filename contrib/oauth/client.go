@@ -74,6 +74,12 @@ func NewClient(config Config, options Options) (*Client, error) {
 	}
 	// Token exchange must never follow an attacker-selected redirect.
 	client.CheckRedirect = authn.RejectRedirect
+	// RequestTimeout is applied as a context deadline, and TinyGo's net/http
+	// ignores those. The exchange runs on a request handler and talks to a host
+	// this application does not control, so the deadline has to be real there
+	// too. A caller that supplied an already wrapped client — which contrib/oidc
+	// does — is handed it back unchanged.
+	client = authn.EnforceDeadlines(client)
 	maxResponse := options.MaxResponseBytes
 	if maxResponse == 0 {
 		maxResponse = defaultMaxResponseBytes

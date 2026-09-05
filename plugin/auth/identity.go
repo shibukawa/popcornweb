@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/shibukawa/popcornweb/contrib/jwt"
+	"github.com/shibukawa/popcornweb/contrib/oauthprofile"
 )
 
 var (
@@ -266,6 +267,23 @@ type SessionData struct {
 	Key         string `json:"key,omitempty"`
 	DisplayName string `json:"name,omitempty"`
 	Email       string `json:"email,omitempty"`
+	// Provider is the OAuth login provider that authenticated this session,
+	// such as "x". It is empty for every other login method, which is what
+	// makes the three fields below readable without a second flag: they are
+	// present exactly when this one is.
+	//
+	// Subject is that provider's own account identifier — the X user id, for
+	// the x provider — and Issuer is the provider's namespace.
+	Provider string `json:"provider,omitempty"`
+	// Username is the handle the provider reported, such as an X @name without
+	// the @. It is stored for display and support, and is not the account link:
+	// a handle can be renamed, and on X a released one can be claimed by
+	// somebody else, so it identifies nobody durably. It is a copy taken at
+	// login and goes stale the moment the user renames themselves.
+	Username string `json:"username,omitempty"`
+	// AvatarURL is the profile image the provider reported, when it reported
+	// one. Like Username it is a copy taken at login.
+	AvatarURL string `json:"avatar_url,omitempty"`
 	// ProviderAuthTime is the verified auth_time of the identity provider: the
 	// moment it last actively authenticated this person, which is not the
 	// moment the login landed here. A provider may satisfy an authorization
@@ -316,6 +334,37 @@ func identityFrom(claims jwt.Claims, identityClaim string) Identity {
 	return identity
 }
 
+// identityFromProfile builds the verified identity of a provider login that
+// carries no ID Token.
+//
+// Verified means something weaker here than it does for an ID Token, and the
+// difference is worth stating: nothing about this profile is signed. What
+// stands behind it is that the access token was obtained through a PKCE-bound
+// exchange this deployment started, and that the profile was read from the
+// provider's own endpoint over TLS using that token. The provider is trusted to
+// answer truthfully about its own users, which is the same trust an ID Token
+// signature ultimately certifies, established by transport rather than by
+// signature.
+//
+// The issuer is the provider definition's, not something a response said. It is
+// the namespace of the account link, and letting a response name its own
+// namespace would let one compromised provider claim another's accounts.
+func identityFromProfile(provider oauthprofile.Provider, profile oauthprofile.Profile, identityClaim string) Identity {
+	if identityClaim == "" {
+		identityClaim = ClaimSubject
+	}
+	identity := Identity{
+		Issuer:   provider.Issuer,
+		Subject:  profile.Subject,
+		KeyClaim: identityClaim,
+		Claims:   Claims{raw: profile.Claims},
+	}
+	if key, ok := claimLookupValue(identityClaim, identity); ok {
+		identity.Key = key
+	}
+	return identity
+}
+
 // admissionRule is the admission policy of whichever mode is asking.
 //
 // OIDC admission and bearer admission are the same decision reached by
@@ -335,6 +384,15 @@ func (c OIDCConfig) admissionRule() admissionRule {
 		Claim:            c.Claim,
 		RegisteredClaims: c.RegisteredClaims,
 		AutoProvision:    c.AutoProvision,
+	}
+}
+
+func (o OAuthConfig) admissionRule() admissionRule {
+	return admissionRule{
+		Admission:        o.Admission,
+		Claim:            o.Claim,
+		RegisteredClaims: o.RegisteredClaims,
+		AutoProvision:    o.AutoProvision,
 	}
 }
 

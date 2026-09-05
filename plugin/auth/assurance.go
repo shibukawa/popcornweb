@@ -42,6 +42,12 @@ type window struct {
 	confirmed bool
 }
 
+// needsReproof reports whether satisfying this window requires proving the
+// identity again during the session, rather than measuring how long ago the
+// login was. A confirmation always does, and so does a zero window, which is
+// read as a confirmation for the current attempt.
+func (w window) needsReproof() bool { return w.confirmed || w.maxAge == 0 }
+
 // MaxAge admits any proof no older than d, including the login that started
 // the session. Use it where recency is the point: a session that has been
 // sitting open all afternoon should not reach an administration area, but the
@@ -309,6 +315,16 @@ func satisfied(x Exchange, requirement Requirement) (bool, error) {
 	if !resolved {
 		return false, fmt.Errorf("%w: requirement could not be resolved", ErrNoAssurance)
 	}
+	if want.needsReproof() && !instance.config.reprovable() {
+		// The mode has no way to prove this identity a second time, so the
+		// requirement can be neither met nor remedied. Reporting it as unmet
+		// would send the browser into a re-proof that returns it exactly as
+		// unproved as it left, forever; reporting it as met would admit the
+		// operation the guard exists to hold. It is an error, which answers 503
+		// and names the deployment mistake in the log.
+		return false, fmt.Errorf("%w: auth.mode %q cannot re-prove an identity, so a confirmed or zero-window requirement can never be satisfied",
+			ErrNoAssurance, instance.config.Mode)
+	}
 	if want.confirmed {
 		return confirmedWithin(view, want.maxAge), nil
 	}
@@ -404,6 +420,15 @@ func challenge(x Exchange, requirement Requirement, api bool) {
 	want, resolved := requirement.resolve(x, instance.config)
 	if !resolved {
 		logger(x).Log(x.Context(), pwruntime.LevelError, "assurance requirement could not be resolved")
+		x.Problem(pwruntime.ServiceUnavailable())
+		return
+	}
+	if want.needsReproof() && !instance.config.reprovable() {
+		// The same refusal satisfied makes, for the handler that evaluates a
+		// requirement itself and then asks for the challenge. Redirecting into a
+		// login that cannot re-prove anything is the loop this avoids.
+		logger(x).Log(x.Context(), pwruntime.LevelError, "assurance requirement cannot be re-proved in this mode",
+			pwruntime.String("mode", instance.config.Mode))
 		x.Problem(pwruntime.ServiceUnavailable())
 		return
 	}

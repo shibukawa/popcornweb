@@ -13,7 +13,7 @@ registration:
   application_wiring: auth.SetAccountResolver, which the import comes with
   scaffold: api:cli-init writes the resolver, the framework migrations, and the configuration for an OIDC mode
 surface:
-  - auth.SetAccountResolver(resolver) links a verified identity to an application account
+  - auth.SetAccountResolver(resolver) links a verified identity to an application account, whichever provider flow verified it
   - auth.User(context) returns the stored account summary of the request
   - auth.Session(context) returns the validated session view
   - auth.MigrationSQL() and rdb.MigrationSQL(table) publish the framework tables
@@ -21,11 +21,11 @@ endpoints:
   login:
     path: auth.login_path, default /auth/login
     method: GET
-    action: begin requirement:contrib-oidc authorization and store the transaction key, with the return path, in a short-lived cookie
+    action: begin authorization through requirement:contrib-oidc, or through requirement:contrib-oauth under oauth_only, and store the transaction key, with the return path, in a short-lived cookie
   callback:
     path: auth.callback_path, default /auth/callback
     method: GET
-    action: consume the transaction, verify the ID Token, and establish the session
+    action: consume the transaction, verify the ID Token — or read the account through requirement:contrib-oauthprofile under oauth_only — and establish the session
   logout:
     path: auth.logout_path, default /auth/logout
     method: POST only
@@ -61,6 +61,7 @@ modes:
   oidc_only: implemented; this concept is its whole endpoint surface
   oidc_passkey: these endpoints plus the login and enrollment endpoints of api:passkey-endpoints
   passkey_only: api:passkey-endpoints alone; login_path, callback_path, and the OIDC configuration are absent
+  oauth_only: the same login_path and callback_path, over flow:oauth-provider-login; the callback reads an account from the provider instead of verifying an ID Token, and the logout is local because no end session endpoint exists
   jwt_only: no endpoint at all, per api:bearer-authentication; the mode installs a middleware and nothing this concept describes exists in it
   logout: shared by every browser mode, because a session is mode-neutral once created; jwt_only has none, because a credential this framework never issued is not one it can end
   selection: data:authentication-runtime-config mode_validation decides which endpoints mount and which fields are read

@@ -73,9 +73,17 @@ func (rt *runtime) rememberSignIn(x Exchange, data SessionData) {
 	if rt.hint == nil {
 		return
 	}
+	// The login identifier is whichever one this login actually produced. An
+	// email address is what an OIDC directory returns; a provider login returns
+	// a handle and usually no address at all, and an empty hint field would
+	// leave the login screen with nothing to render beside the name.
+	loginID := data.Email
+	if loginID == "" {
+		loginID = data.Username
+	}
 	_ = rt.hint.SaveTo(x, SignInHint{
 		DisplayName: data.DisplayName,
-		LoginID:     data.Email,
+		LoginID:     loginID,
 		Issuer:      data.Issuer,
 		LastLoginAt: time.Now().Unix(),
 	})

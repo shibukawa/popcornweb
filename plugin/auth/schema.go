@@ -209,8 +209,10 @@ func requiredTables(config Config) [][2]string {
 		{authstate.TableName, MigrationName},
 	}
 	// The allowlist is read only by the registered admission mode, and not at
-	// all when the application installed a store of its own.
-	if config.OIDC.Admission == AdmissionRegistered && installedAllowlistStore() == nil {
+	// all when the application installed a store of its own. The policy comes
+	// from whichever section the mode reads, so an OAuth deployment is asked for
+	// the table on the same terms as an OIDC one.
+	if config.admission().Admission == AdmissionRegistered && installedAllowlistStore() == nil {
 		required = append(required, [2]string{AllowlistTable, MigrationName})
 	}
 	if !config.usesPasskey() {

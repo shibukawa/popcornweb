@@ -89,3 +89,16 @@ func (b bodyCloser) Close() error {
 	}
 	return nil
 }
+
+// TestEnforceDeadlinesIsIdempotent keeps a client that passes through two
+// packages, each promising a request timeout, from carrying two wrappers.
+func TestEnforceDeadlinesIsIdempotent(t *testing.T) {
+	once := EnforceDeadlines(&http.Client{})
+	if _, wrapped := once.Transport.(deadlineTransport); !wrapped {
+		t.Fatal("a plain client was not wrapped")
+	}
+	twice := EnforceDeadlines(once)
+	if twice != once {
+		t.Fatal("an already wrapped client was wrapped again")
+	}
+}

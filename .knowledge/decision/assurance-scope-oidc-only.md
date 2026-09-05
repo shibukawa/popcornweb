@@ -29,5 +29,6 @@ reopen_when:
   - a passkey_only deployment asks the framework for a recovery channel instead of the administrator bootstrap it has today
 consequence:
   - concept:assurance-axes carries two axes, and a reachability axis is deliberately absent
+  - the freshness axis needs a provider that reports auth_time, so a mode without one — flow:oauth-provider-login — answers a confirmed or zero-window requirement 503 and logs the mode, rather than redirecting into a re-proof that cannot converge; a window measured from the login stays answerable
   - requirement:session-assurance-levels lists contact verification as a non-goal rather than as deferred work
 ```

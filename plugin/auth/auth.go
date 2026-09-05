@@ -6,7 +6,9 @@
 //	import _ "github.com/shibukawa/popcornweb/plugin/auth"
 //
 // Browser modes use OIDC, passkeys, or both and establish a session in the
-// backend session.backend selects. auth.mode = "jwt_only" instead verifies an
+// backend session.backend selects. auth.mode = "oauth_only" instead signs a
+// person in through a provider that speaks OAuth 2.0 and issues no ID Token,
+// such as X, and lands in the same session. auth.mode = "jwt_only" verifies an
 // Authorization bearer token on every request and creates no session or login
 // endpoint.
 //
@@ -42,6 +44,7 @@ import (
 
 	"github.com/shibukawa/popcornweb/authstate"
 	"github.com/shibukawa/popcornweb/contrib/oauth"
+	"github.com/shibukawa/popcornweb/contrib/oauthprofile"
 	"github.com/shibukawa/popcornweb/contrib/oidc"
 	"github.com/shibukawa/popcornweb/contrib/passkey"
 	"github.com/shibukawa/popcornweb/internal/pathpattern"
@@ -61,19 +64,32 @@ const (
 	MethodOIDC = "oidc"
 	// MethodPasskey labels sessions created by a passkey assertion.
 	MethodPasskey = "passkey"
+	// MethodOAuth labels sessions created by a plain OAuth 2.0 provider login.
+	// Which provider is on the session itself, as SessionData.Provider: the
+	// method says how the identity was proved, and a deployment runs one
+	// provider, so ranking or distinguishing them here would say nothing.
+	MethodOAuth = "oauth"
 )
 
 // admissionFor returns the admission rule of the mode this runtime serves.
-func (rt *runtime) admissionFor() admissionRule {
-	if rt.config.usesJWT() {
-		return rt.config.JWT.admissionRule()
-	}
-	return rt.config.OIDC.admissionRule()
-}
+func (rt *runtime) admissionFor() admissionRule { return rt.config.admission() }
 
-// stateNamespace isolates this package's correlation records in the shared
-// auth state table.
-const stateNamespace = "auth-oidc"
+// The correlation records of each provider flow are isolated from one another
+// in the shared auth state table. A process runs one mode, so the two never
+// meet at runtime; they are separate so that a table outliving a mode change
+// cannot answer a callback of the flow that is no longer mounted.
+const (
+	stateNamespace      = "auth-oidc"
+	oauthStateNamespace = "auth-oauth"
+)
+
+// stateNamespaceFor names the correlation records of the mounted flow.
+func (c Config) stateNamespaceFor() string {
+	if c.usesOAuth() {
+		return oauthStateNamespace
+	}
+	return stateNamespace
+}
 
 // authFastPackage is where this capability is served on the second transport.
 // It is a string rather than an import, because importing it from here would
@@ -136,6 +152,10 @@ type runtime struct {
 	proxies requestorigin.Proxies
 	// passkeyFlow is nil unless the selected mode mounts api:passkey-endpoints.
 	passkeyFlow *passkey.SessionFlow
+	// oauthProvider is the resolved definition of ModeOAuthOnly, and the zero
+	// value in every other mode. It is looked up once at startup, so a provider
+	// name nothing defines fails there rather than at the first login.
+	oauthProvider oauthprofile.Provider
 	// credentials and bootstrap are the installed stores, or the framework
 	// defaults over the tables this package owns.
 	credentials CredentialStore
@@ -329,7 +349,17 @@ func Setup(ctx context.Context) (Step, error) {
 		proxies:        proxies,
 		accounts:       newAccountGate(),
 	}
-	if instance.stateStore, err = openState(schemaCtx, instance, stateNamespace, oauth.TransactionCodec{}); err != nil {
+	if config.usesOAuth() {
+		// validate already refused an undefined name, so this cannot fail; the
+		// check stays because a lookup whose failure is impossible is exactly
+		// the one that becomes possible when somebody edits the other file.
+		provider, ok := oauthprofile.Lookup(config.OAuth.Provider)
+		if !ok {
+			return nil, fmt.Errorf("auth.oauth.provider %q is not defined", config.OAuth.Provider)
+		}
+		instance.oauthProvider = provider
+	}
+	if instance.stateStore, err = openState(schemaCtx, instance, config.stateNamespaceFor(), oauth.TransactionCodec{}); err != nil {
 		return nil, err
 	}
 	if instance.hint, err = hintJar(config.Assurance.Hint, sessionConfig.Cookie); err != nil {

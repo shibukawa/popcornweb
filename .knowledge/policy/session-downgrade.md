@@ -48,10 +48,11 @@ removal:
   - a not-me control on the login screen clears the hint, needing no session and no authentication
   - clearing is idempotent
 provider_interaction:
-  fact: api:authentication-endpoints ends the provider session by default through auth.oidc.provider_logout
-  consequence: under that default the provider has forgotten the user too, so a local hint is the only identified level available and also the least useful one
-  caution: a hint surviving a provider logout can read as still signed in, so its presentation states signed out
-  resolution: policy:provider-session-scope
+  fact: what a logout does to the provider session is auth.oidc.logout_scope, whose default reconfirm leaves that session alive, per policy:provider-session-scope
+  consequence: under the default the provider still knows the user, so the hint and the provider's own account picker agree, and the hint shortens a sign-in the provider will still demand proof for
+  under_global: the provider has forgotten the user too, so a local hint is the only identified level available and also the least useful one
+  caution: a hint surviving a global logout can read as still signed in, so its presentation states signed out
+  no_provider: flow:oauth-provider-login reaches no provider session at all, so the hint is the only identified level there whatever a deployment writes
 risks:
   shared_device: a hint discloses the last user of a browser to the next one
   enumeration: the hint is read only from the cookie and never resolved from a request parameter, so it cannot probe for accounts

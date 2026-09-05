@@ -66,6 +66,19 @@ func registerConfigDefinition0() {
 			"auth.oidc.provider_logout",
 			"auth.oidc.allow_global_logout_request",
 			"auth.oidc.allow_loopback_http",
+			"auth.oauth.provider",
+			"auth.oauth.client_id",
+			"auth.oauth.client_secret",
+			"auth.oauth.redirect_url",
+			"auth.oauth.scopes",
+			"auth.oauth.identity_claim",
+			"auth.oauth.admission",
+			"auth.oauth.auto_provision",
+			"auth.oauth.claim.path",
+			"auth.oauth.claim.values",
+			"auth.oauth.claim.match",
+			"auth.oauth.registered_claims",
+			"auth.oauth.allow_loopback_http",
 			"auth.passkey.path",
 			"auth.passkey.rp_id",
 			"auth.passkey.rp_name",
@@ -126,6 +139,11 @@ func registerConfigDefinition0() {
 			"auth.oidc.provider_logout":             "false",
 			"auth.oidc.allow_global_logout_request": "false",
 			"auth.oidc.allow_loopback_http":         "false",
+			"auth.oauth.identity_claim":             "sub",
+			"auth.oauth.admission":                  "authenticated",
+			"auth.oauth.auto_provision":             "true",
+			"auth.oauth.claim.match":                "any",
+			"auth.oauth.allow_loopback_http":        "false",
 			"auth.passkey.path":                     "/auth/passkey",
 			"auth.passkey.user_verification":        "required",
 			"auth.passkey.discoverable":             "preferred",
@@ -186,6 +204,19 @@ func registerConfigDefinition0() {
 			"auth.oidc.provider_logout":                 {{Key: "auth.mode", Op: "=", Values: []string{"oidc_only", "oidc_passkey"}}},
 			"auth.oidc.allow_global_logout_request":     {{Key: "auth.mode", Op: "=", Values: []string{"oidc_only", "oidc_passkey"}}},
 			"auth.oidc.allow_loopback_http":             {{Key: "auth.mode", Op: "=", Values: []string{"oidc_only", "oidc_passkey"}}},
+			"auth.oauth.provider":                       {{Key: "auth.mode", Op: "=", Values: []string{"oauth_only"}}},
+			"auth.oauth.client_id":                      {{Key: "auth.mode", Op: "=", Values: []string{"oauth_only"}}},
+			"auth.oauth.client_secret":                  {{Key: "auth.mode", Op: "=", Values: []string{"oauth_only"}}},
+			"auth.oauth.redirect_url":                   {{Key: "auth.mode", Op: "=", Values: []string{"oauth_only"}}},
+			"auth.oauth.scopes":                         {{Key: "auth.mode", Op: "=", Values: []string{"oauth_only"}}},
+			"auth.oauth.identity_claim":                 {{Key: "auth.mode", Op: "=", Values: []string{"oauth_only"}}},
+			"auth.oauth.admission":                      {{Key: "auth.mode", Op: "=", Values: []string{"oauth_only"}}},
+			"auth.oauth.auto_provision":                 {{Key: "auth.mode", Op: "=", Values: []string{"oauth_only"}}},
+			"auth.oauth.claim.path":                     {{Key: "auth.mode", Op: "=", Values: []string{"oauth_only"}}},
+			"auth.oauth.claim.values":                   {{Key: "auth.mode", Op: "=", Values: []string{"oauth_only"}}},
+			"auth.oauth.claim.match":                    {{Key: "auth.mode", Op: "=", Values: []string{"oauth_only"}}},
+			"auth.oauth.registered_claims":              {{Key: "auth.mode", Op: "=", Values: []string{"oauth_only"}}},
+			"auth.oauth.allow_loopback_http":            {{Key: "auth.mode", Op: "=", Values: []string{"oauth_only"}}},
 			"auth.passkey.path":                         {{Key: "auth.mode", Op: "=", Values: []string{"oidc_passkey", "passkey_only"}}},
 			"auth.passkey.rp_id":                        {{Key: "auth.mode", Op: "=", Values: []string{"oidc_passkey", "passkey_only"}}},
 			"auth.passkey.rp_name":                      {{Key: "auth.mode", Op: "=", Values: []string{"oidc_passkey", "passkey_only"}}},
@@ -224,6 +255,7 @@ func registerConfigDefinition0() {
 			"auth.bootstrap.enrollment_ttl":        "show",
 			"auth.bootstrap.max_attempts":          "show",
 			"auth.oidc.client_secret":              "mask",
+			"auth.oauth.client_secret":             "mask",
 		},
 		Summary: map[string]string{
 			"auth.recent_auth_max_age":      "omit",
@@ -235,7 +267,7 @@ func registerConfigDefinition0() {
 		FlagMetas: []cliparser.FieldMeta{
 			{Prefix: "auth", Key: "enabled", Kind: cliparser.KindBool},
 			{Prefix: "auth", Key: "backend", Help: "storage backend of the authentication tables: rdb or dynamo", Enum: []string{"rdb", "dynamo"}},
-			{Prefix: "auth", Key: "mode", Help: "oidc_only, oidc_passkey, passkey_only, or jwt_only", Enum: []string{"oidc_only", "oidc_passkey", "passkey_only", "jwt_only"}},
+			{Prefix: "auth", Key: "mode", Help: "oidc_only, oidc_passkey, passkey_only, oauth_only, or jwt_only", Enum: []string{"oidc_only", "oidc_passkey", "passkey_only", "oauth_only", "jwt_only"}},
 			{Prefix: "auth", Key: "login_path", Help: "path that starts the provider flow"},
 			{Prefix: "auth", Key: "callback_path"},
 			{Prefix: "auth", Key: "logout_path"},
@@ -276,6 +308,19 @@ func registerConfigDefinition0() {
 			{Prefix: "auth", Key: "oidc.provider_logout", Help: "removed; use auth.oidc.logout_scope", Kind: cliparser.KindBool},
 			{Prefix: "auth", Key: "oidc.allow_global_logout_request", Help: "permit a logout request to escalate to a global sign-out", Kind: cliparser.KindBool},
 			{Prefix: "auth", Key: "oidc.allow_loopback_http", Help: "permit an http loopback issuer during development", Kind: cliparser.KindBool},
+			{Prefix: "auth", Key: "oauth.provider", Help: "OAuth login provider; x is X, formerly Twitter", Enum: []string{"x"}},
+			{Prefix: "auth", Key: "oauth.client_id", Env: "AUTH_OAUTH_CLIENT_ID"},
+			{Prefix: "auth", Key: "oauth.client_secret", Env: "AUTH_OAUTH_CLIENT_SECRET"},
+			{Prefix: "auth", Key: "oauth.redirect_url", Help: "RedirectURL is the absolute callback URL registered with the provider"},
+			{Prefix: "auth", Key: "oauth.scopes", Help: "scopes to request; empty asks for the provider's minimum login set", Kind: cliparser.KindArray},
+			{Prefix: "auth", Key: "oauth.identity_claim", Help: "profile claim that identifies a local account; sub is the provider's own identifier"},
+			{Prefix: "auth", Key: "oauth.admission", Help: "authenticated, claim, registered, or existing"},
+			{Prefix: "auth", Key: "oauth.auto_provision", Help: "permit an unknown profile to create an account through the registered account resolver", Kind: cliparser.KindBool},
+			{Prefix: "auth", Key: "oauth.claim.path", Help: "JSON Pointer into verified claims"},
+			{Prefix: "auth", Key: "oauth.claim.values", Kind: cliparser.KindArray},
+			{Prefix: "auth", Key: "oauth.claim.match", Help: "any or all"},
+			{Prefix: "auth", Key: "oauth.registered_claims", Help: "claims compared against the allowlist; defaults to identity_claim", Kind: cliparser.KindArray},
+			{Prefix: "auth", Key: "oauth.allow_loopback_http", Help: "permit an http loopback redirect URL during development", Kind: cliparser.KindBool},
 			{Prefix: "auth", Key: "passkey.path", Help: "base path of the ceremony endpoints"},
 			{Prefix: "auth", Key: "passkey.rp_id", Help: "relying party domain; localhost during development"},
 			{Prefix: "auth", Key: "passkey.rp_name", Help: "relying party display name"},
@@ -311,7 +356,7 @@ func registerConfigDefinition0() {
 		Scaffold: []configbind.ScaffoldField{
 			{Key: "enabled", Kind: configbind.ScaffoldBool, Default: "false"},
 			{Key: "backend", Kind: configbind.ScaffoldString, Default: "rdb", Help: "storage backend of the authentication tables: rdb or dynamo", Enum: []string{"rdb", "dynamo"}},
-			{Key: "mode", Kind: configbind.ScaffoldString, Default: "oidc_only", Help: "oidc_only, oidc_passkey, passkey_only, or jwt_only", Enum: []string{"oidc_only", "oidc_passkey", "passkey_only", "jwt_only"}},
+			{Key: "mode", Kind: configbind.ScaffoldString, Default: "oidc_only", Help: "oidc_only, oidc_passkey, passkey_only, oauth_only, or jwt_only", Enum: []string{"oidc_only", "oidc_passkey", "passkey_only", "oauth_only", "jwt_only"}},
 			{Key: "login_path", Kind: configbind.ScaffoldString, Default: "/auth/login", Help: "path that starts the provider flow"},
 			{Key: "callback_path", Kind: configbind.ScaffoldString, Default: "/auth/callback"},
 			{Key: "logout_path", Kind: configbind.ScaffoldString, Default: "/auth/logout"},
@@ -357,6 +402,19 @@ func registerConfigDefinition0() {
 			{Key: "oidc.provider_logout", Kind: configbind.ScaffoldBool, Default: "false", Help: "removed; use auth.oidc.logout_scope"},
 			{Key: "oidc.allow_global_logout_request", Kind: configbind.ScaffoldBool, Default: "false", Help: "permit a logout request to escalate to a global sign-out"},
 			{Key: "oidc.allow_loopback_http", Kind: configbind.ScaffoldBool, Default: "false", Help: "permit an http loopback issuer during development"},
+			{Key: "oauth.provider", Kind: configbind.ScaffoldString, Help: "OAuth login provider; x is X, formerly Twitter", Enum: []string{"x"}},
+			{Key: "oauth.client_id", Kind: configbind.ScaffoldString, Env: "AUTH_OAUTH_CLIENT_ID"},
+			{Key: "oauth.client_secret", Kind: configbind.ScaffoldString, Env: "AUTH_OAUTH_CLIENT_SECRET"},
+			{Key: "oauth.redirect_url", Kind: configbind.ScaffoldString, Help: "RedirectURL is the absolute callback URL registered with the provider"},
+			{Key: "oauth.scopes", Kind: configbind.ScaffoldStringSlice, Help: "scopes to request; empty asks for the provider's minimum login set"},
+			{Key: "oauth.identity_claim", Kind: configbind.ScaffoldString, Default: "sub", Help: "profile claim that identifies a local account; sub is the provider's own identifier"},
+			{Key: "oauth.admission", Kind: configbind.ScaffoldString, Default: "authenticated", Help: "authenticated, claim, registered, or existing"},
+			{Key: "oauth.auto_provision", Kind: configbind.ScaffoldBool, Default: "true", Help: "permit an unknown profile to create an account through the registered account resolver"},
+			{Key: "oauth.claim.path", Kind: configbind.ScaffoldString, Help: "JSON Pointer into verified claims"},
+			{Key: "oauth.claim.values", Kind: configbind.ScaffoldStringSlice},
+			{Key: "oauth.claim.match", Kind: configbind.ScaffoldString, Default: "any", Help: "any or all"},
+			{Key: "oauth.registered_claims", Kind: configbind.ScaffoldStringSlice, Help: "claims compared against the allowlist; defaults to identity_claim"},
+			{Key: "oauth.allow_loopback_http", Kind: configbind.ScaffoldBool, Default: "false", Help: "permit an http loopback redirect URL during development"},
 			{Key: "passkey.path", Kind: configbind.ScaffoldString, Default: "/auth/passkey", Help: "base path of the ceremony endpoints"},
 			{Key: "passkey.rp_id", Kind: configbind.ScaffoldString, Help: "relying party domain; localhost during development"},
 			{Key: "passkey.rp_name", Kind: configbind.ScaffoldString, Help: "relying party display name"},
@@ -417,9 +475,9 @@ func applyConfigDefinition0(dst any, o *configbind.Overlay) error {
 	}
 	if v, ok := o.GetString("auth.mode"); ok {
 		switch v {
-		case "oidc_only", "oidc_passkey", "passkey_only", "jwt_only":
+		case "oidc_only", "oidc_passkey", "passkey_only", "oauth_only", "jwt_only":
 		default:
-			return fmt.Errorf("configbind: auth.mode: %q must be one of: oidc_only, oidc_passkey, passkey_only, jwt_only", v)
+			return fmt.Errorf("configbind: auth.mode: %q must be one of: oidc_only, oidc_passkey, passkey_only, oauth_only, jwt_only", v)
 		}
 		p.Mode = v
 	} else {
@@ -686,6 +744,68 @@ func applyConfigDefinition0(dst any, o *configbind.Overlay) error {
 		p.OIDC.AllowLoopbackHTTP = bb
 	} else {
 		p.OIDC.AllowLoopbackHTTP = false
+	}
+	if v, ok := o.GetString("auth.oauth.provider"); ok {
+		switch v {
+		case "x":
+		default:
+			return fmt.Errorf("configbind: auth.oauth.provider: %q must be one of: x", v)
+		}
+		p.OAuth.Provider = v
+	}
+	if v, ok := o.GetString("auth.oauth.client_id"); ok {
+		p.OAuth.ClientID = v
+	}
+	if v, ok := o.GetString("auth.oauth.client_secret"); ok {
+		p.OAuth.ClientSecret = v
+	}
+	if v, ok := o.GetString("auth.oauth.redirect_url"); ok {
+		p.OAuth.RedirectURL = v
+	}
+	if v, ok := o.GetMulti("auth.oauth.scopes"); ok {
+		p.OAuth.Scopes = v
+	}
+	if v, ok := o.GetString("auth.oauth.identity_claim"); ok {
+		p.OAuth.IdentityClaim = v
+	} else {
+		p.OAuth.IdentityClaim = "sub"
+	}
+	if v, ok := o.GetString("auth.oauth.admission"); ok {
+		p.OAuth.Admission = v
+	} else {
+		p.OAuth.Admission = "authenticated"
+	}
+	if v, ok := o.GetString("auth.oauth.auto_provision"); ok {
+		bb, err := strconv.ParseBool(v)
+		if err != nil {
+			return fmt.Errorf("configbind: auth.oauth.auto_provision: %w", err)
+		}
+		p.OAuth.AutoProvision = bb
+	} else {
+		p.OAuth.AutoProvision = true
+	}
+	if v, ok := o.GetString("auth.oauth.claim.path"); ok {
+		p.OAuth.Claim.Path = v
+	}
+	if v, ok := o.GetMulti("auth.oauth.claim.values"); ok {
+		p.OAuth.Claim.Values = v
+	}
+	if v, ok := o.GetString("auth.oauth.claim.match"); ok {
+		p.OAuth.Claim.Match = v
+	} else {
+		p.OAuth.Claim.Match = "any"
+	}
+	if v, ok := o.GetMulti("auth.oauth.registered_claims"); ok {
+		p.OAuth.RegisteredClaims = v
+	}
+	if v, ok := o.GetString("auth.oauth.allow_loopback_http"); ok {
+		bb, err := strconv.ParseBool(v)
+		if err != nil {
+			return fmt.Errorf("configbind: auth.oauth.allow_loopback_http: %w", err)
+		}
+		p.OAuth.AllowLoopbackHTTP = bb
+	} else {
+		p.OAuth.AllowLoopbackHTTP = false
 	}
 	if v, ok := o.GetString("auth.passkey.path"); ok {
 		p.Passkey.Path = v

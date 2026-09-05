@@ -74,6 +74,10 @@ func NewDeviceClient(config DeviceConfig, options DeviceOptions) (*DeviceClient,
 		client = &copy
 	}
 	client.CheckRedirect = authn.RejectRedirect
+	// The same reason NewClient wraps its client: a device flow polls a token
+	// endpoint from whatever is driving it, and on TinyGo a context deadline
+	// bounds nothing on its own.
+	client = authn.EnforceDeadlines(client)
 	maxResponse := options.MaxResponseBytes
 	if maxResponse == 0 {
 		maxResponse = defaultMaxResponseBytes

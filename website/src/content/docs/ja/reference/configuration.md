@@ -551,8 +551,17 @@ CSRF の秘密もここの鍵ではありません。登録されたセッショ
 | `claim.values` | `[]` | 受け入れる値 |
 | `claim.match` | `"any"` | `any` または `all` |
 | `registered_claims` | `[]` | 許可リストと突き合わせるクレーム。既定は `identity_claim` |
-| `provider_logout` | `true` | ログアウト時にプロバイダ側のセッションも終了する |
+| `logout_scope` | `"reconfirm"` | `reconfirm` はローカルのセッションを破棄し、次の認可リクエストに `prompt` を載せる。`global` は加えて `end_session_endpoint` でプロバイダのセッションも終了する |
+| `allow_global_logout_request` | `false` | 同一オリジンのログアウトフォームが `scope=global` を POST して `global` へ引き上げることを許す。引き上げしかできない |
 | `allow_loopback_http` | `false` | 開発時に `http` のループバック issuer と、リクエストから導出するループバック redirect を許可する |
+
+ローカルだけ、というスコープは意図的にありません。ローカルのセッションだけを破棄すると
+次のログインが無言で通るので、サインアウトが何もしなかったように読めます。`reconfirm` は
+まさにそれを直すために存在します。`auth.shared_device` は `global` を要求し、そもそも
+プロバイダのセッションに届かないモード（`passkey_only`、`oauth_only`）は、何もしないキーとして
+バインドするのではなく、明示的に書かれた `logout_scope` を拒否します。かつてこれを綴っていた
+`provider_logout` は削除済みで、まだ `true` を持つ設定は `logout_scope` を名指しして起動時に
+拒否されます。
 
 `identity_claim` はアカウントとの結びつきそのものになるため、そこに指定する値は
 アカウントの生涯にわたって安定し、かつ issuer の中で一意でなければなりません。
@@ -565,6 +574,43 @@ CSRF の秘密もここの鍵ではありません。登録されたセッショ
 変数の両方を名指しします。ローカルのエミュレータ向けに生成されたプロジェクトが
 プロバイダの値を一切持たないのはそのためで、[`pw dev`](/ja/pw/project/dev/) が
 注入します。[認証の組み込み](/ja/guides/backend/authentication/)を参照してください。
+
+### `[auth.oauth]`
+
+`auth.mode = "oauth_only"` が読むキーです。人を認証しながら ID トークンを発行しない
+プロバイダを通したログインで、`provider` が組み込みの定義を選びます。認可・トークン・
+アカウントの各エンドポイント、最小スコープ、claim 名はその定義が供給するので、デプロイ側で
+設定するものはありません。
+
+| キー | 既定値 | 意味 |
+| --- | --- | --- |
+| `provider` | *(空)* | **必須**。定義があるのは `x` だけ |
+| `client_id` | *(空)* | **必須**。`AUTH_OAUTH_CLIENT_ID` |
+| `client_secret` | *(空)* | **必須**。`AUTH_OAUTH_CLIENT_SECRET`（起動サマリではマスクされる） |
+| `redirect_url` | *(空)* | デプロイ先の絶対 URL。`allow_loopback_http` とループバック `Host` の組み合わせに限り、空またはルートパスをリクエスト origin から導出 |
+| `scopes` | `[]` | プロバイダ最小のログインスコープに足すのではなく置き換える。1 エントリ 1 スコープトークン |
+| `identity_claim` | `"sub"` | ローカルアカウントを識別するプロフィールクレーム。プロバイダが報告しない名前は拒否される |
+| `admission` | `"authenticated"` | `authenticated`, `claim`, `registered`, `existing` |
+| `auto_provision` | `true` | 未知のプロフィールにリゾルバ経由でのアカウント作成を許す |
+| `claim.path` | *(空)* | プロフィールクレームへの JSON Pointer。`admission = "claim"` 用 |
+| `claim.values` | `[]` | 受け入れる値 |
+| `claim.match` | `"any"` | `any` または `all` |
+| `registered_claims` | `[]` | 許可リストと突き合わせるクレーム。既定は `identity_claim` |
+| `allow_loopback_http` | `false` | 開発時に、リクエストから導出するループバック redirect を許可する |
+
+`x` プロバイダが報告するのは、X のユーザー ID である `sub` に加えて
+`preferred_username`、`name`、`picture` です。X 自身の綴りは取り込む段で改名されるため、
+`identity_claim = "username"` は毎回のログインで拒否されるのではなく、報告される名前を
+列挙したうえで起動時に拒否されます。
+
+`identity_claim` はアカウントとの結びつきそのものになり、既定ではプロバイダ自身の識別子を
+指します。ここをハンドルに向けると、プロバイダが改名と手放しを許している値にアカウントを
+結び付けることになり、いずれある人に別人のアカウントを渡します。
+
+このモードは `auth.shared_device` と、明示的に書かれた `auth.oidc.logout_scope` を拒否し、
+その場での確認を要求するガードには `503` を返します。全体サインアウトも検証可能な再証明も、
+プレーンな OAuth には無いためです。
+[X でログインする](/ja/guides/backend/authentication/#x-でログインする)を参照してください。
 
 ### `[auth.jwt]`
 

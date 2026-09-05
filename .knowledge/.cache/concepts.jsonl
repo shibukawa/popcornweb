@@ -124,6 +124,7 @@
 {"category": "structure", "id": "data:middleware-runtime-config", "path": ".knowledge/data/middleware-runtime-config.md", "role": "supporting", "title": "Middleware Runtime Config", "type": "data"}
 {"category": "structure", "id": "data:migration-snapshot", "path": ".knowledge/data/migration-snapshot.md", "role": "supporting", "title": "Migration Snapshot", "type": "data"}
 {"category": "structure", "id": "data:migration-source", "path": ".knowledge/data/migration-source.md", "role": "supporting", "title": "Migration Source Tree", "type": "data"}
+{"category": "structure", "id": "data:oauth-provider-profile", "path": ".knowledge/data/oauth-provider-profile.md", "role": "supporting", "title": "OAuth Provider Profile", "type": "data"}
 {"category": "structure", "id": "data:observability-runtime-config", "path": ".knowledge/data/observability-runtime-config.md", "role": "supporting", "title": "Observability Runtime Config", "type": "data"}
 {"category": "structure", "id": "data:page-route-table", "path": ".knowledge/data/page-route-table.md", "role": "supporting", "title": "Page Route Table", "type": "data"}
 {"category": "structure", "id": "data:passkey-credential", "path": ".knowledge/data/passkey-credential.md", "role": "supporting", "title": "Passkey Credential", "type": "data"}
@@ -251,6 +252,8 @@
 {"category": "constraint", "id": "decision:migration-execution-split", "path": ".knowledge/decision/migration-execution-split.md", "role": "supporting", "title": "Migration Execution Split", "type": "decision"}
 {"category": "constraint", "id": "decision:navigable-answer-hub", "path": ".knowledge/decision/navigable-answer-hub.md", "role": "supporting", "title": "Manual Bootstrap Edits an Answer Hub", "type": "decision"}
 {"category": "constraint", "id": "decision:nix-flake-packaging", "path": ".knowledge/decision/nix-flake-packaging.md", "role": "supporting", "title": "In-repository Nix Flake Packaging", "type": "decision"}
+{"category": "constraint", "id": "decision:oauth-login-discards-the-token", "path": ".knowledge/decision/oauth-login-discards-the-token.md", "role": "supporting", "title": "The OAuth Login Discards The Access Token", "type": "decision"}
+{"category": "constraint", "id": "decision:oauth-provider-definitions-are-built-in", "path": ".knowledge/decision/oauth-provider-definitions-are-built-in.md", "role": "supporting", "title": "OAuth Providers Are Named, Not Configured", "type": "decision"}
 {"category": "constraint", "id": "decision:object-storage-in-framework", "path": ".knowledge/decision/object-storage-in-framework.md", "role": "supporting", "title": "Object Storage Abstraction In The Framework", "type": "decision"}
 {"category": "constraint", "id": "decision:otlp-config-through-configbind", "path": ".knowledge/decision/otlp-config-through-configbind.md", "role": "supporting", "title": "OTLP Exporter Configuration Has One Route, Through configbind", "type": "decision"}
 {"category": "constraint", "id": "decision:outbound-trace-propagation", "path": ".knowledge/decision/outbound-trace-propagation.md", "role": "supporting", "title": "traceparent Is Injected By Whatever Opened The Client Span", "type": "decision"}
@@ -331,6 +334,7 @@
 {"category": "behavior", "id": "flow:initial-streaming-render", "path": ".knowledge/flow/initial-streaming-render.md", "role": "primary", "title": "Initial Streaming Render", "type": "flow"}
 {"category": "behavior", "id": "flow:live-boundary-delivery", "path": ".knowledge/flow/live-boundary-delivery.md", "role": "primary", "title": "Live Boundary Delivery", "type": "flow"}
 {"category": "behavior", "id": "flow:metric-collection", "path": ".knowledge/flow/metric-collection.md", "role": "primary", "title": "Metric Collection Flow", "type": "flow"}
+{"category": "behavior", "id": "flow:oauth-provider-login", "path": ".knowledge/flow/oauth-provider-login.md", "role": "primary", "title": "OAuth Provider Login Without An ID Token", "type": "flow"}
 {"category": "behavior", "id": "flow:oidc-account-login", "path": ".knowledge/flow/oidc-account-login.md", "role": "primary", "title": "OIDC Account Login", "type": "flow"}
 {"category": "behavior", "id": "flow:oidc-auth-code", "path": ".knowledge/flow/oidc-auth-code.md", "role": "primary", "title": "OIDC Authorization Code Flow", "type": "flow"}
 {"category": "behavior", "id": "flow:oidc-device-authorization", "path": ".knowledge/flow/oidc-device-authorization.md", "role": "primary", "title": "OIDC Device Authorization Flow", "type": "flow"}
@@ -384,6 +388,7 @@
 {"category": "constraint", "id": "policy:log-emission", "path": ".knowledge/policy/log-emission.md", "role": "supporting", "title": "Log Emission Policy", "type": "policy"}
 {"category": "constraint", "id": "policy:message-rich-text", "path": ".knowledge/policy/message-rich-text.md", "role": "supporting", "title": "Rich Text in Messages", "type": "policy"}
 {"category": "constraint", "id": "policy:migration-safety", "path": ".knowledge/policy/migration-safety.md", "role": "supporting", "title": "Migration Safety", "type": "policy"}
+{"category": "constraint", "id": "policy:oauth-admission", "path": ".knowledge/policy/oauth-admission.md", "role": "supporting", "title": "OAuth Admission Policy", "type": "policy"}
 {"category": "constraint", "id": "policy:oauth-security", "path": ".knowledge/policy/oauth-security.md", "role": "supporting", "title": "OAuth Client Security Policy", "type": "policy"}
 {"category": "constraint", "id": "policy:oidc-admission", "path": ".knowledge/policy/oidc-admission.md", "role": "supporting", "title": "OIDC Admission Policy", "type": "policy"}
 {"category": "constraint", "id": "policy:oidc-security", "path": ".knowledge/policy/oidc-security.md", "role": "supporting", "title": "OIDC Security Policy", "type": "policy"}
@@ -470,6 +475,7 @@
 {"category": "objective", "id": "requirement:contrib-jwt", "path": ".knowledge/requirement/contrib-jwt.md", "role": "primary", "title": "TinyGo JWT", "type": "requirement"}
 {"category": "objective", "id": "requirement:contrib-mysql", "path": ".knowledge/requirement/contrib-mysql.md", "role": "primary", "title": "MySQL Driver Consumption", "type": "requirement"}
 {"category": "objective", "id": "requirement:contrib-oauth", "path": ".knowledge/requirement/contrib-oauth.md", "role": "primary", "title": "TinyGo OAuth Client", "type": "requirement"}
+{"category": "objective", "id": "requirement:contrib-oauthprofile", "path": ".knowledge/requirement/contrib-oauthprofile.md", "role": "primary", "title": "TinyGo OAuth Profile Client", "type": "requirement"}
 {"category": "objective", "id": "requirement:contrib-oidc", "path": ".knowledge/requirement/contrib-oidc.md", "role": "primary", "title": "TinyGo OpenID Connect Client", "type": "requirement"}
 {"category": "objective", "id": "requirement:contrib-otel", "path": ".knowledge/requirement/contrib-otel.md", "role": "primary", "title": "Minimal OpenTelemetry Trace and Log", "type": "requirement"}
 {"category": "objective", "id": "requirement:contrib-passkey-test", "path": ".knowledge/requirement/contrib-passkey-test.md", "role": "primary", "title": "Virtual Passkey Authenticator", "type": "requirement"}

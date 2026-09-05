@@ -19,5 +19,6 @@ fi
 	./contrib/internal/authn \
 	./contrib/jwt \
 	./contrib/oauth \
+	./contrib/oauthprofile \
 	./contrib/oidc \
 	./contrib/passkey

@@ -27,6 +27,7 @@ done <<'EOF'
 ./contrib/oauth FuzzTokenResponse
 ./contrib/oauth FuzzScopeGrammar
 ./contrib/oauth FuzzDeviceAuthorizationResponse
+./contrib/oauthprofile FuzzProfileResponse
 ./contrib/oidc FuzzIDTokenParsing
 ./contrib/oidc FuzzBearerTokenValidation
 ./contrib/passkey FuzzDecodeAuthenticationCredential
