@@ -2,7 +2,7 @@
 title: Incremental HTML updates
 description: Three ways to deliver HTML progressively, after navigation, or when server state changes—and exactly how much survives with JavaScript turned off.
 sidebar:
-  order: 6
+  order: 7
 ---
 
 [Performance](/guides/architecture/performance/) is about the work a request

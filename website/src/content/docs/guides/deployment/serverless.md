@@ -27,7 +27,7 @@ to you, it is the one to take: every target below trades something — a cold
 start, a buffered response, a per-request lifetime — for running where the
 application would not otherwise run, and none of those trades is worth making
 for a service that could simply be a process behind a port. The
-[platform overview](/guides/architecture/platform/) lays the whole set side
+[supported platforms](/guides/architecture/supported-platforms/) lays the whole set side
 by side.
 
 Builds have two independent axes. `--target` selects the deployment host and

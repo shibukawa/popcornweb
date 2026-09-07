@@ -2,7 +2,7 @@
 title: パフォーマンス
 description: リクエスト処理の目安と、本番リリース前に確認する設定。
 sidebar:
-  order: 5
+  order: 6
 ---
 
 Popcorn Web はセッション、CSRF、セキュリティヘッダ、リクエスト ID といった雑事を

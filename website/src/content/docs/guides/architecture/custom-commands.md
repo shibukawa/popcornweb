@@ -2,7 +2,7 @@
 title: Custom Commands
 description: Add batch jobs and maintenance tasks to the application binary, reusing the same queries and application code as the web server.
 sidebar:
-  order: 2
+  order: 3
 ---
 
 The binary produced by `pw build` can run your own subcommands as well as the

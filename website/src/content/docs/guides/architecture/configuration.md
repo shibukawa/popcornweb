@@ -2,7 +2,7 @@
 title: Application Configuration
 description: How an application's runtime settings resolve from TOML, environment variables, and flags into one typed struct, and how to add your own.
 sidebar:
-  order: 3
+  order: 4
 ---
 
 Configuration arrives from several places and resolves to one typed view.

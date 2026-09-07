@@ -2,7 +2,7 @@
 title: テレメトリ
 description: アプリケーションログ、トレース、開発診断、ローカルJSONL、DuckDB分析をPopcorn Webがどう接続するか。
 sidebar:
-  order: 7
+  order: 8
 ---
 
 テレメトリは、性質の異なる二つの問いに答えます。ログは個々の判断や失敗を説明し、
