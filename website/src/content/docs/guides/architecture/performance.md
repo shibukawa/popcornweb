@@ -2,7 +2,7 @@
 title: Performance
 description: A scale for request costs and the settings to check before a production release.
 sidebar:
-  order: 5
+  order: 6
 ---
 
 Popcorn Web handles sessions, CSRF, security headers, request IDs, and other

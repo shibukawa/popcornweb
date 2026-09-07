@@ -2,7 +2,7 @@
 title: 段階的な HTML 更新
 description: HTML を段階的に届ける、画面遷移後に更新する、サーバ状態の変化に合わせて更新する3つの方法と、JavaScript を切ったときにどこまで残るのか。
 sidebar:
-  order: 6
+  order: 7
 ---
 
 [パフォーマンス](/ja/guides/architecture/performance/)では、リクエストを処理するときの
