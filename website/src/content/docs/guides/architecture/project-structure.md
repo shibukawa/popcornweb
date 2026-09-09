@@ -2,7 +2,7 @@
 title: Project structure and principles
 description: The project at three scales — the pw development cradle, feature-oriented packages, and a net/http handler with generated data boundaries.
 sidebar:
-  order: 1
+  order: 2
 ---
 
 A Popcorn Web project has more than one structure. The directory tree is the

@@ -1,8 +1,8 @@
 ---
-title: Platforms
+title: Supported Platforms
 description: Every place a Popcorn Web application runs today, with the build option that produces each artifact and what each host takes away.
 sidebar:
-  order: 8
+  order: 1
 ---
 
 One application, written once against `net/http`, ships as a native binary, a

@@ -2,7 +2,7 @@
 title: Security
 description: What the framework defends by default, what it hands you, and where a request is checked before your handler runs.
 sidebar:
-  order: 4
+  order: 5
 ---
 
 Much of the framework's security is already decided before you write a handler.

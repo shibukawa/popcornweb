@@ -19,6 +19,10 @@ export default defineConfig({
     '/ja/start/architecture': `${base}/ja/guides/architecture/project-structure/`,
     '/guides/frontend/compression': `${base}/guides/backend/compression/`,
     '/ja/guides/frontend/compression': `${base}/ja/guides/backend/compression/`,
+    // The platform overview moved to the head of the Architecture group and
+    // took a name that says what the list is.
+    '/guides/architecture/platform': `${base}/guides/architecture/supported-platforms/`,
+    '/ja/guides/architecture/platform': `${base}/ja/guides/architecture/supported-platforms/`,
     '/guides/cross-layer/tracing': `${base}/guides/architecture/telemetry/#reading-a-request-trace`,
     '/ja/guides/cross-layer/tracing': `${base}/ja/guides/architecture/telemetry/#リクエストトレースを読む`,
     '/guides/backend/token-revocation': `${base}/guides/backend/authentication/#revoking-a-bearer-token`,

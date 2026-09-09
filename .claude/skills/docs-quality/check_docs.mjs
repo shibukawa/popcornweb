@@ -29,6 +29,7 @@ const ASTRO_CONFIG = join(ROOT, 'website', 'astro.config.mjs');
 const REMOVED_ROUTES = {
   '/start/getting-started/': '/tutorial/getting-started/',
   '/guides/configuration/': '/guides/architecture/configuration/',
+  '/guides/architecture/platform/': '/guides/architecture/supported-platforms/',
 };
 
 // Pages where the reader has no Tailwind build yet, so a code block must not

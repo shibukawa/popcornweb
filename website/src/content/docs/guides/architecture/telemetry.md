@@ -2,7 +2,7 @@
 title: Telemetry
 description: How Popcorn Web connects application logs, traces, development diagnostics, local JSONL files, and DuckDB analysis.
 sidebar:
-  order: 7
+  order: 8
 ---
 
 Telemetry answers two different questions. Logs explain discrete decisions and
