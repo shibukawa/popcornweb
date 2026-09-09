@@ -27,7 +27,7 @@ watched_by_default:
   - Go sources, for rebuild
   - .pw.html and .pw.sql, for regeneration
   - a new or removed concept:page-tree route, which needs nothing added: the walk compares files rather than subscribing to events, and a route always carries the page template that makes it one
-  - popcornweb.toml and the policy:config-file-resolution project-local files
+  - popcornweb.toml, the policy:config-file-resolution project-local files, and the policy:dotenv-resolution files
   - the data:migration-source directory and the data:devidp-config file when enabled
 rationale:
   - the wide default is what makes the loop trustworthy, and the narrow one is what makes it fast; only the second is safe to leave to the operator

@@ -15,6 +15,7 @@ import (
 	"strings"
 
 	"github.com/shibukawa/popcornweb/internal/assetverify"
+	"github.com/shibukawa/popcornweb/internal/dotenv"
 	"github.com/shibukawa/popcornweb/internal/pwcheck"
 	"github.com/shibukawa/popcornweb/internal/pwenv"
 	"github.com/shibukawa/popcornweb/internal/pwmigrate"
@@ -78,6 +79,7 @@ func runChecks(ctx context.Context, context checkContext) ([]doctorFinding, []do
 	run.checkWiring()
 	run.checkDependencies()
 	run.checkSecrets()
+	run.checkDotenvTemplate()
 	run.checkEnvironmentValues()
 	run.checkIdentityProvider()
 	run.checkStorage(ctx)
@@ -342,6 +344,10 @@ var placeholderSecrets = map[string]bool{
 
 func (r *checkRun) checkSecrets() {
 	fromFile := 0
+	// A dotenv file exists to hold secrets, so a value read from one is not a
+	// disclosure the way a literal in the TOML is. Where the file stands is
+	// still the question: tracked by git, or readable beyond its owner.
+	dotenvHolding := map[string]bool{}
 	for _, key := range r.Config.secretKeys() {
 		raw := r.Config.raw(key)
 		if !carriesCredential(key, raw) {
@@ -352,6 +358,10 @@ func (r *checkRun) checkSecrets() {
 		if placeholderSecrets[strings.ToLower(strings.TrimSpace(raw))] {
 			// The value is named only as a class, never printed.
 			r.report(pwcheck.PlaceholderSecret, key+" still holds a placeholder value", key)
+		}
+		if file, ok := r.Config.fromDotenv(key); ok {
+			dotenvHolding[file] = true
+			continue
 		}
 		if !r.Config.fromFile(key) {
 			continue
@@ -367,19 +377,61 @@ func (r *checkRun) checkSecrets() {
 		}
 		r.report(pwcheck.LiteralSecretInFile, key+" is set from the configuration file", evidence)
 	}
-	if fromFile == 0 || r.Config.ConfigPath == "" {
+	holding := make([]string, 0, len(dotenvHolding)+1)
+	if fromFile > 0 && r.Config.ConfigPath != "" {
+		holding = append(holding, r.Config.ConfigPath)
+	}
+	for file := range dotenvHolding {
+		holding = append(holding, file)
+	}
+	sortStrings(holding)
+	for _, file := range holding {
+		r.checkSecretFileStanding(file)
+	}
+}
+
+// checkSecretFileStanding asks where a file that holds a secret stands: whether
+// version control carries it, and whether anyone but its owner can read it.
+func (r *checkRun) checkSecretFileStanding(file string) {
+	if r.Scan.inGitTree && r.Scan.tracked(file) {
+		r.report(pwcheck.SecretFileNotIgnored, file+" holds a secret and is tracked by version control", file)
+	}
+	if mode, ok := r.Scan.configFileModes[file]; ok && mode&0o077 != 0 {
+		r.report(pwcheck.SecretFilePerms, fmt.Sprintf("%s holds a secret and its mode is %04o", file, mode), file)
+	}
+}
+
+// checkDotenvTemplate reads the committed template, which is the one file of
+// the family .gitignore lets through. A value there is a committed credential
+// whichever environment is diagnosed, so the check is environment-independent
+// and the name is what a reader needs: the value itself is never printed.
+func (r *checkRun) checkDotenvTemplate() {
+	template, err := dotenv.Read(filepath.Join(r.Root, pwenv.DotenvTemplate), pwenv.DotenvTemplate)
+	if err != nil || template == nil {
+		// A template that does not parse is not one a load ever reads, so
+		// there is nothing here to report about it.
 		return
 	}
-	if r.Scan.inGitTree && r.Scan.tracked(r.Config.ConfigPath) {
-		r.report(pwcheck.SecretFileNotIgnored,
-			r.Config.ConfigPath+" holds a secret and is tracked by version control",
-			r.Config.ConfigPath)
+	for _, entry := range template.Entries {
+		name := strings.ToLower(entry.Name)
+		if !secretVariableName(name) || !carriesCredential(strings.ReplaceAll(name, "_", "."), entry.Value) {
+			continue
+		}
+		r.report(pwcheck.EnvTemplateHoldsSecret,
+			entry.Name+" is assigned a value in "+pwenv.DotenvTemplate,
+			entry.Name+" in "+pwenv.DotenvTemplate)
 	}
-	if mode, ok := r.Scan.configFileModes[r.Config.ConfigPath]; ok && mode&0o077 != 0 {
-		r.report(pwcheck.SecretFilePerms,
-			fmt.Sprintf("%s holds a secret and its mode is %04o", r.Config.ConfigPath, mode),
-			r.Config.ConfigPath)
+}
+
+// secretVariableName mirrors the key-name policy configbind masks by: a
+// variable is derived from its key, so the same tokens classify both.
+func secretVariableName(name string) bool {
+	for _, token := range []string{"password", "secret", "apikey", "api_key", "token", "dsn", "private_key", "credential"} {
+		if strings.Contains(name, token) {
+			return true
+		}
 	}
+	return false
 }
 
 func (r *checkRun) checkEnvironmentValues() {

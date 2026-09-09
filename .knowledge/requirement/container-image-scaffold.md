@@ -32,7 +32,7 @@ files:
     same_runtime_stage: policy:container-runtime-image, so the two files differ in the builder stage only
   .dockerignore:
     always: yes
-    excludes: .git, .devbox, devbox.d, dist, "**/*_pw_gen.go", "*.db", the local binary, and config.dev.toml
+    excludes: .git, .devbox, devbox.d, dist, "**/*_pw_gen.go", "*.db", the local binary, config.dev.toml, and the requirement:dotenv-files .env.dev, .env.local, and .env.*.local
     reason: the image rebuilds the generated Go and the asset tree, and a host copy of either would be copied in and then overwritten or, worse, linked
     development_config_excluded: a development DSN, a development keyring secret, and a devidp roster have no business in a production layer
   config.prod.toml:

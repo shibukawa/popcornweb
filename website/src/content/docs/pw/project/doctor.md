@@ -31,7 +31,7 @@ deployment. So the environment to diagnose is an option:
 | Command | Diagnoses |
 | --- | --- |
 | `pw doctor` | the `APP_ENV` of your shell, then `dev` |
-| `pw doctor --env=prod` | `config.prod.toml` |
+| `pw doctor --env=prod` | `config.prod.toml`, with `.env`, `.env.local`, `.env.prod`, and `.env.prod.local` beneath this host's environment |
 | `pw doctor --env=stg --env=prod` | both, in one report |
 | `pw doctor --env=all` | every `config.*.toml` in the project |
 

@@ -7,8 +7,8 @@ A single process-level environment token selects deployment-specific configurati
 
 ```yaml
 selection:
-  source: APP_ENV environment variable
-  default: dev when APP_ENV is unset or empty
+  source: APP_ENV environment variable, then APP_ENV in ./.env and ./.env.local when the process did not set it, per policy:dotenv-resolution
+  default: dev when neither sets it
   scope: process-level, resolved once before api:runtime-configuration ParseConfig
 known_values:
   dev: local development

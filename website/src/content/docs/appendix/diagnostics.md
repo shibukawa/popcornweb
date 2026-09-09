@@ -460,6 +460,13 @@ Three things go wrong here: wiring the binary does not actually carry, values th
 - **Reads**: merged configuration
 - **Fix**: set auth.oidc.redirect_url to the absolute URL registered with the deployed provider
 
+### PW0438: the dotenv template assigns a secret
+
+- **Severity**: error
+- **Applies to**: every environment
+- **Reads**: project files
+- **Fix**: leave the value empty in .env.example and put it in .env or .env.{env}, which git ignores
+
 ## Production readiness (PW05xx)
 
 The pre-launch checklist as something that runs. Silent while the diagnosed environment is `dev`.

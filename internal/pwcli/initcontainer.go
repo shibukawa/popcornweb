@@ -233,8 +233,12 @@ func dockerignoreScaffold(options initOptions) string {
 dist/
 
 # This machine's, or this developer's. config.` + pwenv.Development + `.toml carries a local DSN and
-# generated secrets, and an image has no use for either.
+# generated secrets, and an image has no use for either. The local dotenv files
+# hold this machine's secrets; the deployment sets its own at run time.
 ` + pwenv.FileName(pwenv.Development) + `
+` + pwenv.DotenvFileName(pwenv.Development) + `
+` + pwenv.DotenvBase + pwenv.DotenvLocalSuffix + `
+` + pwenv.DotenvBase + `.*` + pwenv.DotenvLocalSuffix + `
 *.db
 .devbox/
 

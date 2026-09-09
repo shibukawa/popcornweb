@@ -27,6 +27,7 @@ parse:
   environment:
     - resolve data:runtime-environment before reading any source
     - select the TOML candidate through policy:config-file-resolution
+    - read the policy:dotenv-resolution files and lay the process environment over them, unless the caller supplied Environ
   scope:
     - all registered framework configuration
     - all registered application configuration
@@ -37,7 +38,7 @@ parse:
     - api:application-lifecycle Middlewares when not already parsed
   failure: return before request acceptance
 observability:
-  - log the active environment and the resolved config file path
+  - log the active environment, the resolved config file path, and the dotenv files read
   - log each effective field and its source
   - mask secret values
 source_engine: system:tinybind configbind generation and registry

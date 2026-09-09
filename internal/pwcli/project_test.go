@@ -221,6 +221,16 @@ func TestScaffoldFilesWithTailwind(t *testing.T) {
 	if !strings.Contains(files[".gitignore"], "\n.log/\n") {
 		t.Fatal(".gitignore does not exclude local JSONL logs")
 	}
+	// The local member of each dotenv pair holds this machine's secrets;
+	// .env, .env.{env}, and the template are committed.
+	if !strings.Contains(files[".gitignore"], "\n.env.local\n.env.*.local\n") {
+		t.Fatalf(".gitignore does not exclude the local dotenv files:\n%s", files[".gitignore"])
+	}
+	for _, line := range strings.Split(files[".gitignore"], "\n") {
+		if line == ".env" || line == ".env.*" {
+			t.Fatalf(".gitignore excludes the committed dotenv files: %q", line)
+		}
+	}
 	// The Tailwind stylesheet this preset configures and the component assets the
 	// generator extracts land in one directory, and pw generate rebuilds both from
 	// sources this scaffold also writes. A project that starts without the line

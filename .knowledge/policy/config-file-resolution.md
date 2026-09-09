@@ -32,6 +32,7 @@ rationale:
   - deployment-specific values live beside the project and are selected without editing files
   - operator-owned machine-wide overrides stay environment-neutral and need no per-environment duplication
 engine: system:tinybind configpath resolution with environment-derived extra read paths
+sibling: policy:dotenv-resolution names the .env files by the same token, and layers them where this policy selects exclusively, per decision:layered-dotenv-files
 consumers:
   - api:runtime-configuration
   - data:loaded-configuration

@@ -121,6 +121,7 @@ look similar because both use TOML. They answer to different programs.
 | --- | --- | --- |
 | `popcornweb.toml` | `pw` | project root, main package, generation scopes, migrations, assets, and development tools |
 | `config.{APP_ENV}.toml` | application binary | server, database, authentication, sessions, observability, and application settings |
+| `.env`, `.env.{APP_ENV}`, and their `.local` files | application binary | the values the environment layer reads on this checkout: shared ones in the committed pair, secrets in the two `.local` files git ignores |
 | environment variables and application flags | application binary | deployment-time overrides of runtime settings |
 
 `dev.logs` belongs in `popcornweb.toml` because it controls the process running

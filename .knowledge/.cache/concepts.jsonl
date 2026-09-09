@@ -238,6 +238,7 @@
 {"category": "constraint", "id": "decision:jwt-only-mode-not-scaffolded", "path": ".knowledge/decision/jwt-only-mode-not-scaffolded.md", "role": "supporting", "title": "JWT-Only Mode Is Configured, Never Scaffolded", "type": "decision"}
 {"category": "constraint", "id": "decision:jwt-only-preset-scaffolding", "path": ".knowledge/decision/jwt-only-preset-scaffolding.md", "role": "supporting", "title": "JWT-Only Is Scaffolded By a Preset, Not By a Question", "type": "decision"}
 {"category": "constraint", "id": "decision:language-server-in-pw-cli", "path": ".knowledge/decision/language-server-in-pw-cli.md", "role": "supporting", "title": "Language Server Inside the pw CLI", "type": "decision"}
+{"category": "constraint", "id": "decision:layered-dotenv-files", "path": ".knowledge/decision/layered-dotenv-files.md", "role": "supporting", "title": "Layered Dotenv Files", "type": "decision"}
 {"category": "constraint", "id": "decision:layered-web-runtime", "path": ".knowledge/decision/layered-web-runtime.md", "role": "supporting", "title": "Layered Web Runtime", "type": "decision"}
 {"category": "constraint", "id": "decision:lazy-cookie-session-loading", "path": ".knowledge/decision/lazy-cookie-session-loading.md", "role": "supporting", "title": "Lazy Cookie Session Loading", "type": "decision"}
 {"category": "constraint", "id": "decision:live-delivery-transport", "path": ".knowledge/decision/live-delivery-transport.md", "role": "supporting", "title": "Live Deliveries On The Page Route", "type": "decision"}
@@ -378,6 +379,7 @@
 {"category": "constraint", "id": "policy:dev-token-relaxation", "path": ".knowledge/policy/dev-token-relaxation.md", "role": "supporting", "title": "Development Token Relaxation Policy", "type": "policy"}
 {"category": "constraint", "id": "policy:device-authorization-security", "path": ".knowledge/policy/device-authorization-security.md", "role": "supporting", "title": "Device Authorization Security Policy", "type": "policy"}
 {"category": "constraint", "id": "policy:devidp-safety", "path": ".knowledge/policy/devidp-safety.md", "role": "supporting", "title": "Development IdP Safety Policy", "type": "policy"}
+{"category": "constraint", "id": "policy:dotenv-resolution", "path": ".knowledge/policy/dotenv-resolution.md", "role": "supporting", "title": "Dotenv Resolution", "type": "policy"}
 {"category": "constraint", "id": "policy:dynamodb-migration-safety", "path": ".knowledge/policy/dynamodb-migration-safety.md", "role": "supporting", "title": "DynamoDB Migration Safety", "type": "policy"}
 {"category": "constraint", "id": "policy:editor-tool-execution", "path": ".knowledge/policy/editor-tool-execution.md", "role": "supporting", "title": "Editor Tool Execution Safety", "type": "policy"}
 {"category": "constraint", "id": "policy:generated-artifacts", "path": ".knowledge/policy/generated-artifacts.md", "role": "supporting", "title": "Generated Artifact Ownership", "type": "policy"}
@@ -508,6 +510,7 @@
 {"category": "objective", "id": "requirement:dev-telemetry-viewer", "path": ".knowledge/requirement/dev-telemetry-viewer.md", "role": "primary", "title": "Development Telemetry Viewer", "type": "requirement"}
 {"category": "objective", "id": "requirement:discovered-page-routing", "path": ".knowledge/requirement/discovered-page-routing.md", "role": "primary", "title": "Discovered Page Routing", "type": "requirement"}
 {"category": "objective", "id": "requirement:dockerless-image-builders", "path": ".knowledge/requirement/dockerless-image-builders.md", "role": "primary", "title": "Dockerless Image Builders", "type": "requirement"}
+{"category": "objective", "id": "requirement:dotenv-files", "path": ".knowledge/requirement/dotenv-files.md", "role": "primary", "title": "Dotenv Files", "type": "requirement"}
 {"category": "objective", "id": "requirement:dynamodb-auth-backend", "path": ".knowledge/requirement/dynamodb-auth-backend.md", "role": "primary", "title": "DynamoDB Authentication Backend", "type": "requirement"}
 {"category": "objective", "id": "requirement:dynamodb-auth-stores", "path": ".knowledge/requirement/dynamodb-auth-stores.md", "role": "primary", "title": "DynamoDB Account-Side Authentication Stores", "type": "requirement"}
 {"category": "objective", "id": "requirement:dynamodb-generation", "path": ".knowledge/requirement/dynamodb-generation.md", "role": "primary", "title": "DynamoDB Code Generation", "type": "requirement"}
@@ -667,6 +670,7 @@
 {"category": "constraint", "id": "rule:tinygo-runtime-compatibility", "path": ".knowledge/rule/tinygo-runtime-compatibility.md", "role": "supporting", "title": "TinyGo Runtime Compatibility", "type": "rule"}
 {"category": "constraint", "id": "rule:transport-handle-checks", "path": ".knowledge/rule/transport-handle-checks.md", "role": "supporting", "title": "Transport Handle Checks", "type": "rule"}
 {"category": "external", "id": "system:dbtestify", "path": ".knowledge/system/dbtestify.md", "role": "supporting", "title": "dbtestify", "type": "system"}
+{"category": "external", "id": "system:go-envparse", "path": ".knowledge/system/go-envparse.md", "role": "supporting", "title": "go-envparse", "type": "system"}
 {"category": "external", "id": "system:goose", "path": ".knowledge/system/goose.md", "role": "supporting", "title": "goose Migration Engine", "type": "system"}
 {"category": "external", "id": "system:localotelviewer", "path": ".knowledge/system/localotelviewer.md", "role": "supporting", "title": "LocalOtelViewer", "type": "system"}
 {"category": "external", "id": "system:oidcld", "path": ".knowledge/system/oidcld.md", "role": "supporting", "title": "OIDCLD", "type": "system"}

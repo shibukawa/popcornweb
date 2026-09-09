@@ -157,7 +157,13 @@ secret_material:
     trigger: a file this analysis found carrying a secret-classified literal that the project's git work tree tracks or does not ignore
     scope: dev_only
     severity: error
-    bound: the file set comes from what was actually read; no advisory assumes a .env or a local override file, because policy:config-file-resolution defines none
+    bound: the file set comes from what was actually read, which is the selected TOML and the policy:dotenv-resolution files of the diagnosed token; no advisory assumes a file neither policy defines
+  env-template-holds-secret:
+    id: PW0438
+    trigger: .env.example assigns a non-empty value to a variable whose name carries a secret token, and the value carries a credential by the same test the TOML checks use
+    scope: every
+    severity: error
+    reason: the template is the one dotenv file .gitignore lets through, so a value there is a committed credential whatever the environment, per requirement:dotenv-files
   secret-file-permissions:
     trigger: a file carrying a secret-classified literal that is readable beyond its owner
     scope: dev_only

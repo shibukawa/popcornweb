@@ -67,6 +67,16 @@ Popcorn Web reads, in order:
 A bare `config.toml` in the project tree is never read. Later sources override
 earlier ones, and environment variables and flags override every file.
 
+The environment itself is composed from the working directory's dotenv files
+under the process environment: `./.env`, `./.env.local`, `./.env.{APP_ENV}`,
+`./.env.{APP_ENV}.local`, then one variable per file under `/run/secrets`, then
+the process, a later source winning on the same name. The `.local` files are
+the ones `.gitignore` excludes, and a value from them or from the mount is
+masked wherever it is shown. `APP_ENV` is read
+from the process and then from `.env` and `.env.local`; in the two
+`.env.{APP_ENV}` files it is ignored with a warning. A load whose caller supplied
+the environment — a Cloudflare Workers build — reads no file. See [Secrets and dotenv files](/guides/architecture/configuration/#secrets-and-dotenv-files).
+
 Durations are Go duration strings: `5s`, `200ms`, `2m`, `24h`. Sizes are plain
 integers of bytes. A list is a TOML array, or a comma-separated value in an
 environment variable.
@@ -696,7 +706,7 @@ the union:
 
 ```sh
 ./myapp --generate-config toml > config.dev.toml
-./myapp --generate-config env > .env
+./myapp --generate-config env > .env.example
 ```
 
 Because the scaffold is assembled from registrations present in that build, it

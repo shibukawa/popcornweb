@@ -187,6 +187,7 @@
 {"context": "body", "path": ".knowledge/api/cli-doctor.md", "source": "api:cli-doctor", "target": "data:diagnostic-report", "target_category": "structure", "target_type": "data"}
 {"context": "body", "path": ".knowledge/api/cli-doctor.md", "source": "api:cli-doctor", "target": "data:middleware-runtime-config", "target_category": "structure", "target_type": "data"}
 {"context": "body", "path": ".knowledge/api/cli-doctor.md", "source": "api:cli-doctor", "target": "data:database-connection-set", "target_category": "structure", "target_type": "data"}
+{"context": "body", "path": ".knowledge/api/cli-doctor.md", "source": "api:cli-doctor", "target": "policy:dotenv-resolution", "target_category": "constraint", "target_type": "policy"}
 {"context": "body", "path": ".knowledge/api/cli-doctor.md", "source": "api:cli-doctor", "target": "requirement:startup-summary-brevity", "target_category": "objective", "target_type": "requirement"}
 {"context": "body", "path": ".knowledge/api/cli-doctor.md", "source": "api:cli-doctor", "target": "policy:startup-summary", "target_category": "constraint", "target_type": "policy"}
 {"context": "body", "path": ".knowledge/api/cli-doctor.md", "source": "api:cli-doctor", "target": "decision:config-verbosity-tag-adoption", "target_category": "constraint", "target_type": "decision"}
@@ -290,6 +291,7 @@
 {"context": "body", "path": ".knowledge/api/cli-init.md", "source": "api:cli-init", "target": "rule:rdb-dsn-resolution", "target_category": "constraint", "target_type": "rule"}
 {"context": "body", "path": ".knowledge/api/cli-init.md", "source": "api:cli-init", "target": "rule:tinygo-runtime-compatibility", "target_category": "constraint", "target_type": "rule"}
 {"context": "body", "path": ".knowledge/api/cli-init.md", "source": "api:cli-init", "target": "requirement:local-jsonl-log-capture", "target_category": "objective", "target_type": "requirement"}
+{"context": "body", "path": ".knowledge/api/cli-init.md", "source": "api:cli-init", "target": "requirement:dotenv-files", "target_category": "objective", "target_type": "requirement"}
 {"context": "body", "path": ".knowledge/api/cli-init.md", "source": "api:cli-init", "target": "requirement:container-image-scaffold", "target_category": "objective", "target_type": "requirement"}
 {"context": "body", "path": ".knowledge/api/cli-init.md", "source": "api:cli-init", "target": "requirement:agent-log-analysis-skill", "target_category": "objective", "target_type": "requirement"}
 {"context": "body", "path": ".knowledge/api/cli-init.md", "source": "api:cli-init", "target": "api:auth-credential-store", "target_category": "interface", "target_type": "api"}
@@ -735,6 +737,7 @@
 {"context": "body", "path": ".knowledge/api/runtime-configuration.md", "source": "api:runtime-configuration", "target": "data:observability-runtime-config", "target_category": "structure", "target_type": "data"}
 {"context": "body", "path": ".knowledge/api/runtime-configuration.md", "source": "api:runtime-configuration", "target": "data:middleware-runtime-config", "target_category": "structure", "target_type": "data"}
 {"context": "body", "path": ".knowledge/api/runtime-configuration.md", "source": "api:runtime-configuration", "target": "policy:config-file-resolution", "target_category": "constraint", "target_type": "policy"}
+{"context": "body", "path": ".knowledge/api/runtime-configuration.md", "source": "api:runtime-configuration", "target": "policy:dotenv-resolution", "target_category": "constraint", "target_type": "policy"}
 {"context": "body", "path": ".knowledge/api/runtime-configuration.md", "source": "api:runtime-configuration", "target": "api:application-lifecycle", "target_category": "interface", "target_type": "api"}
 {"context": "body", "path": ".knowledge/api/runtime-configuration.md", "source": "api:runtime-configuration", "target": "system:tinybind", "target_category": "external", "target_type": "system"}
 {"context": "body", "path": ".knowledge/api/runtime-configuration.md", "source": "api:runtime-configuration", "target": "requirement:built-in-config-generation", "target_category": "objective", "target_type": "requirement"}
@@ -1030,6 +1033,8 @@
 {"context": "body", "path": ".knowledge/concept/project-layout.md", "source": "concept:project-layout", "target": "data:project-config", "target_category": "structure", "target_type": "data"}
 {"context": "body", "path": ".knowledge/concept/project-layout.md", "source": "concept:project-layout", "target": "policy:config-file-resolution", "target_category": "constraint", "target_type": "policy"}
 {"context": "body", "path": ".knowledge/concept/project-layout.md", "source": "concept:project-layout", "target": "requirement:environment-switching", "target_category": "objective", "target_type": "requirement"}
+{"context": "body", "path": ".knowledge/concept/project-layout.md", "source": "concept:project-layout", "target": "requirement:dotenv-files", "target_category": "objective", "target_type": "requirement"}
+{"context": "body", "path": ".knowledge/concept/project-layout.md", "source": "concept:project-layout", "target": "policy:dotenv-resolution", "target_category": "constraint", "target_type": "policy"}
 {"context": "body", "path": ".knowledge/concept/project-layout.md", "source": "concept:project-layout", "target": "requirement:container-image-scaffold", "target_category": "objective", "target_type": "requirement"}
 {"context": "body", "path": ".knowledge/concept/project-layout.md", "source": "concept:project-layout", "target": "decision:separate-tinygo-dockerfile", "target_category": "constraint", "target_type": "decision"}
 {"context": "body", "path": ".knowledge/concept/project-layout.md", "source": "concept:project-layout", "target": "rule:template-source-layout", "target_category": "constraint", "target_type": "rule"}
@@ -1301,8 +1306,10 @@
 {"context": "body", "path": ".knowledge/data/i18n-config.md", "source": "data:i18n-config", "target": "policy:locale-vary-correctness", "target_category": "constraint", "target_type": "policy"}
 {"context": "body", "path": ".knowledge/data/i18n-config.md", "source": "data:i18n-config", "target": "rule:locale-prefix-checks", "target_category": "constraint", "target_type": "rule"}
 {"context": "body", "path": ".knowledge/data/loaded-configuration.md", "source": "data:loaded-configuration", "target": "decision:independent-runtime-config-bindings", "target_category": "constraint", "target_type": "decision"}
+{"context": "body", "path": ".knowledge/data/loaded-configuration.md", "source": "data:loaded-configuration", "target": "policy:dotenv-resolution", "target_category": "constraint", "target_type": "policy"}
 {"context": "body", "path": ".knowledge/data/loaded-configuration.md", "source": "data:loaded-configuration", "target": "policy:config-file-resolution", "target_category": "constraint", "target_type": "policy"}
 {"context": "body", "path": ".knowledge/data/loaded-configuration.md", "source": "data:loaded-configuration", "target": "data:runtime-environment", "target_category": "structure", "target_type": "data"}
+{"context": "body", "path": ".knowledge/data/loaded-configuration.md", "source": "data:loaded-configuration", "target": "system:tinybind", "target_category": "external", "target_type": "system"}
 {"context": "body", "path": ".knowledge/data/loaded-configuration.md", "source": "data:loaded-configuration", "target": "data:runtime-config-registry", "target_category": "structure", "target_type": "data"}
 {"context": "body", "path": ".knowledge/data/loaded-configuration.md", "source": "data:loaded-configuration", "target": "data:request-context-capsule", "target_category": "structure", "target_type": "data"}
 {"context": "body", "path": ".knowledge/data/loaded-configuration.md", "source": "data:loaded-configuration", "target": "requirement:alternate-http-backend-readiness", "target_category": "objective", "target_type": "requirement"}
@@ -1486,6 +1493,7 @@
 {"context": "body", "path": ".knowledge/data/route-table.md", "source": "data:route-table", "target": "rule:static-route-discovery", "target_category": "constraint", "target_type": "rule"}
 {"context": "body", "path": ".knowledge/data/route-table.md", "source": "data:route-table", "target": "data:public-asset-manifest", "target_category": "structure", "target_type": "data"}
 {"context": "body", "path": ".knowledge/data/runtime-config-registry.md", "source": "data:runtime-config-registry", "target": "api:runtime-configuration", "target_category": "interface", "target_type": "api"}
+{"context": "body", "path": ".knowledge/data/runtime-environment.md", "source": "data:runtime-environment", "target": "policy:dotenv-resolution", "target_category": "constraint", "target_type": "policy"}
 {"context": "body", "path": ".knowledge/data/runtime-environment.md", "source": "data:runtime-environment", "target": "api:runtime-configuration", "target_category": "interface", "target_type": "api"}
 {"context": "body", "path": ".knowledge/data/runtime-environment.md", "source": "data:runtime-environment", "target": "policy:config-file-resolution", "target_category": "constraint", "target_type": "policy"}
 {"context": "body", "path": ".knowledge/data/runtime-environment.md", "source": "data:runtime-environment", "target": "api:cli-dev", "target_category": "interface", "target_type": "api"}
@@ -1965,6 +1973,7 @@
 {"context": "body", "path": ".knowledge/decision/developer-loop-watch-scope.md", "source": "decision:developer-loop-watch-scope", "target": "requirement:public-asset-delivery", "target_category": "objective", "target_type": "requirement"}
 {"context": "body", "path": ".knowledge/decision/developer-loop-watch-scope.md", "source": "decision:developer-loop-watch-scope", "target": "concept:page-tree", "target_category": "concept", "target_type": "concept"}
 {"context": "body", "path": ".knowledge/decision/developer-loop-watch-scope.md", "source": "decision:developer-loop-watch-scope", "target": "policy:config-file-resolution", "target_category": "constraint", "target_type": "policy"}
+{"context": "body", "path": ".knowledge/decision/developer-loop-watch-scope.md", "source": "decision:developer-loop-watch-scope", "target": "policy:dotenv-resolution", "target_category": "constraint", "target_type": "policy"}
 {"context": "body", "path": ".knowledge/decision/developer-loop-watch-scope.md", "source": "decision:developer-loop-watch-scope", "target": "data:migration-source", "target_category": "structure", "target_type": "data"}
 {"context": "body", "path": ".knowledge/decision/developer-loop-watch-scope.md", "source": "decision:developer-loop-watch-scope", "target": "data:devidp-config", "target_category": "structure", "target_type": "data"}
 {"context": "body", "path": ".knowledge/decision/development-memory-session-backend.md", "source": "decision:development-memory-session-backend", "target": "api:session-store", "target_category": "interface", "target_type": "api"}
@@ -2417,6 +2426,9 @@
 {"context": "body", "path": ".knowledge/decision/language-server-in-pw-cli.md", "source": "decision:language-server-in-pw-cli", "target": "policy:editor-tool-execution", "target_category": "constraint", "target_type": "policy"}
 {"context": "body", "path": ".knowledge/decision/language-server-in-pw-cli.md", "source": "decision:language-server-in-pw-cli", "target": "decision:vscode-first-editor-target", "target_category": "constraint", "target_type": "decision"}
 {"context": "body", "path": ".knowledge/decision/language-server-in-pw-cli.md", "source": "decision:language-server-in-pw-cli", "target": "requirement:cli-distribution", "target_category": "objective", "target_type": "requirement"}
+{"context": "body", "path": ".knowledge/decision/layered-dotenv-files.md", "source": "decision:layered-dotenv-files", "target": "policy:config-file-resolution", "target_category": "constraint", "target_type": "policy"}
+{"context": "body", "path": ".knowledge/decision/layered-dotenv-files.md", "source": "decision:layered-dotenv-files", "target": "requirement:environment-switching", "target_category": "objective", "target_type": "requirement"}
+{"context": "body", "path": ".knowledge/decision/layered-dotenv-files.md", "source": "decision:layered-dotenv-files", "target": "requirement:dotenv-files", "target_category": "objective", "target_type": "requirement"}
 {"context": "body", "path": ".knowledge/decision/layered-web-runtime.md", "source": "decision:layered-web-runtime", "target": "requirement:shared-web-runtime", "target_category": "objective", "target_type": "requirement"}
 {"context": "body", "path": ".knowledge/decision/layered-web-runtime.md", "source": "decision:layered-web-runtime", "target": "concept:classic-web-style", "target_category": "concept", "target_type": "concept"}
 {"context": "body", "path": ".knowledge/decision/layered-web-runtime.md", "source": "decision:layered-web-runtime", "target": "concept:modern-server-ui", "target_category": "concept", "target_type": "concept"}
@@ -3346,6 +3358,8 @@
 {"context": "body", "path": ".knowledge/policy/config-file-resolution.md", "source": "policy:config-file-resolution", "target": "data:runtime-environment", "target_category": "structure", "target_type": "data"}
 {"context": "body", "path": ".knowledge/policy/config-file-resolution.md", "source": "policy:config-file-resolution", "target": "policy:startup-summary", "target_category": "constraint", "target_type": "policy"}
 {"context": "body", "path": ".knowledge/policy/config-file-resolution.md", "source": "policy:config-file-resolution", "target": "system:tinybind", "target_category": "external", "target_type": "system"}
+{"context": "body", "path": ".knowledge/policy/config-file-resolution.md", "source": "policy:config-file-resolution", "target": "policy:dotenv-resolution", "target_category": "constraint", "target_type": "policy"}
+{"context": "body", "path": ".knowledge/policy/config-file-resolution.md", "source": "policy:config-file-resolution", "target": "decision:layered-dotenv-files", "target_category": "constraint", "target_type": "decision"}
 {"context": "body", "path": ".knowledge/policy/config-file-resolution.md", "source": "policy:config-file-resolution", "target": "api:runtime-configuration", "target_category": "interface", "target_type": "api"}
 {"context": "body", "path": ".knowledge/policy/config-file-resolution.md", "source": "policy:config-file-resolution", "target": "data:loaded-configuration", "target_category": "structure", "target_type": "data"}
 {"context": "body", "path": ".knowledge/policy/connection-group-selection.md", "source": "policy:connection-group-selection", "target": "data:database-connection-set", "target_category": "structure", "target_type": "data"}
@@ -3462,6 +3476,18 @@
 {"context": "body", "path": ".knowledge/policy/devidp-safety.md", "source": "policy:devidp-safety", "target": "policy:release-integrity", "target_category": "constraint", "target_type": "policy"}
 {"context": "body", "path": ".knowledge/policy/devidp-safety.md", "source": "policy:devidp-safety", "target": "requirement:contrib-oidc", "target_category": "objective", "target_type": "requirement"}
 {"context": "body", "path": ".knowledge/policy/devidp-safety.md", "source": "policy:devidp-safety", "target": "policy:oidc-admission", "target_category": "constraint", "target_type": "policy"}
+{"context": "body", "path": ".knowledge/policy/dotenv-resolution.md", "source": "policy:dotenv-resolution", "target": "data:runtime-environment", "target_category": "structure", "target_type": "data"}
+{"context": "body", "path": ".knowledge/policy/dotenv-resolution.md", "source": "policy:dotenv-resolution", "target": "policy:config-file-resolution", "target_category": "constraint", "target_type": "policy"}
+{"context": "body", "path": ".knowledge/policy/dotenv-resolution.md", "source": "policy:dotenv-resolution", "target": "system:tinybind", "target_category": "external", "target_type": "system"}
+{"context": "body", "path": ".knowledge/policy/dotenv-resolution.md", "source": "policy:dotenv-resolution", "target": "data:middleware-runtime-config", "target_category": "structure", "target_type": "data"}
+{"context": "body", "path": ".knowledge/policy/dotenv-resolution.md", "source": "policy:dotenv-resolution", "target": "data:storage-runtime-config", "target_category": "structure", "target_type": "data"}
+{"context": "body", "path": ".knowledge/policy/dotenv-resolution.md", "source": "policy:dotenv-resolution", "target": "system:go-envparse", "target_category": "external", "target_type": "system"}
+{"context": "body", "path": ".knowledge/policy/dotenv-resolution.md", "source": "policy:dotenv-resolution", "target": "policy:startup-summary", "target_category": "constraint", "target_type": "policy"}
+{"context": "body", "path": ".knowledge/policy/dotenv-resolution.md", "source": "policy:dotenv-resolution", "target": "api:cli-doctor", "target_category": "interface", "target_type": "api"}
+{"context": "body", "path": ".knowledge/policy/dotenv-resolution.md", "source": "policy:dotenv-resolution", "target": "api:runtime-configuration", "target_category": "interface", "target_type": "api"}
+{"context": "body", "path": ".knowledge/policy/dotenv-resolution.md", "source": "policy:dotenv-resolution", "target": "data:loaded-configuration", "target_category": "structure", "target_type": "data"}
+{"context": "body", "path": ".knowledge/policy/dotenv-resolution.md", "source": "policy:dotenv-resolution", "target": "api:cli-dev", "target_category": "interface", "target_type": "api"}
+{"context": "body", "path": ".knowledge/policy/dotenv-resolution.md", "source": "policy:dotenv-resolution", "target": "decision:layered-dotenv-files", "target_category": "constraint", "target_type": "decision"}
 {"context": "body", "path": ".knowledge/policy/dynamodb-migration-safety.md", "source": "policy:dynamodb-migration-safety", "target": "requirement:database-migration", "target_category": "objective", "target_type": "requirement"}
 {"context": "body", "path": ".knowledge/policy/dynamodb-migration-safety.md", "source": "policy:dynamodb-migration-safety", "target": "decision:dynamodb-operational-configuration", "target_category": "constraint", "target_type": "decision"}
 {"context": "body", "path": ".knowledge/policy/dynamodb-migration-safety.md", "source": "policy:dynamodb-migration-safety", "target": "api:cli-dev", "target_category": "interface", "target_type": "api"}
@@ -4235,6 +4261,7 @@
 {"context": "body", "path": ".knowledge/requirement/container-image-scaffold.md", "source": "requirement:container-image-scaffold", "target": "api:cli-generate", "target_category": "interface", "target_type": "api"}
 {"context": "body", "path": ".knowledge/requirement/container-image-scaffold.md", "source": "requirement:container-image-scaffold", "target": "decision:explicit-tinygo-compile-step", "target_category": "constraint", "target_type": "decision"}
 {"context": "body", "path": ".knowledge/requirement/container-image-scaffold.md", "source": "requirement:container-image-scaffold", "target": "rule:tinygo-runtime-compatibility", "target_category": "constraint", "target_type": "rule"}
+{"context": "body", "path": ".knowledge/requirement/container-image-scaffold.md", "source": "requirement:container-image-scaffold", "target": "requirement:dotenv-files", "target_category": "objective", "target_type": "requirement"}
 {"context": "body", "path": ".knowledge/requirement/container-image-scaffold.md", "source": "requirement:container-image-scaffold", "target": "requirement:environment-switching", "target_category": "objective", "target_type": "requirement"}
 {"context": "body", "path": ".knowledge/requirement/container-image-scaffold.md", "source": "requirement:container-image-scaffold", "target": "policy:config-file-resolution", "target_category": "constraint", "target_type": "policy"}
 {"context": "body", "path": ".knowledge/requirement/container-image-scaffold.md", "source": "requirement:container-image-scaffold", "target": "requirement:built-in-config-generation", "target_category": "objective", "target_type": "requirement"}
@@ -4833,6 +4860,23 @@
 {"context": "body", "path": ".knowledge/requirement/dockerless-image-builders.md", "source": "requirement:dockerless-image-builders", "target": "requirement:healthcheck-subcommand", "target_category": "objective", "target_type": "requirement"}
 {"context": "body", "path": ".knowledge/requirement/dockerless-image-builders.md", "source": "requirement:dockerless-image-builders", "target": "api:cli-doctor", "target_category": "interface", "target_type": "api"}
 {"context": "body", "path": ".knowledge/requirement/dockerless-image-builders.md", "source": "requirement:dockerless-image-builders", "target": "requirement:cli-distribution", "target_category": "objective", "target_type": "requirement"}
+{"context": "body", "path": ".knowledge/requirement/dotenv-files.md", "source": "requirement:dotenv-files", "target": "api:cli-init", "target_category": "interface", "target_type": "api"}
+{"context": "body", "path": ".knowledge/requirement/dotenv-files.md", "source": "requirement:dotenv-files", "target": "policy:container-runtime-image", "target_category": "constraint", "target_type": "policy"}
+{"context": "body", "path": ".knowledge/requirement/dotenv-files.md", "source": "requirement:dotenv-files", "target": "rule:configuration-advisories", "target_category": "constraint", "target_type": "rule"}
+{"context": "body", "path": ".knowledge/requirement/dotenv-files.md", "source": "requirement:dotenv-files", "target": "policy:dotenv-resolution", "target_category": "constraint", "target_type": "policy"}
+{"context": "body", "path": ".knowledge/requirement/dotenv-files.md", "source": "requirement:dotenv-files", "target": "decision:layered-dotenv-files", "target_category": "constraint", "target_type": "decision"}
+{"context": "body", "path": ".knowledge/requirement/dotenv-files.md", "source": "requirement:dotenv-files", "target": "data:loaded-configuration", "target_category": "structure", "target_type": "data"}
+{"context": "body", "path": ".knowledge/requirement/dotenv-files.md", "source": "requirement:dotenv-files", "target": "data:runtime-environment", "target_category": "structure", "target_type": "data"}
+{"context": "body", "path": ".knowledge/requirement/dotenv-files.md", "source": "requirement:dotenv-files", "target": "system:tinybind", "target_category": "external", "target_type": "system"}
+{"context": "body", "path": ".knowledge/requirement/dotenv-files.md", "source": "requirement:dotenv-files", "target": "requirement:built-in-config-generation", "target_category": "objective", "target_type": "requirement"}
+{"context": "body", "path": ".knowledge/requirement/dotenv-files.md", "source": "requirement:dotenv-files", "target": "api:cli-package", "target_category": "interface", "target_type": "api"}
+{"context": "body", "path": ".knowledge/requirement/dotenv-files.md", "source": "requirement:dotenv-files", "target": "api:runtime-configuration", "target_category": "interface", "target_type": "api"}
+{"context": "body", "path": ".knowledge/requirement/dotenv-files.md", "source": "requirement:dotenv-files", "target": "api:cli-doctor", "target_category": "interface", "target_type": "api"}
+{"context": "body", "path": ".knowledge/requirement/dotenv-files.md", "source": "requirement:dotenv-files", "target": "api:cli-dev", "target_category": "interface", "target_type": "api"}
+{"context": "body", "path": ".knowledge/requirement/dotenv-files.md", "source": "requirement:dotenv-files", "target": "policy:startup-summary", "target_category": "constraint", "target_type": "policy"}
+{"context": "body", "path": ".knowledge/requirement/dotenv-files.md", "source": "requirement:dotenv-files", "target": "decision:developer-loop-watch-scope", "target_category": "constraint", "target_type": "decision"}
+{"context": "body", "path": ".knowledge/requirement/dotenv-files.md", "source": "requirement:dotenv-files", "target": "system:go-envparse", "target_category": "external", "target_type": "system"}
+{"context": "body", "path": ".knowledge/requirement/dotenv-files.md", "source": "requirement:dotenv-files", "target": "api:cli-add", "target_category": "interface", "target_type": "api"}
 {"context": "body", "path": ".knowledge/requirement/dynamodb-auth-backend.md", "source": "requirement:dynamodb-auth-backend", "target": "requirement:dynamodb-store", "target_category": "objective", "target_type": "requirement"}
 {"context": "body", "path": ".knowledge/requirement/dynamodb-auth-backend.md", "source": "requirement:dynamodb-auth-backend", "target": "requirement:dynamodb-session-store", "target_category": "objective", "target_type": "requirement"}
 {"context": "body", "path": ".knowledge/requirement/dynamodb-auth-backend.md", "source": "requirement:dynamodb-auth-backend", "target": "api:cli-init", "target_category": "interface", "target_type": "api"}
@@ -5119,6 +5163,7 @@
 {"context": "body", "path": ".knowledge/requirement/environment-switching.md", "source": "requirement:environment-switching", "target": "api:cli-dev", "target_category": "interface", "target_type": "api"}
 {"context": "body", "path": ".knowledge/requirement/environment-switching.md", "source": "requirement:environment-switching", "target": "api:cli-doctor", "target_category": "interface", "target_type": "api"}
 {"context": "body", "path": ".knowledge/requirement/environment-switching.md", "source": "requirement:environment-switching", "target": "api:cli-init", "target_category": "interface", "target_type": "api"}
+{"context": "body", "path": ".knowledge/requirement/environment-switching.md", "source": "requirement:environment-switching", "target": "requirement:dotenv-files", "target_category": "objective", "target_type": "requirement"}
 {"context": "body", "path": ".knowledge/requirement/environment-switching.md", "source": "requirement:environment-switching", "target": "data:observability-runtime-config", "target_category": "structure", "target_type": "data"}
 {"context": "body", "path": ".knowledge/requirement/environment-switching.md", "source": "requirement:environment-switching", "target": "policy:container-runtime-image", "target_category": "constraint", "target_type": "policy"}
 {"context": "body", "path": ".knowledge/requirement/environment-switching.md", "source": "requirement:environment-switching", "target": "requirement:healthcheck-subcommand", "target_category": "objective", "target_type": "requirement"}
@@ -6315,7 +6360,8 @@
 {"context": "body", "path": ".knowledge/rule/configuration-advisories.md", "source": "rule:configuration-advisories", "target": "decision:anonymous-csrf-secret-storage", "target_category": "constraint", "target_type": "decision"}
 {"context": "body", "path": ".knowledge/rule/configuration-advisories.md", "source": "rule:configuration-advisories", "target": "policy:cookie-value-protection", "target_category": "constraint", "target_type": "policy"}
 {"context": "body", "path": ".knowledge/rule/configuration-advisories.md", "source": "rule:configuration-advisories", "target": "requirement:built-in-config-generation", "target_category": "objective", "target_type": "requirement"}
-{"context": "body", "path": ".knowledge/rule/configuration-advisories.md", "source": "rule:configuration-advisories", "target": "policy:config-file-resolution", "target_category": "constraint", "target_type": "policy"}
+{"context": "body", "path": ".knowledge/rule/configuration-advisories.md", "source": "rule:configuration-advisories", "target": "policy:dotenv-resolution", "target_category": "constraint", "target_type": "policy"}
+{"context": "body", "path": ".knowledge/rule/configuration-advisories.md", "source": "rule:configuration-advisories", "target": "requirement:dotenv-files", "target_category": "objective", "target_type": "requirement"}
 {"context": "body", "path": ".knowledge/rule/configuration-advisories.md", "source": "rule:configuration-advisories", "target": "decision:host-side-diagnostic-analysis", "target_category": "constraint", "target_type": "decision"}
 {"context": "body", "path": ".knowledge/rule/configuration-advisories.md", "source": "rule:configuration-advisories", "target": "decision:local-tls-proxy-boundary", "target_category": "constraint", "target_type": "decision"}
 {"context": "body", "path": ".knowledge/rule/configuration-advisories.md", "source": "rule:configuration-advisories", "target": "requirement:proxied-request-identity", "target_category": "objective", "target_type": "requirement"}
@@ -6609,6 +6655,9 @@
 {"context": "body", "path": ".knowledge/system/dbtestify.md", "source": "system:dbtestify", "target": "api:cli-seed", "target_category": "interface", "target_type": "api"}
 {"context": "body", "path": ".knowledge/system/dbtestify.md", "source": "system:dbtestify", "target": "decision:dbtestify-integration", "target_category": "constraint", "target_type": "decision"}
 {"context": "body", "path": ".knowledge/system/dbtestify.md", "source": "system:dbtestify", "target": "requirement:pgx-native-execution", "target_category": "objective", "target_type": "requirement"}
+{"context": "body", "path": ".knowledge/system/go-envparse.md", "source": "system:go-envparse", "target": "policy:dotenv-resolution", "target_category": "constraint", "target_type": "policy"}
+{"context": "body", "path": ".knowledge/system/go-envparse.md", "source": "system:go-envparse", "target": "requirement:cloudflare-workers-build-target", "target_category": "objective", "target_type": "requirement"}
+{"context": "body", "path": ".knowledge/system/go-envparse.md", "source": "system:go-envparse", "target": "system:tinybind", "target_category": "external", "target_type": "system"}
 {"context": "body", "path": ".knowledge/system/goose.md", "source": "system:goose", "target": "rule:rdb-dsn-resolution", "target_category": "constraint", "target_type": "rule"}
 {"context": "body", "path": ".knowledge/system/goose.md", "source": "system:goose", "target": "decision:server-sql-support-tier", "target_category": "constraint", "target_type": "decision"}
 {"context": "body", "path": ".knowledge/system/goose.md", "source": "system:goose", "target": "decision:config-driven-database", "target_category": "constraint", "target_type": "decision"}

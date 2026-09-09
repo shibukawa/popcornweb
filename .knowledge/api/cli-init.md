@@ -136,7 +136,8 @@ outputs:
   - the selected rule:rdb-dsn-resolution engine blank import in main whenever the database capability is selected
   - public directory with non-served .keep sentinel and stable public.go embedding scaffold
   - tinygohelper.go netdev registration for rule:tinygo-runtime-compatibility, only when TinyGo is selected
-  - .gitignore excluding **/*_pw_gen.go generated application build inputs and the requirement:local-jsonl-log-capture .log/ directory
+  - .gitignore excluding **/*_pw_gen.go generated application build inputs, the requirement:local-jsonl-log-capture .log/ directory, and the requirement:dotenv-files .env.local and .env.*.local
+  - .env.example, the requirement:dotenv-files template naming every secret-classified variable of the selected capabilities with no value
   - data:project-config dev.logs enabled at .log
   - config.prod.toml beside config.dev.toml, per requirement:environment-switching, carrying the same endpoint paths, data:observability-runtime-config stdout_format json, and no secret
   - the requirement:container-image-scaffold files, which every answer set receives: Dockerfile and .dockerignore, plus Dockerfile.tinygo when TinyGo is selected
@@ -203,6 +204,7 @@ next_steps:
   - cd myapp
   - devbox shell, only for a project with the Devbox environment
   - pw dev
+  - a line naming .env.example and that a copy named .env.local or .env.dev.local is read and ignored by git, per requirement:dotenv-files
   - a notice naming every declined capability, because a scripted run never sees the wizard say it
   - for a server engine, the server to start and the role and database to create
 exit:

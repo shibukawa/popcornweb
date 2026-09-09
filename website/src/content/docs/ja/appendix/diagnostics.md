@@ -459,6 +459,13 @@ sidebar:
 - **読むもの**: マージ済み設定
 - **直し方**: set auth.oidc.redirect_url to the absolute URL registered with the deployed provider
 
+### PW0438: the dotenv template assigns a secret
+
+- **深刻度**: error
+- **対象**: すべての環境
+- **読むもの**: プロジェクトのファイル
+- **直し方**: leave the value empty in .env.example and put it in .env or .env.{env}, which git ignores
+
 ## 本番前チェック (PW05xx)
 
 公開前のチェックリストを、読むものではなく走らせるものにしたもの。診断対象が `dev` のあいだは何も言いません。

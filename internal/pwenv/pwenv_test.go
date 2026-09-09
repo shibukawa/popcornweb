@@ -81,3 +81,20 @@ func TestIsFileNameExcludesTheNeutralName(t *testing.T) {
 		}
 	}
 }
+
+func TestIsDotenvFileNameAcceptsTheFamilyButNotTheTemplate(t *testing.T) {
+	for name, want := range map[string]bool{
+		".env": true, ".env.local": true, ".env.dev": true, ".env.dev.local": true, ".env.stg": true, ".env.my-env_2": true,
+		".env.example": false, ".env.": false, ".env.Dev": false, ".envrc": false, "env": false,
+	} {
+		if got := IsDotenvFileName(name); got != want {
+			t.Errorf("IsDotenvFileName(%q) = %v, want %v", name, got, want)
+		}
+	}
+	if DotenvFileName("prod") != ".env.prod" {
+		t.Fatal(DotenvFileName("prod"))
+	}
+	if got := DotenvFileNames("stg"); len(got) != 4 || got[1] != ".env.local" || got[2] != ".env.stg" || got[3] != ".env.stg.local" {
+		t.Fatalf("DotenvFileNames = %v", got)
+	}
+}

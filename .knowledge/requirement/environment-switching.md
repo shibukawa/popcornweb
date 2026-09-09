@@ -23,6 +23,7 @@ tooling:
   - api:cli-dev defaults the environment to dev and watches config.*.toml
   - api:cli-doctor names the environment to inspect with an option, which selects files to read and never reaches an application process
   - api:cli-init scaffolds config.dev.toml and config.prod.toml in the project root
+  - requirement:dotenv-files gives the secrets the production file names a per-environment home, selected by the same token
 scaffolded_production_file:
   why_two_and_not_one: the promoted artifact reads a file named for its environment, so a project with only the development file has nothing for any environment it is deployed to, and the first deployment invents the file under time pressure
   contents: the structure of the development file with the values a deployment differs on, chiefly data:observability-runtime-config stdout_format json against the plaintext development default

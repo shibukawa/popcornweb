@@ -169,7 +169,8 @@ keyring シークレットが入っているからです。イメージを pull 
 ## 設定とシークレット
 
 `pw init` は `config.dev.toml` の隣に `config.prod.toml` を書き、Dockerfile が
-それをコピーします。ポート、health と readiness のパス、JSON のログ出力が入って
+それをコピーします。各段階でシークレットがどこに置けるか、他のホストがどう注入するかは
+[シークレットの扱い](/ja/guides/deployment/secrets/)にあります。ポート、health と readiness のパス、JSON のログ出力が入って
 いて、シークレットは一切入っていません。
 
 これは好みではなく制約です。イメージレイヤーは pull できる誰もが読めますし、

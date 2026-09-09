@@ -18,7 +18,7 @@ steps:
   - enable decision:development-public-assets
   - build and run data:project-config project.main, which binds its port under decision:development-port-shift
   - default data:runtime-environment to dev when APP_ENV is unset
-  - watch every Go source for rebuild, plus .pw.html, .pw.sql, popcornweb.toml, config.*.toml, and config/config.*.toml, per decision:developer-loop-watch-scope
+  - watch every Go source for rebuild, plus .pw.html, .pw.sql, popcornweb.toml, config.*.toml, config/config.*.toml, .env, and .env.*, per decision:developer-loop-watch-scope
   - regenerate only from the data:project-config generate purposes, because api:cli-generate reads nothing else
   - regenerate when a concept:page-tree route appears or disappears, which the file walk already reports because a route always carries a page template
   - watch the data:devidp-config file when the development identity provider is enabled

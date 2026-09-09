@@ -56,6 +56,60 @@ reasonable on one operator's machine and misleading in a repository, where
 ./myapp --config-path ./deploy/staging.toml
 ```
 
+## Secrets and dotenv files
+
+The whole path a secret takes, from a laptop to each kind of host, is on
+[Handling Secrets](/guides/deployment/secrets/); this section is the workstation
+half of it.
+
+A production file names its secrets rather than holding them — the scaffolded
+`config.prod.toml` writes `dsn = "${DATABASE_URL}"` and expects the deployment
+to supply the variable. On a workstation that variable has to come from
+somewhere, and a shell profile is the wrong place because it follows the
+developer across projects. So the application reads dotenv files from its
+working directory at startup, in this order:
+
+1. `./.env`
+2. `./.env.local`
+3. `./.env.{APP_ENV}`
+4. `./.env.{APP_ENV}.local`
+5. every file under `/run/secrets`, one variable per file, where a container
+   runtime mounts its secrets
+6. the process environment
+
+A later source wins on the same name, which is the order Vite and Next read
+the same family in: `.env.stg` overrides `.env.local`, because the
+environment's own file is more specific than a machine-wide one, and
+`.env.stg.local` overrides everything. A variable exported in the shell or set
+by the platform overrides every file. A value from a `.local` file or from the secret mount is masked in the
+startup summary whatever its key is called; the shared files are shown. The split is between what is shared and what is this machine's: `.env`
+and `.env.{APP_ENV}` are committed and carry values every checkout agrees on,
+while the two `.local` files are what `.gitignore` excludes and therefore where
+a secret goes. The files are one more way to fill the environment layer, not a
+layer of their own: a name written in `.env.dev.local` and the same name
+exported in the shell reach the application identically, and the startup
+summary tells them apart only by naming the file each value came from.
+
+`pw init` writes `.env.example`, which lists the variables the selected
+capabilities read outside development with empty values, and adds `.env.local`
+and `.env.*.local` to `.gitignore`. Copy the template to `.env.local` — or to
+`.env.dev.local` when the value belongs to one environment — and fill it in.
+`pw doctor` reports a value assigned in the template as an error in every
+environment, because that file is committed; it reports a secret in `.env` or
+`.env.{APP_ENV}` the way it reports one in a tracked TOML file.
+
+`APP_ENV` itself is read from the process first and from `.env` and
+`.env.local` second, so a checkout can pin its environment there. It cannot be
+set in `.env.{APP_ENV}` or its local file: those were chosen by the token, and a
+value there is ignored with a warning.
+
+The read is unconditional in every process that resolves the project's
+configuration from its directory, `pw doctor` included, so there is no switch to
+forget. Where there is no filesystem — a Cloudflare Workers build hands the
+loader its bindings as the environment — no file is looked for. A platform that
+injects every variable itself needs no dotenv file, and the files' absence
+changes nothing.
+
 ## How one value is resolved
 
 Each key is reachable four ways, in increasing precedence:
@@ -63,6 +117,9 @@ Each key is reachable four ways, in increasing precedence:
 ```
 default  <  TOML file  <  environment variable  <  command-line option
 ```
+
+Dotenv files feed the environment-variable step, below the process's own
+environment.
 
 The three names come from one struct field. Field names become snake_case and
 nest under the prefix, and the prefix is not derived from anything — it is the
@@ -205,13 +262,19 @@ with `default` values filled in and `help` text as comments:
 
 ```sh
 ./myapp --generate-config toml > config.dev.toml
-./myapp --generate-config env > .env
+./myapp --generate-config env > .env.example
 ```
 
 Because the binary reports registrations from its actual imports, the scaffold
 matches the packages linked into that build. Add a struct and rerun the command;
 the new keys appear. Either form exits after writing — the server does not
 start. See [Custom Commands](/guides/architecture/custom-commands/).
+
+The env form is the complete variable list, which is more than the template `pw
+init` writes; the template names only what the selected capabilities read from
+the environment. Direct it at `.env.example` rather than `.env`, since `.env` is
+read at the next start and every default the scaffold carries would then count
+as set.
 
 ## Seeing what took effect
 
