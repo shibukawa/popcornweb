@@ -9,6 +9,7 @@ import (
 	"sync"
 	"sync/atomic"
 
+	"github.com/shibukawa/popcornweb/internal/dotenv"
 	"github.com/shibukawa/popcornweb/internal/pwenv"
 	"github.com/shibukawa/popcornweb/pwruntime"
 	"github.com/shibukawa/tinybind-go/configbind"
@@ -29,6 +30,15 @@ var configState = struct {
 }{
 	entries: make(map[reflect.Type]configEntry),
 	options: defaultLoadOptions,
+}
+
+// dotenvState is the layer the last Parse read, for the startup summary. It
+// has a lock of its own because Parse holds configState for its whole body and
+// calls the Loaded hook from inside it; the hook reads this, and a read of the
+// same lock from under its writer would never return.
+var dotenvState struct {
+	sync.RWMutex
+	layer dotenv.Layer
 }
 
 // defaultLoadOptions is what a process loads with when nothing customized it,
@@ -146,12 +156,18 @@ func Parse() error {
 		return configState.parseErr
 	}
 	configState.parsed = true
-	options, env, declared, envErr := resolveLoadOptions(configState.options)
+	plan, envErr := resolveLoadOptions(configState.options)
 	if envErr != nil {
 		configState.parseErr = envErr
 		return envErr
 	}
-	setEnv(env, declared)
+	options, env := plan.options, plan.env
+	setEnv(env, plan.declared)
+	if plan.dotenv != nil {
+		dotenvState.Lock()
+		dotenvState.layer = *plan.dotenv
+		dotenvState.Unlock()
+	}
 	// The framework's own arguments are this package's, so they are filtered off
 	// the line whether or not a runtime installed a hook. A runtime that wants
 	// to add to that installs one; a build that installs none still answers
@@ -166,7 +182,13 @@ func Parse() error {
 		configState.parseErr = actionErr
 		return actionErr
 	}
-	result, err := configbind.Load(options)
+	var result *configbind.LoadResult
+	var err error
+	if plan.dotenv != nil {
+		result, err = dotenv.Load(options, *plan.dotenv, plan.process)
+	} else {
+		result, err = configbind.Load(options)
+	}
 	configState.parseErr = err
 	if err != nil {
 		return err
@@ -379,25 +401,77 @@ func DeriveTraceSampler(result *configbind.LoadResult, bound *ObservabilityConfi
 	}
 }
 
+// loadPlan is a load with its environment settled: the options configbind
+// reads, the token, and — when the process reads its own environment — the
+// dotenv files that environment was composed from.
+type loadPlan struct {
+	options  configbind.LoadOptions
+	env      string
+	declared bool
+	// dotenv is nil when the caller supplied Environ. A Cloudflare Worker entry
+	// and a test harness do that to say no filesystem stands behind them, and a
+	// dotenv read there would be a second source nobody asked for.
+	dotenv  *dotenv.Layer
+	process []string
+}
+
 // resolveLoadOptions completes options for the active runtime environment.
 // Project-local candidates are environment-specific and searched in the working
 // directory before its config/ directory; the user and system configuration
 // directories keep the environment-neutral file name.
-func resolveLoadOptions(options configbind.LoadOptions) (configbind.LoadOptions, string, bool, error) {
+//
+// When nothing supplied Environ, the environment is the process's own, laid
+// over the policy:dotenv-resolution files of the working directory: .env, then
+// .env.{env}, with the token itself read from the process first and the base
+// file second.
+func resolveLoadOptions(options configbind.LoadOptions) (loadPlan, error) {
 	if options.Tool == "" {
 		options.Tool = ExecutableName()
 	}
-	env, declared, err := pwenv.ResolveDeclared(options.Environ)
-	if err != nil {
-		return options, "", false, err
+	plan := loadPlan{options: options}
+	if options.Environ == nil {
+		process := os.Environ()
+		secretDirs := options.EnvSecretDirs
+		if secretDirs == nil {
+			secretDirs = []string{pwenv.SecretDir}
+		}
+		layer, env, declared, err := dotenv.Resolve(".", process, secretDirs)
+		if err != nil {
+			return loadPlan{}, err
+		}
+		plan.dotenv, plan.process = &layer, process
+		plan.env, plan.declared = env, declared
+		plan.options.Environ = layer.Environ(process)
+	} else {
+		env, declared, err := pwenv.ResolveDeclared(options.Environ)
+		if err != nil {
+			return loadPlan{}, err
+		}
+		plan.env, plan.declared = env, declared
 	}
-	if options.FileName == "" {
-		options.FileName = pwenv.NeutralFileName
+	if plan.options.FileName == "" {
+		plan.options.FileName = pwenv.NeutralFileName
 	}
-	if options.ExtraConfigReadPaths == nil {
-		options.ExtraConfigReadPaths = pwenv.ReadPaths(env)
+	if plan.options.ExtraConfigReadPaths == nil {
+		plan.options.ExtraConfigReadPaths = pwenv.ReadPaths(plan.env)
 	}
-	return options, env, declared, nil
+	return plan, nil
+}
+
+// DotenvFiles names the policy:dotenv-resolution files and secret directories
+// the load read, in the order they were layered, which is what the startup
+// summary reports.
+func DotenvFiles() []string {
+	dotenvState.RLock()
+	defer dotenvState.RUnlock()
+	return dotenvState.layer.Names()
+}
+
+// DotenvWarnings is what the dotenv read noticed and went on from.
+func DotenvWarnings() []string {
+	dotenvState.RLock()
+	defer dotenvState.RUnlock()
+	return append([]string(nil), dotenvState.layer.Warnings...)
 }
 
 // ExecutableName is the name a configuration search falls back to when the

@@ -134,7 +134,7 @@ func TestTailwindReachesTheBuilderStageAtThePinnedVersion(t *testing.T) {
 // then either overwritten or, if generation skipped it, linked.
 func TestDockerignoreExcludesWhatTheImageRebuilds(t *testing.T) {
 	ignore := scaffoldFiles(containerOptions())[".dockerignore"]
-	for _, entry := range []string{"**/*_pw_gen.go", "dist/", "config.dev.toml", ".devbox/"} {
+	for _, entry := range []string{"**/*_pw_gen.go", "dist/", "config.dev.toml", ".devbox/", ".env.dev\n", ".env.local\n", ".env.*.local\n"} {
 		if !strings.Contains(ignore, entry) {
 			t.Errorf(".dockerignore does not exclude %s", entry)
 		}

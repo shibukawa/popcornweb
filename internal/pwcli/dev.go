@@ -481,7 +481,7 @@ func snapshotWatchFiles(root string, excludes []string, extra ...string) (watchS
 			state[path] = fileState{size: info.Size(), modTime: info.ModTime()}
 			return nil
 		}
-		if !included[path] && name != "popcornweb.toml" && !pwenv.IsFileName(name) &&
+		if !included[path] && name != "popcornweb.toml" && !pwenv.IsFileName(name) && !pwenv.IsDotenvFileName(name) &&
 			!strings.HasSuffix(name, ".go") &&
 			!strings.HasSuffix(name, ".pw.html") && !strings.HasSuffix(name, ".pw.sql") {
 			return nil

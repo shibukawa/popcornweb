@@ -11,12 +11,15 @@ layout:
   config.dev.toml: policy:config-file-resolution project-local runtime configuration
   config.prod.toml: requirement:environment-switching production configuration, carrying no secret
   config/: optional policy:config-file-resolution project-local runtime configuration directory
+  .env.example: requirement:dotenv-files committed template, read by nothing
+  .env and .env.{env}: policy:dotenv-resolution shared values, committed and never scaffolded
+  .env.local and .env.{env}.local: policy:dotenv-resolution secrets and machine-local values, ignored by git
   Dockerfile: requirement:container-image-scaffold host Go container recipe
   Dockerfile.tinygo: the same recipe for the TinyGo toolchain, only in a TinyGo project, per decision:separate-tinygo-dockerfile
   .dockerignore: keeps the host copy of generated Go, dist, and development configuration out of the build context
   go.mod: Go module definition
   go.sum: Go dependency checksums
-  .gitignore: excludes **/*_pw_gen.go, public/**/*.zstd, and other build-only output
+  .gitignore: excludes **/*_pw_gen.go, public/**/*.zstd, .env.local and .env.*.local, and other build-only output
   .editorconfig: the indent, encoding, and line-ending rules of the scaffolded sources, so an editor with no Go or template support still writes them the way rule:template-source-layout and gofmt do
   .vscode/settings.json: hides **/*_pw_gen.go from the editor explorer
   .vscode/extensions.json: the editor extensions this project's sources need, recommended rather than required
@@ -67,6 +70,7 @@ ownership:
   handwritten:
     - popcornweb.toml
     - config.{env}.toml or config/config.{env}.toml
+    - .env.example, .env, .env.{env}, and the ignored .local files beside them
     - go.mod
     - .gitignore
     - Dockerfile, optional Dockerfile.tinygo, and .dockerignore

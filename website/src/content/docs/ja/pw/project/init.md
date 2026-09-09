@@ -280,6 +280,8 @@ export SESSION_KEYRING_SECRET=$(openssl rand -base64 32)
 myapp/
 ├── popcornweb.toml           プロジェクト名、main パッケージ、生成対象ディレクトリ
 ├── config.dev.toml            APP_ENV=dev のランタイム設定
+├── config.prod.toml           APP_ENV=prod 用の同じ構造。秘密は ${NAME} で参照
+├── .env.example               デプロイが供給する変数の一覧。.env.local にコピーして使う
 ├── go.mod
 ├── devbox.json / devbox.lock  Go + Valkey（--tailwind なら tailwindcss も）
 ├── cmd/myapp/main.go          pw.Run を呼ぶ
@@ -297,7 +299,7 @@ myapp/
 ├── public.go                  public/ を埋め込んで登録する
 ├── .claude/skills/popcornweb/  同梱のエージェントスキル（--skills で移動または省略）
 ├── .vscode/settings.json      **/*_pw_gen.go を隠す
-└── .gitignore                 *_pw_gen.go などのビルド生成物を除外
+└── .gitignore                 *_pw_gen.go、.env.local と .env.*.local などを除外
 ```
 
 `popcornweb.toml` には、いま作ったディレクトリが `[generate]` の各用途に振り分けて

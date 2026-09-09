@@ -117,6 +117,7 @@ watcher、stylesheet tool、標準プロトコルを、各チームが README �
 | --- | --- | --- |
 | `popcornweb.toml` | `pw` | プロジェクトルート、main package、生成範囲、migration、assets、開発ツール |
 | `config.{APP_ENV}.toml` | application binary | server、database、authentication、session、observability、アプリケーション設定 |
+| `.env`、`.env.{APP_ENV}` とその `.local` | application binary | このチェックアウトで環境変数レイヤーが読む値。共有するものはコミットされる側に、秘密は git が無視する `.local` のふたつに置く |
 | 環境変数とアプリケーションのフラグ | application binary | 実行環境での runtime 設定の上書き |
 
 `dev.logs` が `popcornweb.toml` にあるのは、アプリケーションの隣で動く開発プロセスを

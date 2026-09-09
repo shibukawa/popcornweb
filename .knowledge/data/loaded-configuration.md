@@ -13,9 +13,11 @@ registration:
 precedence:
   - typed defaults
   - TOML
+  - dotenv files, per policy:dotenv-resolution
   - environment variables
   - CLI arguments
 toml_selection: policy:config-file-resolution using data:runtime-environment
+dotenv_selection: policy:dotenv-resolution using the same token; the files go to system:tinybind as LoadOptions.EnvFiles, which lays them under Environ and labels each value with its file
 mapping:
   reflection: forbidden
   mechanism: reuse generated JSON-to-struct mapping

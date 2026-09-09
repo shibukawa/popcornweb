@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/shibukawa/popcornweb/internal/configview"
+	"github.com/shibukawa/popcornweb/internal/dotenv"
 	"github.com/shibukawa/popcornweb/internal/pwenv"
 	"github.com/shibukawa/popcornweb/internal/pwtree"
 	"github.com/shibukawa/tinybind-go/configbind"
@@ -37,6 +38,9 @@ type environmentConfig struct {
 	Env         string
 	ConfigPath  string
 	ConfigFound bool
+	// DotenvFiles are the policy:dotenv-resolution files of the token, in the
+	// order they were layered under this host's environment.
+	DotenvFiles []string
 	Values      map[string]configValue
 	// Entries keeps provenance order, which the tree renders as-is.
 	Entries []pwtree.Entry
@@ -45,11 +49,19 @@ type environmentConfig struct {
 	Sections []string
 }
 
-// loadEnvironmentConfig merges typed defaults, this host's environment, and the
-// TOML file the token selects, the way api:runtime-configuration would for the
-// layers a host can see. CLI arguments are never a layer here: doctor's own
-// arguments are not the application's.
+// loadEnvironmentConfig merges typed defaults, the project's dotenv files for
+// the token, this host's environment, and the TOML file the token selects, the
+// way api:runtime-configuration would for the layers a host can see. CLI
+// arguments are never a layer here: doctor's own arguments are not the
+// application's.
 func loadEnvironmentConfig(root, env, explicitPath string, environ []string) (environmentConfig, error) {
+	if environ == nil {
+		environ = processEnviron()
+	}
+	layer, err := dotenv.ReadLayer(root, env, []string{pwenv.SecretDir})
+	if err != nil {
+		return environmentConfig{}, err
+	}
 	extras := make([]string, 0, 2)
 	for _, candidate := range pwenv.ReadPaths(env) {
 		extras = append(extras, filepath.Join(root, filepath.FromSlash(candidate)))
@@ -57,21 +69,21 @@ func loadEnvironmentConfig(root, env, explicitPath string, environ []string) (en
 	if explicitPath != "" && !filepath.IsAbs(explicitPath) {
 		explicitPath = filepath.Join(root, filepath.FromSlash(explicitPath))
 	}
-	result, err := configbind.Load(configbind.LoadOptions{
+	result, err := dotenv.Load(configbind.LoadOptions{
 		Vendor:               "popcornweb",
 		Tool:                 "pw-doctor",
 		FileName:             pwenv.NeutralFileName,
 		Args:                 []string{},
-		Environ:              environ,
 		ExplicitConfigPath:   explicitPath,
 		ExtraConfigReadPaths: extras,
-	})
+	}, layer, environ)
 	if err != nil {
 		return environmentConfig{}, err
 	}
 	loaded := environmentConfig{
 		Env:         env,
 		ConfigFound: result.FoundFile,
+		DotenvFiles: layer.Names(),
 		Values:      map[string]configValue{},
 	}
 	if result.FoundFile {
@@ -162,6 +174,11 @@ func (c environmentConfig) place(key string) configbind.Place {
 // fromFile reports whether the file layer won the key.
 func (c environmentConfig) fromFile(key string) bool {
 	return c.place(key) == configbind.PlaceFile
+}
+
+// fromDotenv names the dotenv file that won the key, when one did.
+func (c environmentConfig) fromDotenv(key string) (string, bool) {
+	return configbind.EnvFileOf(c.place(key))
 }
 
 // secretKeys lists the secret-classified keys that resolved to a value, in key

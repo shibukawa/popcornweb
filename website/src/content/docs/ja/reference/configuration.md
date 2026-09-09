@@ -64,6 +64,14 @@ Popcorn Web は次の順に読みます。
 プロジェクトツリーに置いた素の `config.toml` は読まれません。後のソースが前を
 上書きし、環境変数とオプションはすべてのファイルを上書きします。
 
+環境変数そのものは、作業ディレクトリの dotenv ファイルの上にプロセスの環境を重ねて
+組み立てられます。`./.env`、`./.env.local`、`./.env.{APP_ENV}`、`./.env.{APP_ENV}.local`、
+次に `/run/secrets` の下の 1 ファイル 1 変数、最後にプロセスの順で、同じ名前は後のものが
+勝ちます。`.gitignore` が除外するのは `.local` のふたつで、そこやマウントから来た値は
+表示されるどこでもマスクされます。`APP_ENV` はプロセス、次に `.env` と `.env.local` から読まれ、
+`.env.{APP_ENV}` 系のふたつにあるものは警告付きで無視されます。呼び出し側が環境を渡すロード（Cloudflare Workers の
+ビルド）はファイルを読みません。[秘密情報と dotenv ファイル](/ja/guides/architecture/configuration/#秘密情報と-dotenv-ファイル)を参照してください。
+
 期間は Go の duration 文字列（`5s`、`200ms`、`2m`、`24h`）、サイズはバイト数の
 整数です。リストは TOML の配列、環境変数ではカンマ区切りの値になります。
 
@@ -670,7 +678,7 @@ CSRF の秘密もここの鍵ではありません。登録されたセッショ
 
 ```sh
 ./myapp --generate-config toml > config.dev.toml
-./myapp --generate-config env > .env
+./myapp --generate-config env > .env.example
 ```
 
 ひな形はそのビルドに存在する登録から組み立てられるので、そのバイナリにとっては

@@ -30,7 +30,7 @@ import です。プラグインはブランクインポートで自分を登録�
 | コマンド | 診断対象 |
 | --- | --- |
 | `pw doctor` | シェルの `APP_ENV`、未設定なら `dev` |
-| `pw doctor --env=prod` | `config.prod.toml` |
+| `pw doctor --env=prod` | `config.prod.toml`。このホストの環境変数の下に `.env`、`.env.local`、`.env.prod`、`.env.prod.local` を重ねる |
 | `pw doctor --env=stg --env=prod` | 両方を 1 つのレポートに |
 | `pw doctor --env=all` | プロジェクトにある `config.*.toml` すべて |
 

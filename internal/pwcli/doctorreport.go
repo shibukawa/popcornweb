@@ -390,10 +390,14 @@ func writeConfigurationDifferences(out *strings.Builder, report doctorReport, st
 }
 
 func configCaption(environment doctorEnvReport) string {
+	caption := "no config file (defaults and environment only)"
 	if environment.ConfigFound && environment.ConfigPath != "" {
-		return environment.ConfigPath
+		caption = environment.ConfigPath
 	}
-	return "no config file (defaults and environment only)"
+	if len(environment.DotenvFiles) > 0 {
+		caption += " · " + strings.Join(environment.DotenvFiles, ", ")
+	}
+	return caption
 }
 
 func featureLine(feature doctorFeature, style doctorStyle) string {
@@ -484,6 +488,9 @@ func doctorSourceTag(source string) string {
 	case configbind.PlaceCLI:
 		return "flag"
 	default:
+		if file, ok := configbind.EnvFileOf(configbind.Place(source)); ok {
+			return file
+		}
 		return source
 	}
 }
@@ -503,6 +510,7 @@ type doctorEnvironmentJSON struct {
 	Env           string              `json:"env"`
 	ConfigPath    string              `json:"config_path"`
 	ConfigFound   bool                `json:"config_found"`
+	DotenvFiles   []string            `json:"dotenv_files"`
 	LoadError     string              `json:"load_error,omitempty"`
 	Features      []doctorFeature     `json:"features"`
 	Middleware    []string            `json:"middleware"`
@@ -542,6 +550,7 @@ func writeDoctorJSON(out io.Writer, report doctorReport) error {
 			Env:           environment.Env,
 			ConfigPath:    environment.ConfigPath,
 			ConfigFound:   environment.ConfigFound,
+			DotenvFiles:   append([]string{}, environment.DotenvFiles...),
 			LoadError:     environment.LoadError,
 			Features:      environment.Features,
 			Middleware:    environment.Middleware,

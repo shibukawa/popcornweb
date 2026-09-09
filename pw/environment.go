@@ -82,6 +82,18 @@ func reportCompressionCodings(config MiddlewareConfig) {
 	)
 }
 
+// reportDotenvWarnings says what the dotenv read noticed and went on from:
+// an APP_ENV written into the file that APP_ENV selected. It is a warning and
+// not a refusal because the value the developer wanted is one file up.
+func reportDotenvWarnings() {
+	for _, warning := range pwconfig.DotenvWarnings() {
+		processLogger().Warn("a dotenv file carries a setting that cannot apply there",
+			String("detail", warning),
+			String("action", "set "+EnvVar+" in the process environment or in .env, which are read before the file is chosen"),
+		)
+	}
+}
+
 func reportEnvironment() {
 	if EnvironmentDeclared() {
 		return

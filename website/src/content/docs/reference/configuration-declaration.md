@@ -323,7 +323,7 @@ Every registered prefix can print itself, with `default` values filled in and
 
 ```sh
 ./myapp --generate-config toml > config.dev.toml
-./myapp --generate-config env > .env
+./myapp --generate-config env > .env.example
 ```
 
 Because the scaffold is assembled from the registrations present in that build,
@@ -338,9 +338,12 @@ having no table grouping to hang declaration order on, and it respects `opt`,
 The struct's godoc becomes the TOML table comment. Either form exits after
 writing — the server does not start.
 
-Parsing reads process environment variables and does not read a `.env` file, so
-a scaffolded `.env` needs your shell or a dotenv loader to reach the process
-first.
+Parsing reads the process environment laid over the working directory's `.env`,
+`.env.local`, `.env.{APP_ENV}`, and `.env.{APP_ENV}.local`, so a copy of the
+scaffold named `.env.dev.local` is read at the next start. Direct the scaffold
+at `.env.example`, the committed template: every default it carries would
+otherwise count as an environment value. See
+[Secrets and dotenv files](/guides/architecture/configuration/#secrets-and-dotenv-files).
 
 ## CLI-only subcommands
 

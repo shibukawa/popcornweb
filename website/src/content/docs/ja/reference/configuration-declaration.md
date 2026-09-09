@@ -304,7 +304,7 @@ dsn = "postgres://app:${PRIMARY_DB_PASSWORD}@db1.internal:5432/app"
 
 ```sh
 ./myapp --generate-config toml > config.dev.toml
-./myapp --generate-config env > .env
+./myapp --generate-config env > .env.example
 ```
 
 ひな形はそのビルドに存在する登録から組み立てられるので、そのバイナリにとっての正式なキー
@@ -317,8 +317,11 @@ dsn = "postgres://app:${PRIMARY_DB_PASSWORD}@db1.internal:5432/app"
 構造体の godoc は TOML テーブルのコメントになります。どちらの形も書き終えると終了し、サーバーは
 起動しません。
 
-パースが読むのはプロセスの環境変数で、`.env` ファイルは読みません。ひな形の `.env` は、シェルか
-dotenv のローダで先にプロセスへ届ける必要があります。
+パースが読むのは、作業ディレクトリの `.env`・`.env.local`・`.env.{APP_ENV}`・
+`.env.{APP_ENV}.local` の上にプロセスの環境変数を重ねたものです。ひな形を `.env.dev.local`
+という名前で置けば次の起動で読まれます。出力先はコミット
+されるテンプレートの `.env.example` にしてください。そうしないと、ひな形に並ぶ既定値がすべて
+環境変数として扱われます。[秘密情報と dotenv ファイル](/ja/guides/architecture/configuration/#秘密情報と-dotenv-ファイル)を参照してください。
 
 ## CLI 専用のサブコマンド
 

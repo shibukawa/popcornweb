@@ -6,6 +6,8 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+
+	"github.com/shibukawa/popcornweb/internal/pwenv"
 	"strconv"
 	"strings"
 
@@ -86,6 +88,18 @@ func newProjectScan(root string, state projectState, configFiles map[string]stri
 	for name := range configFiles {
 		if info, err := os.Stat(filepath.Join(root, filepath.FromSlash(name))); err == nil {
 			scan.configFileModes[name] = info.Mode().Perm()
+		}
+	}
+	// The dotenv files are read by the load rather than listed by the project
+	// state, so their modes are gathered here, where the TOML ones are.
+	if entries, err := os.ReadDir(root); err == nil {
+		for _, entry := range entries {
+			if entry.IsDir() || !pwenv.IsDotenvFileName(entry.Name()) {
+				continue
+			}
+			if info, err := entry.Info(); err == nil {
+				scan.configFileModes[entry.Name()] = info.Mode().Perm()
+			}
 		}
 	}
 	return scan

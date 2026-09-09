@@ -25,6 +25,9 @@ const (
 	SecretSharedBetween  = "PW0414"
 	SecretFileNotIgnored = "PW0415"
 	SecretFilePerms      = "PW0416"
+	// The dotenv template is the one file of its family .gitignore lets
+	// through, so a value in it is committed whatever the environment.
+	EnvTemplateHoldsSecret = "PW0438"
 
 	// Environment-appropriate values.
 	InsecureSessionCookie = "PW0410"
@@ -211,6 +214,13 @@ func init() {
 			Severity: Warning, DevSeverity: Warning, Scope: Deployed,
 			Inputs: ProjectFiles, Phase: Doctor,
 			Remedy: "chmod 600 the file",
+		},
+		Check{
+			ID: EnvTemplateHoldsSecret, Group: GroupConfig,
+			Title:    "the dotenv template assigns a secret",
+			Severity: Error, DevSeverity: Error, Scope: Every,
+			Inputs: ProjectFiles, Phase: Doctor,
+			Remedy: "leave the value empty in .env.example and put it in .env or .env.{env}, which git ignores",
 		},
 		Check{
 			ID: QueryDiagnosticsOn, Group: GroupConfig,

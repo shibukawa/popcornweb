@@ -122,6 +122,7 @@ func buildMiddlewares(handler http.Handler, option ...Option) (http.Handler, err
 	rootSpan := telemetry.Tracing() || traceForced(observability)
 	resources := runtimeResources(telemetry.Backend(), telemetry.MetricProvider(), telemetry.Tracing())
 	reportEnvironment()
+	reportDotenvWarnings()
 	reportCompressionCodings(middleware)
 	reportDatabaseConnections(resources.Connections)
 	reportQueryDiagnostics(resources.Query, Env(), Development(), resources.DBDriver)

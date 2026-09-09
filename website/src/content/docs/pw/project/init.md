@@ -282,6 +282,8 @@ in a populated tree fails rather than scattering files.
 myapp/
 ├── popcornweb.toml           project name, main package, generation sources
 ├── config.dev.toml            runtime configuration for APP_ENV=dev
+├── config.prod.toml           the same structure for APP_ENV=prod, secrets as ${NAME}
+├── .env.example               the variables a deployment supplies; copy to .env.local
 ├── go.mod
 ├── devbox.json / devbox.lock  Go + Valkey (+ tailwindcss with --tailwind)
 ├── cmd/myapp/main.go          calls pw.Run
@@ -301,7 +303,7 @@ myapp/
 ├── public.go                  embeds public/ and registers it
 ├── .claude/skills/popcornweb/  the bundled agent skill (--skills moves or drops it)
 ├── .vscode/settings.json      hides **/*_pw_gen.go
-└── .gitignore                 excludes *_pw_gen.go and other build output
+└── .gitignore                 excludes *_pw_gen.go, .env.local and .env.*.local, and other build output
 ```
 
 `popcornweb.toml` names the directories it just created under each `[generate]`

@@ -169,7 +169,8 @@ pull the image can read.
 ## Configuration and secrets
 
 `pw init` writes `config.prod.toml` beside `config.dev.toml`, and the Dockerfile
-copies it. It sets the port, the health and readiness paths, and JSON log
+copies it. Where each secret lives at every stage, and how the other hosts
+inject one, is on [Handling Secrets](/guides/deployment/secrets/). It sets the port, the health and readiness paths, and JSON log
 output, and it carries no secret at all.
 
 That last part is a constraint rather than a preference. An image layer is

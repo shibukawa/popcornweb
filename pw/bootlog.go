@@ -9,6 +9,7 @@ import (
 	"github.com/shibukawa/popcornweb/internal/bootblock"
 	"github.com/shibukawa/popcornweb/internal/configview"
 	"github.com/shibukawa/popcornweb/internal/pwtree"
+	"github.com/shibukawa/popcornweb/pwconfig"
 	"github.com/shibukawa/tinybind-go/configbind"
 )
 
@@ -45,6 +46,9 @@ type bootReport struct {
 	environment string
 	configPath  string
 	configFound bool
+	// dotenvFiles are the policy:dotenv-resolution files the load layered
+	// under the process environment, in order; empty when none was read.
+	dotenvFiles []string
 	entries     []bootEntry
 }
 
@@ -57,7 +61,7 @@ var bootState struct {
 // captureBootReport records resolved configuration instead of logging one
 // record per key. The summary is emitted later, by Run or Middlewares.
 func captureBootReport(result *configbind.LoadResult) {
-	report := bootReport{startedAt: time.Now(), environment: Env()}
+	report := bootReport{startedAt: time.Now(), environment: Env(), dotenvFiles: pwconfig.DotenvFiles()}
 	if result != nil {
 		report.configPath, report.configFound = result.ConfigPath, result.FoundFile
 		report.entries = bootEntries(result)
@@ -230,10 +234,14 @@ func bootDisplayValue(value string) string {
 }
 
 func bootConfigCaption(report bootReport) string {
+	caption := "no config file (defaults, env, and flags only)"
 	if report.configFound && report.configPath != "" {
-		return report.configPath
+		caption = report.configPath
 	}
-	return "no config file (defaults, env, and flags only)"
+	if len(report.dotenvFiles) > 0 {
+		caption += " · " + strings.Join(report.dotenvFiles, ", ")
+	}
+	return caption
 }
 
 // bootSourceTag names the layer that won a key. Defaults stay unmarked so the
@@ -247,6 +255,11 @@ func bootSourceTag(source string) string {
 	case configbind.PlaceCLI:
 		return "flag"
 	default:
+		// A value a dotenv file set is tagged with the file, so the reader
+		// knows which of the two files to open.
+		if file, ok := configbind.EnvFileOf(configbind.Place(source)); ok {
+			return file
+		}
 		return source
 	}
 }
@@ -267,6 +280,9 @@ func bootRecordAttrs(report bootReport, listening string) []Attribute {
 	}
 	if report.configFound && report.configPath != "" {
 		attrs = append(attrs, String("config_file", report.configPath))
+	}
+	if len(report.dotenvFiles) > 0 {
+		attrs = append(attrs, String("dotenv_files", strings.Join(report.dotenvFiles, ",")))
 	}
 	if listening != "" {
 		attrs = append(attrs, String("listening", listening))

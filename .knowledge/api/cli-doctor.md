@@ -39,7 +39,7 @@ sections:
   database: the data:database-connection-set connections, their drivers, and the pointers that select them
   registrations: the plugins and database/sql drivers the import graph links
   configuration:
-    content: the merged view of defaults, this host's environment, and the selected TOML file
+    content: the merged view of defaults, this host's environment, the policy:dotenv-resolution files of the diagnosed token, and the selected TOML file
     completeness: >
       this is the complete surface of requirement:startup-summary-brevity, so an
       entry rated as detail is rendered rather than skipped; policy:startup-summary

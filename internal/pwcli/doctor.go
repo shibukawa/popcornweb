@@ -63,6 +63,7 @@ type doctorEnvReport struct {
 	Env           string
 	ConfigPath    string
 	ConfigFound   bool
+	DotenvFiles   []string
 	Entries       []pwtree.Entry
 	Features      []doctorFeature
 	Middleware    []string
@@ -276,6 +277,7 @@ func diagnose(ctx context.Context, root string, options doctorOptions, environ [
 			continue
 		}
 		environment.ConfigPath, environment.ConfigFound = loaded.ConfigPath, loaded.ConfigFound
+		environment.DotenvFiles = loaded.DotenvFiles
 		environment.Entries = loaded.Entries
 		environment.Features = resolveFeatures(loaded, graph, state)
 		environment.Middleware = resolveMiddleware(loaded)
