@@ -19,6 +19,7 @@ import (
 	"github.com/shibukawa/popcornweb/internal/pwcheck"
 	"github.com/shibukawa/popcornweb/internal/pwenv"
 	"github.com/shibukawa/popcornweb/internal/pwmigrate"
+	"github.com/shibukawa/popcornweb/plugin/auth"
 )
 
 // checkContext is everything one environment's checks may read. A check that
@@ -520,9 +521,31 @@ func (r *checkRun) checkIdentityProvider() {
 	if !r.Config.enabled("auth.enabled") {
 		return
 	}
-	issuer := r.Config.raw("auth.oidc.issuer")
-	allowLoopback := r.Config.enabled("auth.oidc.allow_loopback_http")
-	redirect := strings.TrimSpace(r.Config.raw("auth.oidc.redirect_url"))
+	// The runtime validates and reads only the provider section auth.mode
+	// selects, and refuses a value in any other; these advisories follow the
+	// same rule, or an oauth_only project is told to fill in an oidc section
+	// it is forbidden to fill. The predicates are plugin/auth's own, so the
+	// list of modes lives once.
+	mode := strings.TrimSpace(r.Config.raw("auth.mode"))
+	if mode == "" {
+		mode = auth.ModeOIDCOnly
+	}
+	var section string
+	switch {
+	case auth.ModeUsesOIDC(mode):
+		section = "auth.oidc"
+	case auth.ModeUsesOAuth(mode):
+		section = "auth.oauth"
+	default:
+		// passkey_only has no provider, jwt_only runs no login ceremony, and
+		// a value outside the enum fails startup by itself; none of them has
+		// a provider section for these advisories to read.
+		return
+	}
+	redirectKey := section + ".redirect_url"
+	loopbackKey := section + ".allow_loopback_http"
+	allowLoopback := r.Config.enabled(loopbackKey)
+	redirect := strings.TrimSpace(r.Config.raw(redirectKey))
 	// The redirect target is checked in every environment: the provider would
 	// send the browser to a path the application does not serve, and a loopback
 	// redirect that happens to work locally hides it.
@@ -530,8 +553,8 @@ func (r *checkRun) checkIdentityProvider() {
 		callback := r.Config.raw("auth.callback_path")
 		if parsed, err := url.Parse(redirect); err == nil && callback != "" && parsed.Path != callback {
 			r.report(pwcheck.RedirectDisagreement,
-				"auth.oidc.redirect_url ends at "+parsed.Path+" while auth.callback_path is "+callback,
-				"auth.oidc.redirect_url")
+				redirectKey+" ends at "+parsed.Path+" while auth.callback_path is "+callback,
+				redirectKey)
 		}
 	}
 	// In dev the provider values are expected to be absent from the file:
@@ -542,10 +565,12 @@ func (r *checkRun) checkIdentityProvider() {
 	}
 	if parsed, err := url.Parse(redirect); redirect == "" || err != nil || !parsed.IsAbs() || parsed.Host == "" {
 		r.report(pwcheck.DynamicOIDCRedirect,
-			"auth.oidc.redirect_url is empty or path-only, so its host would come from the request",
-			"auth.oidc.redirect_url")
+			redirectKey+" is empty or path-only, so its host would come from the request",
+			redirectKey)
 	}
-	if issuer != "" {
+	// An OAuth provider is named rather than discovered, so there is no issuer
+	// whose scheme or host could give away a development arrangement.
+	if issuer := r.Config.raw(section + ".issuer"); issuer != "" && auth.ModeUsesOIDC(mode) {
 		if parsed, err := url.Parse(issuer); err == nil {
 			if isLoopbackHost(parsed.Hostname()) {
 				r.report(pwcheck.DevelopmentIssuer,
@@ -561,20 +586,31 @@ func (r *checkRun) checkIdentityProvider() {
 	}
 	if allowLoopback {
 		r.report(pwcheck.InsecureIssuer,
-			"auth.oidc.allow_loopback_http is true, which is a development-only exception",
-			"auth.oidc.allow_loopback_http")
+			loopbackKey+" is true, which is a development-only exception",
+			loopbackKey)
 		if secure, resolved := r.Config.boolValue("session.cookie.secure"); resolved && !secure {
 			r.report(pwcheck.LoopbackPairing,
 				"allow_loopback_http and an insecure session cookie are the development pairing",
-				"auth.oidc.allow_loopback_http, session.cookie.secure")
+				loopbackKey+", session.cookie.secure")
 		}
 	}
-	var missing []string
-	for key, variable := range map[string]string{
+	// The variables are the ones plugin/auth binds for the section in force,
+	// so the line a reader copies is the one the runtime reads. The OAuth
+	// provider name has no variable: it is a startup failure when empty, and
+	// stays one rather than becoming a variable invented here.
+	variables := map[string]string{
 		"auth.oidc.issuer":        "AUTH_OIDC_ISSUER",
 		"auth.oidc.client_id":     "AUTH_OIDC_CLIENT_ID",
 		"auth.oidc.client_secret": "AUTH_OIDC_CLIENT_SECRET",
-	} {
+	}
+	if auth.ModeUsesOAuth(mode) {
+		variables = map[string]string{
+			"auth.oauth.client_id":     "AUTH_OAUTH_CLIENT_ID",
+			"auth.oauth.client_secret": "AUTH_OAUTH_CLIENT_SECRET",
+		}
+	}
+	var missing []string
+	for key, variable := range variables {
 		if strings.TrimSpace(r.Config.raw(key)) == "" {
 			missing = append(missing, variable)
 		}

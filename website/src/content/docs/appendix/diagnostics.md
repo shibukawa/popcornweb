@@ -425,40 +425,40 @@ Three things go wrong here: wiring the binary does not actually carry, values th
 - **Reads**: merged configuration
 - **Fix**: set auth.oidc.issuer to the deployment provider
 
-### PW0432: the OIDC issuer is reached over http outside dev
+### PW0432: the provider is reached over http outside dev
 
 - **Severity**: error, and note in `dev`
 - **Applies to**: every environment except `dev`
 - **Reads**: merged configuration
-- **Fix**: use an https issuer and clear auth.oidc.allow_loopback_http
+- **Fix**: use an https issuer and clear allow_loopback_http in the provider section auth.mode selects
 
-### PW0433: the OIDC redirect URL does not match the callback path
+### PW0433: the login redirect URL does not match the callback path
 
 - **Severity**: error
 - **Applies to**: every environment
 - **Reads**: merged configuration
-- **Fix**: make auth.oidc.redirect_url end with auth.callback_path
+- **Fix**: make auth.oidc.redirect_url, or auth.oauth.redirect_url under oauth_only, end with auth.callback_path
 
 ### PW0434: no provider values are declared for a deployed environment
 
 - **Severity**: note
 - **Applies to**: every environment except `dev`
 - **Reads**: merged configuration, process environment
-- **Fix**: confirm the deployment sets AUTH_OIDC_ISSUER, AUTH_OIDC_CLIENT_ID, and AUTH_OIDC_CLIENT_SECRET
+- **Fix**: confirm the deployment sets AUTH_OIDC_ISSUER, AUTH_OIDC_CLIENT_ID, and AUTH_OIDC_CLIENT_SECRET under an OIDC mode, or AUTH_OAUTH_CLIENT_ID and AUTH_OAUTH_CLIENT_SECRET under oauth_only
 
 ### PW0436: the loopback development pairing is still set outside dev
 
 - **Severity**: error, and note in `dev`
 - **Applies to**: every environment except `dev`
 - **Reads**: merged configuration
-- **Fix**: clear auth.oidc.allow_loopback_http and set session.cookie.secure
+- **Fix**: clear allow_loopback_http in the provider section auth.mode selects and set session.cookie.secure
 
-### PW0437: the OIDC redirect URL is derived from a request outside dev
+### PW0437: the login redirect URL is derived from a request outside dev
 
 - **Severity**: error, and note in `dev`
 - **Applies to**: every environment except `dev`
 - **Reads**: merged configuration
-- **Fix**: set auth.oidc.redirect_url to the absolute URL registered with the deployed provider
+- **Fix**: set auth.oidc.redirect_url, or auth.oauth.redirect_url under oauth_only, to the absolute URL registered with the deployed provider
 
 ### PW0438: the dotenv template assigns a secret
 

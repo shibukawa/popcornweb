@@ -560,3 +560,99 @@ func TestOptionsRejectUnknownArguments(t *testing.T) {
 		t.Fatalf("options = %+v", options)
 	}
 }
+
+// The runtime reads only the provider section auth.mode selects, and so do
+// these advisories: an oauth_only project is judged on auth.oauth and told to
+// set AUTH_OAUTH_*, never on an oidc section it is forbidden to fill.
+func TestOAuthOnlyIsDiagnosedOnItsOwnSection(t *testing.T) {
+	root := diagnosedProject(t, map[string]string{
+		"config.prod.toml": `[auth]
+enabled = true
+mode = "oauth_only"
+callback_path = "/auth/callback"
+[auth.oauth]
+provider = "x"
+redirect_url = "https://app.example.com/auth/callback"
+`,
+	})
+	report := diagnoseFor(t, root, doctorOptions{Envs: []string{"prod"}})
+	findings := findingsFor(report, "prod")
+	if _, reported := findings[pwcheck.DynamicOIDCRedirect]; reported {
+		t.Error("an absolute auth.oauth.redirect_url must not be reported as request-derived")
+	}
+	for _, code := range []string{pwcheck.DevelopmentIssuer, pwcheck.InsecureIssuer, pwcheck.LoopbackPairing, pwcheck.RedirectDisagreement} {
+		if _, reported := findings[code]; reported {
+			t.Errorf("%s fired for an oauth_only project with no oidc section", code)
+		}
+	}
+	finding, reported := findings[pwcheck.ProviderNotDeclared]
+	if !reported {
+		t.Fatal("empty oauth client values must be reported for a deployment")
+	}
+	for _, want := range []string{"AUTH_OAUTH_CLIENT_ID", "AUTH_OAUTH_CLIENT_SECRET"} {
+		if !strings.Contains(finding.Evidence, want) {
+			t.Errorf("evidence %q must name %s", finding.Evidence, want)
+		}
+	}
+	if strings.Contains(finding.Evidence, "OIDC") {
+		t.Errorf("evidence %q names an oidc variable the mode refuses", finding.Evidence)
+	}
+}
+
+func TestOAuthOnlyRedirectAdvisoriesReadTheOAuthSection(t *testing.T) {
+	root := diagnosedProject(t, map[string]string{
+		"config.prod.toml": `[auth]
+enabled = true
+mode = "oauth_only"
+callback_path = "/auth/callback"
+[auth.oauth]
+provider = "x"
+client_id = "fixture"
+client_secret = "fixture-secret"
+redirect_url = "https://app.example.com/elsewhere"
+allow_loopback_http = true
+`,
+	})
+	report := diagnoseFor(t, root, doctorOptions{Envs: []string{"prod"}})
+	findings := findingsFor(report, "prod")
+	if finding, reported := findings[pwcheck.RedirectDisagreement]; !reported || !strings.Contains(finding.Evidence, "auth.oauth.redirect_url") {
+		t.Errorf("redirect disagreement = %#v, %v; want it named on auth.oauth.redirect_url", finding, reported)
+	}
+	if finding, reported := findings[pwcheck.InsecureIssuer]; !reported || !strings.Contains(finding.Evidence, "auth.oauth.allow_loopback_http") {
+		t.Errorf("loopback exception = %#v, %v; want it named on auth.oauth.allow_loopback_http", finding, reported)
+	}
+	if _, reported := findings[pwcheck.ProviderNotDeclared]; reported {
+		t.Error("declared oauth client values must count as declared")
+	}
+	root = diagnosedProject(t, map[string]string{
+		"config.prod.toml": `[auth]
+enabled = true
+mode = "oauth_only"
+[auth.oauth]
+provider = "x"
+client_id = "fixture"
+client_secret = "fixture-secret"
+`,
+	})
+	report = diagnoseFor(t, root, doctorOptions{Envs: []string{"prod"}})
+	if finding, reported := findingsFor(report, "prod")[pwcheck.DynamicOIDCRedirect]; !reported || !strings.Contains(finding.Evidence, "auth.oauth.redirect_url") {
+		t.Errorf("empty oauth redirect = %#v, %v; want PW0437 naming auth.oauth.redirect_url", finding, reported)
+	}
+}
+
+// A passkey-only login has no provider and a bearer API runs no login
+// ceremony, so neither has a provider section for the advisories to read.
+func TestModesWithoutAProviderSkipTheProviderAdvisories(t *testing.T) {
+	for _, mode := range []string{"passkey_only", "jwt_only"} {
+		root := diagnosedProject(t, map[string]string{
+			"config.prod.toml": "[auth]\nenabled = true\nmode = \"" + mode + "\"\n",
+		})
+		report := diagnoseFor(t, root, doctorOptions{Envs: []string{"prod"}})
+		findings := findingsFor(report, "prod")
+		for _, code := range []string{pwcheck.ProviderNotDeclared, pwcheck.DynamicOIDCRedirect, pwcheck.InsecureIssuer, pwcheck.DevelopmentIssuer} {
+			if _, reported := findings[code]; reported {
+				t.Errorf("%s fired under %s, which has no provider section", code, mode)
+			}
+		}
+	}
+}

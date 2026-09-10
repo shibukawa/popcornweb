@@ -235,6 +235,7 @@ identity_provider:
     dev: requirement:contrib-devidp is a legitimate dev issuer that api:cli-dev injects, so an empty auth oidc section in config.dev.toml is correct rather than missing
     deployed: policy:oidc-security requires an HTTPS issuer and exact issuer equality, so a deployed token needs a real provider declared somewhere
     static_bound: doctor checks the shape of the issuer and the agreement of the local paths; it fetches no discovery document, because that is the network call the deferred probe of decision:host-side-diagnostic-analysis owns
+    section_in_force: every trigger below that names an oidc field reads the provider section auth.mode selects, per requirement:doctor-auth-mode-awareness; oauth_only reads auth.oauth and its AUTH_OAUTH_* names, and passkey_only and jwt_only skip the provider advisories
   devidp-enabled-outside-dev:
     trigger: data:project-config dev.idp.enabled with a non-dev token
     scope: dev_only

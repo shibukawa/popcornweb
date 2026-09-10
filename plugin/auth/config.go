@@ -774,10 +774,29 @@ func (h HintConfig) validate() error {
 	return nil
 }
 
-func (c Config) usesOIDC() bool    { return c.Mode == ModeOIDCOnly || c.Mode == ModeOIDCPasskey }
-func (c Config) usesPasskey() bool { return c.Mode == ModeOIDCPasskey || c.Mode == ModePasskeyOnly }
-func (c Config) usesOAuth() bool   { return c.Mode == ModeOAuthOnly }
-func (c Config) usesJWT() bool     { return c.Mode == ModeJWTOnly }
+func (c Config) usesOIDC() bool    { return ModeUsesOIDC(c.Mode) }
+func (c Config) usesPasskey() bool { return ModeUsesPasskey(c.Mode) }
+func (c Config) usesOAuth() bool   { return ModeUsesOAuth(c.Mode) }
+func (c Config) usesJWT() bool     { return ModeUsesJWT(c.Mode) }
+
+// The mode predicates are exported because pw doctor asks the same question
+// this package answers at startup — which provider section a mode reads — and
+// a second list of the modes in the CLI is a list that drifts. The dependon
+// tags on the sections above restate these for the configuration summary.
+
+// ModeUsesOIDC reports whether mode signs in through an OpenID Provider and
+// reads [auth.oidc].
+func ModeUsesOIDC(mode string) bool { return mode == ModeOIDCOnly || mode == ModeOIDCPasskey }
+
+// ModeUsesPasskey reports whether mode serves passkeys and reads [auth.passkey].
+func ModeUsesPasskey(mode string) bool { return mode == ModeOIDCPasskey || mode == ModePasskeyOnly }
+
+// ModeUsesOAuth reports whether mode signs in through a plain OAuth provider
+// and reads [auth.oauth].
+func ModeUsesOAuth(mode string) bool { return mode == ModeOAuthOnly }
+
+// ModeUsesJWT reports whether mode verifies bearer tokens and reads [auth.jwt].
+func ModeUsesJWT(mode string) bool { return mode == ModeJWTOnly }
 
 // admission is the admission policy of the selected mode. It exists so that
 // nothing outside it has to know which section a mode reads: the three sections

@@ -424,40 +424,40 @@ sidebar:
 - **読むもの**: マージ済み設定
 - **直し方**: set auth.oidc.issuer to the deployment provider
 
-### PW0432: the OIDC issuer is reached over http outside dev
+### PW0432: the provider is reached over http outside dev
 
 - **深刻度**: error（`dev` では note）
 - **対象**: `dev` 以外のすべての環境
 - **読むもの**: マージ済み設定
-- **直し方**: use an https issuer and clear auth.oidc.allow_loopback_http
+- **直し方**: use an https issuer and clear allow_loopback_http in the provider section auth.mode selects
 
-### PW0433: the OIDC redirect URL does not match the callback path
+### PW0433: the login redirect URL does not match the callback path
 
 - **深刻度**: error
 - **対象**: すべての環境
 - **読むもの**: マージ済み設定
-- **直し方**: make auth.oidc.redirect_url end with auth.callback_path
+- **直し方**: make auth.oidc.redirect_url, or auth.oauth.redirect_url under oauth_only, end with auth.callback_path
 
 ### PW0434: no provider values are declared for a deployed environment
 
 - **深刻度**: note
 - **対象**: `dev` 以外のすべての環境
 - **読むもの**: マージ済み設定、プロセス環境変数
-- **直し方**: confirm the deployment sets AUTH_OIDC_ISSUER, AUTH_OIDC_CLIENT_ID, and AUTH_OIDC_CLIENT_SECRET
+- **直し方**: confirm the deployment sets AUTH_OIDC_ISSUER, AUTH_OIDC_CLIENT_ID, and AUTH_OIDC_CLIENT_SECRET under an OIDC mode, or AUTH_OAUTH_CLIENT_ID and AUTH_OAUTH_CLIENT_SECRET under oauth_only
 
 ### PW0436: the loopback development pairing is still set outside dev
 
 - **深刻度**: error（`dev` では note）
 - **対象**: `dev` 以外のすべての環境
 - **読むもの**: マージ済み設定
-- **直し方**: clear auth.oidc.allow_loopback_http and set session.cookie.secure
+- **直し方**: clear allow_loopback_http in the provider section auth.mode selects and set session.cookie.secure
 
-### PW0437: the OIDC redirect URL is derived from a request outside dev
+### PW0437: the login redirect URL is derived from a request outside dev
 
 - **深刻度**: error（`dev` では note）
 - **対象**: `dev` 以外のすべての環境
 - **読むもの**: マージ済み設定
-- **直し方**: set auth.oidc.redirect_url to the absolute URL registered with the deployed provider
+- **直し方**: set auth.oidc.redirect_url, or auth.oauth.redirect_url under oauth_only, to the absolute URL registered with the deployed provider
 
 ### PW0438: the dotenv template assigns a secret
 

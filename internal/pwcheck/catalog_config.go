@@ -315,40 +315,40 @@ func init() {
 		},
 		Check{
 			ID: InsecureIssuer, Group: GroupConfig,
-			Title:    "the OIDC issuer is reached over http outside dev",
+			Title:    "the provider is reached over http outside dev",
 			Severity: Error, DevSeverity: Note, Scope: Deployed,
 			Inputs: Config, Phase: Doctor,
-			Remedy: "use an https issuer and clear auth.oidc.allow_loopback_http",
+			Remedy: "use an https issuer and clear allow_loopback_http in the provider section auth.mode selects",
 		},
 		Check{
 			ID: RedirectDisagreement, Group: GroupConfig,
-			Title:    "the OIDC redirect URL does not match the callback path",
+			Title:    "the login redirect URL does not match the callback path",
 			Severity: Error, DevSeverity: Error, Scope: Every,
 			Inputs: Config, Phase: Doctor,
 			// The provider would redirect to a URL the application does not
 			// serve, and a loopback redirect that works locally hides it.
-			Remedy: "make auth.oidc.redirect_url end with auth.callback_path",
+			Remedy: "make auth.oidc.redirect_url, or auth.oauth.redirect_url under oauth_only, end with auth.callback_path",
 		},
 		Check{
 			ID: ProviderNotDeclared, Group: GroupConfig,
 			Title:    "no provider values are declared for a deployed environment",
 			Severity: Note, DevSeverity: Note, Scope: Deployed,
 			Inputs: Config | ProcessEnv, Phase: Doctor,
-			Remedy: "confirm the deployment sets AUTH_OIDC_ISSUER, AUTH_OIDC_CLIENT_ID, and AUTH_OIDC_CLIENT_SECRET",
+			Remedy: "confirm the deployment sets AUTH_OIDC_ISSUER, AUTH_OIDC_CLIENT_ID, and AUTH_OIDC_CLIENT_SECRET under an OIDC mode, or AUTH_OAUTH_CLIENT_ID and AUTH_OAUTH_CLIENT_SECRET under oauth_only",
 		},
 		Check{
 			ID: LoopbackPairing, Group: GroupConfig,
 			Title:    "the loopback development pairing is still set outside dev",
 			Severity: Error, DevSeverity: Note, Scope: Deployed,
 			Inputs: Config, Phase: Doctor,
-			Remedy: "clear auth.oidc.allow_loopback_http and set session.cookie.secure",
+			Remedy: "clear allow_loopback_http in the provider section auth.mode selects and set session.cookie.secure",
 		},
 		Check{
 			ID: DynamicOIDCRedirect, Group: GroupConfig,
-			Title:    "the OIDC redirect URL is derived from a request outside dev",
+			Title:    "the login redirect URL is derived from a request outside dev",
 			Severity: Error, DevSeverity: Note, Scope: Deployed,
 			Inputs: Config, Phase: Doctor,
-			Remedy: "set auth.oidc.redirect_url to the absolute URL registered with the deployed provider",
+			Remedy: "set auth.oidc.redirect_url, or auth.oauth.redirect_url under oauth_only, to the absolute URL registered with the deployed provider",
 		},
 	)
 }
