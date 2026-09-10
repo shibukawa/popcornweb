@@ -70,6 +70,10 @@ var packageArtifacts = map[string]bool{
 	// that every discovered-routing project failed on the day it was created.
 	pwgen.PageDecoderOutput:  true,
 	pwgen.PageRegistryOutput: true,
+	// The asset manifest is written by pw build from the built tree, not from a
+	// source beside it, so the scan finds none and would report the file the
+	// build had just written — an error on every project that ran pw build.
+	assetManifestFile: true,
 }
 
 func newProjectScan(root string, state projectState, configFiles map[string]string) *projectScan {
