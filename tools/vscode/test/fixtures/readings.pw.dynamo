@@ -9,7 +9,8 @@ export statement ReadingsSince(sensor: string, from: int64): dynamo.many<Reading
 }
 
 export statement ReadingsBetween(sensor: string, from: int64, to: int64): dynamo.page<Reading> {
-  table readings; key sensor = {sensor} and at between {from} and {to}
+  table readings
+  key sensor = {sensor} and at between {from} and {to}
 }
 
 export statement ReadingsPrefixed(sensor: string, prefix: string): dynamo.many<Reading> {

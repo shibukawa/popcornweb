@@ -39,7 +39,11 @@ export component Page(q: string?): html {
 export component OrderTable(id: string, query: string): html {
   <table class="panel__table" id="{id}">
     <thead>
-      <tr><th>Order</th><th>Owner</th><th>Placed</th><th></th></tr>
+      <tr>
+        <th>Order</th>
+        <th>Owner</th>
+        <th>Placed</th>
+        <th></th></tr>
     </thead>
     <tbody>
       {for order in SearchOrders(query)}
@@ -66,8 +70,13 @@ export component OrderRow(id: string, title: string, owner: string, at: string):
     <td class="row__cell">{owner}</td>
     <td class="row__cell"><time datetime="{at}">{at}</time></td>
     <td class="row__cell">
-      <button class="row__redraw" type="button"
-        data-redraw="{id}" data-title="{title}" data-owner="{owner}" data-at="{at}">redraw</button>
+      <button
+        class="row__redraw"
+        type="button"
+        data-redraw="{id}"
+        data-title="{title}"
+        data-owner="{owner}"
+        data-at="{at}">redraw</button>
     </td>
   </tr>
 }

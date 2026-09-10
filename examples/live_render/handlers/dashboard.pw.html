@@ -11,7 +11,7 @@ external live WatchThroughput(): Sample
 external live WatchMessages(room: string): Message[]
 
 export component Dashboard(room: string): html {
-<script component>
+  <script component>
   // Runs once per rendered instance of this component, handed one object it
   // destructures for what it needs. Anything taken from onSignal is released
   // when the instance goes away — which never happens on this page, because
@@ -84,7 +84,8 @@ export component Dashboard(room: string): html {
         {await sample = WatchThroughput()}
           <strong class="text-4xl font-semibold tabular-nums text-slate-900 dark:text-slate-50">{sample.value}</strong>
           <span class="text-slate-600 dark:text-slate-400">{sample.label}</span>
-          <small class="text-sm tabular-nums text-slate-400 dark:text-slate-500">at {sample.at}</small>
+          <small class="text-sm tabular-nums text-slate-400 dark:text-slate-500">at
+            {sample.at}</small>
         {fallback}
           <span class="animate-pulse text-slate-400 italic dark:text-slate-500">sampling…</span>
         {recover err}
@@ -98,7 +99,10 @@ export component Dashboard(room: string): html {
       </p>
     </section>
 
-    <section data-room class="rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900" role="log">
+    <section
+      data-room
+      class="rounded-xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900"
+      role="log">
       <h2 class="mb-3 text-xs font-semibold tracking-widest text-slate-500 uppercase dark:text-slate-400">Room</h2>
       {await title = LoadRoomTitle(room), messages = WatchMessages(room)}
         <h3 class="mb-3 font-medium text-slate-900 dark:text-slate-50">{title}</h3>

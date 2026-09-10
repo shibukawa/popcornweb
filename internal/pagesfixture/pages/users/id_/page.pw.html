@@ -1,14 +1,11 @@
 package id_
 
-type View {
-  name: string
-  page: int
-}
+type View { name: string, page: int }
 
 external LoadUser(id: string, page: int?): View
 
 export component Page(id: string, page: int?): html {
-<script component>
+  <script component>
   export function setup({ el }) {
     return {
       highlight(event) {
@@ -23,7 +20,7 @@ export component Page(id: string, page: int?): html {
     <p>page {view.page}</p>
     <button server-action="Rename" data-target="#name">rename</button>
     <form server-action="Retire">
-      <input type="text" name="reason" />
+      <input type="text" name="reason"/>
       <button type="submit">retire</button>
     </form>
   </section>

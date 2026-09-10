@@ -12,7 +12,10 @@ export component Page(): html {
     <h2 class="panel__title">Invoices</h2>
     <table class="panel__table">
       <thead>
-        <tr><th>Number</th><th>Customer</th><th>Total</th></tr>
+        <tr>
+          <th>Number</th>
+          <th>Customer</th>
+          <th>Total</th></tr>
       </thead>
       <tbody>
         {for invoice in invoices}
