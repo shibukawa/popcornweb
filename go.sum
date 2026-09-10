@@ -183,8 +183,8 @@ github.com/shibukawa/dbtestify v0.5.0 h1:Fay1k+5iQVtLqUPbepMU/j2SZtD8RG15LG2XIX8
 github.com/shibukawa/dbtestify v0.5.0/go.mod h1:ZYHV3hcW8E6456hg3DUByd5y3WlW2kV34awn7V6AAqs=
 github.com/shibukawa/localotelviewer v1.0.2 h1:bwIj/Wy/fiW0eTC4S9a1eDUx8IYtjmOGFU0nafVLrfo=
 github.com/shibukawa/localotelviewer v1.0.2/go.mod h1:4uHkRUebfefDmDaY1xgu4ZRpe+TVxbdDerJrFXImD4o=
-github.com/shibukawa/tinybind-go v0.5.31 h1:D0wo5JoES0SwB3dHkKc/wEyxzIn4hdm94cMiKtUzeic=
-github.com/shibukawa/tinybind-go v0.5.31/go.mod h1:5Oa1sHIbHJVsLaYG6ZYB3wkCCU5bSXaAWX8ueE8qJHs=
+github.com/shibukawa/tinybind-go v0.5.32 h1:Jq21YOLISnQP53y9T7GnkyvY7s15tfAQ7csZt/RmxHM=
+github.com/shibukawa/tinybind-go v0.5.32/go.mod h1:5Oa1sHIbHJVsLaYG6ZYB3wkCCU5bSXaAWX8ueE8qJHs=
 github.com/shibukawa/tinygodriver v1.2.12 h1:uFWjJo1Xk32PD5rOmTJUWIP3MjjpQqZ1MkgPrFNTFs4=
 github.com/shibukawa/tinygodriver v1.2.12/go.mod h1:BHF2120Trf0Np+CO1uxsmtd2G/gfslLuMl5zaA0T7ik=
 github.com/shirou/gopsutil/v4 v4.26.6 h1:Mzr/npDtQC/xpeEuQKHZt8Zo9CmPvhTj8nkR8w5TLDs=

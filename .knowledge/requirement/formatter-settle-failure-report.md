@@ -6,7 +6,7 @@ title: A Non-Settling Template Is Reproducible From Its Report
 When api:cli-fmt refuses a .pw.html source because formatting does not settle, the defect is fixed upstream in system:tinybind and the report a user can make carries what that fix needs, because the guard already protects the file and the remaining cost is the round trip.
 
 ```yaml
-status: proposed; reported by an application on 2026-09-10 against a pages/page.pw.html that generates and builds
+status: the reported defect is fixed upstream in system:tinybind v0.5.32 and the pin moved on 2026-09-10; the report_shape below stays proposed
 priority: should
 defect:
   message: "templatefmt: <path>: formatting does not settle, so nothing was changed; this is a formatter bug, please report the file"
@@ -16,6 +16,7 @@ defect:
 reproduction:
   local: every api:cli-init scaffold variant tried on 2026-09-10 and every example project settle under system:tinybind v0.5.31, so the trigger is a construct in the reported file that no fixture holds
   needed: the source file itself, or a reduced excerpt that still fails, plus the tinybind version pinned in the project's go.mod
+  found: the preserve-whitespace printer copied the run before an {else}, {else if}, {fallback}, or {recover} label and then opened a line on top of it, so every pass added one whitespace-only line; the label now rides the copied run, per upstream 26d7f8c
   known_classes:
     escape_round_trip: a brace run in template text or an attribute value that is escaped on print and decoded on the next parse
     raw_text_braces: a brace in a script or style body near the insertion gate, the class fixed by a700e67 upstream
@@ -31,6 +32,7 @@ report_shape:
 fix_path:
   upstream: the printer defect is fixed in system:tinybind with the reduced source as a fixture in its settle test set
   downstream: this repository moves the pin and re-runs pw fmt --check on every example, per requirement:template-formatting
+  pin_move_verified: v0.5.32 formats every .pw source in this repository byte-for-byte as v0.5.31 did, so the fix changes nothing already formatted; the same five example sources and two fixtures were already unformatted before the move and stay so
   workaround: none in pw fmt; naming other paths skips the file, and the file stays unformatted until the pin moves
 acceptance:
   - the reported file, once obtained, fails under the pinned version and settles under the fixed one
