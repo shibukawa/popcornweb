@@ -2,6 +2,7 @@ package pwcli
 
 import (
 	"encoding/base64"
+	"github.com/shibukawa/tinybind-go/minitoml"
 	"os"
 	"path/filepath"
 	"sort"
@@ -559,6 +560,36 @@ func TestScaffoldCoversThePageActionPrefix(t *testing.T) {
 	}
 }
 
+// TOML refuses a key written twice, and a login with a page tree once wrote
+// csrf.include for the login and again for the page actions, so the scaffolded
+// file did not parse at all. Every scaffold that writes the section is parsed
+// here, and the include list is checked to be the one both callers need.
+func TestScaffoldedSecuritySectionParsesWithOneIncludeList(t *testing.T) {
+	for _, options := range []initOptions{
+		{Name: "demo", Database: true, Auth: authOIDC, Router: routerBoth},
+		{Name: "demo", Database: true, Auth: authOAuth, Router: routerBoth},
+		{Name: "demo", Database: true, Auth: authOIDC, Router: routerRegistered},
+		{Name: "demo", Tailwind: true, Router: routerBoth},
+		{Name: "demo", Router: routerDiscovered},
+	} {
+		config := scaffoldFiles(options)[pwenv.FileName(pwenv.Development)]
+		if _, err := minitoml.ParseString(config); err != nil {
+			t.Errorf("%+v: config.dev.toml does not parse: %v\n%s", options, err, config)
+			continue
+		}
+		if got := strings.Count(config, "\ncsrf.include = "); got != 1 {
+			t.Errorf("%+v: csrf.include is written %d times:\n%s", options, got, config)
+		}
+		want := `csrf.include = ["/**"]`
+		if hasDiscoveredPages(options) {
+			want = `csrf.include = ["/_action/**", "/**"]`
+		}
+		if !strings.Contains(config, want) {
+			t.Errorf("%+v: the include list is not %s:\n%s", options, want, config)
+		}
+	}
+}
+
 // Without a session there is nothing to bind a token to, so the section would
 // only describe a check that could not pass.
 func TestScaffoldWritesNoSecuritySectionWithoutASession(t *testing.T) {
@@ -946,5 +977,49 @@ func TestScaffoldedStoresCallWhatGenerationDiscovers(t *testing.T) {
 		if !strings.Contains(entity, want) {
 			t.Errorf("entities/note.go does not carry %q:\n%s", want, entity)
 		}
+	}
+}
+
+// The OAuth answer is a browser login like the OIDC one, so it gets the same
+// resolver, the same sign-in control, and the same empty client placeholders;
+// what it never gets is an issuer or the development identity provider, because
+// a plain OAuth provider has neither.
+func TestScaffoldWiresAnOAuthProvider(t *testing.T) {
+	files := scaffoldFiles(initOptions{Name: "demo", Router: routerRegistered, Database: true, Auth: authOAuth, AuthEmulator: true})
+
+	config := files[pwenv.FileName(pwenv.Development)]
+	for _, expected := range []string{`mode = "oauth_only"`, "[auth.oauth]", `provider = "x"`, `client_id = ""`, `client_secret = ""`,
+		`redirect_url = "http://localhost:8080/auth/callback"`, "allow_loopback_http = true", "AUTH_OAUTH_CLIENT_ID"} {
+		if !strings.Contains(config, expected) {
+			t.Errorf("config is missing %s:\n%s", expected, config)
+		}
+	}
+	for _, absent := range []string{"[auth.oidc]", "issuer =", "AUTH_OIDC"} {
+		if strings.Contains(config, absent) {
+			t.Errorf("config carries %s, which the mode refuses:\n%s", absent, config)
+		}
+	}
+	if _, present := files[defaultIdPConfig]; present || strings.Contains(files["popcornweb.toml"], "[dev.idp]") {
+		t.Error("an OAuth login must not scaffold the development identity provider, which is an OpenID Provider")
+	}
+	accounts := files["handlers/accounts.go"]
+	if !strings.Contains(accounts, "auth.SetAccountResolver(resolveAccount)") {
+		t.Errorf("the OAuth login needs the account resolver:\n%s", accounts)
+	}
+	showsSignIn := false
+	for _, content := range files {
+		showsSignIn = showsSignIn || strings.Contains(content, "ProviderLogin: true")
+	}
+	if !showsSignIn {
+		t.Error("no scaffolded page shows the sign-in control for the OAuth login")
+	}
+	env := files[".env.example"]
+	for _, expected := range []string{"\nAUTH_OAUTH_CLIENT_ID=\n", "\nAUTH_OAUTH_CLIENT_SECRET=\n"} {
+		if !strings.Contains(env, expected) {
+			t.Errorf(".env.example does not name %q:\n%s", strings.TrimSpace(expected), env)
+		}
+	}
+	if strings.Contains(env, "AUTH_OIDC") {
+		t.Errorf(".env.example names an oidc variable the mode refuses:\n%s", env)
 	}
 }

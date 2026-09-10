@@ -67,7 +67,7 @@ these answers afterwards.
 | `--firestore` | add Firestore in Datastore mode: its configuration, a typed entity, and a query declaration |
 | `--no-redis` | leave the Valkey development server out of `devbox.json` |
 | `--router=<kind>` | `registered` (default), `discovered`, or `both`; see [Discovered routing](/guides/cross-layer/discovered-routing/#commands) |
-| `--auth=<mode>` | `none` (default), `oidc`, `oidc-passkey`, or `passkey` |
+| `--auth=<mode>` | `none` (default), `oidc`, `oidc-passkey`, `passkey`, or `oauth` |
 | `--session=<backend>` | with a login, where sessions live: `rdb` (default), `cookie`, `redis`, `dynamo`, or `firestore` |
 | `--devidp` | with an OIDC mode, wire up the local identity provider |
 | `--skills=<dir>` | where the bundled agent skill lands: `claude` (default), `agents`, or `none`; see [The agent skill](#the-agent-skill) |
@@ -166,9 +166,15 @@ Authentication changes more than one flag, so the selected mode determines the
 | OIDC | `oidc` | every login goes through an OpenID Provider |
 | OIDC + passkey | `oidc_passkey` | OIDC bootstraps the account, passkeys handle repeat logins |
 | Passkey only | `passkey_only` | no external provider; recovery policy is yours |
+| OAuth provider | `oauth_only` | a provider that issues no ID Token, such as X, says who its access token belongs to |
 
 Choosing an OIDC mode asks one follow-up: **local emulator** or **external
-provider**.
+provider**. The OAuth answer has no follow-up, because there is no emulator for
+a plain OAuth provider: the scaffold names the built-in provider definition
+(`provider = "x"`), leaves `client_id` and `client_secret` empty for
+`AUTH_OAUTH_CLIENT_ID` and `AUTH_OAUTH_CLIENT_SECRET` to fill, and registers the
+development callback URL at `http://localhost:8080/auth/callback`, which must
+match the one registered with the provider exactly.
 
 The local emulator is the development identity provider that
 [`pw dev`](/pw/project/dev/) runs. `pw init` sets `dev.idp.enabled` in

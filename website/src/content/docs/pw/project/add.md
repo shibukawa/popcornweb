@@ -84,6 +84,7 @@ The review screen lists every change before anything is written:
 ```
   Review
     Capability     auth
+    Login          OIDC
     OIDC provider  External provider
 
     create  handlers/accounts.go
@@ -95,6 +96,11 @@ The review screen lists every change before anything is written:
 
   enter add  ·  esc back  ·  ctrl+c cancel
 ```
+
+`auth` asks which protocol the provider speaks first, OIDC or a plain OAuth
+provider such as X, and only the OIDC answer goes on to ask about the local
+emulator. A passkey mode stays a `pw init` answer, because its relying-party
+registration is bound to the origin the deployment is reached on.
 
 Four rules govern that list:
 

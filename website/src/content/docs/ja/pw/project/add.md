@@ -81,6 +81,7 @@ pw: add: this project already has auth, per migrations/00003_init_popcornweb_aut
 ```
   Review
     Capability     auth
+    Login          OIDC
     OIDC provider  External provider
 
     create  handlers/accounts.go
@@ -92,6 +93,11 @@ pw: add: this project already has auth, per migrations/00003_init_popcornweb_aut
 
   enter add  ·  esc back  ·  ctrl+c cancel
 ```
+
+`auth` は最初にプロバイダのプロトコルを尋ねます。OIDC か、X のような素の OAuth
+プロバイダかです。ローカルエミュレータについて続けて尋ねるのは OIDC の回答だけです。
+パスキーのモードは `pw init` の回答のままです。Relying Party の登録が、デプロイ先の
+オリジンに結び付いているからです。
 
 この一覧を支配する規則は 4 つです。
 

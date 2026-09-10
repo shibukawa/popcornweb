@@ -87,6 +87,7 @@ questions:
     oidc: auth.mode oidc
     oidc-passkey: auth.mode oidc_passkey per decision:authentication-bootstrap-strategy, with recovery.policy oidc
     passkey: auth.mode passkey_only, with registration.policy and recovery.policy both administrator and the bootstrap bounds set
+    oauth: auth.mode oauth_only per requirement:init-oauth-login-choice, with auth.oauth.provider x and the client values empty; the emulator question is skipped, because the mode has no issuer to emulate
     not_offered: jwt_only is absent from this question and from --auth, per decision:jwt-only-mode-not-scaffolded; the enum is the four values above and an unrecognized --auth is rejected rather than passed through
     passkey_scaffold:
       when: the selected mode mounts api:passkey-endpoints

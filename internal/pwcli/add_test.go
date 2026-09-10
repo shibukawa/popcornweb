@@ -828,3 +828,32 @@ func TestAddImagesWithoutDevboxNamesTheTools(t *testing.T) {
 		t.Errorf("plan.manual = %v", plan.manual)
 	}
 }
+
+// pw add auth offers the OAuth login in the same terms as pw init: the same
+// section, no roster, and no development identity provider.
+func TestAddAuthInstallsTheOAuthLogin(t *testing.T) {
+	root := declinedProject(t)
+	state, err := loadProjectState(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	plan, err := planCapability(state, addOptions{Capability: capabilityAuth, AuthMode: authOAuth, AuthEmulator: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, created := plan.creates[defaultIdPConfig]; created {
+		t.Error("an OAuth login has no issuer for the development identity provider to emulate")
+	}
+	if _, appended := plan.appends["popcornweb.toml"]; appended {
+		t.Error("dev.idp must not be enabled for an OAuth login")
+	}
+	section := plan.appends["config.dev.toml"]
+	for _, expected := range []string{`mode = "oauth_only"`, "[auth.oauth]", `provider = "x"`} {
+		if !strings.Contains(section, expected) {
+			t.Errorf("the appended section is missing %s:\n%s", expected, section)
+		}
+	}
+	if strings.Contains(section, "[auth.oidc]") {
+		t.Errorf("the appended section carries an oidc section the mode refuses:\n%s", section)
+	}
+}

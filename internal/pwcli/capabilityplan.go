@@ -385,11 +385,12 @@ func planAuth(state projectState, options addOptions, plan *capabilityPlan) erro
 	plan.creates[migrations+"/"+migrationFileName(version, sessionstore.MigrationName)] = sessionMigration
 	plan.creates[migrations+"/"+migrationFileName(version+1, auth.MigrationName)] = authMigration
 
-	// pw add installs the OIDC mode. A passkey mode additionally needs a
-	// relying-party registration that depends on the origin this deployment is
-	// reached on, which pw add cannot know, so it stays a pw init answer.
+	// pw add installs a provider login, OIDC or OAuth. A passkey mode
+	// additionally needs a relying-party registration that depends on the
+	// origin this deployment is reached on, which pw add cannot know, so it
+	// stays a pw init answer.
 	scaffold := initOptions{
-		Name: state.config.Name, Auth: authOIDC,
+		Name: state.config.Name, Auth: options.authMode(),
 		// pw add installs the rdb backend, which is the one that fits a project
 		// that already has a database. pw init offers the other two.
 		Session: sessionRDB, AuthEmulator: options.AuthEmulator,
@@ -402,7 +403,7 @@ func planAuth(state projectState, options addOptions, plan *capabilityPlan) erro
 	for _, name := range state.configFiles {
 		plan.appends[name] = section
 	}
-	if options.AuthEmulator {
+	if options.AuthEmulator && usesOIDC(scaffold.Auth) {
 		plan.creates[defaultIdPConfig] = devIdPRoster()
 		// Built from scaffold rather than from a fresh value: this section is
 		// written only for a mode that uses OIDC, and a hand-built options with

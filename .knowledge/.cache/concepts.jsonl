@@ -510,6 +510,7 @@
 {"category": "objective", "id": "requirement:dev-telemetry-viewer", "path": ".knowledge/requirement/dev-telemetry-viewer.md", "role": "primary", "title": "Development Telemetry Viewer", "type": "requirement"}
 {"category": "objective", "id": "requirement:discovered-page-routing", "path": ".knowledge/requirement/discovered-page-routing.md", "role": "primary", "title": "Discovered Page Routing", "type": "requirement"}
 {"category": "objective", "id": "requirement:dockerless-image-builders", "path": ".knowledge/requirement/dockerless-image-builders.md", "role": "primary", "title": "Dockerless Image Builders", "type": "requirement"}
+{"category": "objective", "id": "requirement:doctor-auth-mode-awareness", "path": ".knowledge/requirement/doctor-auth-mode-awareness.md", "role": "primary", "title": "Doctor Reads the Provider Section the Auth Mode Selects", "type": "requirement"}
 {"category": "objective", "id": "requirement:dotenv-files", "path": ".knowledge/requirement/dotenv-files.md", "role": "primary", "title": "Dotenv Files", "type": "requirement"}
 {"category": "objective", "id": "requirement:dynamodb-auth-backend", "path": ".knowledge/requirement/dynamodb-auth-backend.md", "role": "primary", "title": "DynamoDB Authentication Backend", "type": "requirement"}
 {"category": "objective", "id": "requirement:dynamodb-auth-stores", "path": ".knowledge/requirement/dynamodb-auth-stores.md", "role": "primary", "title": "DynamoDB Account-Side Authentication Stores", "type": "requirement"}
@@ -549,6 +550,7 @@
 {"category": "objective", "id": "requirement:firestore-session-store", "path": ".knowledge/requirement/firestore-session-store.md", "role": "primary", "title": "Firestore Session Backend", "type": "requirement"}
 {"category": "objective", "id": "requirement:firestore-store", "path": ".knowledge/requirement/firestore-store.md", "role": "primary", "title": "Firestore Store", "type": "requirement"}
 {"category": "objective", "id": "requirement:firestore-test-isolation", "path": ".knowledge/requirement/firestore-test-isolation.md", "role": "primary", "title": "Isolated Firestore Tests", "type": "requirement"}
+{"category": "objective", "id": "requirement:formatter-settle-failure-report", "path": ".knowledge/requirement/formatter-settle-failure-report.md", "role": "primary", "title": "A Non-Settling Template Is Reproducible From Its Report", "type": "requirement"}
 {"category": "objective", "id": "requirement:framework-metrics", "path": ".knowledge/requirement/framework-metrics.md", "role": "primary", "title": "Framework Metrics", "type": "requirement"}
 {"category": "objective", "id": "requirement:framework-script-assets", "path": ".knowledge/requirement/framework-script-assets.md", "role": "primary", "title": "Framework Script Assets", "type": "requirement"}
 {"category": "objective", "id": "requirement:generated-code-version-tolerance", "path": ".knowledge/requirement/generated-code-version-tolerance.md", "role": "primary", "title": "Generated Code Must State What Runtime It Links Against", "type": "requirement"}
@@ -556,6 +558,7 @@
 {"category": "objective", "id": "requirement:html-fragment-rendering", "path": ".knowledge/requirement/html-fragment-rendering.md", "role": "primary", "title": "HTML Fragment Rendering", "type": "requirement"}
 {"category": "objective", "id": "requirement:httpbinder-extensible-route-analysis", "path": ".knowledge/requirement/httpbinder-extensible-route-analysis.md", "role": "primary", "title": "Extensible httpbind-go Route Analysis", "type": "requirement"}
 {"category": "objective", "id": "requirement:incremental-project-capabilities", "path": ".knowledge/requirement/incremental-project-capabilities.md", "role": "primary", "title": "Incremental Project Capabilities", "type": "requirement"}
+{"category": "objective", "id": "requirement:init-oauth-login-choice", "path": ".knowledge/requirement/init-oauth-login-choice.md", "role": "primary", "title": "OAuth Login in the pw init Authentication Question", "type": "requirement"}
 {"category": "objective", "id": "requirement:init-presets", "path": ".knowledge/requirement/init-presets.md", "role": "primary", "title": "Project Bootstrap Presets", "type": "requirement"}
 {"category": "objective", "id": "requirement:jwt-only-api-authentication", "path": ".knowledge/requirement/jwt-only-api-authentication.md", "role": "primary", "title": "JWT-Only API Authentication", "type": "requirement"}
 {"category": "objective", "id": "requirement:live-boundary-liveness-signal", "path": ".knowledge/requirement/live-boundary-liveness-signal.md", "role": "primary", "title": "Liveness Must Be Visible Per Boundary", "type": "requirement"}

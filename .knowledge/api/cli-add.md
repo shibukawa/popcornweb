@@ -24,7 +24,7 @@ questions:
   oidc_provider:
     asked_when: auth is selected
     choices: requirement:contrib-devidp local emulator, or an external provider left for the operator to fill in
-    mode: oidc, the only authentication mode with an implementation
+    mode: oidc or oauth, asked as the login protocol first, per requirement:init-oauth-login-choice; the emulator question follows the oidc answer only
   review: lists every file to create, every configuration section to append, and every follow-up command
 capabilities:
   devbox:

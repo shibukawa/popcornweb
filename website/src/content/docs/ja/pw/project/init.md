@@ -67,7 +67,7 @@ enter を押すとその質問が開き、答えると一覧に戻ります。�
 | `--firestore` | Datastore mode の Firestore を追加する。設定・型付きエンティティ・クエリ宣言 |
 | `--no-redis` | `devbox.json` に Valkey 開発サーバーを入れない |
 | `--router=<kind>` | `registered`（既定）, `discovered`, `both`。[探索型ルーティング](/ja/guides/cross-layer/discovered-routing/#コマンド)を参照 |
-| `--auth=<mode>` | `none`（既定）, `oidc`, `oidc-passkey`, `passkey` |
+| `--auth=<mode>` | `none`（既定）, `oidc`, `oidc-passkey`, `passkey`, `oauth` |
 | `--session=<backend>` | ログインを作る場合のセッションの置き場所: `rdb`（既定）, `cookie`, `redis`, `dynamo`, `firestore` |
 | `--devidp` | OIDC を選んだ場合に、ローカルの認証プロバイダを組み込む |
 | `--skills=<dir>` | 同梱のエージェントスキルの置き場所: `claude`（既定）, `agents`, `none`。[エージェントスキル](#エージェントスキル)を参照 |
@@ -168,9 +168,15 @@ database = "postgres"   # sqlite、postgres、mysql
 | OIDC | `oidc` | ログインは常に OpenID Provider を経由する |
 | OIDC + passkey | `oidc_passkey` | OIDC でアカウントを作り、以降はパスキーでログイン |
 | Passkey only | `passkey_only` | 外部プロバイダなし。リカバリ方針は自分で決める |
+| OAuth provider | `oauth_only` | X のように ID Token を発行しないプロバイダに、アクセストークンの持ち主を尋ねてログインする |
 
 OIDC 系を選ぶと、**ローカルエミュレータ**か**外部プロバイダ**かを1つだけ追加で質問
-します。
+します。OAuth の回答には追加の質問がありません。素の OAuth プロバイダにはエミュレータが
+ないからです。スキャフォールドは組み込みのプロバイダ定義（`provider = "x"`）を書き、
+`client_id` と `client_secret` は `AUTH_OAUTH_CLIENT_ID` と `AUTH_OAUTH_CLIENT_SECRET`
+で埋めるために空にしておき、開発用のコールバック URL として
+`http://localhost:8080/auth/callback` を書きます。この URL はプロバイダに登録したものと
+完全に一致していなければなりません。
 
 ローカルエミュレータは [`pw dev`](/ja/pw/project/dev/) が起動する開発用認証プロバイダ
 です。`pw init` は `popcornweb.toml` に `dev.idp.enabled` を設定し、初期ユーザー2人分の

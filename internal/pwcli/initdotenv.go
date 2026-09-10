@@ -80,5 +80,11 @@ func dotenvTemplateVariables(options initOptions) []dotenvVariable {
 			dotenvVariable{name: "AUTH_OIDC_CLIENT_SECRET", help: "that client's secret"},
 		)
 	}
+	if usesOAuth(options.Auth) {
+		variables = append(variables,
+			dotenvVariable{name: "AUTH_OAUTH_CLIENT_ID", help: "the client registered with the OAuth provider auth.oauth.provider names"},
+			dotenvVariable{name: "AUTH_OAUTH_CLIENT_SECRET", help: "that client's secret"},
+		)
+	}
 	return variables
 }

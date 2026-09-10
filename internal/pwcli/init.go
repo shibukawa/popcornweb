@@ -39,7 +39,7 @@ const (
 	repositoryURL    = "https://github.com/shibukawa/popcornweb"
 )
 
-const initUsage = "usage: pw init [<project-name>] [--yes] [--router=registered|discovered|both] [--tailwind] [--tinygo] [--no-devbox] [--no-database] [--db=sqlite|postgres|mysql] [--dynamo] [--no-redis] [--auth=none|oidc|oidc-passkey|passkey] [--session=dev-volatile|dev-persist|rdb|cookie|redis|dynamo] [--devidp] [--skills=claude|agents|none]"
+const initUsage = "usage: pw init [<project-name>] [--yes] [--router=registered|discovered|both] [--tailwind] [--tinygo] [--no-devbox] [--no-database] [--db=sqlite|postgres|mysql] [--dynamo] [--no-redis] [--auth=none|oidc|oidc-passkey|passkey|oauth] [--session=dev-volatile|dev-persist|rdb|cookie|redis|dynamo] [--devidp] [--skills=claude|agents|none]"
 
 // Authentication modes the wizard and the --auth flag select between. They map
 // onto the plugin/auth modes, with none meaning no [auth] configuration.
@@ -48,6 +48,11 @@ const (
 	authOIDC        = "oidc"
 	authOIDCPasskey = "oidc-passkey"
 	authPasskey     = "passkey"
+	// authOAuth signs in through a provider that issues no ID Token, such as
+	// X, and asks the provider who its access token belongs to. It is a
+	// browser login like the three above, which is why it is a value of the
+	// same question rather than a preset.
+	authOAuth = "oauth"
 	// authJWTOnly verifies a bearer token somebody else issued. It is absent
 	// from the wizard question and from --auth on purpose: it is reached by
 	// naming the project shape it belongs to, which is the api-server preset,
@@ -95,6 +100,14 @@ const (
 
 // usesOIDC reports whether a mode needs an OpenID Provider.
 func usesOIDC(mode string) bool { return mode == authOIDC || mode == authOIDCPasskey }
+
+// usesOAuth reports whether a mode needs a plain OAuth provider.
+func usesOAuth(mode string) bool { return mode == authOAuth }
+
+// servesProviderLogin reports whether a mode starts a login at an external
+// provider, whichever protocol it speaks; it is what mounts the sign-in control
+// and the account resolver.
+func servesProviderLogin(mode string) bool { return usesOIDC(mode) || usesOAuth(mode) }
 
 // usesPasskey reports whether the mode mounts the ceremony endpoints, which
 // decides whether the project needs a relying-party registration and the
@@ -468,11 +481,11 @@ func parseInitArgs(args []string) (initOptions, error) {
 			}
 			if mode, ok := strings.CutPrefix(arg, "--auth="); ok {
 				switch mode {
-				case authNone, authOIDC, authOIDCPasskey, authPasskey:
+				case authNone, authOIDC, authOIDCPasskey, authPasskey, authOAuth:
 					options.Auth = mode
 				default:
-					return initOptions{}, fmt.Errorf("init: --auth must be %s, %s, %s, or %s",
-						authNone, authOIDC, authOIDCPasskey, authPasskey)
+					return initOptions{}, fmt.Errorf("init: --auth must be %s, %s, %s, %s, or %s",
+						authNone, authOIDC, authOIDCPasskey, authPasskey, authOAuth)
 				}
 				continue
 			}
@@ -1741,7 +1754,7 @@ wire("passkey-register", register);
 func accountsScaffold(options initOptions) string {
 	imports := "\t\"context\"\n\n\t\"github.com/shibukawa/popcornweb/plugin/auth\"\n"
 	body := "// RegisterAccounts installs the account seams. Call it from main before\n// pw.Run.\nfunc RegisterAccounts() {\n"
-	if usesOIDC(options.Auth) {
+	if servesProviderLogin(options.Auth) {
 		body += "\tauth.SetAccountResolver(resolveAccount)\n"
 	}
 	if usesPasskey(options.Auth) {
@@ -1751,14 +1764,15 @@ func accountsScaffold(options initOptions) string {
 		body += "\tauth.SetAccountActivator(activateAccount)\n"
 	}
 	body += "}\n"
-	if usesOIDC(options.Auth) {
+	if servesProviderLogin(options.Auth) {
 		body += `
 // resolveAccount answers with the account behind a verified identity.
 //
 // This starter derives one instead of storing it, which is enough to log in
 // and read the user. Replace it with a lookup against your own table as soon
 // as the application owns accounts: the link is the issuer plus the verified
-// claim auth.oidc.identity_claim selected, never the email address.
+// claim the provider section's identity_claim selected, never the email
+// address.
 func resolveAccount(ctx context.Context, identity auth.Identity, provision bool) (auth.Account, error) {
 	displayName, _ := identity.Claims.String("name")
 	if displayName == "" {
@@ -1891,7 +1905,7 @@ func home(w http.ResponseWriter, r *http.Request) {
 		LoginPath:   url.URL{Path: "/auth/login"},
 		LogoutPath:  url.URL{Path: "/auth/logout"},
 		Passkey:     ` + passkeyLiteral(usesPasskey(options.Auth)) + `,
-		ProviderLogin: ` + passkeyLiteral(usesOIDC(options.Auth)) + `,
+		ProviderLogin: ` + passkeyLiteral(servesProviderLogin(options.Auth)) + `,
 		Bootstrap:   ` + passkeyLiteral(options.Auth == authPasskey) + `,
 	}))
 }
@@ -2407,7 +2421,39 @@ protection.unauthenticated = "redirect"
 	if usesOIDC(options.Auth) {
 		section += authOIDCConfig(options)
 	}
+	if usesOAuth(options.Auth) {
+		section += authOAuthConfig(options)
+	}
 	return section
+}
+
+// authOAuthConfig writes the [auth.oauth] section of the oauth_only mode.
+//
+// The provider is named rather than discovered, so there is no issuer here and
+// no emulator to inject one: the only development provider is the real one,
+// reached from localhost. The client values are empty for the same reason the
+// external OIDC answer leaves them empty — they are placeholders the deployment
+// fills from the environment, and startup refuses to run without them.
+func authOAuthConfig(options initOptions) string {
+	return `
+[auth.oauth]
+# The built-in provider definition; it selects the endpoints, the scopes, and
+# the shape of the account response together. x is X, formerly Twitter.
+provider = "x"
+# Supply these from the environment in every environment, including this one:
+# AUTH_OAUTH_CLIENT_ID, AUTH_OAUTH_CLIENT_SECRET. There is no development
+# emulator for a plain OAuth provider, so a login here reaches the real one.
+client_id = ""
+client_secret = ""
+# The callback URL registered with the provider, which must match exactly.
+redirect_url = "` + authDevelopmentOrigin(options) + `/auth/callback"
+identity_claim = "sub"
+admission = "authenticated"
+auto_provision = true
+# The development redirect above is loopback http. A deployed redirect is https
+# and this goes back to false.
+allow_loopback_http = true
+`
 }
 
 // securityRuntimeConfig writes the [security] section.
@@ -2460,15 +2506,18 @@ enabled = false
 
 ` + why + `[security]
 csrf.enabled = true
-csrf.include = ["/**"]
 `
+	// TOML refuses a key written twice, so the include list is decided here
+	// and written once: a page action is a POST reachable with ambient
+	// credentials, and nothing else stands in front of it, so it is the one
+	// prefix a page tree must not leave out.
 	if hasDiscoveredPages(options) {
-		// A page action is a POST reachable with ambient credentials, and
-		// nothing else stands in front of it, so it is the one prefix a page
-		// tree must not leave out.
 		section += `# Page actions are POST endpoints reachable with the session cookie, so the
 # action prefix belongs in the include list of any page tree.
 csrf.include = ["/_action/**", "/**"]
+`
+	} else {
+		section += `csrf.include = ["/**"]
 `
 	}
 	section += `# Exclude what a browser never posts: a webhook has no session and carries its
@@ -2577,6 +2626,8 @@ func authConfigMode(mode string) string {
 		return "passkey_only"
 	case authJWTOnly:
 		return "jwt_only"
+	case authOAuth:
+		return "oauth_only"
 	default:
 		return "oidc_only"
 	}
@@ -3050,7 +3101,7 @@ func Load(w http.ResponseWriter, r *http.Request) {
 		LoginPath:     url.URL{Path: "/auth/login"},
 		LogoutPath:    url.URL{Path: "/auth/logout"},
 		Passkey:       ` + passkeyLiteral(usesPasskey(options.Auth)) + `,
-		ProviderLogin: ` + passkeyLiteral(usesOIDC(options.Auth)) + `,
+		ProviderLogin: ` + passkeyLiteral(servesProviderLogin(options.Auth)) + `,
 		Bootstrap:     ` + passkeyLiteral(options.Auth == authPasskey) + `,
 	}
 	// The ancestor layouts of this route, outermost first. The root has one.

@@ -202,6 +202,11 @@ func applicationSteps(defaults initOptions) []wizardStep[initOptions] {
 				description: "no provider; an administrator issues the first sign-in credential",
 				apply:       setAuth(authPasskey),
 			},
+			wizardChoice[initOptions]{
+				name:        "OAuth provider",
+				description: "log in through a provider that issues no ID Token, such as X; no local emulator",
+				apply:       setAuth(authOAuth),
+			},
 		)),
 		// With a login there is no "no store" answer to give, so this asks
 		// which one rather than whether.
@@ -556,6 +561,8 @@ func authCursor(mode string) int {
 		return 2
 	case authPasskey:
 		return 3
+	case authOAuth:
+		return 4
 	default:
 		return 0
 	}

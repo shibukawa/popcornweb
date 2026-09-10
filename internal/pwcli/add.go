@@ -30,8 +30,20 @@ type addOptions struct {
 	// DSN overrides the engine default. Empty takes the engine's own, so the
 	// answer follows the engine step rather than a value seeded before it.
 	DSN string
+	// AuthMode is the pw init authentication answer the auth capability
+	// installs: authOIDC or authOAuth. Empty means authOIDC, so a caller that
+	// predates the question keeps the mode it always got.
+	AuthMode string
 	// AuthEmulator selects requirement:contrib-devidp over an external provider.
 	AuthEmulator bool
+}
+
+// authMode resolves the login mode the auth capability writes.
+func (o addOptions) authMode() string {
+	if o.AuthMode == "" {
+		return authOIDC
+	}
+	return o.AuthMode
 }
 
 // databaseDSN resolves the DSN a plan writes for this project.
@@ -235,7 +247,30 @@ func addWizardSteps(state projectState, missing []string, defaults addOptions) [
 				func(target *addOptions, value string) { target.DSN = value },
 			),
 		),
+		// The protocol is asked before the provider, because only one of the
+		// two answers has an emulator to offer. A passkey mode stays a pw init
+		// answer: it needs a relying-party registration bound to the origin
+		// this deployment is reached on, which pw add cannot know.
 		when(func(options addOptions) bool { return options.Capability == capabilityAuth },
+			newChoiceStep(
+				"Login",
+				"Which protocol the provider speaks. The framework writes the matching [auth] section; handlers stay yours.",
+				addAuthCursor(defaults.authMode()),
+				wizardChoice[addOptions]{
+					name:        "OIDC",
+					description: "log in against an OpenID Provider",
+					apply:       func(target *addOptions) { target.AuthMode = authOIDC },
+				},
+				wizardChoice[addOptions]{
+					name:        "OAuth provider",
+					description: "log in through a provider that issues no ID Token, such as X; no local emulator",
+					apply:       func(target *addOptions) { target.AuthMode = authOAuth; target.AuthEmulator = false },
+				},
+			),
+		),
+		when(func(options addOptions) bool {
+			return options.Capability == capabilityAuth && usesOIDC(options.authMode())
+		},
 			newChoiceStep(
 				"OIDC provider",
 				"The local emulator signs you in by picking a user from a list, so login works before a real IdP exists.",
@@ -290,4 +325,12 @@ func validateDSN(value string) error {
 		return errors.New("a DSN looks like sqlite://app.db")
 	}
 	return nil
+}
+
+// addAuthCursor maps the login answer onto its position in the choice list.
+func addAuthCursor(mode string) int {
+	if mode == authOAuth {
+		return 1
+	}
+	return 0
 }

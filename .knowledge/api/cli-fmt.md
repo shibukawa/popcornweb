@@ -56,6 +56,7 @@ stdin_mode:
 guard:
   owner: templatefmt formats twice internally and errors rather than returning an unstable result, from v0.3.2
   here: none of its own, for the reason requirement:editor-formatting gives
+  failure_report: a source that does not settle is reported per requirement:formatter-settle-failure-report and fixed upstream
 boundaries:
   writes: only under an explicit run, and never from api:cli-generate or api:cli-dev
   network: none
