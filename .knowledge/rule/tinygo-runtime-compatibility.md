@@ -51,6 +51,13 @@ unsupported_runtime_packages:
     not_reproducible_under: decision:force-tinygo-logic, which selects the TinyGo code paths while still linking the host net/http, so this is one of the few behaviours that has to be tested on the real toolchain
     verified: tinygo test of contrib/internal/authn on 0.41.1 darwin/arm64, found by security review on 2026-08-05, and again on 0.42.0 with Go 1.27.0 on 2026-09-02
     kind: availability rather than admission; nothing is accepted that would otherwise be refused
+  net/http_client_ignores_a_nil_transport:
+    behavior: TinyGo rewrote net/http's send to call a socket round trip declared in its own client.go, which reads neither Client.Transport when it is nil nor http.DefaultTransport; only a Client carrying a non-nil Transport reaches Transport.RoundTrip, and on the wasm target that is the Fetch API implementation in roundtrip_js.go
+    consequence: on a host with no netdev — requirement:cloudflare-workers-build-target is the one, since a Worker owns no socket — http.Get and a bare http.Client fail with "Netdev not set" while the same request through a Transport succeeds, so outbound HTTP appears broken to application code and works for the framework
+    surface: any application code on the Worker target that builds its own client; every framework caller already passes through contrib/internal/authn EnforceDeadlines, which sets a Transport and therefore selects fetch by accident of enforcing a deadline
+    handling: nothing to work around in the framework, because assigning http.DefaultTransport does not help — the nil case never reads it; application code on that target sets Transport explicitly
+    verified: wrangler dev on TinyGo 0.42.0 with Go 1.27.0 on 2026-09-10; Client{} and Client{Timeout} both reported "Netdev not set" while Client{Transport: &http.Transport{}} and DefaultTransport.RoundTrip both answered 404 from api.x.com
+    kind: availability rather than admission; nothing is accepted that would otherwise be refused
   os/signal:
     behavior: registering a handler replaces the default disposition but never delivers to the channel
     consequence: the process stops responding to Ctrl+C and SIGTERM

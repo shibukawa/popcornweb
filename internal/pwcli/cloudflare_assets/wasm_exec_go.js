@@ -367,7 +367,12 @@
 							const v = loadValue(sp + 8);
 							const m = Reflect.get(v, loadString(sp + 16));
 							const args = loadSliceOfValues(sp + 32);
-							const result = Reflect.apply(m, v, args);
+							// Popcorn Web: a global builtin that brand-checks its
+							// receiver -- fetch above all, which is every outbound
+							// request this program can make -- refuses a `this` that
+							// is not the real global object, and the proxy run()
+							// installs is not it.
+							const result = Reflect.apply(m, this._globalReceiver(v), args);
 							sp = this._inst.exports.getsp() >>> 0; // see comment above
 							storeValue(sp + 56, result);
 							this.mem.setUint8(sp + 64, 1);
@@ -480,6 +485,14 @@
 		// argument and exposes it to Go as the global named "context", which is
 		// what github.com/syumai/workers reads. Everything else is the file the
 		// Go release ships.
+		// Popcorn Web: the receiver a method call should carry. The global value
+		// Go holds is a proxy, and a brand-checked builtin such as fetch throws
+		// "Illegal invocation" when applied to one, so a call on the global
+		// resolves back to globalThis. Every other value is its own receiver.
+		_globalReceiver(value) {
+			return value === this._globalProxy ? globalThis : value;
+		}
+
 		async run(instance, context) {
 			if (!(instance instanceof WebAssembly.Instance)) {
 				throw new Error("Go.run: WebAssembly.Instance expected");
@@ -494,6 +507,7 @@
 					return Reflect.get(target, prop, target);
 				},
 			});
+			this._globalProxy = globalProxy;
 			this._values = [ // JS values that Go currently has references to, indexed by reference id
 				NaN,
 				0,
