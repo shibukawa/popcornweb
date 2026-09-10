@@ -3483,7 +3483,7 @@
 {"context": "body", "path": ".knowledge/policy/dotenv-resolution.md", "source": "policy:dotenv-resolution", "target": "policy:config-file-resolution", "target_category": "constraint", "target_type": "policy"}
 {"context": "body", "path": ".knowledge/policy/dotenv-resolution.md", "source": "policy:dotenv-resolution", "target": "system:tinybind", "target_category": "external", "target_type": "system"}
 {"context": "body", "path": ".knowledge/policy/dotenv-resolution.md", "source": "policy:dotenv-resolution", "target": "data:middleware-runtime-config", "target_category": "structure", "target_type": "data"}
-{"context": "body", "path": ".knowledge/policy/dotenv-resolution.md", "source": "policy:dotenv-resolution", "target": "data:storage-runtime-config", "target_category": "structure", "target_type": "data"}
+{"context": "body", "path": ".knowledge/policy/dotenv-resolution.md", "source": "policy:dotenv-resolution", "target": "api:storage-package", "target_category": "interface", "target_type": "api"}
 {"context": "body", "path": ".knowledge/policy/dotenv-resolution.md", "source": "policy:dotenv-resolution", "target": "system:go-envparse", "target_category": "external", "target_type": "system"}
 {"context": "body", "path": ".knowledge/policy/dotenv-resolution.md", "source": "policy:dotenv-resolution", "target": "policy:startup-summary", "target_category": "constraint", "target_type": "policy"}
 {"context": "body", "path": ".knowledge/policy/dotenv-resolution.md", "source": "policy:dotenv-resolution", "target": "api:cli-doctor", "target_category": "interface", "target_type": "api"}

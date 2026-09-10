@@ -27,7 +27,7 @@ read_order:
   - resolve the token from the process environment, then from ./.env and ./.env.local when the process did not declare it
   - hand the four candidates in that order to system:tinybind as LoadOptions.EnvFiles, the .local ones marked Secret, and the secret directory as EnvSecretDirs, which reads them in that order, later source winning on the same name, under the process environment
   - the order is the one Vite and Next read the family in: the environment's own file outranks a machine-wide local one, and the environment's local file outranks everything
-  - keep the composed lines for the environment-carried arrays of data:middleware-runtime-config and data:storage-runtime-config, which the framework decodes outside the load
+  - keep the composed lines for the environment-carried arrays of data:middleware-runtime-config and api:storage-package, which the framework decodes outside the load
 token:
   process_first: APP_ENV in the process environment is the token, per data:runtime-environment; an empty process value is unset rather than an override
   base_files: APP_ENV in ./.env or ./.env.local is honored when the process did not set it, the local file winning, so a checkout can pin its own environment
