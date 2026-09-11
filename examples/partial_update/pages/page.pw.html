@@ -43,7 +43,8 @@ export component OrderTable(id: string, query: string): html {
         <th>Order</th>
         <th>Owner</th>
         <th>Placed</th>
-        <th></th></tr>
+        <th></th>
+      </tr>
     </thead>
     <tbody>
       {for order in SearchOrders(query)}

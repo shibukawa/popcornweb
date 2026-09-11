@@ -9,8 +9,8 @@ export statement FindAccount(issuer: string, claim: string, value: string): sql.
     ON external_identities.account_id = accounts.id
   WHERE
     external_identities.issuer = {issuer}
-    AND  external_identities.claim = {claim}
-    AND  external_identities.value = {value}
+    AND external_identities.claim = {claim}
+    AND external_identities.value = {value}
 }
 
 export statement InsertAccount(id: string, display_name: string, email: string): sql.exec {
