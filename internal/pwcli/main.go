@@ -44,6 +44,8 @@ func Main(args []string, stdout, stderr io.Writer) int {
 		err = runDev(ctx, args[1:], stdout, stderr)
 	case "doctor":
 		err = runDoctor(ctx, args[1:], stdout, stderr)
+	case "request":
+		err = runRequest(ctx, args[1:], stdout, stderr)
 	case "rename":
 		err = runRename(args[1:], stdout)
 	case "lsp":
@@ -63,6 +65,13 @@ func Main(args []string, stdout, stderr io.Writer) int {
 		if errors.As(err, &findings) {
 			fmt.Fprintln(stderr, findings.command+":", findings.message)
 			return 1
+		}
+		// A command that shares its exit codes with a tool its callers
+		// already script against says which one.
+		var coded *exitCodeError
+		if errors.As(err, &coded) {
+			fmt.Fprintln(stderr, "pw:", coded.message)
+			return coded.code
 		}
 		fmt.Fprintln(stderr, "pw:", err)
 		return 1
@@ -92,6 +101,7 @@ var commandSummaries = []struct{ name, summary string }{
 	{"build", "run generate and then compile the project"},
 	{"dev", "watch, regenerate, rebuild, and restart"},
 	{"doctor", "report what a named environment will actually run"},
+	{"request", "send one request to the running application, routed by its OpenAPI"},
 	{"rename", "rename a template declaration and everything that names it"},
 	{"lsp", "serve editor analysis over the Language Server Protocol"},
 	{"version", "print the version, revision, and toolchain"},
@@ -129,6 +139,12 @@ func printUsage(w io.Writer) {
 	fmt.Fprintln(w, "  Without it the artifact carries neither, which is what staging and")
 	fmt.Fprintln(w, "  production want: an artifact that ships its own sources rehearses nothing.")
 	fmt.Fprintln(w, doctorUsage)
+	fmt.Fprintln(w, requestUsage)
+	fmt.Fprintln(w, "  curl flags keep their meaning: -X -d -F -H -b -c -u -i -f -s -L -G --json.")
+	fmt.Fprintln(w, "  With the catalog, -d key=value goes where the handler reads it: a path")
+	fmt.Fprintln(w, "  segment, the query, a header, a cookie, or the body. --format=json")
+	fmt.Fprintln(w, "  prints one object for an agent. --url picks the origin; without it the")
+	fmt.Fprintln(w, "  running pw dev application is asked, then the configured port is tried.")
 	fmt.Fprintln(w, renameUsage)
 	fmt.Fprintln(w, "  Previews the edit set; --apply writes it. The set reaches handwritten")
 	fmt.Fprintln(w, "  Go, so seeing it first is the point. Generated files are not edited:")

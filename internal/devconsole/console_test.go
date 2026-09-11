@@ -161,6 +161,42 @@ func TestLoopStateIsReadableAsJSON(t *testing.T) {
 	}
 }
 
+func TestApplicationAddressIsEmptyUntilAnnouncedAndThenTheAnnouncedURL(t *testing.T) {
+	attach := NewAttachment("secret")
+	console, err := New("127.0.0.1:0", Project{Name: "app", Environment: "dev"}, nil, attach)
+	if err != nil {
+		t.Fatalf("new: %v", err)
+	}
+	t.Cleanup(console.Close)
+
+	_, body := get(t, console.URL()+"/api/application")
+	var address ApplicationAddress
+	if err := json.Unmarshal([]byte(body), &address); err != nil {
+		t.Fatalf("decode %q: %v", body, err)
+	}
+	if address.Listening != "" {
+		t.Errorf("listening = %q before any announcement", address.Listening)
+	}
+
+	request, _ := http.NewRequest(http.MethodPost, console.URL()+"/api/listening", strings.NewReader("http://localhost:8081"))
+	request.Header.Set("X-Pw-Attach-Token", "secret")
+	response, err := http.DefaultClient.Do(request)
+	if err != nil {
+		t.Fatal(err)
+	}
+	response.Body.Close()
+	if response.StatusCode != http.StatusNoContent {
+		t.Fatalf("announce: %d", response.StatusCode)
+	}
+	_, body = get(t, console.URL()+"/api/application")
+	if err := json.Unmarshal([]byte(body), &address); err != nil {
+		t.Fatalf("decode %q: %v", body, err)
+	}
+	if address.Listening != "http://localhost:8081" {
+		t.Errorf("listening = %q, want the announced URL", address.Listening)
+	}
+}
+
 // A console that could not listen is an ordinary outcome, and every call site
 // in the loop would otherwise need a branch for it.
 func TestNilConsoleToleratesEveryCall(t *testing.T) {

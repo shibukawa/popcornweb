@@ -27,6 +27,7 @@ Commands:
   build     run generate and then compile the project
   dev       watch, regenerate, rebuild, and restart
   doctor    report what a named environment will actually run
+  request   send one request to the running application, routed by its OpenAPI
   version   print the version, revision, and toolchain
   help      print this message
 ```
@@ -50,6 +51,7 @@ Install it with Homebrew, Nix, a release archive, or the Go toolchain — see
 | [`pw dev`](/pw/project/dev/) | watch, regenerate, migrate, and restart |
 | [`pw build`](/pw/project/build/) | produce a release binary |
 | [`pw doctor`](/pw/project/doctor/) | report what an environment would run, and what is wrong |
+| [`pw request`](/pw/project/request/) | send one request to the running application, routed by its OpenAPI document |
 | `pw rename` | rename a template declaration and everything that names it |
 | `pw lsp` | serve editor analysis over the Language Server Protocol |
 
@@ -80,7 +82,9 @@ the search reaches the top without that file, the command fails with
 ## Exit status
 
 `0` on success, `1` on a command failure, `2` when no command was given. Errors
-are written to standard error prefixed with `pw:`.
+are written to standard error prefixed with `pw:`. [`pw request`](/pw/project/request/)
+shares curl's codes instead, so `2` is a usage error there and `22` a failed
+status under `-f`.
 
 ## Not to be confused with
 

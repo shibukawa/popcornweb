@@ -21,6 +21,7 @@
 {"category": "interface", "id": "api:cli-migrate", "path": ".knowledge/api/cli-migrate.md", "role": "primary", "title": "pw migrate", "type": "api"}
 {"category": "interface", "id": "api:cli-new", "path": ".knowledge/api/cli-new.md", "role": "primary", "title": "pw new", "type": "api"}
 {"category": "interface", "id": "api:cli-package", "path": ".knowledge/api/cli-package.md", "role": "primary", "title": "Package Authoring Commands", "type": "api"}
+{"category": "interface", "id": "api:cli-request", "path": ".knowledge/api/cli-request.md", "role": "primary", "title": "pw request", "type": "api"}
 {"category": "interface", "id": "api:cli-seed", "path": ".knowledge/api/cli-seed.md", "role": "primary", "title": "pw seed", "type": "api"}
 {"category": "interface", "id": "api:cli-session-schema", "path": ".knowledge/api/cli-session-schema.md", "role": "primary", "title": "pw session schema", "type": "api"}
 {"category": "interface", "id": "api:cli-version", "path": ".knowledge/api/cli-version.md", "role": "primary", "title": "pw version", "type": "api"}
@@ -98,6 +99,7 @@
 {"category": "structure", "id": "data:bot-user-agent-catalog", "path": ".knowledge/data/bot-user-agent-catalog.md", "role": "supporting", "title": "Bot User Agent Catalog", "type": "data"}
 {"category": "structure", "id": "data:browser-report-record", "path": ".knowledge/data/browser-report-record.md", "role": "supporting", "title": "Browser Report Record", "type": "data"}
 {"category": "structure", "id": "data:cache-store-set", "path": ".knowledge/data/cache-store-set.md", "role": "supporting", "title": "Cache Store Set", "type": "data"}
+{"category": "structure", "id": "data:cli-identity", "path": ".knowledge/data/cli-identity.md", "role": "supporting", "title": "CLI Identity", "type": "data"}
 {"category": "structure", "id": "data:component-boundary", "path": ".knowledge/data/component-boundary.md", "role": "supporting", "title": "Component Boundary Metadata", "type": "data"}
 {"category": "structure", "id": "data:component-package-manifest", "path": ".knowledge/data/component-package-manifest.md", "role": "supporting", "title": "Component Package Manifest", "type": "data"}
 {"category": "structure", "id": "data:compression-runtime-config", "path": ".knowledge/data/compression-runtime-config.md", "role": "supporting", "title": "Compression Runtime Config", "type": "data"}
@@ -126,6 +128,7 @@
 {"category": "structure", "id": "data:migration-source", "path": ".knowledge/data/migration-source.md", "role": "supporting", "title": "Migration Source Tree", "type": "data"}
 {"category": "structure", "id": "data:oauth-provider-profile", "path": ".knowledge/data/oauth-provider-profile.md", "role": "supporting", "title": "OAuth Provider Profile", "type": "data"}
 {"category": "structure", "id": "data:observability-runtime-config", "path": ".knowledge/data/observability-runtime-config.md", "role": "supporting", "title": "Observability Runtime Config", "type": "data"}
+{"category": "structure", "id": "data:operation-catalog", "path": ".knowledge/data/operation-catalog.md", "role": "supporting", "title": "Operation Catalog", "type": "data"}
 {"category": "structure", "id": "data:page-route-table", "path": ".knowledge/data/page-route-table.md", "role": "supporting", "title": "Page Route Table", "type": "data"}
 {"category": "structure", "id": "data:passkey-credential", "path": ".knowledge/data/passkey-credential.md", "role": "supporting", "title": "Passkey Credential", "type": "data"}
 {"category": "structure", "id": "data:preference-hint-config", "path": ".knowledge/data/preference-hint-config.md", "role": "supporting", "title": "Preference Hint Runtime Config", "type": "data"}
@@ -270,6 +273,7 @@
 {"category": "constraint", "id": "decision:preset-first-bootstrap", "path": ".knowledge/decision/preset-first-bootstrap.md", "role": "supporting", "title": "Preset First, Questions Behind It", "type": "decision"}
 {"category": "constraint", "id": "decision:propagation-header-access", "path": ".knowledge/decision/propagation-header-access.md", "role": "supporting", "title": "One Trace Context Validator, Two Header Types", "type": "decision"}
 {"category": "constraint", "id": "decision:report-endpoint-above-the-session", "path": ".knowledge/decision/report-endpoint-above-the-session.md", "role": "supporting", "title": "The Report Endpoint Is Answered Above The Session", "type": "decision"}
+{"category": "constraint", "id": "decision:request-execution-target", "path": ".knowledge/decision/request-execution-target.md", "role": "supporting", "title": "Request Execution Target", "type": "decision"}
 {"category": "constraint", "id": "decision:response-content-codings", "path": ".knowledge/decision/response-content-codings.md", "role": "supporting", "title": "Response Content Codings", "type": "decision"}
 {"category": "constraint", "id": "decision:response-encoders-are-unconditional", "path": ".knowledge/decision/response-encoders-are-unconditional.md", "role": "supporting", "title": "Every Build Carries Both Response Encoders", "type": "decision"}
 {"category": "constraint", "id": "decision:root-pw-api", "path": ".knowledge/decision/root-pw-api.md", "role": "supporting", "title": "Root pw API", "type": "decision"}
@@ -321,6 +325,7 @@
 {"category": "behavior", "id": "flow:bearer-request-authentication", "path": ".knowledge/flow/bearer-request-authentication.md", "role": "primary", "title": "Bearer Request Authentication Flow", "type": "flow"}
 {"category": "behavior", "id": "flow:capability-addition", "path": ".knowledge/flow/capability-addition.md", "role": "primary", "title": "Capability Addition Flow", "type": "flow"}
 {"category": "behavior", "id": "flow:cli-release", "path": ".knowledge/flow/cli-release.md", "role": "primary", "title": "CLI Release Flow", "type": "flow"}
+{"category": "behavior", "id": "flow:cli-request", "path": ".knowledge/flow/cli-request.md", "role": "primary", "title": "CLI Request Flow", "type": "flow"}
 {"category": "behavior", "id": "flow:component-package-consumption", "path": ".knowledge/flow/component-package-consumption.md", "role": "primary", "title": "Component Package Consumption", "type": "flow"}
 {"category": "behavior", "id": "flow:database-migration", "path": ".knowledge/flow/database-migration.md", "role": "primary", "title": "Database Migration Flow", "type": "flow"}
 {"category": "behavior", "id": "flow:derived-asset-build", "path": ".knowledge/flow/derived-asset-build.md", "role": "primary", "title": "Derived Asset Build Flow", "type": "flow"}
@@ -445,6 +450,7 @@
 {"category": "objective", "id": "requirement:classic-web-acceptance", "path": ".knowledge/requirement/classic-web-acceptance.md", "role": "primary", "title": "Classic Web Acceptance", "type": "requirement"}
 {"category": "objective", "id": "requirement:cli-distribution", "path": ".knowledge/requirement/cli-distribution.md", "role": "primary", "title": "pw CLI Distribution", "type": "requirement"}
 {"category": "objective", "id": "requirement:cli-generate-check-rename", "path": ".knowledge/requirement/cli-generate-check-rename.md", "role": "primary", "title": "pw generate And pw check Renaming", "type": "requirement"}
+{"category": "objective", "id": "requirement:cli-request", "path": ".knowledge/requirement/cli-request.md", "role": "primary", "title": "CLI Request Invocation", "type": "requirement"}
 {"category": "objective", "id": "requirement:client-behaviour-adoption", "path": ".knowledge/requirement/client-behaviour-adoption.md", "role": "primary", "title": "Client Behaviour Adoption", "type": "requirement"}
 {"category": "objective", "id": "requirement:client-signal-registry", "path": ".knowledge/requirement/client-signal-registry.md", "role": "primary", "title": "Client Signal Registry", "type": "requirement"}
 {"category": "objective", "id": "requirement:cloudflare-cache-memo-store", "path": ".knowledge/requirement/cloudflare-cache-memo-store.md", "role": "primary", "title": "Cloudflare Cache Memo Store", "type": "requirement"}
@@ -659,6 +665,7 @@
 {"category": "constraint", "id": "rule:query-array-wire-format", "path": ".knowledge/rule/query-array-wire-format.md", "role": "supporting", "title": "Query Array Wire Format", "type": "rule"}
 {"category": "constraint", "id": "rule:query-reproduction-format", "path": ".knowledge/rule/query-reproduction-format.md", "role": "supporting", "title": "Query Reproduction Format", "type": "rule"}
 {"category": "constraint", "id": "rule:rdb-dsn-resolution", "path": ".knowledge/rule/rdb-dsn-resolution.md", "role": "supporting", "title": "RDB DSN Scheme Resolution", "type": "rule"}
+{"category": "constraint", "id": "rule:request-parameter-routing", "path": ".knowledge/rule/request-parameter-routing.md", "role": "supporting", "title": "Request Parameter Routing", "type": "rule"}
 {"category": "constraint", "id": "rule:route-and-template-checks", "path": ".knowledge/rule/route-and-template-checks.md", "role": "supporting", "title": "Route and Template Checks", "type": "rule"}
 {"category": "constraint", "id": "rule:savepoint-dialect-support", "path": ".knowledge/rule/savepoint-dialect-support.md", "role": "supporting", "title": "Savepoint Dialect Support", "type": "rule"}
 {"category": "constraint", "id": "rule:server-action-authoring", "path": ".knowledge/rule/server-action-authoring.md", "role": "supporting", "title": "Server Action Authoring Rules", "type": "rule"}

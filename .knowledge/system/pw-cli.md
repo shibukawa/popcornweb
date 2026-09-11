@@ -19,6 +19,7 @@ commands:
   - api:cli-version
   - api:cli-fmt
   - api:cli-lsp, proposed by decision:language-server-in-pw-cli
+  - api:cli-request, first slice built 2026-09-11 per requirement:cli-request
 configuration: data:project-config
 runtime_dependency_policy: concept:public-package-boundaries
 execution_split: decision:host-tools-target-runtime
