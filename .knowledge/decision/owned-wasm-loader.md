@@ -13,7 +13,9 @@ context:
   - the two facts together mean the correct loader is neither file, and the merge of the two is what the probe hand-wrote
 shape:
   files: one wasm_exec.js per compiler and one worker.mjs, embedded in the CLI beside the code that writes the stage
-  derivation: each wasm_exec.js is the pinned compiler's own file with one change, the context proxy the Go side reads; the license headers stay
+  derivation: each wasm_exec.js is the pinned compiler's own file with two changes, the context proxy the Go side reads and the receiver that proxy then costs; the license headers stay
+  context_proxy: the global Go holds is a Proxy over globalThis answering one added property, so a per-request context reaches syscall/js without writing to the isolate's own global, which two overlapping requests would race on
+  proxy_receiver: valueCall resolves a call on that proxy back to globalThis before applying it, because a brand-checked global builtin refuses a receiver that is not the real global object; without it fetch throws "Illegal invocation" and traps the module, which took every outbound request — the OIDC discovery, the token exchange, the JWKS fetch, and the oauth_only profile request — out of the Worker target while the build reported nothing
   worker_mjs: exports fetch only, instantiates the cached module per request, exposes the tryCatch helper and the ready signal the Go side calls, and hands the request to the handler the Go side registered
   pinning: the files are tied to the compiler versions the release supports, decision:tinygo-042-baseline and the go directive, and a compiler bump is where they are re-derived
 why_not_the_upstream_generator:

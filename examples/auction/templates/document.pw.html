@@ -13,6 +13,8 @@ export component Document(children: html?): html {
       <title>Auction Room</title>
       <link rel="stylesheet" href='{AssetURL("app.css")}'>
       <link rel="stylesheet" href='{AssetURL("generated/app.css")}'>
-      <script type="module" src="{RuntimeScriptURL()}"></script></head>
-    <body class="m-0 bg-stone-50 text-stone-950 antialiased"><slot/></body></html>
+      <script type="module" src="{RuntimeScriptURL()}"></script>
+    </head>
+    <body class="m-0 bg-stone-50 text-stone-950 antialiased"><slot/></body>
+  </html>
 }

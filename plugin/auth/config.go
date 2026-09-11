@@ -188,12 +188,16 @@ type Config struct {
 	// predicates decide what is built, and these decide what is reported, so
 	// the two have to agree. The enabled switch is not repeated: Mode answers
 	// to it, and a condition on Mode inherits that gate transitively.
-	OIDC OIDCConfig `dependon:".mode=oidc_only,oidc_passkey" help:"The three login-method sections name the modes they belong to, so a summary reports the methods this deployment offers rather than all of them. The lists restate usesOIDC, usesPasskey, and usesJWT below; those predicates decide what is built, and these decide what is reported, so the two have to agree. The enabled switch is not repeated: Mode answers to it, and a condition on Mode inherits that gate transitively"`
+	//
+	// The help text stays short here, and in every tag: TinyGo refuses a struct
+	// tag over 255 bytes, so a comment copied into one takes plugin/auth out of
+	// every TinyGo build — which is the Cloudflare Workers build as well.
+	OIDC OIDCConfig `dependon:".mode=oidc_only,oidc_passkey" help:"provider settings, read by oidc_only and oidc_passkey"`
 	// The key tag is load-bearing. Generation derives a TOML key from the field
 	// name and splits it at every lower-to-upper boundary, which turns OAuth
 	// into o_auth — OIDC survives only because it is all caps. The setting a
 	// deployment writes is [auth.oauth].
-	OAuth   OAuthConfig   `key:"oauth" dependon:".mode=oauth_only" help:"The key tag is load-bearing. Generation derives a TOML key from the field name and splits it at every lower-to-upper boundary, which turns OAuth into o_auth — OIDC survives only because it is all caps. The setting a deployment writes is [auth.oauth]"`
+	OAuth   OAuthConfig   `key:"oauth" dependon:".mode=oauth_only" help:"provider settings, read by oauth_only; the TOML key is [auth.oauth]"`
 	Passkey PasskeyConfig `dependon:".mode=oidc_passkey,passkey_only"`
 	JWT     JWTConfig     `dependon:".mode=jwt_only"`
 }

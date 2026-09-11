@@ -83,7 +83,7 @@ export statement ListOpenRooms(viewerAccountID: string): sql.many<LobbyRoom> {
       FROM room_participants AS viewer_participation
       WHERE
         viewer_participation.room_id = room.id
-        AND  viewer_participation.account_id = {viewerAccountID}
+        AND viewer_participation.account_id = {viewerAccountID}
     ) AS isParticipant
   FROM rooms AS room
   JOIN accounts AS creator
@@ -149,7 +149,7 @@ export statement GetAuctionRoom(roomID: int, viewerAccountID: string): sql.optio
       FROM room_participants AS viewer_participation
       WHERE
         viewer_participation.room_id = room.id
-        AND  viewer_participation.account_id = {viewerAccountID}
+        AND viewer_participation.account_id = {viewerAccountID}
     ) AS viewerIsParticipant
   FROM rooms AS room
   JOIN accounts AS creator

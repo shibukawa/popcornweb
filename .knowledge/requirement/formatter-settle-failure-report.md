@@ -6,7 +6,7 @@ title: A Non-Settling Template Is Reproducible From Its Report
 When api:cli-fmt refuses a .pw.html source because formatting does not settle, the defect is fixed upstream in system:tinybind and the report a user can make carries what that fix needs, because the guard already protects the file and the remaining cost is the round trip.
 
 ```yaml
-status: the reported defect is fixed upstream in system:tinybind v0.5.32 and the pin moved on 2026-09-10; the report_shape below stays proposed
+status: the two reported defects are fixed upstream, the first in system:tinybind v0.5.32 and the second in v0.5.33, and the pin moved to v0.5.33 on 2026-09-11; the report_shape below stays proposed
 priority: should
 defect:
   message: "templatefmt: <path>: formatting does not settle, so nothing was changed; this is a formatter bug, please report the file"
@@ -17,9 +17,10 @@ reproduction:
   local: every api:cli-init scaffold variant tried on 2026-09-10 and every example project settle under system:tinybind v0.5.31, so the trigger is a construct in the reported file that no fixture holds
   needed: the source file itself, or a reduced excerpt that still fails, plus the tinybind version pinned in the project's go.mod
   found: the preserve-whitespace printer copied the run before an {else}, {else if}, {fallback}, or {recover} label and then opened a line on top of it, so every pass added one whitespace-only line; the label now rides the copied run, per upstream 26d7f8c
+  found_second: a brace shaped like an insertion in a head contribution's script body, the {z}/{x}/{y} of a Leaflet tile URL, gained an escape pair on every pass because the printer ran the raw-text escape over a body the parser reads verbatim; those bodies now go back byte for byte, per upstream 196a404
   known_classes:
     escape_round_trip: a brace run in template text or an attribute value that is escaped on print and decoded on the next parse
-    raw_text_braces: a brace in a script or style body near the insertion gate, the class fixed by a700e67 upstream
+    raw_text_braces: a brace in a script or style body near the insertion gate, fixed by a700e67 upstream, and in a verbatim head or component script body by 196a404
     whitespace_run: a run reshaped on the first pass and dropped or recreated on the second, which the fidelity rules forbid
     line_width: a line that wraps under the soft width on pass one and re-glues on pass two
   method: format once with the guard bypassed, diff the first and second outputs, and reduce the source to the smallest region that keeps the diff
@@ -33,6 +34,7 @@ fix_path:
   upstream: the printer defect is fixed in system:tinybind with the reduced source as a fixture in its settle test set
   downstream: this repository moves the pin and re-runs pw fmt --check on every example, per requirement:template-formatting
   pin_move_verified: v0.5.32 formats every .pw source in this repository byte-for-byte as v0.5.31 did, so the fix changes nothing already formatted; the same five example sources and two fixtures were already unformatted before the move and stay so
+  pin_move_v0_5_33: not byte-for-byte, because upstream 486566b corrects layouts v0.5.32 accepted as settled; eleven example sources were reformatted with the move, where a closer that rode its last child in a free container, as </script></head> and <th></th></tr>, takes its own line and a boolean operator opening a SQL line loses its second space; every example regenerates and builds after, the scaffold follows by itself through canonicalScaffoldSource, and the internal/pagesfixture sources unformatted under v0.5.32 stay unformatted and unchanged
   workaround: none in pw fmt; naming other paths skips the file, and the file stays unformatted until the pin moves
 acceptance:
   - the reported file, once obtained, fails under the pinned version and settles under the fixed one

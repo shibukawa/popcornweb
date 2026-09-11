@@ -358,7 +358,14 @@
 						const args = loadSliceOfValues(args_ptr, args_len, args_cap);
 						try {
 							const m = Reflect.get(v, name);
-							storeValue(ret_addr, Reflect.apply(m, v, args));
+							// Popcorn Web: a global builtin that brand-checks its
+							// receiver -- fetch above all, which is every outbound
+							// request this program can make -- refuses a `this` that
+							// is not the real global object, and the proxy run()
+							// installs is not it. Applying such a call to globalThis
+							// keeps the proxy's one added property visible to a
+							// lookup while leaving the receiver a builtin accepts.
+							storeValue(ret_addr, Reflect.apply(m, this._globalReceiver(v), args));
 							mem().setUint8(ret_addr + 8, 1);
 						} catch (err) {
 							storeValue(ret_addr, err);
@@ -478,6 +485,14 @@
 		// argument and exposes it to Go as the global named "context", which is
 		// what github.com/syumai/workers reads. Everything else is the file the
 		// TinyGo release ships.
+		// Popcorn Web: the receiver a method call should carry. The global value
+		// Go holds is a proxy, and a brand-checked builtin such as fetch throws
+		// "Illegal invocation" when applied to one, so a call on the global
+		// resolves back to globalThis. Every other value is its own receiver.
+		_globalReceiver(value) {
+			return value === this._globalProxy ? globalThis : value;
+		}
+
 		async run(instance, context) {
 			this._inst = instance;
 			const globalProxy = new Proxy(globalThis, {
@@ -488,6 +503,7 @@
 					return Reflect.get(target, prop, target);
 				},
 			});
+			this._globalProxy = globalProxy;
 			this._values = [ // JS values that Go currently has references to, indexed by reference id
 				NaN,
 				0,

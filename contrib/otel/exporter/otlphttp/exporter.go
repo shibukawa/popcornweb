@@ -69,7 +69,14 @@ func New(config Config) (*Exporter, error) {
 		return nil, fmt.Errorf("otel otlphttp metrics endpoint: %w", err)
 	}
 	if config.Client == nil {
-		config.Client = http.DefaultClient
+		// Named rather than left nil, which is what http.DefaultClient is. On
+		// host Go the two are the same client; under TinyGo they are not, because
+		// its net/http reads Client.Transport only when it is set and otherwise
+		// takes a socket round trip of its own — and a Cloudflare Worker owns no
+		// socket, so an export from one would fail with "Netdev not set" while
+		// the same request through a transport succeeds. See
+		// rule:tinygo-runtime-compatibility.
+		config.Client = &http.Client{Transport: http.DefaultTransport}
 	}
 	config.Client = untraced(config.Client)
 	if config.Headers == nil {
