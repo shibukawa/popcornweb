@@ -177,6 +177,59 @@ func TestOAuthModeRefusesAClaimTheProviderNeverReports(t *testing.T) {
 	}
 }
 
+// An http redirect URL needs the loopback allowance, and the two spellings of
+// one deployment have to agree about that.
+//
+// The path-only form was already refused here. The absolute form was accepted
+// and then refused by the client at the first login, reported to the browser as
+// a 503 — one configuration, two answers, and the slower one arriving after
+// somebody pressed sign in.
+func TestAnHTTPRedirectURLRequiresTheLoopbackAllowance(t *testing.T) {
+	for _, section := range []struct {
+		mode string
+		key  string
+		set  func(*Config, string, bool)
+	}{
+		{ModeOIDCOnly, "auth.oidc.redirect_url", func(c *Config, url string, allow bool) {
+			c.OIDC.RedirectURL, c.OIDC.AllowLoopbackHTTP = url, allow
+		}},
+		{ModeOAuthOnly, "auth.oauth.redirect_url", func(c *Config, url string, allow bool) {
+			c.OAuth.RedirectURL, c.OAuth.AllowLoopbackHTTP = url, allow
+		}},
+	} {
+		t.Run(section.mode, func(t *testing.T) {
+			// What pw init used to write for an external OIDC provider: a
+			// loopback callback without the allowance the client needs.
+			config := baseConfig(section.mode)
+			section.set(&config, "http://localhost:8080/auth/callback", false)
+			assertInvalid(t, config, section.key)
+			assertInvalid(t, config, "allow_loopback_http")
+
+			// The pair every configuration in this repository writes.
+			config = baseConfig(section.mode)
+			section.set(&config, "http://localhost:8080/auth/callback", true)
+			if err := config.validate(); err != nil {
+				t.Fatalf("the loopback pair was refused: %v", err)
+			}
+
+			// The allowance covers loopback only, so it cannot stand in for a
+			// deployment that simply forgot the s.
+			config = baseConfig(section.mode)
+			section.set(&config, "http://app.example/auth/callback", true)
+			assertInvalid(t, config, "loopback only")
+
+			// https needs no allowance either way.
+			for _, allow := range []bool{true, false} {
+				config = baseConfig(section.mode)
+				section.set(&config, "https://app.example/auth/callback", allow)
+				if err := config.validate(); err != nil {
+					t.Fatalf("an https redirect with allow_loopback_http=%v was refused: %v", allow, err)
+				}
+			}
+		})
+	}
+}
+
 // policy:provider-session-scope already says a mode reaching no provider session
 // refuses the settings that claim to end one. Only a typed value is refused;
 // every mode binds the default.

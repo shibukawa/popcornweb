@@ -188,6 +188,11 @@ optional settings**. The application refuses to start until they are supplied
 in the file or through `AUTH_OIDC_*` environment variables; the remaining
 alternative is to use the emulator.
 
+The scaffolded `redirect_url` is `http://localhost:8080/auth/callback`, and
+`allow_loopback_http = true` is written beside it because the client accepts an
+`http` callback only under that allowance. A deployed configuration names an
+`https` URL and drops the line; startup refuses the two written apart.
+
 ## Session storage
 
 An `--auth` mode asks one more question: which server backend holds the session

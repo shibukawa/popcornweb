@@ -916,7 +916,7 @@ func (c Config) validateOIDCRedirect() error {
 		return fmt.Errorf("auth.oidc.redirect_url is invalid: %w", err)
 	}
 	if parsed.IsAbs() {
-		return nil
+		return absoluteRedirectScheme("auth.oidc.redirect_url", parsed, c.OIDC.AllowLoopbackHTTP)
 	}
 	if !c.OIDC.AllowLoopbackHTTP {
 		return errors.New("a path-only auth.oidc.redirect_url requires auth.oidc.allow_loopback_http")
@@ -971,7 +971,7 @@ func (c Config) validateOAuthRedirect() error {
 		return fmt.Errorf("auth.oauth.redirect_url is invalid: %w", err)
 	}
 	if parsed.IsAbs() {
-		return nil
+		return absoluteRedirectScheme("auth.oauth.redirect_url", parsed, c.OAuth.AllowLoopbackHTTP)
 	}
 	if !c.OAuth.AllowLoopbackHTTP {
 		return errors.New("a path-only auth.oauth.redirect_url requires auth.oauth.allow_loopback_http")
@@ -982,6 +982,36 @@ func (c Config) validateOAuthRedirect() error {
 	}
 	if raw != c.CallbackPath {
 		return fmt.Errorf("auth.oauth.redirect_url path %q must match auth.callback_path %q", raw, c.CallbackPath)
+	}
+	return nil
+}
+
+// absoluteRedirectScheme applies to an absolute redirect URL the rule the
+// path-only form beside it already applies.
+//
+// The two spellings describe the same deployment. "/auth/callback" with
+// allow_loopback_http false was refused here, while
+// "http://localhost:8080/auth/callback" with the same flag was accepted and
+// then refused by the client at the first login, as an invalid configuration
+// reported to the browser as a 503. One configuration, two answers, and the
+// slower one arrives after a person has already pressed sign in.
+//
+// The rule is the client's own: an http redirect needs the allowance and a
+// loopback host, and https needs neither. Stating it once at startup names both
+// keys while somebody is still reading the file.
+func absoluteRedirectScheme(key string, parsed *url.URL, allowLoopbackHTTP bool) error {
+	if parsed.Scheme != "http" {
+		// https is accepted, and any other scheme is refused by the client for
+		// reasons of its own rather than by this pairing rule.
+		return nil
+	}
+	if !allowLoopbackHTTP {
+		return fmt.Errorf("%s is http, which the login accepts only under %s; set that true for a loopback development callback, or name an https URL",
+			key, strings.TrimSuffix(key, "redirect_url")+"allow_loopback_http")
+	}
+	if !isLoopbackHost(strings.ToLower(parsed.Hostname())) {
+		return fmt.Errorf("%s is http on %q, and the allowance covers loopback only; name an https URL",
+			key, parsed.Hostname())
 	}
 	return nil
 }

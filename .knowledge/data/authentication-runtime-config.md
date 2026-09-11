@@ -124,6 +124,8 @@ mode_validation:
     revocation_backend: cookie is refused, per policy:token-revocation
     development: jwt.dev is accepted only under the locks of policy:dev-token-relaxation, and jwt.issuer, jwt.audience, and the rest stay required even then, so turning the relaxation off leaves a configuration that still serves
   shared:
+    - an http redirect_url is refused unless the mode's allow_loopback_http is set and the host is loopback, whichever section it is in; the rule is the client's own, and stating it at startup is what keeps the two spellings of one deployment from disagreeing
+    - the path-only redirect_url already carried that rule, while the absolute form skipped it and was refused by the client at the first login instead, reported as a 503 after somebody pressed sign in
     - session.idle_timeout must not exceed session.ttl, and session.renewal_interval must be shorter than both
     - a guard window of api:assurance-guard longer than session.ttl is refused, because a requirement no live session can satisfy is a configuration error rather than a permanent challenge loop
     - passkey.rp_id must be a registrable domain or localhost, never an IP literal, because an IP cannot be an RP ID

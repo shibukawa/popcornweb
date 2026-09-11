@@ -19,7 +19,7 @@ context:
   - the name reads like the easy answer for anyone writing an API, which is exactly the reader least likely to have the three answers yet
 decision:
   binding: data:authentication-runtime-config accepts mode jwt_only and validates the whole auth.jwt prefix, so a hand-written configuration serves
-  init: api:cli-init does not offer it in the authentication question and does not accept it as an --auth value; the enum stays none, oidc, oidc-passkey, and passkey. The question half stands; the "no command writes it" half is reversed by the amendment above
+  init: api:cli-init does not offer it in the authentication question and does not accept it as an --auth value; the enum stays none, oidc, oidc-passkey, passkey, and oauth, the last a browser login this question can express, per requirement:init-oauth-login-choice. The question half stands; the "no command writes it" half is reversed by the amendment above
   add: it is not a member of the requirement:incremental-project-capabilities catalog, so api:cli-add never lists it and its auth capability continues to mean the browser login
   doctor: api:cli-doctor validates a project already configured for it and never suggests it, per rule:configuration-advisories
   discovery: the mode is found by reading this catalog or the reference documentation, not by answering a wizard question

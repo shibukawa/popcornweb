@@ -10,7 +10,7 @@ status: accepted
 decided: user 2026-08-05
 amends: decision:jwt-only-mode-not-scaffolded
 what_that_decision_got_right:
-  keeps_manual: the authentication row of decision:navigable-answer-hub does not offer jwt_only, so the Manual path cannot reach the mode; its values stay none, oidc, oidc-passkey, and passkey
+  keeps_manual: the authentication row of decision:navigable-answer-hub does not offer jwt_only, so the Manual path cannot reach the mode; its values stay none, oidc, oidc-passkey, passkey, and oauth
   keeps_flag: --auth does not accept it, and an unrecognized value is rejected rather than passed through
   keeps_catalog: it stays out of the requirement:incremental-project-capabilities catalog, so api:cli-add never lists it and the auth capability still means the browser login
   keeps_doctor: api:cli-doctor never suggests it

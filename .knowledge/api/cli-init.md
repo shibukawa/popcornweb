@@ -93,6 +93,7 @@ questions:
       when: the selected mode mounts api:passkey-endpoints
       config: passkey.rp_id localhost, passkey.origins the development origin, user_verification required, discoverable preferred
       origin: an OIDC redirect_url in a passkey mode uses localhost rather than 127.0.0.1, because an origin has to sit inside the RP ID and an address can never be one
+      loopback_pair: a written-out loopback http redirect_url is scaffolded together with allow_loopback_http true, for every provider answer; the external-provider OIDC branch wrote them apart and produced a project that started and then answered the first login 503, which data:authentication-runtime-config now refuses at startup
       accounts: SetAccountLookup for every passkey mode, plus SetAccountActivator and an IssueBootstrapCredential wrapper for passkey_only
       browser: public/passkey.js, dependency free, because the framework serves the endpoints but cannot call navigator.credentials for the page
       page: controls bound by element id, so the template carries no inline script

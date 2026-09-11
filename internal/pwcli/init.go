@@ -1901,7 +1901,7 @@ func home(w http.ResponseWriter, r *http.Request) {
 		Name:        name,
 		Project:     ` + project + `,
 		SignedIn:    signedIn,
-		Email:       user.Email,
+		Account:     ` + accountLineExpression(options) + `,
 		LoginPath:   url.URL{Path: "/auth/login"},
 		LogoutPath:  url.URL{Path: "/auth/logout"},
 		Passkey:     ` + passkeyLiteral(usesPasskey(options.Auth)) + `,
@@ -1910,6 +1910,18 @@ func home(w http.ResponseWriter, r *http.Request) {
 	}))
 }
 `
+}
+
+// accountLineExpression is what the starter page prints under the greeting.
+//
+// It is not always an address. An OIDC directory reports one, and X reports
+// none at all, so the line read "Signed in as " with nothing after it on every
+// OAuth project. The handle is what X has, so that is what those projects show.
+func accountLineExpression(options initOptions) string {
+	if usesOAuth(options.Auth) {
+		return `"@" + user.Username`
+	}
+	return "user.Email"
 }
 
 // passkeyLiteral renders a Go bool literal for the scaffold.
@@ -2176,7 +2188,7 @@ export component Home(name: string, project: string): html {
 
 export component Home(name: string, project: string, ` + accountParams + `): html {
 <div` + style.Page + `>
-` + registeredHomeHeader(options, style) + accountSection(style) + registeredHomeSections(options, style) + `</div>
+` + registeredHomeHeader(options, style) + accountSection(options, style) + registeredHomeSections(options, style) + `</div>
 }
 `
 }
@@ -2185,29 +2197,24 @@ export component Home(name: string, project: string, ` + accountParams + `): htm
 // the way out. They are a shared string because both routers scaffold this
 // section, and a parameter list that disagreed with the section below it would
 // fail generation with a message about counts rather than about the login.
-const accountParams = "signedIn: bool, email: string, loginPath: url, logoutPath: url, passkey: bool, providerLogin: bool, bootstrap: bool"
+const accountParams = "signedIn: bool, account: string, loginPath: url, logoutPath: url, passkey: bool, providerLogin: bool, bootstrap: bool"
 
 // accountSection is the sign-in and sign-out surface, which the framework
 // serves and the starter page only points at. Whichever page is at the root
 // carries it: it is the one part of a scaffolded login a project cannot be left
 // without, because there is otherwise no way to reach the login at all.
-func accountSection(style landingStyle) string {
+func accountSection(options initOptions, style landingStyle) string {
 	return `  <section` + style.Section + `>
     <h2` + style.Heading + `>Account</h2>
     {if signedIn}
-      <p>Signed in as {email}</p>
+      <p>Signed in as {account}</p>
       {if passkey}
         <p><button type="button" id="passkey-register">Add a passkey</button></p>
       {/if}
       <form method="post" action={logoutPath}>
         <button type="submit">Sign out</button>
       </form>
-      <!-- Signing out keeps the session at the identity provider and makes the next
-           sign-in here ask again, which is what auth.oidc.logout_scope defaults to.
-           To offer a sign-out-everywhere control as well, set
-           auth.oidc.allow_global_logout_request and add a second form posting to
-           the same path with <input type="hidden" name="scope" value="global">. -->
-    {else}
+` + logoutScopeNote(options) + `    {else}
       {if providerLogin}
         <p><a` + style.Link + ` href={loginPath}>Sign in</a></p>
       {/if}
@@ -2228,6 +2235,28 @@ func accountSection(style landingStyle) string {
       <script type="module" src="/public/passkey.js"></script>
     {/if}
   </section>
+`
+}
+
+// logoutScopeNote explains, beside the control, how far this project's sign-out
+// reaches. The two answers are different facts rather than different wordings.
+func logoutScopeNote(options initOptions) string {
+	if usesOAuth(options.Auth) {
+		// There is no end session endpoint and no prompt parameter, so
+		// auth.oidc.logout_scope is refused in this mode rather than bound
+		// inert. Pointing at it here would send a reader to a key that stops
+		// their application from starting.
+		return `      <!-- This signs out here and nowhere else. A plain OAuth provider offers no
+           way to end the session it holds, so the account stays signed in at the
+           provider and the next sign-in here may be answered from it without a
+           word. On a shared browser, say so next to this button. -->
+`
+	}
+	return `      <!-- Signing out keeps the session at the identity provider and makes the next
+           sign-in here ask again, which is what auth.oidc.logout_scope defaults to.
+           To offer a sign-out-everywhere control as well, set
+           auth.oidc.allow_global_logout_request and add a second form posting to
+           the same path with <input type="hidden" name="scope" value="global">. -->
 `
 }
 
@@ -2253,7 +2282,7 @@ func discoveredAccountSection(options initOptions, style landingStyle) string {
 	if !discoveredRootCarriesAccount(options) {
 		return ""
 	}
-	return accountSection(style)
+	return accountSection(options, style)
 }
 
 // devConsoleProjectConfig pins the development console port and the corner its
@@ -2773,7 +2802,11 @@ func authOIDCConfig(options initOptions) string {
 issuer = ""
 client_id = ""
 client_secret = ""`
-	loopback := "false"
+	// The scaffolded callback is loopback http whichever provider answers, and
+	// the client accepts an http redirect only under this allowance. Writing the
+	// two apart produced a project that started and then refused the first
+	// login; startup now refuses the pair, so they are written together.
+	loopback := "true"
 	redirect := `redirect_url = "` + authDevelopmentOrigin(options) + `/auth/callback"`
 	if options.AuthEmulator {
 		provider = `
@@ -2797,6 +2830,9 @@ auto_provision = true
 #   reconfirm: keep it, and make the next login here ask again
 #   global:    end it, signing the user out of those applications too
 logout_scope = "reconfirm"
+# Development only. It permits the loopback http callback above, and an http
+# issuer on loopback with it. A deployed configuration names https for both and
+# drops this line; startup refuses an http callback without it.
 allow_loopback_http = ` + loopback + `
 `
 }
@@ -3097,7 +3133,7 @@ func Load(w http.ResponseWriter, r *http.Request) {
 	user, signedIn := auth.User(r.Context())
 	params := PageParams{
 		SignedIn:      signedIn,
-		Email:         user.Email,
+		Account:       ` + accountLineExpression(options) + `,
 		LoginPath:     url.URL{Path: "/auth/login"},
 		LogoutPath:    url.URL{Path: "/auth/logout"},
 		Passkey:       ` + passkeyLiteral(usesPasskey(options.Auth)) + `,

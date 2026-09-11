@@ -561,7 +561,7 @@ CSRF の秘密もここの鍵ではありません。登録されたセッショ
 | `registered_claims` | `[]` | 許可リストと突き合わせるクレーム。既定は `identity_claim` |
 | `logout_scope` | `"reconfirm"` | `reconfirm` はローカルのセッションを破棄し、次の認可リクエストに `prompt` を載せる。`global` は加えて `end_session_endpoint` でプロバイダのセッションも終了する |
 | `allow_global_logout_request` | `false` | 同一オリジンのログアウトフォームが `scope=global` を POST して `global` へ引き上げることを許す。引き上げしかできない |
-| `allow_loopback_http` | `false` | 開発時に `http` のループバック issuer と、リクエストから導出するループバック redirect を許可する |
+| `allow_loopback_http` | `false` | 開発時に `http` のループバック issuer と、`http` のループバックコールバックを許可する。コールバックは書き出したものでもリクエストから導出したものでもよい |
 
 ローカルだけ、というスコープは意図的にありません。ローカルのセッションだけを破棄すると
 次のログインが無言で通るので、サインアウトが何もしなかったように読めます。`reconfirm` は
@@ -570,6 +570,11 @@ CSRF の秘密もここの鍵ではありません。登録されたセッショ
 バインドするのではなく、明示的に書かれた `logout_scope` を拒否します。かつてこれを綴っていた
 `provider_logout` は削除済みで、まだ `true` を持つ設定は `logout_scope` を名指しして起動時に
 拒否されます。
+
+`http` の `redirect_url` は、`allow_loopback_http` が true でホストがループバックでなければ
+起動時に拒否されます。つまりこの 2 つは必ずセットで書きます。この検査が入る前は、
+`/auth/callback` はここで拒否されるのに、同じデプロイを長く綴った
+`http://localhost:8080/auth/callback` は起動を通り、最初のログインで `503` を返していました。
 
 `identity_claim` はアカウントとの結びつきそのものになるため、そこに指定する値は
 アカウントの生涯にわたって安定し、かつ issuer の中で一意でなければなりません。
@@ -604,7 +609,7 @@ CSRF の秘密もここの鍵ではありません。登録されたセッショ
 | `claim.values` | `[]` | 受け入れる値 |
 | `claim.match` | `"any"` | `any` または `all` |
 | `registered_claims` | `[]` | 許可リストと突き合わせるクレーム。既定は `identity_claim` |
-| `allow_loopback_http` | `false` | 開発時に、リクエストから導出するループバック redirect を許可する |
+| `allow_loopback_http` | `false` | 開発時に `http` のループバックコールバックを許可する。書き出したものでもリクエストから導出したものでもよい |
 
 `x` プロバイダが報告するのは、X のユーザー ID である `sub` に加えて
 `preferred_username`、`name`、`picture` です。X 自身の綴りは取り込む段で改名されるため、

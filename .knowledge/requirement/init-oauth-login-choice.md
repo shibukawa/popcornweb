@@ -31,6 +31,8 @@ question:
   requires: a store for the login records, the same rule as every other login value
   dotenv: .env.example names AUTH_OAUTH_CLIENT_ID and AUTH_OAUTH_CLIENT_SECRET, per requirement:dotenv-files
   page: the sign-in and sign-out controls the OIDC scaffold writes, because api:authentication-endpoints serves the same paths
+  account_line: the line under the greeting shows the handle, because the provider reports no address and the shared email parameter rendered "Signed in as " with nothing after it; the parameter is account, filled per mode
+  logout_note: the note beside the sign-out control states that it reaches the local session only, rather than pointing at auth.oidc.logout_scope, which this mode refuses
   resolver: the account resolver source the OIDC scaffold writes, keyed on the profile identity claim, because policy:oauth-admission authenticated needs it
   next_steps: a line naming the provider developer console where the callback URL is registered, because the redirect must match exactly
 catalog:

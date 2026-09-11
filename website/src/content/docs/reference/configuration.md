@@ -584,7 +584,13 @@ imports nothing authentication-related has no `[auth]` prefix to configure.
 | `registered_claims` | `[]` | claims compared against the allowlist; defaults to `identity_claim` |
 | `logout_scope` | `"reconfirm"` | `reconfirm` revokes the local session and makes the next authorization carry `prompt`; `global` also ends the provider session through its `end_session_endpoint` |
 | `allow_global_logout_request` | `false` | let a same-origin logout form escalate to `global` by posting `scope=global`; a request may only escalate |
-| `allow_loopback_http` | `false` | permit an `http` loopback issuer and a request-derived loopback redirect during development |
+| `allow_loopback_http` | `false` | permit an `http` loopback issuer and an `http` loopback callback during development, whether that callback is written out or derived from the request |
+
+An `http` `redirect_url` is refused at startup unless `allow_loopback_http` is
+true and the host is loopback, so the two are written together or not at all.
+Before that check existed, `/auth/callback` was refused here while
+`http://localhost:8080/auth/callback` — the same deployment, spelled longer —
+started and then answered the first login `503`.
 
 `identity_claim` becomes the account link, so whatever it names must be stable
 for the life of the account and unique within the issuer. A reissued or reused
@@ -628,7 +634,7 @@ minimum scopes, and the claim names — a deployment configures none of them.
 | `claim.values` | `[]` | accepted values |
 | `claim.match` | `"any"` | `any` or `all` |
 | `registered_claims` | `[]` | claims compared against the allowlist; defaults to `identity_claim` |
-| `allow_loopback_http` | `false` | permit a request-derived loopback redirect during development |
+| `allow_loopback_http` | `false` | permit an `http` loopback callback during development, whether written out or derived from the request |
 
 The `x` provider reports `sub` — the X user id — plus `preferred_username`,
 `name`, and `picture`. X's own spellings are renamed on the way in, so

@@ -65,7 +65,14 @@ func TestScaffoldWiresAnExternalProvider(t *testing.T) {
 	}
 	config := files[pwenv.FileName(pwenv.Development)]
 	for _, expected := range []string{
-		`issuer = ""`, `client_id = ""`, `client_secret = ""`, "allow_loopback_http = false",
+		`issuer = ""`, `client_id = ""`, `client_secret = ""`,
+		// The scaffolded callback is loopback http, and the client accepts an
+		// http redirect only under this allowance. This assertion read false
+		// until the pair was found to produce a project that started and then
+		// answered the first login 503; startup now refuses the mismatch, so
+		// writing false here would scaffold a project that cannot start.
+		`redirect_url = "http://localhost:8080/auth/callback"`,
+		"allow_loopback_http = true",
 	} {
 		if !strings.Contains(config, expected) {
 			t.Fatalf("config is missing %s:\n%s", expected, config)
@@ -1021,5 +1028,29 @@ func TestScaffoldWiresAnOAuthProvider(t *testing.T) {
 	}
 	if strings.Contains(env, "AUTH_OIDC") {
 		t.Errorf(".env.example names an oidc variable the mode refuses:\n%s", env)
+	}
+}
+
+// An OAuth project's starter page has to describe the login it actually has:
+// X reports no address, and its sign-out reaches only the local session.
+func TestScaffoldOAuthAccountLineAndLogoutNote(t *testing.T) {
+	files := scaffoldFiles(initOptions{Name: "demo", Router: routerRegistered, Database: true, Auth: authOAuth})
+	if handler := files["handlers/home_handler.go"]; !strings.Contains(handler, `"@" + user.Username`) {
+		t.Fatalf("the account line does not show the handle:\n%s", handler)
+	}
+	page := files["handlers/home.pw.html"]
+	if strings.Contains(page, "logout_scope") {
+		t.Fatalf("the page points at a key auth.mode oauth_only refuses:\n%s", page)
+	}
+	if !strings.Contains(page, "signs out here and nowhere else") {
+		t.Fatalf("the page does not say how far the sign-out reaches:\n%s", page)
+	}
+
+	oidc := scaffoldFiles(initOptions{Name: "demo", Router: routerRegistered, Database: true, Auth: authOIDC})
+	if !strings.Contains(oidc["handlers/home.pw.html"], "auth.oidc.logout_scope") {
+		t.Fatal("the OIDC sign-out note was lost")
+	}
+	if !strings.Contains(oidc["handlers/home_handler.go"], "user.Email") {
+		t.Fatal("the OIDC account line no longer shows the address")
 	}
 }
