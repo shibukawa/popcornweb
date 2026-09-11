@@ -229,6 +229,10 @@ api_doc_path = "/docs"
 
 `pw init` writes `api_doc = "scalar"` into `config.dev.toml` only, so a fresh project answers on `/openapi.json` and `/docs` in dev. `api_doc` requires `openapi` or startup fails. Both paths sit beneath the auth chain — list them in `auth.protection.include` to protect them. The UI loads from a public CDN; the endpoint substitutes its own CSP on that page only. To improve the document, write handler and field godoc (first sentence = summary) and declare constraints in tags; set `pw.SetOpenAPIInfo` once in `main`.
 
+### Calling an operation from the shell
+
+`pw request` is curl against the running application, with the document doing the routing. Prefer it over hand-written curl when checking a handler: `pw request --list` names every operation with each parameter's location; `pw request /api/users -d name=Alice -d age=3` matches the operation and sends `{"name":"Alice","age":3}` where the handler reads it (path segment, query, header, cookie, or body, coerced by the schema); `--format=json` prints one object with `status`, `headers`, parsed `body`, the matched `operation`, and the `routing` of each pair. The origin is `--url`, else the address `pw dev` announced, else `server.port`. Exit codes are curl's (`-f` gives 22 on 4xx/5xx). A guarded route needs `-H 'Authorization: …'` or `-b`/`-c` cookies; there is no login shortcut. Page routes are not in the document, so they are called by path with plain curl semantics.
+
 ## Startup summary
 
 Resolved configuration is reported once per start. On a terminal it is a tree ending with `listening on http://localhost:8080`; values that came from other than built-in defaults are marked `← file`, `← env`, or `← flag`. Elsewhere (pipe, container) the same facts become one structured slog record. `observability.boot_log` overrides: `auto` (default), `tree`, `record`, `off`. Secrets are masked; DSNs keep their public location but lose credentials. With `pw.Middlewares` instead of `pw.Run`, the summary is emitted after initialization without the `listening` line. Note the configured `server.port` and the `listening` address can differ in dev (port shift).

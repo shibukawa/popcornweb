@@ -285,6 +285,7 @@ func (c *Console) routes() http.Handler {
 	mux.HandleFunc("GET /{$}", c.index)
 	mux.HandleFunc("GET /api/loop-state", c.loopState)
 	mux.HandleFunc("GET /api/loop-state/stream", c.loopStateStream)
+	mux.HandleFunc("GET /api/application", c.application)
 	mux.HandleFunc("POST /api/attach", c.announce)
 	mux.HandleFunc("POST /api/listening", c.announceListening)
 	mux.HandleFunc("POST /api/reseed", c.runReseed)
@@ -527,6 +528,22 @@ func (c *Console) loopState(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Cache-Control", "no-store")
 	_ = json.NewEncoder(w).Encode(c.state.get())
+}
+
+// application answers where the application is listening, as it announced it,
+// or an empty string before it has. pw request asks this rather than reading
+// the project, because the announced address is the only one that survives a
+// port shift, and the loop keeps it in memory rather than in a file.
+func (c *Console) application(w http.ResponseWriter, r *http.Request) {
+	allowLoopbackOrigin(w, r)
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Cache-Control", "no-store")
+	_ = json.NewEncoder(w).Encode(ApplicationAddress{Listening: c.attach.Listening()})
+}
+
+// ApplicationAddress is the body of GET /api/application.
+type ApplicationAddress struct {
+	Listening string `json:"listening"`
 }
 
 // loopStateStream pushes the current state and then every transition.

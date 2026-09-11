@@ -27,6 +27,7 @@ Commands:
   build     run generate and then compile the project
   dev       watch, regenerate, rebuild, and restart
   doctor    report what a named environment will actually run
+  request   send one request to the running application, routed by its OpenAPI
   version   print the version, revision, and toolchain
   help      print this message
 ```
@@ -50,6 +51,7 @@ Commands:
 | [`pw dev`](/ja/pw/project/dev/) | 監視、再生成、マイグレーション、再起動 |
 | [`pw build`](/ja/pw/project/build/) | リリース用バイナリを作る |
 | [`pw doctor`](/ja/pw/project/doctor/) | その環境で何が動き、どこが間違っているかを報告する |
+| [`pw request`](/ja/pw/project/request/) | 起動中のアプリケーションへリクエストを 1 つ送る。OpenAPI 文書で振り分ける |
 | `pw rename` | テンプレートの宣言と、それを名指しているものすべてを改名する |
 | `pw lsp` | Language Server Protocol でエディタ向けの解析を提供する |
 
@@ -78,6 +80,8 @@ Commands:
 
 成功で `0`、コマンドの失敗で `1`、コマンドが与えられなかった場合は `2` です。エラーは
 `pw:` を前置して標準エラー出力に書かれます。
+[`pw request`](/ja/pw/project/request/) だけは curl のコードを共有し、`2` が使い方
+エラー、`-f` 下の失敗ステータスが `22` です。
 
 ## 混同しないように
 

@@ -8,7 +8,7 @@ description: >
   database access, caching, sessions, auth, WebSockets, or another language;
   when building for fasthttp, TinyGo, or a serverless host; or when running,
   checking, or debugging a project with the pw command (pw dev, pw generate,
-  pw build, pw doctor, pw migrate, pw fmt, pw i18n); or when investigating
+  pw build, pw doctor, pw request, pw migrate, pw fmt, pw i18n); or when investigating
   structured development logs in .log with DuckDB.
 ---
 
@@ -135,6 +135,7 @@ development. `pw migrate status` shows where you are.
 | `pw build [--backend …] [--target …] [--debug]` | run `pw generate` and then compile the project |
 | `pw dev` | watch, regenerate, rebuild, restart, and run dev services |
 | `pw doctor [--env=…] [--format=json] [--strict] [--online]` | report what an environment will actually run |
+| `pw request [--list] [--format=json] [curl flags] [METHOD] <path\|operationId>` | send one request to the running app, `-d` pairs routed by its OpenAPI document |
 | `pw version` | print the version, revision, and toolchain |
 
 Documentation: https://shibukawa.github.io/popcornweb/
