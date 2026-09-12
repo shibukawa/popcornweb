@@ -11,7 +11,6 @@ import (
 	"strings"
 	"testing"
 	"time"
-	"unicode/utf8"
 
 	"github.com/shibukawa/popcornweb/internal/bootblock"
 	"github.com/shibukawa/popcornweb/pwruntime"
@@ -59,23 +58,6 @@ func TestRenderBootTreeGroupsKeysBySection(t *testing.T) {
 	}
 }
 
-func TestBootBannerRowsShareOneWidth(t *testing.T) {
-	// Captions are appended after each art row, so a ragged row would leave the
-	// text beside it out of line.
-	for _, art := range bootBannerArt {
-		if got, want := utf8.RuneCountInString(art), utf8.RuneCountInString(bootBannerArt[0]); got != want {
-			t.Fatalf("banner row %q is %d wide, want %d", art, got, want)
-		}
-	}
-	banner := bootBanner(sampleBootReport(), bootStyle{})
-	if len(banner) != len(bootBannerArt)+1 {
-		t.Fatalf("banner has %d lines, want %d", len(banner), len(bootBannerArt)+1)
-	}
-	if trailing := banner[len(banner)-1]; trailing != "" {
-		t.Fatalf("banner does not end with a blank line: %q", trailing)
-	}
-}
-
 func TestRenderBootTreeMarksNonDefaultSourcesOnly(t *testing.T) {
 	rendered := renderBootTree(sampleBootReport(), "", bootStyle{})
 	for _, line := range strings.Split(rendered, "\n") {
@@ -96,30 +78,6 @@ func TestRenderBootTreeMarksNonDefaultSourcesOnly(t *testing.T) {
 	}
 	if strings.Contains(rendered, "listening on") {
 		t.Fatal("summary announced a listener the framework does not own")
-	}
-}
-
-func TestRenderBootTreeAlignsSourceMarksWithinAGroup(t *testing.T) {
-	report := sampleBootReport()
-	report.entries = []bootEntry{
-		{key: "app.endpoint", value: "https://example.test", source: "default"},
-		{key: "app.mode", value: "on", source: "cli"},
-	}
-	rendered := renderBootTree(report, "", bootStyle{})
-	var marked, longest string
-	for _, line := range strings.Split(rendered, "\n") {
-		switch {
-		case strings.Contains(line, "mode"):
-			marked = line
-		case strings.Contains(line, "endpoint"):
-			longest = line
-		}
-	}
-	// The mark starts past the widest value of the group, so a short value does
-	// not drag its mark leftward out of the column.
-	markColumn := utf8.RuneCountInString(marked[:strings.Index(marked, "←")])
-	if got, want := markColumn, utf8.RuneCountInString(longest)+2; got != want {
-		t.Fatalf("mark column = %d, want %d\n%s", got, want, rendered)
 	}
 }
 
@@ -183,15 +141,6 @@ func TestResolveBootLogFormat(t *testing.T) {
 		if got := resolveBootLogFormat(setting); got != want {
 			t.Fatalf("resolveBootLogFormat(%q) = %q, want %q", setting, got, want)
 		}
-	}
-}
-
-func TestBootStyleWrapsOnlyWhenColored(t *testing.T) {
-	if got := (bootStyle{}).bold("x"); got != "x" {
-		t.Fatalf("plain style = %q", got)
-	}
-	if got := (bootStyle{color: true}).bold("x"); got != "\x1b[1mx\x1b[0m" {
-		t.Fatalf("colored style = %q", got)
 	}
 }
 

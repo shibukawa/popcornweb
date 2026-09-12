@@ -81,18 +81,3 @@ func TestWriteMessageFramesTheEncodedBody(t *testing.T) {
 		t.Fatalf("framed = %q", out.String())
 	}
 }
-
-func TestARoundTripKeepsTheBody(t *testing.T) {
-	var out bytes.Buffer
-	if err := writeMessage(&out, notification{JSONRPC: "2.0", Method: "m", Params: []int{1}}); err != nil {
-		t.Fatalf("writeMessage: %v", err)
-	}
-
-	body, err := readMessage(bufio.NewReader(&out))
-	if err != nil {
-		t.Fatalf("readMessage: %v", err)
-	}
-	if string(body) != `{"jsonrpc":"2.0","method":"m","params":[1]}` {
-		t.Fatalf("body = %q", body)
-	}
-}

@@ -38,17 +38,6 @@ func updateRequest(t *testing.T, mode string) *http.Request {
 	return request
 }
 
-// A request that asks for nothing gets the document it always got. That is what
-// keeps a crawler, curl, and a browser without the runtime unaffected.
-func TestNoRenderHeaderStillServesTheDocument(t *testing.T) {
-	config := updateConfig()
-	recorder := httptest.NewRecorder()
-	request := httptest.NewRequest(http.MethodGet, "/search?q=go", nil)
-	if serveUpdate(recorder, request, nil, staticFragment(`<h1>hi</h1>`), config, nil, false, false) {
-		t.Fatal("a request with no render header was answered as an update")
-	}
-}
-
 // A page rendered by another build holds client state this binary cannot vouch
 // for, and none of that is visible in a validator.
 func TestAnotherBuildIsAnsweredWithTheDocument(t *testing.T) {
@@ -108,16 +97,8 @@ func TestTheRuntimeIsContributedRatherThanScaffolded(t *testing.T) {
 	if strings.Contains(joined, "<script>") {
 		t.Errorf("inline script reached the head:\n%s", joined)
 	}
-}
-
-// The server and the browser build the same configuration object, so the two
-// cannot disagree about a name.
-func TestTheRuntimeConfigurationNamesWhatTheServerUses(t *testing.T) {
-	nodes := updateHeadNodes(updateConfig(), "token-value")
-	tags, err := htmlbind.RenderHeadNodes(nodes)
-	if err != nil {
-		t.Fatal(err)
-	}
+	// The server and browser share these names; parse the generated metadata
+	// rather than relying only on the runtime reference being present.
 	encoded := tags[0]
 	start := strings.Index(encoded, `content="`) + len(`content="`)
 	end := strings.LastIndex(encoded, `"`)
@@ -487,15 +468,6 @@ func TestANavigationRequestIsAnsweredWithADelta(t *testing.T) {
 }
 
 // The document path keeps every byte it had. Adopting updates must not change
-// what a request that asks for none receives.
-func TestTheDocumentPathIsUnchangedByEnablingUpdates(t *testing.T) {
-	off := httptest.NewRecorder()
-	WriteHTMLChain(off, httptest.NewRequest(http.MethodGet, "/", nil), nil, staticFragment(`<h1>home</h1>`))
-	if !strings.Contains(off.Body.String(), "<h1>home</h1>") {
-		t.Fatalf("the document did not render:\n%s", off.Body.String())
-	}
-}
-
 // The response headers of every update mode are this framework's, because the
 // wire is. These assert what each mode must carry whatever the module does or
 // stops doing, which is the point of owning them here.

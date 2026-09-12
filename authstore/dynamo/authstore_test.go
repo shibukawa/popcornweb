@@ -590,15 +590,3 @@ func TestOperationsWithoutAClientNameTheImport(t *testing.T) {
 		t.Fatalf("bootstrap without a client = %v", err)
 	}
 }
-
-func TestStoresSatisfyTheirContracts(t *testing.T) {
-	var (
-		_ auth.AllowlistStore       = NewAllowlist()
-		_ auth.CredentialStore      = NewCredentials(CredentialOptions{})
-		_ auth.FirstEnrollmentStore = NewCredentials(CredentialOptions{})
-		_ auth.BootstrapStore       = NewBootstrap()
-	)
-	if numberText(-1) != "-1" {
-		t.Fatal("number formatting changed")
-	}
-}

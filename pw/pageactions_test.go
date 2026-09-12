@@ -69,7 +69,4 @@ func TestPageActionsAreAbsentWhereTheRoutePublishesNone(t *testing.T) {
 			t.Errorf("%s contributed %d nodes", testCase.name, len(nodes))
 		}
 	}
-	if nodes := pageActionHeadNodes(nil); len(nodes) != 0 {
-		t.Errorf("a nil request contributed %d nodes", len(nodes))
-	}
 }

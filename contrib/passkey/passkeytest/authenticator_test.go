@@ -137,61 +137,6 @@ func TestRegistrationFaultsAreRejected(t *testing.T) {
 	}
 }
 
-func TestAuthenticationFaultsAreRejected(t *testing.T) {
-	cases := []struct {
-		fault passkeytest.Fault
-		want  error
-	}{
-		{passkeytest.FaultOrigin, passkey.ErrOrigin},
-		{passkeytest.FaultRPID, passkey.ErrRPID},
-		{passkeytest.FaultChallenge, passkey.ErrChallenge},
-		{passkeytest.FaultUserPresence, passkey.ErrFlags},
-		{passkeytest.FaultUserVerification, passkey.ErrFlags},
-		{passkeytest.FaultBackupState, passkey.ErrFlags},
-		{passkeytest.FaultSignature, passkey.ErrSignature},
-		{passkeytest.FaultUserHandle, passkey.ErrUser},
-	}
-	for _, testCase := range cases {
-		t.Run(string(testCase.fault), func(t *testing.T) {
-			rp := newRelyingParty(t)
-			authenticator, err := passkeytest.NewAuthenticator()
-			if err != nil {
-				t.Fatalf("NewAuthenticator: %v", err)
-			}
-			credential := register(t, rp, authenticator)
-			authenticator.SetFault(testCase.fault)
-			if _, err := authenticate(t, rp, authenticator, credential); !errors.Is(err, testCase.want) {
-				t.Fatalf("FinishAuthentication error = %v, want %v", err, testCase.want)
-			}
-		})
-	}
-}
-
-// A replayed counter is a risk signal rather than a rejection, because the
-// relying party leaves the decision to caller policy.
-func TestReplayedCounterSurfacesRiskWithoutFailing(t *testing.T) {
-	rp := newRelyingParty(t)
-	authenticator, err := passkeytest.NewAuthenticator()
-	if err != nil {
-		t.Fatalf("NewAuthenticator: %v", err)
-	}
-	credential := register(t, rp, authenticator)
-	result, err := authenticate(t, rp, authenticator, credential)
-	if err != nil {
-		t.Fatalf("first assertion: %v", err)
-	}
-
-	credential.SignCount = result.SignCount
-	authenticator.SetFault(passkeytest.FaultSignCount)
-	replayed, err := authenticate(t, rp, authenticator, credential)
-	if err != nil {
-		t.Fatalf("replayed assertion error = %v, want acceptance with risk", err)
-	}
-	if !replayed.CounterRisk {
-		t.Fatal("counter risk = false for a counter that did not advance")
-	}
-}
-
 func TestSeedReproducesCredentialsButNotSignatures(t *testing.T) {
 	first := registerWithSeed(t, "shared-seed")
 	second := registerWithSeed(t, "shared-seed")

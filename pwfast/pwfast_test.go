@@ -215,29 +215,6 @@ func TestTheProblemValueIsTheOneBothRuntimesShare(t *testing.T) {
 	}
 }
 
-func TestRateLimitedCarriesCompatibilityHeaders(t *testing.T) {
-	status, header, body := serve(t, func(r *fasthttp.RequestCtx) {
-		WriteProblem(r, RateLimited(RateLimit{
-			Limit: 25, Remaining: 0, Reset: time.Unix(1_800_000_000, 0), RetryAfter: 3 * time.Second,
-		}, "slow down"))
-	}, "/limited")
-
-	if status != fasthttp.StatusTooManyRequests {
-		t.Fatalf("status = %d", status)
-	}
-	for _, fragment := range []string{
-		"Cache-Control: no-store", "Retry-After: 3", "X-Ratelimit-Limit: 25",
-		"X-Ratelimit-Remaining: 0", "X-Ratelimit-Reset: 1800000000",
-	} {
-		if !strings.Contains(header, fragment) {
-			t.Errorf("header does not contain %q:\n%s", fragment, header)
-		}
-	}
-	if !strings.Contains(body, `"status":429`) {
-		t.Fatalf("body = %q", body)
-	}
-}
-
 // documentWrapper builds a shell that renders its children between two strings.
 func documentWrapper(open, close string) HTMLWrapper {
 	type params struct{ Children HTMLFragment }

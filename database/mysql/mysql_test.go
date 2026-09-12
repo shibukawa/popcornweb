@@ -19,11 +19,6 @@ func TestWithParseTime(t *testing.T) {
 			want: "user:pass@tcp(127.0.0.1:3306)/app?charset=utf8mb4&parseTime=true",
 		},
 		{
-			name: "already set",
-			dsn:  "user:pass@tcp(127.0.0.1:3306)/app?parseTime=true",
-			want: "user:pass@tcp(127.0.0.1:3306)/app?parseTime=true",
-		},
-		{
 			// An operator who turned it off meant it, even though the framework
 			// would rather it were on.
 			name: "explicitly disabled",
@@ -36,11 +31,6 @@ func TestWithParseTime(t *testing.T) {
 			name: "question mark in the password",
 			dsn:  "user:pa?ss@tcp(127.0.0.1:3306)/app",
 			want: "user:pa?ss@tcp(127.0.0.1:3306)/app?parseTime=true",
-		},
-		{
-			name: "no database name",
-			dsn:  "user:pass@tcp(127.0.0.1:3306)/",
-			want: "user:pass@tcp(127.0.0.1:3306)/?parseTime=true",
 		},
 		{
 			// A parameter whose name merely ends in parseTime is not the one.

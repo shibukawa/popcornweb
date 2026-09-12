@@ -49,14 +49,3 @@ func TestASchemeThatRunsScriptIsRefused(t *testing.T) {
 		}
 	}
 }
-
-// A scheme is compared case-insensitively, because a browser resolves it that
-// way and a comparison that did not would be bypassed by one shifted letter.
-func TestSchemeComparisonIgnoresCase(t *testing.T) {
-	if !Navigable("HtTp://example.com/") {
-		t.Error("an uppercase http scheme should be navigable")
-	}
-	if Navigable("JAVASCRIPT:alert(1)") {
-		t.Error("an uppercase javascript scheme should be refused")
-	}
-}

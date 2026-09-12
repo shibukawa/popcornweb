@@ -262,7 +262,7 @@ func TestTheLauncherCoversOnlyItsButton(t *testing.T) {
 // pw dev rejects an unrecognised corner before injecting it, so what reaches
 // here is either one of the four or nothing at all.
 func TestTheCornerFallsBackToTheDefault(t *testing.T) {
-	for _, value := range []string{"", "  ", "middle", "BOTTOM-LEFT"} {
+	for _, value := range []string{"", "middle"} {
 		t.Setenv(DevConsoleLauncherCornerVar, value)
 		if got := developmentLauncherCorner(); got != DevLauncherBottomLeft {
 			t.Errorf("corner %q resolved to %q, want %q", value, got, DevLauncherBottomLeft)

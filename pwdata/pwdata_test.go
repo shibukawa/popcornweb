@@ -263,6 +263,9 @@ func TestPagesRender(t *testing.T) {
 		if body := recorder.Body.String(); strings.Contains(body, "template error") {
 			t.Errorf("%s failed to render:\n%s", path, body)
 		}
+		if body := recorder.Body.String(); !strings.Contains(body, "memos") {
+			t.Errorf("%s: the sidebar listed no tables", path)
+		}
 	}
 }
 
@@ -488,21 +491,6 @@ func TestATableWithNoForeignKeysYieldsNone(t *testing.T) {
 	}
 }
 
-// The sidebar repeats on every page, so the table list belongs to the shared
-// view. It was built by one handler once, which left every other page's sidebar
-// empty.
-func TestEveryPageListsTheTablesForItsSidebar(t *testing.T) {
-	connection := open(t)
-	server := serverFor(connection)
-	for _, path := range []string{"/", "/table/memos", "/console", "/queries"} {
-		recorder := httptest.NewRecorder()
-		server.Handler().ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, path, nil))
-		if body := recorder.Body.String(); !strings.Contains(body, "memos") {
-			t.Errorf("%s: the sidebar listed no tables:\n%s", path, body)
-		}
-	}
-}
-
 // The link is what makes an identifier navigable, so its absence is a defect
 // rather than a missing nicety.
 func TestTheGridLinksAForeignKey(t *testing.T) {
@@ -614,14 +602,6 @@ func TestTablePageOffersSchemaAndDataTabs(t *testing.T) {
 	if !strings.Contains(body, `title="TEXT · not null"`) {
 		t.Errorf("a column header carries no type:\n%s", body)
 	}
-}
-
-// The insert row lives in the grid, at both ends, so a value is typed where the
-// other values are rather than in a separate stack of fields.
-func TestGridCarriesBlankRowsAtBothEnds(t *testing.T) {
-	recorder := httptest.NewRecorder()
-	serverFor(open(t)).Handler().ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, "/table/memos", nil))
-	body := recorder.Body.String()
 	if got := strings.Count(body, `data-new="1"`); got != 2 {
 		t.Errorf("blank rows = %d, want one at each end", got)
 	}

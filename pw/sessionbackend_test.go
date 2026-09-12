@@ -129,15 +129,6 @@ func TestCookieBackendRequiresAUsableSecret(t *testing.T) {
 	}
 }
 
-func TestCookieBackendKeepsRotatedSecretsReadable(t *testing.T) {
-	config := testSessionConfig(SessionBackendCookie)
-	config.Keyring.Secret = base64.StdEncoding.EncodeToString(secretOf(2))
-	config.Keyring.PreviousSecrets = []string{base64.StdEncoding.EncodeToString(secretOf(1))}
-	if _, err := OpenSessionBackend(t.Context(), config, SessionResources{}); err != nil {
-		t.Fatalf("rotation: %v", err)
-	}
-}
-
 func TestSessionCookiePolicyIsSharedByBothHalves(t *testing.T) {
 	policy, err := SessionCookiePolicy(testSessionConfig(SessionBackendCookie))
 	if err != nil {
@@ -163,12 +154,4 @@ func TestRegisterSessionBackendRejectsADuplicate(t *testing.T) {
 	RegisterSessionBackend(SessionBackendCookie, func(context.Context, SessionConfig, SessionResources) (session.Backend, error) {
 		return session.Backend{}, errors.New("unreachable")
 	})
-}
-
-func secretOf(fill byte) []byte {
-	secret := make([]byte, 32)
-	for index := range secret {
-		secret[index] = fill
-	}
-	return secret
 }

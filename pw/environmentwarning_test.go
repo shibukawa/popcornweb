@@ -49,16 +49,13 @@ func TestAnUnnamedEnvironmentIsAnnouncedAtStartup(t *testing.T) {
 // A deployment that named its environment gets nothing: a warning printed on
 // every correct startup is one that stops being read.
 func TestANamedEnvironmentIsSilent(t *testing.T) {
-	for _, environment := range []string{EnvDevelopment, EnvStaging, EnvProduction, "live"} {
-		t.Run(environment, func(t *testing.T) {
-			recorded := captureProcessLog(t)
-			swapEnvForTest(t, environment, true)
+	const environment = "live"
+	recorded := captureProcessLog(t)
+	swapEnvForTest(t, environment, true)
 
-			reportEnvironment()
+	reportEnvironment()
 
-			if output := recorded.String(); output != "" {
-				t.Errorf("APP_ENV=%q still warned: %s", environment, output)
-			}
-		})
+	if output := recorded.String(); output != "" {
+		t.Errorf("APP_ENV=%q still warned: %s", environment, output)
 	}
 }

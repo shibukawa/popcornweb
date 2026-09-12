@@ -68,21 +68,6 @@ readonly = true
 	}
 }
 
-func TestScaffoldTOMLRendersTheConnectionsBlock(t *testing.T) {
-	toml, err := ScaffoldTOML()
-	if err != nil {
-		t.Fatal(err)
-	}
-	for _, fragment := range []string{
-		"[[middleware.rdb.connections]]", "group = \"\"", "readonly = false",
-		"default_group", "write_group", "migration_group",
-	} {
-		if !strings.Contains(toml, fragment) {
-			t.Fatalf("TOML scaffold missing %q:\n%s", fragment, toml)
-		}
-	}
-}
-
 func TestValidateRDBConfigRejectsBadConnectionSets(t *testing.T) {
 	base := func(connections ...RDBConnectionConfig) RDBConfig {
 		return RDBConfig{Enabled: true, DefaultGroup: "replica", Connections: connections}

@@ -65,6 +65,12 @@ func TestXProviderDefinition(t *testing.T) {
 	if strings.Join(provider.Scopes, " ") != "users.read tweet.read" {
 		t.Errorf("scopes = %v; users.read needs tweet.read beside it, and offline.access is not asked for", provider.Scopes)
 	}
+	if got := strings.Join(provider.Claims(), " "); got != "name picture preferred_username sub" {
+		t.Errorf("Claims() = %q", got)
+	}
+	if provider.Profile["sub"] != "id" || provider.ProfileRoot != "/data" {
+		t.Errorf("X profile mapping = %v at %q", provider.Profile, provider.ProfileRoot)
+	}
 	config := provider.OAuthConfig("client", "secret", "https://app.example/auth/callback")
 	if config.TokenEndpoint != provider.TokenEndpoint || config.ClientID != "client" ||
 		config.RedirectURI != "https://app.example/auth/callback" || config.AuthMethod != provider.AuthMethod {
@@ -129,12 +135,14 @@ func TestFetchRefusesUnusableResponses(t *testing.T) {
 		body   string
 		want   error
 	}{
-		"error status":  {http.StatusUnauthorized, `{"data":{"id":"1"}}`, ErrProfile},
-		"no data":       {http.StatusOK, `{"errors":[{"message":"not found"}]}`, ErrProfile},
-		"no id":         {http.StatusOK, `{"data":{"username":"handle"}}`, ErrProfile},
-		"not json":      {http.StatusOK, `<html>`, ErrProfile},
-		"id a fraction": {http.StatusOK, `{"data":{"id":2244994945.5}}`, ErrProfile},
-		"id empty":      {http.StatusOK, `{"data":{"id":"","username":"handle"}}`, ErrProfile},
+		"error status":    {http.StatusUnauthorized, `{"data":{"id":"1"}}`, ErrProfile},
+		"no data":         {http.StatusOK, `{"errors":[{"message":"not found"}]}`, ErrProfile},
+		"data not object": {http.StatusOK, `{"data":"1"}`, ErrProfile},
+		"root is list":    {http.StatusOK, `[{"id":"1"}]`, ErrProfile},
+		"no id":           {http.StatusOK, `{"data":{"username":"handle"}}`, ErrProfile},
+		"not json":        {http.StatusOK, `<html>`, ErrProfile},
+		"id a fraction":   {http.StatusOK, `{"data":{"id":2244994945.5}}`, ErrProfile},
+		"id empty":        {http.StatusOK, `{"data":{"id":"","username":"handle"}}`, ErrProfile},
 	} {
 		t.Run(name, func(t *testing.T) {
 			client := clientServing(func(w http.ResponseWriter, _ *http.Request) {
@@ -190,18 +198,6 @@ func TestFetchRefusesATokenAHeaderCannotCarry(t *testing.T) {
 	}
 }
 
-// TestClaimsListsWhatAProviderReports pins the vocabulary a deployment
-// configures an identity claim against, in the stable order an error prints.
-func TestClaimsListsWhatAProviderReports(t *testing.T) {
-	provider, _ := Lookup(ProviderX)
-	if got := strings.Join(provider.Claims(), " "); got != "name picture preferred_username sub" {
-		t.Fatalf("Claims() = %q", got)
-	}
-	if provider.Profile["sub"] != "id" || provider.ProfileRoot != "/data" {
-		t.Fatalf("X profile mapping = %v at %q", provider.Profile, provider.ProfileRoot)
-	}
-}
-
 // TestFetchReadsANumericIdentifier covers the providers that answer with a JSON
 // number where X answers with a string. The literal text is the claim, and a
 // value that is not a whole number is left out rather than normalized.
@@ -227,26 +223,6 @@ func TestFetchReadsANumericIdentifier(t *testing.T) {
 	})
 	if _, err := Fetch(context.Background(), numeric, "token", Options{HTTPClient: fractional}); !errors.Is(err, ErrProfile) {
 		t.Fatalf("a fractional identifier: err = %v, want %v", err, ErrProfile)
-	}
-}
-
-// TestFetchRefusesAnEnvelopeThatIsNotThere keeps a provider whose response
-// shape changed from silently reporting an account of nobody.
-func TestFetchRefusesAnEnvelopeThatIsNotThere(t *testing.T) {
-	provider, _ := Lookup(ProviderX)
-	for name, body := range map[string]string{
-		"root missing":     `{"id":"1"}`,
-		"root not object":  `{"data":"1"}`,
-		"response is list": `[{"id":"1"}]`,
-	} {
-		t.Run(name, func(t *testing.T) {
-			client := clientServing(func(w http.ResponseWriter, _ *http.Request) {
-				_, _ = io.WriteString(w, body)
-			})
-			if _, err := Fetch(context.Background(), provider, "token", Options{HTTPClient: client}); !errors.Is(err, ErrProfile) {
-				t.Fatalf("err = %v, want %v", err, ErrProfile)
-			}
-		})
 	}
 }
 

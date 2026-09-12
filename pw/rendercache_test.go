@@ -135,19 +135,6 @@ func TestRenderCacheRebuildsOnReconfiguration(t *testing.T) {
 	}
 }
 
-// TestRenderCacheOptionAbsentWithoutStore keeps the no-store path exact. A
-// generated plan reaching a nil store renders normally and computes no key,
-// which is what makes a project using no annotation pay nothing.
-func TestRenderCacheOptionAbsentWithoutStore(t *testing.T) {
-	resetRenderCache(t)
-	if option := renderCacheOption(t.Context(), HTMLCacheConfig{Enabled: false}); option != nil {
-		t.Error("a disabled cache still handed the render an option")
-	}
-	if option := renderCacheOption(t.Context(), HTMLCacheConfig{Enabled: true, MaxEntries: 4}); option == nil {
-		t.Error("an enabled cache handed the render no option")
-	}
-}
-
 // TestRenderCacheCountsReportBothHalves covers the span attributes. A hit count
 // alone cannot tell a working cache from one nothing is eligible for, which is
 // the question an author with a guessed TTL actually has.

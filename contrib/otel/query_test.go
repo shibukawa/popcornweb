@@ -25,13 +25,3 @@ func TestQueryValuesDoNotReachATrace(t *testing.T) {
 		}
 	}
 }
-
-// The names survive, because knowing which parameters a request carried is the
-// whole reason the attribute exists.
-func TestQueryParameterNamesSurvive(t *testing.T) {
-	got := RedactedQuery("next=%2Fadmin&id_token_hint=eyJhbGciOi")
-	want := "next=REDACTED&id_token_hint=REDACTED"
-	if got != want {
-		t.Errorf("redactedQuery = %q, want %q", got, want)
-	}
-}

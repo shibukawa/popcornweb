@@ -27,28 +27,21 @@ func TestDeadlineIsTheEarliestBoundThatIsSet(t *testing.T) {
 		{name: "neither", record: Record[int]{}, wantZero: true},
 	} {
 		got := testCase.record.deadline()
+		raw := RawRecord{IdleExpiresAt: testCase.record.IdleExpiresAt, ExpiresAt: testCase.record.ExpiresAt}
 		if testCase.wantZero {
 			if !got.IsZero() {
 				t.Errorf("%s: deadline = %v, want the zero time", testCase.name, got)
+			}
+			if rawGot := raw.Deadline(); !rawGot.IsZero() {
+				t.Errorf("%s: raw deadline = %v, want the zero time", testCase.name, rawGot)
 			}
 			continue
 		}
 		if !got.Equal(testCase.want) {
 			t.Errorf("%s: deadline = %v, want %v", testCase.name, got, testCase.want)
 		}
-	}
-}
-
-// RawRecord answers the same question for a backend, so it has to answer it the
-// same way.
-func TestRawRecordDeadlineMatches(t *testing.T) {
-	base := time.Unix(1_700_000_000, 0).UTC()
-	idle := base.Add(15 * time.Minute)
-
-	if got := (RawRecord{IdleExpiresAt: idle}).Deadline(); !got.Equal(idle) {
-		t.Errorf("Deadline = %v, want the idle bound %v", got, idle)
-	}
-	if got := (RawRecord{}).Deadline(); !got.IsZero() {
-		t.Errorf("Deadline = %v, want the zero time when nothing is set", got)
+		if rawGot := raw.Deadline(); !rawGot.Equal(testCase.want) {
+			t.Errorf("%s: raw deadline = %v, want %v", testCase.name, rawGot, testCase.want)
+		}
 	}
 }

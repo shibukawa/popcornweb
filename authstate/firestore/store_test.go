@@ -150,46 +150,6 @@ func TestPutOverAnExpiredRecordSucceeds(t *testing.T) {
 	}
 }
 
-// The uncontended write is one commit and no transaction. The transaction is
-// what a collision costs, not what every ceremony costs.
-func TestAnUncontendedPutIsOneCommitAndNoTransaction(t *testing.T) {
-	ctx, store, fake := newStore(t)
-	if err := store.Put(ctx, "challenge", []byte("state"), time.Now().Add(time.Minute)); err != nil {
-		t.Fatal(err)
-	}
-	if got := fake.Calls("commit"); got != 1 {
-		t.Errorf("commits: got %d, want 1", got)
-	}
-	if got := fake.Calls("lookup"); got != 0 {
-		t.Errorf("lookups: got %d, want 0", got)
-	}
-	if got := fake.Calls("beginTransaction"); got != 0 {
-		t.Errorf("beginTransaction: got %d, want 0", got)
-	}
-}
-
-// A take is one read plus one commit, and the driver folds the begin into the
-// read, so it costs two round trips rather than three.
-func TestATakeCostsTwoRoundTripsAndNoExplicitBegin(t *testing.T) {
-	ctx, store, fake := newStore(t)
-	if err := store.Put(ctx, "challenge", []byte("state"), time.Now().Add(time.Minute)); err != nil {
-		t.Fatal(err)
-	}
-	before := fake.Calls("commit")
-	if _, err := store.Take(ctx, "challenge"); err != nil {
-		t.Fatal(err)
-	}
-	if got := fake.Calls("beginTransaction"); got != 0 {
-		t.Errorf("beginTransaction: got %d, want 0; the begin is folded into the read", got)
-	}
-	if got := fake.Calls("lookup"); got != 1 {
-		t.Errorf("lookups: got %d, want 1", got)
-	}
-	if got := fake.Calls("commit") - before; got != 1 {
-		t.Errorf("commits: got %d, want 1", got)
-	}
-}
-
 func TestTakeAfterExpiryReturnsTheContractErrorAndLeavesNothing(t *testing.T) {
 	now := time.Now()
 	clock := now

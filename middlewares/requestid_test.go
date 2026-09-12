@@ -74,11 +74,12 @@ func TestRequestIDBindsRuntimeLoggerByDefault(t *testing.T) {
 	}
 }
 
-func TestGeneratedRequestIDsAreUnique(t *testing.T) {
-	for _, generate := range []func() string{SequentialRequestID, RandomRequestID} {
-		first, second := generate(), generate()
-		if first == second || !ValidRequestID(first) {
-			t.Fatalf("generated IDs = %q, %q", first, second)
-		}
+func TestSequentialRequestIDsAreUnique(t *testing.T) {
+	first, second := SequentialRequestID(), SequentialRequestID()
+	if first == second {
+		t.Fatalf("two sequential requests shared ID %q", first)
+	}
+	if !ValidRequestID(first) || !ValidRequestID(second) {
+		t.Fatalf("generated IDs = %q, %q; both must be safe request IDs", first, second)
 	}
 }

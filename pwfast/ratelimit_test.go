@@ -95,7 +95,11 @@ func TestRateLimitRefusalCarriesRetryMetadata(t *testing.T) {
 		t.Fatalf("status = %d, want 429", status)
 	}
 	lower := strings.ToLower(header)
-	for _, want := range []string{"retry-after:", "ratelimit-limit:", "ratelimit-reset:"} {
+	for _, want := range []string{
+		"cache-control: no-store", "retry-after:",
+		"ratelimit-limit:", "ratelimit-remaining:", "ratelimit-reset:",
+		"x-ratelimit-limit:", "x-ratelimit-remaining:", "x-ratelimit-reset:",
+	} {
 		if !strings.Contains(lower, want) {
 			t.Errorf("the refusal carries no %q:\n%s", want, header)
 		}

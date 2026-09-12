@@ -266,6 +266,34 @@ func TestSnapshotRoundTrip(t *testing.T) {
 	if normalizeDump(gotDump) != normalizeDump(wantDump) {
 		t.Fatalf("replayed database differs\n--- replayed ---\n%s\n--- migrated ---\n%s", gotDump, wantDump)
 	}
+	// The AUTOINCREMENT counter must survive so a new row cannot reuse id 1.
+	if _, err := replayed.Exec("INSERT INTO users (name) VALUES ('next')"); err != nil {
+		t.Fatalf("insert after replay: %v", err)
+	}
+	var nextID int64
+	if err := replayed.QueryRow("SELECT id FROM users WHERE name = 'next'").Scan(&nextID); err != nil {
+		t.Fatalf("read new id: %v", err)
+	}
+	if nextID != 2 {
+		t.Fatalf("new id = %d, want 2", nextID)
+	}
+
+	// Recorded versions must make the replayed database look fully migrated.
+	target := AttachSQLite(replayed)
+	version, err := Version(context.Background(), target, sources)
+	if err != nil {
+		t.Fatalf("version after replay: %v", err)
+	}
+	if version != 2 {
+		t.Fatalf("version after replay = %d, want 2", version)
+	}
+	pending, err := Pending(context.Background(), target, sources)
+	if err != nil {
+		t.Fatalf("pending after replay: %v", err)
+	}
+	if len(pending) != 0 {
+		t.Fatalf("pending after replay = %d, want 0", len(pending))
+	}
 }
 
 // normalizeDump drops the goose timestamp column, which records wall-clock time.
@@ -281,84 +309,6 @@ func normalizeDump(dump string) string {
 		kept = append(kept, line)
 	}
 	return strings.Join(kept, "\n")
-}
-
-func TestSnapshotPreservesValuesAndCounters(t *testing.T) {
-	directory := fullSources(t)
-	sources, err := Sources(directory)
-	if err != nil {
-		t.Fatalf("sources: %v", err)
-	}
-	script, err := Snapshot(context.Background(), sources)
-	if err != nil {
-		t.Fatalf("snapshot: %v", err)
-	}
-	if !strings.Contains(script, "sqlite_sequence") {
-		t.Fatalf("snapshot omits AUTOINCREMENT counters:\n%s", script)
-	}
-	if !strings.Contains(script, `INSERT INTO "goose_db_version"`) {
-		t.Fatalf("snapshot omits recorded versions:\n%s", script)
-	}
-	indexPosition := strings.Index(script, "CREATE INDEX")
-	insertPosition := strings.LastIndex(script, "INSERT INTO")
-	if indexPosition < 0 || indexPosition < insertPosition {
-		t.Fatalf("snapshot emits indexes before data:\n%s", script)
-	}
-
-	db, err := sql.Open("sqlite", ":memory:")
-	if err != nil {
-		t.Fatalf("open memory database: %v", err)
-	}
-	defer db.Close()
-	if err := Replay(context.Background(), db, script); err != nil {
-		t.Fatalf("replay: %v", err)
-	}
-
-	var name string
-	var avatar []byte
-	var score float64
-	err = db.QueryRow("SELECT name, avatar, score FROM users WHERE id = 1").Scan(&name, &avatar, &score)
-	if err != nil {
-		t.Fatalf("read replayed row: %v", err)
-	}
-	if name != "it's me" {
-		t.Fatalf("name = %q, want %q", name, "it's me")
-	}
-	if string(avatar) != "\x00\xffA" {
-		t.Fatalf("avatar = %q, want the original blob", avatar)
-	}
-	if score != 0.1 {
-		t.Fatalf("score = %v, want 0.1", score)
-	}
-
-	// The AUTOINCREMENT counter must survive so a new row cannot reuse id 1.
-	if _, err := db.Exec("INSERT INTO users (name) VALUES ('next')"); err != nil {
-		t.Fatalf("insert after replay: %v", err)
-	}
-	var nextID int64
-	if err := db.QueryRow("SELECT id FROM users WHERE name = 'next'").Scan(&nextID); err != nil {
-		t.Fatalf("read new id: %v", err)
-	}
-	if nextID != 2 {
-		t.Fatalf("new id = %d, want 2", nextID)
-	}
-
-	// Recorded versions must make the replayed database look fully migrated.
-	target := AttachSQLite(db)
-	version, err := Version(context.Background(), target, sources)
-	if err != nil {
-		t.Fatalf("version after replay: %v", err)
-	}
-	if version != 2 {
-		t.Fatalf("version after replay = %d, want 2", version)
-	}
-	pending, err := Pending(context.Background(), target, sources)
-	if err != nil {
-		t.Fatalf("pending after replay: %v", err)
-	}
-	if len(pending) != 0 {
-		t.Fatalf("pending after replay = %d, want 0", len(pending))
-	}
 }
 
 func TestSnapshotIsDeterministic(t *testing.T) {

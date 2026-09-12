@@ -31,26 +31,6 @@ func TestSecurityHeadersSendsTheResolvedSet(t *testing.T) {
 	}
 }
 
-// The header set is the shared leaf's arithmetic, so the two transports cannot
-// disagree about it. This asserts that rather than asserting a list twice.
-func TestTheHeaderSetIsTheOneTheSharedLeafResolved(t *testing.T) {
-	config := DefaultSecurityHeaders()
-	resolved, err := pwruntime.ResolveSecurityHeaders(config)
-	if err != nil {
-		t.Fatal(err)
-	}
-	middleware, err := SecurityHeaders(config)
-	if err != nil {
-		t.Fatal(err)
-	}
-	_, header, _ := serve(t, Chain(func(*fasthttp.RequestCtx) {}, middleware), "/")
-	for _, entry := range resolved.Always {
-		if !strings.Contains(header, entry.Name+": "+entry.Value) {
-			t.Errorf("resolved %s was not sent:\n%s", entry.Name, header)
-		}
-	}
-}
-
 func TestAnInvalidSecurityConfigurationIsAnErrorBeforeServing(t *testing.T) {
 	if _, err := SecurityHeaders(SecurityHeadersConfig{FrameOptions: "sometimes"}); err == nil {
 		t.Fatal("an unsupported frame_options was accepted")

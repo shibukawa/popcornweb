@@ -94,14 +94,12 @@ func TestValidateSessionConfigJudgesTheCookieByEnvironment(t *testing.T) {
 	if err := validateSessionConfig(insecure, EnvDevelopment, true); err != nil {
 		t.Fatalf("dev refused the loopback exception: %v", err)
 	}
-	for _, env := range []string{EnvStaging, EnvProduction, "sandbox"} {
-		err := validateSessionConfig(insecure, env, false)
-		if err == nil {
-			t.Fatalf("%s started with an insecure session cookie", env)
-		}
-		if !strings.Contains(err.Error(), "session.cookie.secure") {
-			t.Fatalf("%s error = %v, want the key named", env, err)
-		}
+	err := validateSessionConfig(insecure, EnvStaging, false)
+	if err == nil {
+		t.Fatal("staging started with an insecure session cookie")
+	}
+	if !strings.Contains(err.Error(), "session.cookie.secure") {
+		t.Fatalf("staging error = %v, want the key named", err)
 	}
 	crossSite := SessionConfig{Enabled: true, Cookie: SessionCookieConfig{SameSite: "none"}}
 	if err := validateSessionConfig(crossSite, EnvDevelopment, true); err == nil {

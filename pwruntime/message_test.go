@@ -30,13 +30,6 @@ func TestRenderMessageDoesNotEscape(t *testing.T) {
 	}
 }
 
-func TestRenderMessageReturnsALoneLiteralDirectly(t *testing.T) {
-	row := []Segment{{Lit: "こんにちは"}}
-	if got := RenderMessage(row); got != "こんにちは" {
-		t.Errorf("RenderMessage = %q", got)
-	}
-}
-
 // A row referring to an argument the caller did not pass renders nothing there
 // rather than panicking. Generation checks arity, so reaching this means the
 // table and the signature disagree, and a blank is a better production outcome

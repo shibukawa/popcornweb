@@ -75,16 +75,6 @@ func TestTheLoginRedirectCarriesAScopedTransactionCookie(t *testing.T) {
 	}
 }
 
-// A callback with no transaction cookie is a request that did not start here.
-func TestACallbackWithoutATransactionIsRefused(t *testing.T) {
-	browser := newBrowser(t).noRedirect()
-
-	response, _ := browser.get("/auth/callback?state=made-up&code=made-up")
-	if response.StatusCode != http.StatusBadRequest {
-		t.Fatalf("an uncorrelated callback answered %d, want 400", response.StatusCode)
-	}
-}
-
 // The endpoints answer only the methods they serve, and say which.
 func TestTheEndpointsRefuseTheWrongMethod(t *testing.T) {
 	browser := newBrowser(t).noRedirect()

@@ -138,19 +138,6 @@ func TestManifestDoesNotVaryOnAcceptForOneRepresentation(t *testing.T) {
 	}
 }
 
-func TestManifestNegotiatesTheContentCoding(t *testing.T) {
-	tree := manifestFixture(t)
-	response := manifestRequest(t, tree, "/public/app.css", map[string]string{
-		"Accept-Encoding": "zstd",
-	})
-	if response.Body.String() != "bdy" || response.Header().Get("Content-Encoding") != "zstd" {
-		t.Errorf("body = %q, encoding = %q", response.Body.String(), response.Header().Get("Content-Encoding"))
-	}
-	if response.Header().Get("ETag") != `"cssz"` {
-		t.Errorf("the coded form reused the identity validator")
-	}
-}
-
 func TestManifestAnswersNotModified(t *testing.T) {
 	tree := manifestFixture(t)
 	response := manifestRequest(t, tree, "/public/app.css", map[string]string{"If-None-Match": `"css"`})

@@ -73,15 +73,17 @@ func (e errProvider) Error() string { return "provider error: " + string(e) }
 // worth checking: the second token arrives now, and reports a proof from
 // earlier, because the provider answered from its own session.
 func TestASecondAuthorizationReportsTheEarlierAuthTime(t *testing.T) {
-	server := startProvider(t, devidp.Options{LoginUser: "admin"})
-	party := newRelyingParty(t, server)
+	clock := time.Now().Truncate(time.Second)
+	now := func() time.Time { return clock }
+	server := startProvider(t, devidp.Options{LoginUser: "admin", Now: now})
+	party := newRelyingParty(t, server, now)
 	client := browser(t)
 
 	first, err := authTimeOf(t, party, client, oidc.BeginOptions{Scopes: []string{"openid"}})
 	if err != nil || first == nil {
 		t.Fatalf("first authorization: %v, %v", first, err)
 	}
-	time.Sleep(1100 * time.Millisecond)
+	clock = clock.Add(2 * time.Second)
 	second, err := authTimeOf(t, party, client, oidc.BeginOptions{Scopes: []string{"openid"}})
 	if err != nil || second == nil {
 		t.Fatalf("second authorization: %v, %v", second, err)
@@ -94,15 +96,17 @@ func TestASecondAuthorizationReportsTheEarlierAuthTime(t *testing.T) {
 // max_age is what a relying party sends to refuse that answer, and the provider
 // honours it by authenticating again.
 func TestMaxAgeForcesAFreshAuthentication(t *testing.T) {
-	server := startProvider(t, devidp.Options{LoginUser: "admin"})
-	party := newRelyingParty(t, server)
+	clock := time.Now().Truncate(time.Second)
+	now := func() time.Time { return clock }
+	server := startProvider(t, devidp.Options{LoginUser: "admin", Now: now})
+	party := newRelyingParty(t, server, now)
 	client := browser(t)
 
 	first, err := authTimeOf(t, party, client, oidc.BeginOptions{Scopes: []string{"openid"}})
 	if err != nil || first == nil {
 		t.Fatalf("first authorization: %v, %v", first, err)
 	}
-	time.Sleep(1100 * time.Millisecond)
+	clock = clock.Add(2 * time.Second)
 	zero := time.Duration(0)
 	second, err := authTimeOf(t, party, client, oidc.BeginOptions{Scopes: []string{"openid"}, MaxAge: &zero})
 	if err != nil || second == nil {
@@ -135,15 +139,17 @@ func TestAWideMaxAgeIsSatisfiedFromTheSession(t *testing.T) {
 }
 
 func TestPromptLoginReauthenticatesAndPromptNoneRefuses(t *testing.T) {
-	server := startProvider(t, devidp.Options{LoginUser: "admin"})
-	party := newRelyingParty(t, server)
+	clock := time.Now().Truncate(time.Second)
+	now := func() time.Time { return clock }
+	server := startProvider(t, devidp.Options{LoginUser: "admin", Now: now})
+	party := newRelyingParty(t, server, now)
 	client := browser(t)
 
 	first, err := authTimeOf(t, party, client, oidc.BeginOptions{Scopes: []string{"openid"}})
 	if err != nil || first == nil {
 		t.Fatalf("first authorization: %v, %v", first, err)
 	}
-	time.Sleep(1100 * time.Millisecond)
+	clock = clock.Add(2 * time.Second)
 	relogin, err := authTimeOf(t, party, client, oidc.BeginOptions{Scopes: []string{"openid"}, Prompt: []string{"login"}})
 	if err != nil || relogin == nil {
 		t.Fatalf("prompt=login: %v, %v", relogin, err)
@@ -165,8 +171,10 @@ func TestPromptLoginReauthenticatesAndPromptNoneRefuses(t *testing.T) {
 // Ending the provider session is what a global sign-out asks for, and the next
 // authorization must therefore authenticate rather than answer from it.
 func TestEndSessionClearsTheProviderSession(t *testing.T) {
-	server := startProvider(t, devidp.Options{LoginUser: "admin"})
-	party := newRelyingParty(t, server)
+	clock := time.Now().Truncate(time.Second)
+	now := func() time.Time { return clock }
+	server := startProvider(t, devidp.Options{LoginUser: "admin", Now: now})
+	party := newRelyingParty(t, server, now)
 	client := browser(t)
 
 	first, err := authTimeOf(t, party, client, oidc.BeginOptions{Scopes: []string{"openid"}})
@@ -183,7 +191,7 @@ func TestEndSessionClearsTheProviderSession(t *testing.T) {
 	}
 	_ = response.Body.Close()
 
-	time.Sleep(1100 * time.Millisecond)
+	clock = clock.Add(2 * time.Second)
 	second, err := authTimeOf(t, party, client, oidc.BeginOptions{Scopes: []string{"openid"}})
 	if err != nil || second == nil {
 		t.Fatalf("second authorization: %v, %v", second, err)

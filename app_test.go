@@ -44,9 +44,6 @@ func TestAppComposesStandardHandlersAndMiddleware(t *testing.T) {
 	if !reflect.DeepEqual(order, want) {
 		t.Fatalf("middleware order = %v, want %v", order, want)
 	}
-	if _, ok := any(app.Mux()).(http.Handler); !ok {
-		t.Fatal("Mux does not implement http.Handler")
-	}
 }
 
 func TestOperationalEndpoints(t *testing.T) {

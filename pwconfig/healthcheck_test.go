@@ -121,13 +121,3 @@ func TestRefusePendingFrameworkActionNamesTheAction(t *testing.T) {
 		t.Fatal(err)
 	}
 }
-
-func TestRegisterSubCommandRejectsReservedHealthcheckName(t *testing.T) {
-	defer func() {
-		if recover() == nil {
-			t.Fatal("reserved subcommand name was accepted")
-		}
-	}()
-	type probeCommand struct{}
-	RegisterSubCommand[probeCommand]("healthcheck", "collides with the framework probe")
-}

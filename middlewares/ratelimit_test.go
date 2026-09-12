@@ -67,17 +67,12 @@ func TestRateLimitBoundsOneAddress(t *testing.T) {
 			t.Fatalf("request %d: status = %d, want %d (all: %v)", i+1, code, want[i], codes)
 		}
 	}
-}
-
-// Two callers are two buckets. This is the whole point of resolving the client
-// address: behind a proxy they would otherwise share one.
-func TestRateLimitSeparatesCallers(t *testing.T) {
-	handler := rateLimitChain(t, enabledRateLimit(), RateLimitDeps{})
-	statuses(t, handler, func() *http.Request { return anonymous("203.0.113.9") }, 2)
-	response := httptest.NewRecorder()
-	handler.ServeHTTP(response, anonymous("198.51.100.4"))
-	if response.Code != http.StatusNoContent {
-		t.Fatalf("a second caller got status %d from the first caller's bucket", response.Code)
+	// Once one address is exhausted, another gets its own full allowance.
+	second := statuses(t, handler, func() *http.Request { return anonymous("198.51.100.4") }, 3)
+	for i, code := range second {
+		if code != want[i] {
+			t.Fatalf("second caller request %d: status = %d, want %d (all: %v)", i+1, code, want[i], second)
+		}
 	}
 }
 

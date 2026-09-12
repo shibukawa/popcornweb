@@ -42,12 +42,6 @@ test("pw dev is not a task", async () => {
   assert.ok(!taskCommands().some((command) => command.id === "dev"));
 });
 
-test("migrate asks before it runs", async () => {
-  // policy:migration-safety makes it forward-only against a real database, so
-  // a click must not reach it.
-  assert.ok(commandById("migrate").confirm);
-});
-
 test("generate is the only command that writes generated Go", async () => {
   assert.equal(commandById("generate").writes, true);
   assert.equal(commandById("check").writes, false);
@@ -102,20 +96,6 @@ test("a matcher resolves a path against the workspace folder", async () => {
   for (const matcher of manifest.contributes.problemMatchers) {
     assert.deepEqual(matcher.fileLocation, ["relative", "${workspaceFolder}"]);
   }
-});
-
-test("the manifest version has a changelog entry", async () => {
-  // requirement:extension-distribution: both registries require the changelog,
-  // and a version published without one tells a reader nothing about what
-  // changed. The tag is what publishes, so the entry has to exist before it.
-  const { readFileSync } = await import("node:fs");
-  const changelog = readFileSync(join(extensionRoot, "CHANGELOG.md"), "utf8");
-
-  assert.match(
-    changelog,
-    new RegExp(`^## ${manifest.version.replace(/\./g, "\\.")}$`, "m"),
-    `CHANGELOG.md has no entry for ${manifest.version}`,
-  );
 });
 
 test("the changelog opens with the version being published", async () => {

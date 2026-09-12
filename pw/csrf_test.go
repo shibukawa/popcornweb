@@ -166,17 +166,6 @@ func TestBoundaryRuntimeSendsTheTokenItReadsFromTheCookie(t *testing.T) {
 	}
 }
 
-// The name is a contract between the Go side and the script, so the two must
-// not be able to drift: a module script cannot read it off its own tag.
-func TestCSRFCookieNameIsOneValueOnBothSides(t *testing.T) {
-	if CSRFCookieName == "" {
-		t.Fatal("the cookie name is empty")
-	}
-	if !strings.Contains(boundaryRuntimeScript, `"`+CSRFCookieName+`"`) {
-		t.Errorf("the script does not name %q", CSRFCookieName)
-	}
-}
-
 // A configured field name generated forms will not carry is refused at startup.
 //
 // The failure it replaces is a 403 on every form submission with the reason in

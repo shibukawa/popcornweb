@@ -48,6 +48,10 @@ func TestHomeStreamsFallbacksBeforeCompletions(t *testing.T) {
 	if !strings.Contains(body, `<tb-apply for="tb-1"></tb-apply>`) {
 		t.Errorf("boundary framing missing: %q", body)
 	}
+	wantRuntime := `<script type="module" src="` + pw.RuntimeScriptURL() + `">`
+	if !strings.Contains(body, wantRuntime) {
+		t.Errorf("document does not reference %q", wantRuntime)
+	}
 	// The profile is an ordinary parameter, so it belongs to the first pass
 	// rather than to a boundary.
 	if profile := strings.Index(body, "Ada Lovelace"); profile < 0 || profile > fallback {
@@ -71,16 +75,6 @@ func TestRecommendationFailureStaysServerSide(t *testing.T) {
 	}
 	if strings.Contains(body, "503") {
 		t.Fatal("the raw error reached the page")
-	}
-}
-
-func TestDocumentReferencesTheRuntimeModule(t *testing.T) {
-	recorder := httptest.NewRecorder()
-	profile(recorder, browserRequest("/profile"))
-
-	want := `<script type="module" src="` + pw.RuntimeScriptURL() + `">`
-	if !strings.Contains(recorder.Body.String(), want) {
-		t.Fatalf("document does not reference %q", want)
 	}
 }
 

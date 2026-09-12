@@ -51,31 +51,3 @@ func TestPresenceOffValidatesNothing(t *testing.T) {
 		t.Fatalf("disabled presence = %v", err)
 	}
 }
-
-// A wall-clock gap far larger than the tick interval is how a machine waking
-// from sleep is inferred, because nothing reports a wake directly. It counts as
-// absence: nobody was there for the gap.
-func TestALargeClockGapCountsAsAbsence(t *testing.T) {
-	config := presenceConfig()
-	cases := map[string]struct {
-		report presenceReport
-		absent bool
-	}{
-		"interaction":            {presenceReport{Active: true}, false},
-		"no interaction":         {presenceReport{Active: false}, true},
-		"slept past the window":  {presenceReport{Active: true, Gap: int64((31 * time.Minute).Seconds())}, true},
-		"brief gap while active": {presenceReport{Active: true, Gap: 5}, false},
-	}
-	for name, testCase := range cases {
-		t.Run(name, func(t *testing.T) {
-			absent := !testCase.report.Active
-			if config.AbsentAfter > 0 && testCase.report.Gap > 0 &&
-				time.Duration(testCase.report.Gap)*time.Second >= config.AbsentAfter {
-				absent = true
-			}
-			if absent != testCase.absent {
-				t.Fatalf("absent = %v, want %v", absent, testCase.absent)
-			}
-		})
-	}
-}

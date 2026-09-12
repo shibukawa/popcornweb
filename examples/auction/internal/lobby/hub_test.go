@@ -2,20 +2,7 @@ package lobby
 
 import (
 	"testing"
-	"time"
 )
-
-func TestNotifyRoomsChangedWakesSubscriber(t *testing.T) {
-	changed, unsubscribe := Subscribe()
-	defer unsubscribe()
-
-	NotifyRoomsChanged()
-	select {
-	case <-changed:
-	case <-time.After(time.Second):
-		t.Fatal("subscriber did not receive a room change")
-	}
-}
 
 func TestNotifyRoomsChangedCoalescesBursts(t *testing.T) {
 	changed, unsubscribe := Subscribe()

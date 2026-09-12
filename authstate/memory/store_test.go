@@ -128,23 +128,18 @@ func TestStoreRejectsNilContext(t *testing.T) {
 	}
 }
 
-func TestNilStoreIsSafe(t *testing.T) {
-	var store *Store[int]
-	if err := store.Put(context.Background(), "state", 1, time.Now().Add(time.Minute)); !errors.Is(err, authstate.ErrInvalidOptions) {
-		t.Fatalf("nil Put = %v", err)
-	}
-	if _, err := store.Take(context.Background(), "state"); !errors.Is(err, authstate.ErrInvalidOptions) {
-		t.Fatalf("nil Take = %v", err)
-	}
-}
-
-func TestZeroStoreIsSafe(t *testing.T) {
-	var store Store[int]
-	if err := store.Put(context.Background(), "state", 1, time.Now().Add(time.Minute)); !errors.Is(err, authstate.ErrInvalidOptions) {
-		t.Fatalf("zero Put = %v", err)
-	}
-	if _, err := store.Take(context.Background(), "state"); !errors.Is(err, authstate.ErrInvalidOptions) {
-		t.Fatalf("zero Take = %v", err)
+func TestNilAndZeroStoresAreSafe(t *testing.T) {
+	var nilStore *Store[int]
+	var zeroStore Store[int]
+	for name, store := range map[string]*Store[int]{"nil": nilStore, "zero": &zeroStore} {
+		t.Run(name, func(t *testing.T) {
+			if err := store.Put(context.Background(), "state", 1, time.Now().Add(time.Minute)); !errors.Is(err, authstate.ErrInvalidOptions) {
+				t.Fatalf("Put = %v", err)
+			}
+			if _, err := store.Take(context.Background(), "state"); !errors.Is(err, authstate.ErrInvalidOptions) {
+				t.Fatalf("Take = %v", err)
+			}
+		})
 	}
 }
 

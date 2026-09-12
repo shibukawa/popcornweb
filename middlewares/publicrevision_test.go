@@ -4,7 +4,6 @@ package middlewares
 
 import (
 	"net/http"
-	"strings"
 	"testing"
 	"testing/fstest"
 
@@ -77,6 +76,10 @@ func TestStaleRevisionIsNotFound(t *testing.T) {
 		"/public/ffffffffffffffff/app.css",
 		"/public/fedcba9876543210/app.css", // another entry's revision
 		"/public/0123456789abcdef/missing.css",
+		"/public/fffffffffffffff/app.css",
+		"/public/fffffffffffffffff/app.css",
+		"/public/0123456789ABCDEF/app.css",
+		"/public/0123456789abcdeg/app.css",
 	} {
 		tree := revisionFixture(t)
 		if response := manifestRequest(t, tree, target, nil); response.Code != http.StatusNotFound {
@@ -128,19 +131,5 @@ func TestPublicAssetURLFollowsTheConfiguredMount(t *testing.T) {
 	// template carrying yesterday's literal is not silently doubled up.
 	if got := PublicAssetURL("/static/app.css"); got != "/static/0123456789abcdef/app.css" {
 		t.Errorf("PublicAssetURL = %q", got)
-	}
-}
-
-// TestRevisionSegmentShapeIsCheckedBeforeTheManifest pins the pre-filter, which
-// exists so an ordinary two-segment path costs one lookup rather than two.
-func TestRevisionSegmentShapeIsCheckedBeforeTheManifest(t *testing.T) {
-	for _, segment := range []string{"", "generated", strings.Repeat("f", 15), strings.Repeat("f", 17),
-		"0123456789ABCDEF", "0123456789abcdeg"} {
-		if isRevisionSegment(segment) {
-			t.Errorf("%q was read as a revision", segment)
-		}
-	}
-	if !isRevisionSegment("0123456789abcdef") {
-		t.Error("a well-formed segment was refused")
 	}
 }

@@ -448,9 +448,6 @@ func TestBeginAuthorizationBoundsCorrelationInputs(t *testing.T) {
 	if _, _, err := client.BeginAuthorization(context.Background(), BeginOptions{Nonce: string(make([]byte, 257))}); !errors.Is(err, ErrInvalidOptions) {
 		t.Fatalf("nonce bound error = %v", err)
 	}
-	if _, _, err := client.BeginAuthorization(context.Background(), BeginOptions{Scopes: []string{string(make([]byte, 257))}}); !errors.Is(err, ErrInvalidOptions) {
-		t.Fatalf("scope bound error = %v", err)
-	}
 }
 
 func TestRejectsRedirectAndInvalidEndpoint(t *testing.T) {

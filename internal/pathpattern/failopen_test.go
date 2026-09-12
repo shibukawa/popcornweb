@@ -63,14 +63,21 @@ func TestOrdinaryPathsStayCanonical(t *testing.T) {
 	}
 }
 
-// Exclude sees the same normalization, so a pattern means one thing wherever it
-// is used.
+// Exclusions take precedence over an including subtree, including the
+// equivalent trailing-slash path form.
 func TestExcludeAlsoSeesTheTrailingSlash(t *testing.T) {
+	include, err := Compile([]string{"/public/**"})
+	if err != nil {
+		t.Fatal(err)
+	}
 	exclude, err := Compile([]string{"/public/health"})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !MatchAny(exclude, "/public/health/") {
-		t.Error("an exclude pattern did not cover the trailing-slash form")
+	if Protected(include, exclude, "/public/health/") {
+		t.Error("an excluded trailing-slash path remained protected")
+	}
+	if !Protected(include, exclude, "/public/memos") {
+		t.Error("the including subtree stopped protecting a non-excluded path")
 	}
 }

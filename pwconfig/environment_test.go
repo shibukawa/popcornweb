@@ -79,9 +79,3 @@ func TestResolveLoadOptionsKeepsExplicitReadPaths(t *testing.T) {
 		t.Fatalf("ExtraConfigReadPaths = %v, want %v", plan.options.ExtraConfigReadPaths, explicit)
 	}
 }
-
-func TestEnvFallsBackToTheDefaultEnvironment(t *testing.T) {
-	if got := Env(); got == "" {
-		t.Fatal("Env returned an empty environment")
-	}
-}

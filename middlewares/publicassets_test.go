@@ -6,7 +6,6 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 	"testing/fstest"
 )
@@ -152,20 +151,32 @@ func TestPublicAssetLocalOverlayIsLayerConsistent(t *testing.T) {
 		"app.css.zstd": {Data: []byte("embedded-zstd")},
 		"fallback.txt": {Data: []byte("fallback")},
 	}
-	asset, ok := resolvePublicAsset("app.css", PublicAssetConfig{ReadLocal: true}, embedded)
-	if !ok || string(asset.identity) != "local" {
-		t.Fatalf("local asset = %#v, %v", asset, ok)
+	middleware, err := PublicAssets(PublicAssetConfig{
+		Enabled:   true,
+		Mount:     "/public",
+		ReadLocal: true,
+	}, embedded)
+	if err != nil {
+		t.Fatal(err)
 	}
-	// A local override answers with its own bytes, so the embedded tree's
-	// sidecars must not be mixed in: they encode a different file.
-	for rank, body := range asset.encoded {
-		if body != nil {
-			t.Fatalf("local asset carried an embedded %s sidecar", staticContentCodings[rank].token)
+	handler := middleware(http.NotFoundHandler())
+	for _, testCase := range []struct {
+		path, wantBody string
+		wantEncoding   string
+	}{
+		{path: "/public/app.css", wantBody: "local"},
+		{path: "/public/fallback.txt", wantBody: "fallback"},
+	} {
+		request := httptest.NewRequest(http.MethodGet, testCase.path, nil)
+		request.Header.Set("Accept-Encoding", "zstd")
+		response := httptest.NewRecorder()
+		handler.ServeHTTP(response, request)
+		if response.Code != http.StatusOK || response.Body.String() != testCase.wantBody {
+			t.Errorf("%s: response = %d %q, want 200 %q", testCase.path, response.Code, response.Body.String(), testCase.wantBody)
 		}
-	}
-	asset, ok = resolvePublicAsset("fallback.txt", PublicAssetConfig{ReadLocal: true}, embedded)
-	if !ok || string(asset.identity) != "fallback" {
-		t.Fatalf("fallback asset = %#v, %v", asset, ok)
+		if got := response.Header().Get("Content-Encoding"); got != testCase.wantEncoding {
+			t.Errorf("%s: Content-Encoding = %q, want %q", testCase.path, got, testCase.wantEncoding)
+		}
 	}
 }
 
@@ -186,8 +197,5 @@ func TestEmbeddedAssetRequiresRegularFile(t *testing.T) {
 	var embedded fs.FS = fstest.MapFS{"directory/file.txt": {Data: []byte("ok")}}
 	if _, ok := readEmbeddedPublicAsset(embedded, "directory"); ok {
 		t.Fatal("directory without index was served")
-	}
-	if _, ok := publicAssetName(strings.Repeat("a", 1)); !ok {
-		t.Fatal("valid asset name rejected")
 	}
 }

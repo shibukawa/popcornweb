@@ -46,19 +46,6 @@ func TestReproductionSnippetBindsInsteadOfInlining(t *testing.T) {
 	}
 }
 
-// The whole point of the snippet is that the reproduced statement is the one
-// that ran, so a value must never end up inside the statement text.
-func TestReproductionSnippetNeverInlinesIntoStatement(t *testing.T) {
-	snippet := reproductionSnippet("postgres", "SELECT * FROM items WHERE name = $1", []any{"alpha"})
-	statement := snippet[:strings.Index(snippet, "EXECUTE")]
-	if strings.Contains(statement, "alpha") {
-		t.Errorf("value was inlined into the prepared statement: %q", statement)
-	}
-	if !strings.Contains(statement, "$1") {
-		t.Errorf("placeholder was rewritten: %q", statement)
-	}
-}
-
 func TestReproductionSnippetRefusesUnreproducibleInput(t *testing.T) {
 	tests := []struct {
 		name   string

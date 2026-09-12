@@ -4,12 +4,10 @@ import (
 	"bytes"
 	"net/http"
 	"net/http/httptest"
-	"reflect"
 	"strings"
 	"testing"
 	"testing/fstest"
 
-	kzstd "github.com/klauspost/compress/zstd"
 	"github.com/shibukawa/popcornweb/pwruntime"
 	"github.com/shibukawa/tinybind-go/configbind"
 	"github.com/shibukawa/tinybind-go/htmlbind"
@@ -28,6 +26,8 @@ func TestScaffoldsIncludeBuiltInDefinitions(t *testing.T) {
 		"access_log = true",
 		`backend = "rdb"`, `cookie_store.name = "pw_session_data"`, `keyring.secret = ""`,
 		`redis.key_prefix = "pw:session:"`, `redis.connect_timeout = "5s"`,
+		"[[middleware.rdb.connections]]", `group = ""`, "readonly = false",
+		"default_group", "write_group", "migration_group",
 	} {
 		if !strings.Contains(toml, fragment) {
 			t.Fatalf("TOML scaffold missing %q:\n%s", fragment, toml)
@@ -76,21 +76,6 @@ func TestMiddlewaresParseAndInjectConfiguration(t *testing.T) {
 	}
 	if recorder.Header().Get("X-Request-ID") == "" {
 		t.Fatal("request ID was not added")
-	}
-}
-
-func TestWriteHTMLBuffersAndWrites(t *testing.T) {
-	recorder := httptest.NewRecorder()
-	request := httptest.NewRequest(http.MethodGet, "/", nil)
-	builder := htmlbind.Builder[string]{}
-	leaf := (&htmlbind.Plan[string]{Ops: []htmlbind.Op[string]{
-		builder.Static("<h1>"),
-		builder.Text(func(value string) string { return value }),
-		builder.Static("</h1>"),
-	}}).Bind("Hello")
-	WriteHTML(recorder, request, leaf)
-	if recorder.Code != http.StatusOK || recorder.Body.String() != "<h1>Hello</h1>" {
-		t.Fatalf("response = %d %q", recorder.Code, recorder.Body.String())
 	}
 }
 
@@ -146,39 +131,6 @@ func TestWriteHTMLUsesRegisteredDocument(t *testing.T) {
 	WriteHTML(recorder, httptest.NewRequest(http.MethodGet, "/", nil), page)
 	if recorder.Body.String() != "<!doctype html><body><main>page</main></body>" {
 		t.Fatalf("body = %q", recorder.Body.String())
-	}
-}
-
-func TestWriteHTMLPreservesConfiguredZstdCompression(t *testing.T) {
-	builder := htmlbind.Builder[struct{}]{}
-	leaf := (&htmlbind.Plan[struct{}]{Ops: []htmlbind.Op[struct{}]{
-		builder.Static("<main>compressed</main>"),
-	}}).Bind(struct{}{})
-	request := httptest.NewRequest(http.MethodGet, "/", nil)
-	request.Header.Set("Accept-Encoding", "zstd")
-	request = request.WithContext(pwruntime.WithResources(request.Context(), pwruntime.Resources{
-		Configs: map[reflect.Type]any{
-			reflect.TypeFor[MiddlewareConfig](): MiddlewareConfig{Compression: true},
-		},
-	}))
-	recorder := httptest.NewRecorder()
-
-	WriteHTML(recorder, request, leaf)
-
-	if recorder.Header().Get("Content-Encoding") != "zstd" {
-		t.Fatalf("Content-Encoding = %q", recorder.Header().Get("Content-Encoding"))
-	}
-	decoder, err := kzstd.NewReader(nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer decoder.Close()
-	body, err := decoder.DecodeAll(recorder.Body.Bytes(), nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if string(body) != "<main>compressed</main>" {
-		t.Fatalf("decoded body = %q", body)
 	}
 }
 

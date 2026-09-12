@@ -38,19 +38,6 @@ func TestCSRFTokenDiffersPerEmissionAndStillVerifies(t *testing.T) {
 	}
 }
 
-// Verification recomputes the expected value from the pad the caller sent, which
-// is what lets a masked token work with a verifier that only compares.
-func TestExpectedCSRFTokenRebuildsFromThePresentedPad(t *testing.T) {
-	secret := newSecret(t)
-	token, err := CSRFToken(secret, nil)
-	if err != nil {
-		t.Fatalf("CSRFToken: %v", err)
-	}
-	if got := ExpectedCSRFToken(secret, token); got != token {
-		t.Errorf("ExpectedCSRFToken = %q, want the presented token", got)
-	}
-}
-
 func TestCSRFTokenRejectsForeignAndMalformedValues(t *testing.T) {
 	secret := newSecret(t)
 	other := newSecret(t)

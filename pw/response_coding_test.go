@@ -72,7 +72,6 @@ func TestWriteHTMLNegotiatesTheConfiguredOrder(t *testing.T) {
 		want           string
 	}{
 		{name: "gzip only", acceptEncoding: "gzip, deflate", want: "gzip"},
-		{name: "safari over plain http", acceptEncoding: "gzip, deflate", want: "gzip"},
 		{name: "both accepted takes the leader", acceptEncoding: "gzip, zstd", want: "zstd"},
 		{name: "configured order wins over header order", acceptEncoding: "gzip, zstd", codings: []string{"gzip", "zstd"}, want: "gzip"},
 		{name: "zstd refused falls through", acceptEncoding: "zstd;q=0, gzip", want: "gzip"},

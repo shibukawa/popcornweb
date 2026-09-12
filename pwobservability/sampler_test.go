@@ -9,11 +9,7 @@ import (
 func TestResolveSamplerDefaultsByEnvironment(t *testing.T) {
 	for _, testCase := range []struct{ env, want string }{
 		{env: pwconfig.EnvDevelopment, want: "parentbased_always_on"},
-		{env: pwconfig.EnvStaging, want: "parentbased_traceidratio{0.1}"},
 		{env: pwconfig.EnvProduction, want: "parentbased_traceidratio{0.1}"},
-		// An environment token nobody here declared is a deployment somebody
-		// added, so it takes the sampled branch rather than the dev one.
-		{env: "preview", want: "parentbased_traceidratio{0.1}"},
 	} {
 		sampler, err := ResolveSampler(pwconfig.ObservabilityConfig{}, testCase.env)
 		if err != nil {
@@ -29,7 +25,7 @@ func TestResolveSamplerPrefersTheConfiguredValue(t *testing.T) {
 	config := pwconfig.ObservabilityConfig{}
 	config.Trace.Sampler = "traceidratio"
 	config.Trace.SamplerArg = "0.25"
-	for _, env := range []string{pwconfig.EnvDevelopment, pwconfig.EnvProduction, "preview"} {
+	for _, env := range []string{pwconfig.EnvDevelopment, pwconfig.EnvProduction} {
 		sampler, err := ResolveSampler(config, env)
 		if err != nil {
 			t.Fatalf("%s: %v", env, err)

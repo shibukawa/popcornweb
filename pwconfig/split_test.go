@@ -5,6 +5,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"sync"
 	"testing"
 )
 
@@ -163,18 +164,37 @@ access_log = false
 }
 
 // dependsOn reports whether one package reaches another through any path.
+var dependencyCache = struct {
+	sync.Mutex
+	packages map[string]map[string]struct{}
+}{packages: make(map[string]map[string]struct{})}
+
 func dependsOn(t *testing.T, from, to string) bool {
 	t.Helper()
-	output, err := run(t, "", "go", "list", "-deps", from)
-	if err != nil {
-		t.Fatalf("go list -deps %s: %v\n%s", from, err, output)
-	}
-	for _, line := range strings.Split(output, "\n") {
-		if strings.TrimSpace(line) == to {
-			return true
+	dependencyCache.Lock()
+	packages, cached := dependencyCache.packages[from]
+	dependencyCache.Unlock()
+	if !cached {
+		output, err := run(t, "", "go", "list", "-deps", from)
+		if err != nil {
+			t.Fatalf("go list -deps %s: %v\n%s", from, err, output)
 		}
+		packages = make(map[string]struct{})
+		for _, line := range strings.Split(output, "\n") {
+			if name := strings.TrimSpace(line); name != "" {
+				packages[name] = struct{}{}
+			}
+		}
+		dependencyCache.Lock()
+		if previous, alreadyCached := dependencyCache.packages[from]; alreadyCached {
+			packages = previous
+		} else {
+			dependencyCache.packages[from] = packages
+		}
+		dependencyCache.Unlock()
 	}
-	return false
+	_, found := packages[to]
+	return found
 }
 
 func run(t *testing.T, directory string, name string, args ...string) (string, error) {

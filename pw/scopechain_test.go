@@ -69,8 +69,9 @@ func TestScopeCatalogDropsAnEntryItCannotSpell(t *testing.T) {
 // A URL holds colons, so only the first separates. This is the encoder's half of
 // the split the client performs.
 func TestScopeCatalogKeepsAURLsOwnColons(t *testing.T) {
-	got := encodeScopeChain([]scopeEntry{{Owner: "app.x.Comp", URL: "/public/generated/x.script.abc.js"}})
-	if _, url, found := strings.Cut(got, ":"); !found || url != "/public/generated/x.script.abc.js" {
+	const url = "https://assets.example.test/public/generated/x.script.abc.js"
+	got := encodeScopeChain([]scopeEntry{{Owner: "app.x.Comp", URL: url}})
+	if _, gotURL, found := strings.Cut(got, ":"); !found || gotURL != url {
 		t.Errorf("chain = %q, want the URL to survive intact", got)
 	}
 }

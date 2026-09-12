@@ -466,6 +466,9 @@ func TestSetWritesWithoutAFetch(t *testing.T) {
 	if err := store.Set(ctx, userKey{ID: "u1"}, "written"); err != nil {
 		t.Fatal(err)
 	}
+	if !store.Has(ctx, userKey{ID: "u1"}) {
+		t.Fatal("Has did not see the entry Set wrote")
+	}
 	got, err := store.Get(ctx, userKey{ID: "u1"}, func(context.Context) (string, error) {
 		t.Error("the fetch ran despite a written entry")
 		return "", nil

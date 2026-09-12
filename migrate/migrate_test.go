@@ -48,39 +48,38 @@ func requirePWOnPath(t *testing.T) {
 
 func TestSnapshotProducesReplayableSchema(t *testing.T) {
 	directory := migrationDir(t)
-	script, err := migrate.Snapshot(context.Background(), migrate.WithDir(directory))
-	if err != nil {
-		t.Fatalf("snapshot: %v", err)
-	}
-	if !strings.Contains(script, "CREATE TABLE counter") {
-		t.Fatalf("snapshot lacks the migrated table:\n%s", script)
-	}
+	for _, source := range []struct {
+		name   string
+		option migrate.Option
+	}{
+		{name: "directory", option: migrate.WithDir(directory)},
+		{name: "filesystem", option: migrate.WithFS(os.DirFS(directory))},
+	} {
+		t.Run(source.name, func(t *testing.T) {
+			script, err := migrate.Snapshot(context.Background(), source.option)
+			if err != nil {
+				t.Fatalf("snapshot: %v", err)
+			}
+			if !strings.Contains(script, "CREATE TABLE counter") {
+				t.Fatalf("snapshot lacks the migrated table:\n%s", script)
+			}
 
-	db, err := sql.Open("sqlite", ":memory:")
-	if err != nil {
-		t.Fatalf("open memory database: %v", err)
-	}
-	defer db.Close()
-	if err := migrate.Replay(context.Background(), db, script); err != nil {
-		t.Fatalf("replay: %v", err)
-	}
-	var value int
-	if err := db.QueryRow("SELECT value FROM counter").Scan(&value); err != nil {
-		t.Fatalf("read replayed row: %v", err)
-	}
-	if value != 7 {
-		t.Fatalf("value = %d, want 7", value)
-	}
-}
-
-func TestSnapshotFromEmbeddedTree(t *testing.T) {
-	directory := migrationDir(t)
-	script, err := migrate.Snapshot(context.Background(), migrate.WithFS(os.DirFS(directory)))
-	if err != nil {
-		t.Fatalf("snapshot from fs: %v", err)
-	}
-	if !strings.Contains(script, "CREATE TABLE counter") {
-		t.Fatalf("snapshot from fs lacks the migrated table:\n%s", script)
+			db, err := sql.Open("sqlite", ":memory:")
+			if err != nil {
+				t.Fatalf("open memory database: %v", err)
+			}
+			defer db.Close()
+			if err := migrate.Replay(context.Background(), db, script); err != nil {
+				t.Fatalf("replay: %v", err)
+			}
+			var value int
+			if err := db.QueryRow("SELECT value FROM counter").Scan(&value); err != nil {
+				t.Fatalf("read replayed row: %v", err)
+			}
+			if value != 7 {
+				t.Fatalf("value = %d, want 7", value)
+			}
+		})
 	}
 }
 

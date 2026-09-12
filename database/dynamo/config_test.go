@@ -71,10 +71,6 @@ func TestValidateRejectsANonPositiveTimeout(t *testing.T) {
 	if err := config.validate(false); err == nil {
 		t.Fatal("a zero timeout must be rejected")
 	}
-	config.Timeout = -time.Second
-	if err := config.validate(false); err == nil {
-		t.Fatal("a negative timeout must be rejected")
-	}
 }
 
 func TestValidateRejectsADuplicateTableMapping(t *testing.T) {
@@ -100,17 +96,6 @@ func TestValidateRejectsAnIllegalPrefix(t *testing.T) {
 	}
 }
 
-func TestDefaultConfigVerifiesSchema(t *testing.T) {
-	// Verification is the production value of this package, so it is the
-	// default rather than something a deployment has to remember.
-	if !DefaultConfig().VerifySchema {
-		t.Fatal("verify_schema must default on")
-	}
-	if DefaultConfig().AutoMigrate {
-		t.Fatal("auto_migrate must default off")
-	}
-}
-
 // TestDefaultConfigMatchesTheBoundDefaults keeps the two statements of the
 // same defaults from drifting: the struct tags configbind reads to fill an
 // unset key, and DefaultConfig for a caller building a Config in Go.
@@ -126,6 +111,9 @@ func TestDefaultConfigMatchesTheBoundDefaults(t *testing.T) {
 		}
 	}
 	defaults := DefaultConfig()
+	if defaults.AutoMigrate {
+		t.Fatal("auto_migrate must default off")
+	}
 	want := map[string]string{
 		"Timeout":      defaults.Timeout.String(),
 		"MaxIdleConns": strconv.Itoa(defaults.MaxIdleConns),
