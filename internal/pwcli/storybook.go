@@ -53,12 +53,17 @@ type plannedSources struct {
 	// per directory and filtering the whole change set for each one made them
 	// O(directories × changes).
 	names map[string][]string
+	// removed holds the paths this run deletes. Such a file is still on disk
+	// while the run is being planned, so a scan that only asked the disk would
+	// go on registering a template whose source is already gone.
+	removed map[string]bool
 }
 
 func planned(changes []fileChange) plannedSources {
-	sources := plannedSources{byPath: map[string][]byte{}, names: map[string][]string{}}
+	sources := plannedSources{byPath: map[string][]byte{}, names: map[string][]string{}, removed: map[string]bool{}}
 	for _, change := range changes {
 		if change.remove {
+			sources.removed[change.path] = true
 			continue
 		}
 		sources.byPath[change.path] = change.source
@@ -107,6 +112,9 @@ func scanStorybookTemplates(directory string, sources plannedSources) ([]storybo
 	packageName := ""
 	for name := range names {
 		if !strings.HasSuffix(name, "_pw_gen.go") || name == storybookFileName {
+			continue
+		}
+		if sources.removed[filepath.Join(directory, name)] {
 			continue
 		}
 		source, err := sources.read(filepath.Join(directory, name))
@@ -250,6 +258,12 @@ func storybookHarness(module string, packages []string) ([]byte, error) {
 // It runs after the templates themselves are planned, because it reads the
 // generated files to find what to register. A project with no template tree
 // plans nothing here and gets no harness.
+//
+// It also removes what an earlier run wrote and this one would not. The
+// registration carries the pwdev build constraint, so one left behind in a
+// package whose last template was deleted names functions that no longer exist
+// and nothing but pw dev compiles it: go build and go vet pass, and the
+// project fails to start in the one mode that is used all day.
 func planStorybook(root string, config projectConfig, changes []fileChange) ([]fileChange, error) {
 	moduleSource, err := os.ReadFile(filepath.Join(root, "go.mod"))
 	if err != nil {
@@ -263,10 +277,15 @@ func planStorybook(root string, config projectConfig, changes []fileChange) ([]f
 	// Every directory holding a generated template, from both purposes: a page
 	// tree generates templates the same way a templates directory does.
 	directories := map[string]bool{}
+	// Every registration already on disk is stale until this run plans it.
+	stale := map[string]bool{}
 	for _, purpose := range [][]string{config.Generate.Templates, config.Generate.Pages} {
 		err := walkSources(root, purpose, func(path string, entry fs.DirEntry) error {
 			if strings.HasSuffix(entry.Name(), ".pw.html") {
 				directories[filepath.Dir(path)] = true
+			}
+			if entry.Name() == storybookFileName {
+				stale[path] = true
 			}
 			return nil
 		})
@@ -284,8 +303,9 @@ func planStorybook(root string, config projectConfig, changes []fileChange) ([]f
 		if err != nil {
 			return nil, err
 		}
-		changes, err = appendIfChanged(changes,
-			filepath.Join(directory, storybookFileName), registration)
+		target := filepath.Join(directory, storybookFileName)
+		delete(stale, target)
+		changes, err = appendIfChanged(changes, target, registration)
 		if err != nil {
 			return nil, err
 		}
@@ -295,7 +315,21 @@ func planStorybook(root string, config projectConfig, changes []fileChange) ([]f
 		}
 		packages = append(packages, filepath.ToSlash(relative))
 	}
+	leftover := make([]string, 0, len(stale))
+	for path := range stale {
+		leftover = append(leftover, path)
+	}
+	sort.Strings(leftover)
+	for _, path := range leftover {
+		changes = append(changes, fileChange{path: path, remove: true})
+	}
+	harnessPath := filepath.Join(root, storybookDirectory, "main_pw_gen.go")
 	if len(packages) == 0 {
+		// The harness imports the packages that registered something, so with
+		// none left it would import nothing and serve nothing.
+		if _, err := os.Stat(harnessPath); err == nil {
+			changes = append(changes, fileChange{path: harnessPath, remove: true})
+		}
 		return changes, nil
 	}
 	sort.Strings(packages)
@@ -303,6 +337,5 @@ func planStorybook(root string, config projectConfig, changes []fileChange) ([]f
 	if err != nil {
 		return nil, err
 	}
-	return appendIfChanged(changes,
-		filepath.Join(root, storybookDirectory, "main_pw_gen.go"), harness)
+	return appendIfChanged(changes, harnessPath, harness)
 }

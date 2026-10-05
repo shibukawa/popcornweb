@@ -129,6 +129,137 @@ func TestHarnessImportsEveryTemplatePackage(t *testing.T) {
 	}
 }
 
+// storybookProject lays out a module with two template packages, each holding
+// one generated template and the registration an earlier run wrote for it.
+func storybookProject(t *testing.T) (string, projectConfig) {
+	t.Helper()
+	root := t.TempDir()
+	write := func(relative, content string) {
+		t.Helper()
+		path := filepath.Join(root, filepath.FromSlash(relative))
+		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	write("go.mod", "module memoapp\n\ngo 1.27\n")
+	for _, directory := range []string{"handlers", "templates"} {
+		write(directory+"/home.pw.html", "<template></template>\n")
+		write(directory+"/home_pw_gen.go", generatedTemplate)
+		write(directory+"/"+storybookFileName, "//go:build pwdev\n\npackage templates\n")
+	}
+	write(storybookDirectory+"/main_pw_gen.go", "//go:build pwdev\n\npackage main\n")
+	var config projectConfig
+	config.Generate.Templates = []string{"handlers", "templates"}
+	return root, config
+}
+
+func removals(changes []fileChange) map[string]bool {
+	removed := map[string]bool{}
+	for _, change := range changes {
+		if change.remove {
+			removed[change.path] = true
+		}
+	}
+	return removed
+}
+
+// The registration is compiled only under pwdev, so one that outlives its
+// templates breaks pw dev and nothing else: it names functions that are gone,
+// and go build never reads the file.
+func TestStorybookRegistrationIsRemovedWithItsLastTemplate(t *testing.T) {
+	root, config := storybookProject(t)
+	handlers := filepath.Join(root, "handlers")
+	if err := os.Remove(filepath.Join(handlers, "home.pw.html")); err != nil {
+		t.Fatal(err)
+	}
+	// The template step has already planned the generated file's removal, and
+	// the file is still on disk while this step runs.
+	pending := []fileChange{{path: filepath.Join(handlers, "home_pw_gen.go"), remove: true}}
+
+	changes, err := planStorybook(root, config, pending)
+	if err != nil {
+		t.Fatal(err)
+	}
+	removed := removals(changes)
+	if !removed[filepath.Join(handlers, storybookFileName)] {
+		t.Fatalf("the registration of a package with no template left was kept: %+v", changes)
+	}
+	if removed[filepath.Join(root, "templates", storybookFileName)] {
+		t.Fatal("the registration of a package that still has templates was removed")
+	}
+	for _, change := range changes {
+		if change.path == filepath.Join(root, storybookDirectory, "main_pw_gen.go") {
+			if change.remove || strings.Contains(string(change.source), `"memoapp/handlers"`) {
+				t.Fatalf("the harness still imports the emptied package:\n%s", change.source)
+			}
+		}
+	}
+}
+
+// A template deleted from a package that keeps others must leave the
+// registration in the same run, not in the one after it: the generated file it
+// was read from is still on disk when the registration is planned.
+func TestStorybookRegistrationForgetsATemplatePlannedForRemoval(t *testing.T) {
+	root, config := storybookProject(t)
+	templates := filepath.Join(root, "templates")
+	const other = `package templates
+
+import "github.com/shibukawa/tinybind-go/htmlbind"
+
+type KeptParams struct{}
+
+func Kept(params KeptParams) htmlbind.Fragment { return planKeptPlan.Bind(params) }
+`
+	if err := os.WriteFile(filepath.Join(templates, "kept_pw_gen.go"), []byte(other), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	pending := []fileChange{{path: filepath.Join(templates, "home_pw_gen.go"), remove: true}}
+	changes, err := planStorybook(root, config, pending)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, change := range changes {
+		if change.path != filepath.Join(templates, storybookFileName) {
+			continue
+		}
+		source := string(change.source)
+		if !strings.Contains(source, `"Kept"`) || strings.Contains(source, `"Error400"`) {
+			t.Fatalf("the registration names a template whose generated file is being removed:\n%s", source)
+		}
+		return
+	}
+	t.Fatal("the registration was not rewritten")
+}
+
+// With no template package left the harness has nothing to import.
+func TestStorybookHarnessIsRemovedWithTheLastTemplatePackage(t *testing.T) {
+	root, config := storybookProject(t)
+	var pending []fileChange
+	for _, directory := range []string{"handlers", "templates"} {
+		if err := os.Remove(filepath.Join(root, directory, "home.pw.html")); err != nil {
+			t.Fatal(err)
+		}
+		pending = append(pending, fileChange{path: filepath.Join(root, directory, "home_pw_gen.go"), remove: true})
+	}
+	changes, err := planStorybook(root, config, pending)
+	if err != nil {
+		t.Fatal(err)
+	}
+	removed := removals(changes)
+	for _, path := range []string{
+		filepath.Join(root, "handlers", storybookFileName),
+		filepath.Join(root, "templates", storybookFileName),
+		filepath.Join(root, storybookDirectory, "main_pw_gen.go"),
+	} {
+		if !removed[path] {
+			t.Errorf("%s was kept", path)
+		}
+	}
+}
+
 // Before the first build there is no harness, and the pane says so rather than
 // the console appearing to have lost it.
 func TestStorybookPaneReportsAnAbsentHarness(t *testing.T) {
