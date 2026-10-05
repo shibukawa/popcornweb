@@ -249,7 +249,7 @@ func TestScaffoldFilesWithTailwind(t *testing.T) {
 	}
 	for name, want := range map[string]string{
 		"popcornweb.toml": "[dev.watch]\nincludes = []\nexcludes = []",
-		"devbox.json":     "tailwindcss_4@4.1.18",
+		"devbox.json":     "tailwindcss_4@4.2.4",
 		// Named through AssetURL rather than as a literal, so the Tailwind
 		// output is served under a revision segment and cached rather than
 		// revalidated on every page load.

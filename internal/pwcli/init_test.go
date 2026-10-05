@@ -1,8 +1,10 @@
 package pwcli
 
 import (
+	"encoding/json"
 	"errors"
 	"go/ast"
+	"go/format"
 	"go/parser"
 	"go/token"
 	"io"
@@ -1037,5 +1039,94 @@ func TestProjectConfigRoundTripsTheFastHTTPBuild(t *testing.T) {
 				t.Errorf("project.fasthttp read as %v, want %v", config.FastHTTP, testcase.want)
 			}
 		})
+	}
+}
+
+// The entry point is the first file a new project opens, and an editor formats
+// it on save. Import specs in the order the scaffold happened to decide them
+// made that first save a diff nobody wrote.
+func TestScaffoldedEntryPointIsAlreadyFormatted(t *testing.T) {
+	for _, args := range [][]string{
+		{"demo"},
+		{"demo", "--router=registered", "--no-database"},
+		{"demo", "--router=discovered", "--auth=oidc", "--devidp"},
+		{"demo", "--router=both", "--db=postgres", "--no-redis", "--auth=oidc", "--devidp", "--session=rdb"},
+		{"demo", "--router=both", "--no-database", "--dynamo", "--auth=oidc", "--session=dynamo"},
+		{"example.com/team/demo", "--db=mysql", "--auth=passkey"},
+	} {
+		options, err := parseInitArgs(args)
+		if err != nil {
+			t.Fatalf("%v: %v", args, err)
+		}
+		for name, source := range map[string]string{
+			"main.go":          mainScaffold(options),
+			"main_fasthttp.go": fastMainScaffold(options),
+		} {
+			formatted, err := format.Source([]byte(source))
+			if err != nil {
+				t.Fatalf("%v %s: %v\n%s", args, name, err, source)
+			}
+			if string(formatted) != source {
+				t.Errorf("%v: %s is not what gofmt leaves:\n%s", args, name, source)
+			}
+			// goimports reads a first path element without a dot as the
+			// standard library, so the project's own packages are kept in a
+			// block of their own where neither tool moves them.
+			if strings.Contains(source, "\"log\"\n\t\""+options.Name+"/") {
+				t.Errorf("%v: %s lists a project package with the standard library:\n%s", args, name, source)
+			}
+		}
+	}
+}
+
+// A PostgreSQL project's Devbox environment carries the one command that makes
+// the scaffolded DSN connectable. The plugin only starts a server, and a plain
+// initdb leaves every database SQL_ASCII.
+func TestPostgresScaffoldCarriesItsDatabaseSetup(t *testing.T) {
+	options, err := parseInitArgs([]string{"my-app", "--db=postgres"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	var devbox struct {
+		Packages []string          `json:"packages"`
+		Env      map[string]string `json:"env"`
+		Shell    struct {
+			InitHook []string            `json:"init_hook"`
+			Scripts  map[string][]string `json:"scripts"`
+		} `json:"shell"`
+	}
+	source := scaffoldFiles(options)["devbox.json"]
+	if err := json.Unmarshal([]byte(source), &devbox); err != nil {
+		t.Fatalf("devbox.json is not JSON: %v\n%s", err, source)
+	}
+	script := strings.Join(devbox.Shell.Scripts[devboxDatabaseScript], "\n")
+	for _, want := range []string{
+		"initdb -U postgres --auth=trust -E UTF8",
+		`CREATE ROLE \"my-app\" LOGIN PASSWORD 'my-app' CREATEDB`,
+		"createdb -h \"$host\" -O my-app my-app",
+		// Its own server listens on no TCP port, so one already on 5432 is
+		// not in the way.
+		"listen_addresses=''",
+	} {
+		if !strings.Contains(script, want) {
+			t.Errorf("the %s script is missing %q:\n%s", devboxDatabaseScript, want, script)
+		}
+	}
+	// The plugin's readiness probe connects as whoever PGUSER names.
+	if devbox.Env["PGUSER"] != "postgres" || len(devbox.Shell.InitHook) == 0 {
+		t.Errorf("devbox.json = %s", source)
+	}
+	if notice := databaseEngineNotice(options); !strings.Contains(notice, "devbox run "+devboxDatabaseScript) {
+		t.Errorf("the notice does not name the command: %q", notice)
+	}
+
+	// An embedded engine has nothing to initialize, and its file says nothing
+	// about a server.
+	sqlite, err := parseInitArgs([]string{"my-app"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if source := scaffoldFiles(sqlite)["devbox.json"]; strings.Contains(source, "scripts") || strings.Contains(source, "PGUSER") {
+		t.Errorf("a SQLite project carries a database setup:\n%s", source)
 	}
 }

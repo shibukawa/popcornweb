@@ -1,15 +1,22 @@
 package pwcli
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
 	"strconv"
 	"strings"
 )
 
 // tailwindDevboxPackage is the pinned toolchain of decision:tailwind-host-toolchain.
-const tailwindDevboxPackage = "tailwindcss_4@4.1.18"
+//
+// The pin is chosen by what runs, on every platform nixpkgs still builds it
+// for. 4.1.18 was killed at launch on macOS arm64, where the kernel refuses a
+// code signature that does not validate; 4.2.4 runs there and is the newest
+// release that still has an Intel macOS build, which 4.3 dropped.
+const tailwindDevboxPackage = "tailwindcss_4@4.2.4"
 
 // tailwindToolchainRequirement is what an operator installing the toolchain
 // themselves has to satisfy. The Devbox package name is a nixpkgs identifier,
@@ -203,13 +210,68 @@ func addDevboxPackage(devbox, pkg string) (string, error) {
 
 // devboxScaffold is the development environment api:cli-init writes and
 // api:cli-add installs, so both reach the same file state.
-func devboxScaffold(packages []string) string {
+//
+// setup carries what a development server needs before it can serve this
+// project, and is the zero value for a project with no such server.
+func devboxScaffold(packages []string, setup devboxSetup) string {
+	env := ""
+	if len(setup.Env) > 0 {
+		keys := make([]string, 0, len(setup.Env))
+		for key := range setup.Env {
+			keys = append(keys, key)
+		}
+		sort.Strings(keys)
+		pairs := make([]string, 0, len(keys))
+		for _, key := range keys {
+			pairs = append(pairs, strconv.Quote(key)+": "+strconv.Quote(setup.Env[key]))
+		}
+		env = "\n  \"env\": {" + strings.Join(pairs, ", ") + "},"
+	}
+	shell := `{"init_hook": ["echo 'Popcorn Web development environment'"]}`
+	if len(setup.Script) > 0 {
+		lines := make([]string, 0, len(setup.Script))
+		for _, line := range setup.Script {
+			lines = append(lines, "        "+jsonString(line))
+		}
+		shell = `{
+    "init_hook": ["echo 'Popcorn Web development environment'"],
+    "scripts": {
+      ` + strconv.Quote(devboxDatabaseScript) + `: [
+` + strings.Join(lines, ",\n") + `
+      ]
+    }
+  }`
+	}
 	return `{
   "$schema": "https://raw.githubusercontent.com/jetify-com/devbox/0.14.2/.schema/devbox.schema.json",
-  "packages": [` + quotedList(packages) + `],
-  "shell": {"init_hook": ["echo 'Popcorn Web development environment'"]}
+  "packages": [` + quotedList(packages) + `],` + env + `
+  "shell": ` + shell + `
 }
 `
+}
+
+// devboxDatabaseScript is the script that prepares the development database:
+// devbox run db:init.
+const devboxDatabaseScript = "db:init"
+
+// devboxSetup is what the scaffold adds to devbox.json for a development
+// server that has to be initialized before its first start.
+type devboxSetup struct {
+	// Env is exported into the Devbox environment.
+	Env map[string]string
+	// Script is the body of the db:init script, one shell line per element.
+	Script []string
+}
+
+// jsonString encodes one shell line as a JSON string without the HTML escaping
+// encoding/json applies by default, which would turn every > and & of a shell
+// line into a \u escape nobody can read.
+func jsonString(value string) string {
+	var out strings.Builder
+	encoder := json.NewEncoder(&out)
+	encoder.SetEscapeHTML(false)
+	_ = encoder.Encode(value)
+	return strings.TrimSuffix(out.String(), "\n")
 }
 
 // tailwindProjectConfig is the assets section api:cli-init scaffolds and

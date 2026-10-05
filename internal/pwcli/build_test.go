@@ -206,3 +206,26 @@ func TestBuildProjectRefusesAPackageForBuildOnly(t *testing.T) {
 		t.Fatal("build accepted a package project")
 	}
 }
+
+// Every command answers --help with its own usage. Left to each parser, most
+// of them reported the flag as an unknown option.
+func TestEveryCommandAnswersHelp(t *testing.T) {
+	for _, command := range commandSummaries {
+		switch command.name {
+		case "help", "version", "lsp", "request", "doctor":
+			// help is the list itself, version takes no flags, and the other
+			// three answer in their own words.
+			continue
+		}
+		for _, flag := range []string{"--help", "-h"} {
+			var out, errOut bytes.Buffer
+			if status := Main([]string{command.name, flag}, &out, &errOut); status != 0 {
+				t.Errorf("pw %s %s exited %d: %s", command.name, flag, status, errOut.String())
+				continue
+			}
+			if !strings.Contains(out.String(), "usage: pw "+command.name) {
+				t.Errorf("pw %s %s printed no usage:\n%s", command.name, flag, out.String())
+			}
+		}
+	}
+}

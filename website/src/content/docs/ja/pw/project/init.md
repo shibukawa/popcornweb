@@ -108,7 +108,18 @@ import _ "github.com/shibukawa/popcornweb/database/postgres"
 ```
 
 スキャフォールドが書く資格情報は `config.dev.toml` の開発用の値です。そこに書かれた
-ロールとデータベースを一度だけ作ってから `pw migrate up` を実行してください。
+ロールとデータベースがサーバー側に無ければ、何も接続できません。Devbox つきの
+PostgreSQL プロジェクトには、そのためのスクリプトが入ります。
+
+```bash
+devbox run db:init
+```
+
+クラスタ、ロール、データベースを作ります。もう一度実行しても何も変わりません。最初の
+`pw dev` の前に一度だけ実行してください。クラスタをわざわざ UTF-8 で作るのには理由が
+あります。素の `initdb` ではどのデータベースも `SQL_ASCII` になり、非 ASCII の文字列を
+それが何であるか知らないまま保存してしまうからです。MySQL の場合や Devbox を使わない
+場合は、ロールとデータベースを自分で作ってから `pw migrate up` を実行してください。
 
 あとからエンジンを変えることは `pw add` では行いません。DSN もマイグレーションも
 `.pw.sql` もすべて書き直しになるからです。デプロイ先のエンジンを選んでください。
@@ -360,7 +371,7 @@ Tailwind CSS needs its own toolchain here:
   install the standalone tailwindcss CLI, version 4 or later
 ```
 
-Devbox のパッケージ名ではなく要件を書きます。`tailwindcss_4@4.1.18` は nixpkgs の
+Devbox のパッケージ名ではなく要件を書きます。`tailwindcss_4@4.2.4` は nixpkgs の
 識別子であり、mise や Homebrew、Scoop を使う人には何も伝えないからです。バイナリが
 見つからないときの [`pw build`](/ja/pw/project/build/) も同じ内容を報告します。
 

@@ -104,8 +104,19 @@ Every engine adds one blank import to `main.go`, which is what registers it:
 import _ "github.com/shibukawa/popcornweb/database/postgres"
 ```
 
-The scaffolded credentials are development values in `config.dev.toml`. Create
-the role and database they name once, then `pw migrate up`.
+The scaffolded credentials are development values in `config.dev.toml`, and
+the server has to hold the role and database they name before anything can
+connect. A PostgreSQL project with Devbox gets a script for that:
+
+```bash
+devbox run db:init
+```
+
+It creates the cluster, the role, and the database, and running it again
+changes nothing. Run it once, before the first `pw dev`. The cluster is created
+as UTF-8 on purpose: a plain `initdb` leaves every database `SQL_ASCII`, which
+stores a non-ASCII string without knowing what it is. On MySQL, or without
+Devbox, create the role and database yourself, then `pw migrate up`.
 
 Changing engines afterwards is not something `pw add` will do for you: the DSN,
 every migration, and every `.pw.sql` source would have to be rewritten together.
@@ -366,7 +377,7 @@ Tailwind CSS needs its own toolchain here:
 ```
 
 It names the requirement rather than the Devbox package, because
-`tailwindcss_4@4.1.18` is a nixpkgs identifier that means nothing to mise,
+`tailwindcss_4@4.2.4` is a nixpkgs identifier that means nothing to mise,
 Homebrew, or Scoop. [`pw build`](/pw/project/build/) reports the same when the
 binary is missing.
 

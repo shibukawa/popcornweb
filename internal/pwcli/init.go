@@ -1149,7 +1149,7 @@ func PublicFS() fs.FS {
 		files[path] = source
 	}
 	if options.Devbox {
-		files["devbox.json"] = devboxScaffold(devboxPackages)
+		files["devbox.json"] = devboxScaffold(devboxPackages, databaseDevboxSetup(options))
 		files["devbox.lock"] = "{}\n"
 	}
 	files["public/app.css"] = applicationStylesheet(options)
@@ -2934,7 +2934,7 @@ func mainScaffold(options initOptions) string {
 	return `package main
 
 import (
-` + imports + databaseDriverImport(options) + storeMiddlewareImport(options) + sessionBackendImport(options) + `
+` + arrangeImports(imports+databaseDriverImport(options)+storeMiddlewareImport(options)+sessionBackendImport(options), name) + `
 )
 
 func main() {
@@ -2949,6 +2949,76 @@ func main() {
 	}
 }
 `
+}
+
+// arrangeImports orders the import specs of a scaffolded entry point the way
+// gofmt and goimports leave them, so the first save in an editor changes
+// nothing: the standard library, the framework, the project's own packages,
+// and then the blank imports that link a capability, each group sorted by path.
+//
+// The specs arrive as fragments, one per capability, in the order the scaffold
+// decided to take them. That order is the scaffold's and not the reader's, and
+// a file that reformats itself on first save reads as one somebody already
+// edited. A comment stays with the spec it was written above.
+//
+// The blank imports are their own group rather than sorted into the framework
+// one, where pw would land between two of them and their comments would read as
+// describing it.
+func arrangeImports(specs, module string) string {
+	type spec struct {
+		lines []string
+		path  string
+	}
+	const (
+		groupStandard = iota
+		groupThirdParty
+		groupProject
+		groupBlank
+		groupCount
+	)
+	groups := make([][]spec, groupCount)
+	var pending []string
+	for _, line := range strings.Split(specs, "\n") {
+		trimmed := strings.TrimSpace(line)
+		if trimmed == "" {
+			continue
+		}
+		if strings.HasPrefix(trimmed, "//") {
+			pending = append(pending, line)
+			continue
+		}
+		open := strings.IndexByte(trimmed, '"')
+		path, err := strconv.Unquote(trimmed[max(open, 0):])
+		if open < 0 || err != nil {
+			// Not a spec this function understands, so the block is returned
+			// as it was written rather than rearranged around a guess.
+			return specs
+		}
+		group := groupThirdParty
+		switch first, _, _ := strings.Cut(path, "/"); {
+		case strings.HasPrefix(trimmed, "_"):
+			group = groupBlank
+		case path == module || strings.HasPrefix(path, module+"/"):
+			group = groupProject
+		case !strings.Contains(first, "."):
+			group = groupStandard
+		}
+		groups[group] = append(groups[group], spec{lines: append(pending, line), path: path})
+		pending = nil
+	}
+	var blocks []string
+	for _, group := range groups {
+		if len(group) == 0 {
+			continue
+		}
+		sort.SliceStable(group, func(i, j int) bool { return group[i].path < group[j].path })
+		var lines []string
+		for _, entry := range group {
+			lines = append(lines, entry.lines...)
+		}
+		blocks = append(blocks, strings.Join(lines, "\n"))
+	}
+	return strings.Join(blocks, "\n\n")
 }
 
 // registeredRouterScaffold writes a handler package into directory: the mux the
@@ -3483,7 +3553,7 @@ func fastMainScaffold(options initOptions) string {
 package main
 
 import (
-` + imports + databaseDriverImport(options) + storeMiddlewareImport(options) + sessionBackendImport(options) + `
+` + arrangeImports(imports+databaseDriverImport(options)+storeMiddlewareImport(options)+sessionBackendImport(options), name) + `
 )
 
 func main() {

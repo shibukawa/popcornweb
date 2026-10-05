@@ -16,6 +16,11 @@ func Main(args []string, stdout, stderr io.Writer) int {
 		printUsage(stderr)
 		return 2
 	}
+	// Every command answers --help, from the same table pw help prints. Left
+	// to each parser it was an "unknown option" in most of them.
+	if asksForHelp(args[0], args[1:]) && printCommandUsage(stdout, args[0]) {
+		return 0
+	}
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer cancel()
 	var err error
@@ -108,6 +113,132 @@ var commandSummaries = []struct{ name, summary string }{
 	{"help", "print this message"},
 }
 
+// commandHelp is the usage of each command and the notes that go with it, in
+// the order pw help prints them. It is one table so that pw help and
+// pw <command> --help cannot drift into saying different things.
+var commandHelp = []struct {
+	name  string
+	lines []string
+}{
+	{"init", []string{
+		initUsage,
+		"  Omit the project name to answer the same questions in the wizard.",
+		"  A capability declined here can be enabled later with pw add.",
+	}},
+	{"add", []string{
+		addUsage,
+		"  Omit the capability to pick from what this project does not already have.",
+	}},
+	{"new", []string{
+		newUsage,
+		"  Omit the kind to pick one, then answer for the route and the package.",
+	}},
+	{"generate", []string{
+		generateUsage,
+		"  --code-only writes the generated Go and stops, for the editor and the",
+		"  inner loop. What it leaves out is what a compiler needs: without the",
+		"  asset tree, the embed directive in public.go has no directory to read.",
+	}},
+	{"check", []string{
+		checkUsage,
+	}},
+	{"fmt", []string{
+		fmtUsage,
+		"  Omit every path to format the sources your generate purposes list.",
+	}},
+	{"migrate", []string{
+		migrateUsage,
+		"  Actions: " + strings.Join(migrateActions, ", "),
+	}},
+	{"seed", []string{
+		seedUsage,
+	}},
+	{"build", []string{
+		buildUsage,
+		"  --backend selects the HTTP implementation; --target selects deployment packaging.",
+		"  --debug keeps the source maps, and pw build also keeps the Go symbols.",
+		"  Without it the artifact carries neither, which is what staging and",
+		"  production want: an artifact that ships its own sources rehearses nothing.",
+	}},
+	{"doctor", []string{
+		doctorUsage,
+	}},
+	{"request", []string{
+		requestUsage,
+		"  curl flags keep their meaning: -X -d -F -H -b -c -u -i -f -s -L -G --json.",
+		"  With the catalog, -d key=value goes where the handler reads it: a path",
+		"  segment, the query, a header, a cookie, or the body. --format=json",
+		"  prints one object for an agent. --url picks the origin; without it the",
+		"  running pw dev application is asked, then the configured port is tried.",
+	}},
+	{"rename", []string{
+		renameUsage,
+		"  Previews the edit set; --apply writes it. The set reaches handwritten",
+		"  Go, so seeing it first is the point. Generated files are not edited:",
+		"  run pw generate afterwards.",
+	}},
+	{"lsp", []string{
+		lspUsage,
+		"  Started by an editor rather than by hand; stdio carries the protocol,",
+		"  so nothing but protocol messages may be written to it.",
+	}},
+}
+
+// summaryOnlyUsage is the usage line of a command pw help describes by its
+// summary alone, because the line would add nothing to the list there. Asked
+// for directly, it is still the answer.
+var summaryOnlyUsage = map[string]string{
+	"dev":  "usage: pw dev",
+	"i18n": i18nUsage,
+}
+
+// printCommandUsage prints what pw help says about one command, and reports
+// whether it knew the command.
+func printCommandUsage(w io.Writer, name string) bool {
+	lines, known := []string(nil), false
+	for _, command := range commandHelp {
+		if command.name == name {
+			lines, known = command.lines, true
+		}
+	}
+	if line, ok := summaryOnlyUsage[name]; ok {
+		lines, known = []string{line}, true
+	}
+	if !known {
+		return false
+	}
+	for _, summary := range commandSummaries {
+		if summary.name == name {
+			fmt.Fprintf(w, "pw %s: %s\n\n", name, summary.summary)
+		}
+	}
+	for _, line := range lines {
+		fmt.Fprintln(w, line)
+	}
+	return true
+}
+
+// asksForHelp reports whether a command line asks for its own usage.
+//
+// request and doctor answer the flag themselves, and lsp reads no flags at
+// all. Arguments after a bare -- belong to something else, so they are not
+// searched.
+func asksForHelp(command string, args []string) bool {
+	switch command {
+	case "request", "doctor", "lsp":
+		return false
+	}
+	for _, arg := range args {
+		switch arg {
+		case "--":
+			return false
+		case "--help", "-h":
+			return true
+		}
+	}
+	return false
+}
+
 func printUsage(w io.Writer) {
 	fmt.Fprintln(w, "Usage: pw <command> [arguments]")
 	fmt.Fprintln(w)
@@ -116,42 +247,11 @@ func printUsage(w io.Writer) {
 		fmt.Fprintf(w, "  %-8s  %s\n", command.name, command.summary)
 	}
 	fmt.Fprintln(w)
-	fmt.Fprintln(w, initUsage)
-	fmt.Fprintln(w, "  Omit the project name to answer the same questions in the wizard.")
-	fmt.Fprintln(w, "  A capability declined here can be enabled later with pw add.")
-	fmt.Fprintln(w, addUsage)
-	fmt.Fprintln(w, "  Omit the capability to pick from what this project does not already have.")
-	fmt.Fprintln(w, newUsage)
-	fmt.Fprintln(w, "  Omit the kind to pick one, then answer for the route and the package.")
-	fmt.Fprintln(w, generateUsage)
-	fmt.Fprintln(w, "  --code-only writes the generated Go and stops, for the editor and the")
-	fmt.Fprintln(w, "  inner loop. What it leaves out is what a compiler needs: without the")
-	fmt.Fprintln(w, "  asset tree, the embed directive in public.go has no directory to read.")
-	fmt.Fprintln(w, checkUsage)
-	fmt.Fprintln(w, fmtUsage)
-	fmt.Fprintln(w, "  Omit every path to format the sources your generate purposes list.")
-	fmt.Fprintln(w, migrateUsage)
-	fmt.Fprintln(w, "  Actions: "+strings.Join(migrateActions, ", "))
-	fmt.Fprintln(w, seedUsage)
-	fmt.Fprintln(w, buildUsage)
-	fmt.Fprintln(w, "  --backend selects the HTTP implementation; --target selects deployment packaging.")
-	fmt.Fprintln(w, "  --debug keeps the source maps, and pw build also keeps the Go symbols.")
-	fmt.Fprintln(w, "  Without it the artifact carries neither, which is what staging and")
-	fmt.Fprintln(w, "  production want: an artifact that ships its own sources rehearses nothing.")
-	fmt.Fprintln(w, doctorUsage)
-	fmt.Fprintln(w, requestUsage)
-	fmt.Fprintln(w, "  curl flags keep their meaning: -X -d -F -H -b -c -u -i -f -s -L -G --json.")
-	fmt.Fprintln(w, "  With the catalog, -d key=value goes where the handler reads it: a path")
-	fmt.Fprintln(w, "  segment, the query, a header, a cookie, or the body. --format=json")
-	fmt.Fprintln(w, "  prints one object for an agent. --url picks the origin; without it the")
-	fmt.Fprintln(w, "  running pw dev application is asked, then the configured port is tried.")
-	fmt.Fprintln(w, renameUsage)
-	fmt.Fprintln(w, "  Previews the edit set; --apply writes it. The set reaches handwritten")
-	fmt.Fprintln(w, "  Go, so seeing it first is the point. Generated files are not edited:")
-	fmt.Fprintln(w, "  run pw generate afterwards.")
-	fmt.Fprintln(w, lspUsage)
-	fmt.Fprintln(w, "  Started by an editor rather than by hand; stdio carries the protocol,")
-	fmt.Fprintln(w, "  so nothing but protocol messages may be written to it.")
+	for _, command := range commandHelp {
+		for _, line := range command.lines {
+			fmt.Fprintln(w, line)
+		}
+	}
 	fmt.Fprintln(w)
 	fmt.Fprintln(w, "Documentation: https://shibukawa.github.io/popcornweb/")
 }

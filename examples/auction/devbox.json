@@ -3,7 +3,7 @@
   "packages": [
     "go@latest",
     "valkey@latest",
-    "tailwindcss_4@4.1.18",
+    "tailwindcss_4@4.2.4",
     "git@latest"
   ],
   "shell": {"init_hook": ["echo 'Popcorn Web development environment'"]}

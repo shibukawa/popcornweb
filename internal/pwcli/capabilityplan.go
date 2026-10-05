@@ -227,7 +227,7 @@ func planDevbox(state projectState, plan *capabilityPlan) error {
 	if state.config.Tailwind.Enabled {
 		packages = append(packages, tailwindDevboxPackage)
 	}
-	plan.creates["devbox.json"] = devboxScaffold(packages)
+	plan.creates["devbox.json"] = devboxScaffold(packages, devboxSetup{})
 	plan.creates["devbox.lock"] = "{}\n"
 	plan.next = append(plan.next, "devbox shell")
 	return nil
