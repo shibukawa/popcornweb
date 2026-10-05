@@ -147,7 +147,12 @@ type Config struct {
 	// the issued bootstrap credentials. They move together, because they are
 	// one deployment's authentication state and splitting them across two
 	// engines gains nothing.
-	Backend string `default:"rdb" enum:"rdb,dynamo" dependon:".enabled" help:"storage backend of the authentication tables: rdb or dynamo"`
+	//
+	// The value is a registered name rather than an enum. A backend package
+	// registers itself when imported and an application may register its own
+	// with RegisterBackend, so the list of valid names is whatever this binary
+	// linked; startup reports an unknown one together with that list.
+	Backend string `default:"rdb" dependon:".enabled" help:"storage backend of the authentication tables: rdb, dynamo, firestore, or a name the application registered with auth.RegisterBackend"`
 	// Mode selects which login methods this deployment offers, and with them
 	// which of the OIDC, Passkey, and JWT sections below are in force. The enum
 	// is what makes those sections' conditions checkable: a mistyped mode there

@@ -9,8 +9,10 @@ package mysql
 import (
 	"context"
 	"database/sql"
+	"errors"
 
 	"github.com/shibukawa/popcornweb/authstate"
+	"github.com/shibukawa/tinybind-go/sqlbind"
 )
 
 // Dialect is the registered engine name, which is also what a mysql:// DSN
@@ -40,11 +42,26 @@ func createTable() string {
 )`
 }
 
+// transactor is the part of *sql.DB the two transactional operations need. A
+// MySQL pool is always a database/sql one, so anything else reaching this
+// dialect is a wiring mistake rather than an engine to support.
+type transactor interface {
+	BeginTx(ctx context.Context, options *sql.TxOptions) (*sql.Tx, error)
+}
+
+func begin(ctx context.Context, db sqlbind.SQLExecutor) (*sql.Tx, error) {
+	pool, ok := db.(transactor)
+	if !ok {
+		return nil, errors.New("authstate/mysql: the executor opens no database/sql transaction")
+	}
+	return pool.BeginTx(ctx, nil)
+}
+
 // insert runs in a transaction, because MySQL puts no condition on an upsert:
 // the expired row is removed first, and the insert that follows fails on a
 // duplicate key exactly when a live record still holds it.
-func insert(ctx context.Context, db *sql.DB, record authstate.SQLRecord) (bool, error) {
-	tx, err := db.BeginTx(ctx, nil)
+func insert(ctx context.Context, db sqlbind.SQLExecutor, record authstate.SQLRecord) (bool, error) {
+	tx, err := begin(ctx, db)
 	if err != nil {
 		return false, err
 	}
@@ -77,8 +94,8 @@ func insert(ctx context.Context, db *sql.DB, record authstate.SQLRecord) (bool, 
 
 // take reads and deletes in one transaction, because MySQL has no RETURNING.
 // The row is locked for the read, so two callers cannot both consume it.
-func take(ctx context.Context, db *sql.DB, namespace, key string) (int64, []byte, error) {
-	tx, err := db.BeginTx(ctx, nil)
+func take(ctx context.Context, db sqlbind.SQLExecutor, namespace, key string) (int64, []byte, error) {
+	tx, err := begin(ctx, db)
 	if err != nil {
 		return 0, nil, err
 	}
@@ -104,7 +121,7 @@ func take(ctx context.Context, db *sql.DB, namespace, key string) (int64, []byte
 
 // prune deletes in place, because MySQL refuses a subquery that reads the
 // table being deleted from but does accept ORDER BY and LIMIT here.
-func prune(ctx context.Context, db *sql.DB, namespace string, beforeMS int64, limit int) (int64, error) {
+func prune(ctx context.Context, db sqlbind.SQLExecutor, namespace string, beforeMS int64, limit int) (int64, error) {
 	result, err := db.ExecContext(ctx, `
 		DELETE FROM `+authstate.TableName+`
 		WHERE namespace = ? AND expires_at_ms <= ?
@@ -116,14 +133,14 @@ func prune(ctx context.Context, db *sql.DB, namespace string, beforeMS int64, li
 	return result.RowsAffected()
 }
 
-func columns(ctx context.Context, db *sql.DB) ([]string, error) {
-	rows, err := db.QueryContext(ctx, `
+func columns(ctx context.Context, db sqlbind.SQLExecutor) ([]string, error) {
+	rows, err := sqlbind.Query(ctx, db, `
 		SELECT column_name FROM information_schema.columns
 		WHERE table_name = ? AND table_schema = database()
 		ORDER BY ordinal_position`, authstate.TableName)
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 	return authstate.ScanColumns(rows)
 }

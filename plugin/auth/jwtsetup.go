@@ -2,7 +2,6 @@ package auth
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"fmt"
 	"time"
@@ -10,6 +9,7 @@ import (
 	"github.com/shibukawa/popcornweb/internal/pathpattern"
 	"github.com/shibukawa/popcornweb/pwconfig"
 	"github.com/shibukawa/popcornweb/pwruntime"
+	"github.com/shibukawa/tinybind-go/sqlbind"
 )
 
 // setupBearer builds the ModeJWTOnly runtime.
@@ -47,10 +47,10 @@ func setupBearer(ctx context.Context, config Config) (Step, error) {
 	} else if db != nil {
 		schemaCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
 		defer cancel()
-		if err := verifyTables(schemaCtx, db, config); err != nil {
+		driver, _ := pwruntime.DBDriver(ctx)
+		if err := verifyTables(schemaCtx, db, driver, config); err != nil {
 			return nil, err
 		}
-		driver, _ := pwruntime.DBDriver(ctx)
 		instance.allowlist = resolveAllowlistStore(db, driver)
 		if config.JWT.Revocation.enabled() {
 			instance.revocations = newRevocationStore(db, driver, config.JWT)
@@ -87,11 +87,11 @@ func setupBearer(ctx context.Context, config Config) (Step, error) {
 
 // bearerDatabase returns the database this configuration reads, or nil when it
 // reads none.
-func bearerDatabase(ctx context.Context, config Config) (*sql.DB, error) {
+func bearerDatabase(ctx context.Context, config Config) (sqlbind.SQLExecutor, error) {
 	if !config.JWT.readsAStore() {
 		return nil, nil
 	}
-	db, ok := pwruntime.DB(ctx)
+	db, ok := pwruntime.ConnectionExecutor(ctx)
 	if !ok {
 		return nil, errors.New("auth.mode \"jwt_only\" requires middleware.rdb.enabled = true for the registered allowlist or the revocation list")
 	}

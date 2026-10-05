@@ -92,6 +92,22 @@ func TestAnUnlinkedBackendIsRefusedAtValidation(t *testing.T) {
 	}
 }
 
+// auth.backend is a registered name rather than an enum. It was once bound as
+// the enum "rdb,dynamo", which refused the name of a backend the application
+// registered itself — and the framework's own firestore backend with it —
+// before validation ever asked what was linked.
+func TestAnApplicationRegisteredBackendIsSelectable(t *testing.T) {
+	registerTestBackend(t, "test-app-owned", Backend{})
+	config := Config{
+		Enabled: true, Backend: "test-app-owned", Mode: ModeOIDCOnly,
+		LoginPath: "/auth/login", CallbackPath: "/auth/callback",
+		LogoutPath: "/auth/logout", PostLoginPath: "/",
+	}
+	if err := config.validateShape(); err != nil && strings.Contains(err.Error(), "auth.backend") {
+		t.Fatalf("an application-registered backend was refused: %v", err)
+	}
+}
+
 // A store that decides expiry on read registers no pruner, and the sweep is
 // simply empty rather than special-cased.
 func TestAStoreThatNeedsNoSweepRegistersNoPruner(t *testing.T) {

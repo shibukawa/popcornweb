@@ -8,6 +8,9 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/shibukawa/popcornweb/database"
+	"github.com/shibukawa/tinybind-go/sqlbind"
 )
 
 var (
@@ -161,15 +164,82 @@ func installedBootstrapStore() BootstrapStore {
 // sharing the same database joins that unit of work instead of opening its own.
 type txKey struct{}
 
-func withTx(ctx context.Context, tx *sql.Tx) context.Context {
+func withTx(ctx context.Context, tx sqlbind.SQLExecutor) context.Context {
 	return context.WithValue(ctx, txKey{}, tx)
 }
 
-// executor is the subset of *sql.DB and *sql.Tx these stores use.
-type executor interface {
-	ExecContext(ctx context.Context, query string, args ...any) (sql.Result, error)
-	QueryContext(ctx context.Context, query string, args ...any) (*sql.Rows, error)
-	QueryRowContext(ctx context.Context, query string, args ...any) *sql.Row
+// The framework-owned stores hold a sqlbind.SQLExecutor rather than a *sql.DB,
+// because an engine may bypass database/sql at request time: PostgreSQL is
+// served by a native pool, and a connection opened that way has no *sql.DB to
+// hand out. Both kinds of pool, and both kinds of transaction, satisfy the
+// same interface, so the stores are written once.
+
+// singleRow is the one row a statement was expected to return. It stands in
+// for QueryRowContext, which only database/sql can answer.
+type singleRow struct {
+	rows sqlbind.Rows
+	err  error
+}
+
+func queryRow(ctx context.Context, db sqlbind.SQLExecutor, query string, args ...any) singleRow {
+	rows, err := sqlbind.Query(ctx, db, query, args...)
+	return singleRow{rows: rows, err: err}
+}
+
+// Scan reads the row and reports sql.ErrNoRows when the statement returned
+// none, which is the contract of *sql.Row the callers were written against.
+func (r singleRow) Scan(dest ...any) error {
+	if r.err != nil {
+		return r.err
+	}
+	defer func() { _ = r.rows.Close() }()
+	if !r.rows.Next() {
+		if err := r.rows.Err(); err != nil {
+			return err
+		}
+		return sql.ErrNoRows
+	}
+	if err := r.rows.Scan(dest...); err != nil {
+		return err
+	}
+	return r.rows.Err()
+}
+
+// transaction is one open unit of work on either kind of pool.
+type transaction struct {
+	sqlbind.SQLExecutor
+	commit   func() error
+	rollback func()
+}
+
+// beginTx opens a transaction on the pool a store holds.
+//
+// The rollback is safe to defer unconditionally: after a commit it reports
+// that the transaction is already finished, and that report is dropped.
+func beginTx(ctx context.Context, db sqlbind.SQLExecutor) (transaction, error) {
+	switch pool := db.(type) {
+	case *sql.DB:
+		tx, err := pool.BeginTx(ctx, nil)
+		if err != nil {
+			return transaction{}, err
+		}
+		return transaction{SQLExecutor: tx, commit: tx.Commit, rollback: func() { _ = tx.Rollback() }}, nil
+	case database.NativeDB:
+		tx, err := pool.BeginTx(ctx, database.NativeTxOptions{})
+		if err != nil {
+			return transaction{}, err
+		}
+		// The commit and the rollback travel without the caller's context, for
+		// the reason pwruntime.TransactionScope gives: neither may be abandoned
+		// by the cancellation that ended the request.
+		return transaction{
+			SQLExecutor: tx,
+			commit:      func() error { return tx.Commit(context.Background()) },
+			rollback:    func() { _ = tx.Rollback(context.Background()) },
+		}, nil
+	default:
+		return transaction{}, errors.New("auth: the database handle opens no transaction")
+	}
 }
 
 // rebind rewrites ? placeholders into the $n form the Postgres driver
@@ -198,12 +268,12 @@ func rebind(dialect, statement string) string {
 // dbStore is the framework-owned store over the popcornweb_ tables. It is used
 // only when the application installed no store of its own.
 type dbStore struct {
-	db      *sql.DB
+	db      sqlbind.SQLExecutor
 	dialect string
 }
 
-func (s dbStore) executor(ctx context.Context) executor {
-	if tx, ok := ctx.Value(txKey{}).(*sql.Tx); ok && tx != nil {
+func (s dbStore) executor(ctx context.Context) sqlbind.SQLExecutor {
+	if tx, ok := ctx.Value(txKey{}).(sqlbind.SQLExecutor); ok && tx != nil {
 		return tx
 	}
 	return s.db
@@ -213,7 +283,7 @@ func (s dbStore) Find(ctx context.Context, credentialID []byte) (Credential, err
 	if len(credentialID) == 0 {
 		return Credential{}, ErrUnknownCredential
 	}
-	row := s.executor(ctx).QueryRowContext(ctx, rebind(s.dialect, `SELECT credential_id, account_id, user_handle, public_key,
+	row := queryRow(ctx, s.executor(ctx), rebind(s.dialect, `SELECT credential_id, account_id, user_handle, public_key,
 		public_key_x, public_key_y, algorithm, sign_count, backup_eligible, backup_state, transports,
 		label, created_at, last_used_at
 		FROM `+CredentialTable+` WHERE credential_id = ?`), credentialID)
@@ -224,14 +294,14 @@ func (s dbStore) ListByAccount(ctx context.Context, accountID string) ([]Credent
 	if accountID == "" {
 		return nil, nil
 	}
-	rows, err := s.executor(ctx).QueryContext(ctx, rebind(s.dialect, `SELECT credential_id, account_id, user_handle, public_key,
+	rows, err := sqlbind.Query(ctx, s.executor(ctx), rebind(s.dialect, `SELECT credential_id, account_id, user_handle, public_key,
 		public_key_x, public_key_y, algorithm, sign_count, backup_eligible, backup_state, transports,
 		label, created_at, last_used_at
 		FROM `+CredentialTable+` WHERE account_id = ? ORDER BY created_at`), accountID)
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 	var result []Credential
 	for rows.Next() {
 		credential, err := scanCredential(rows)
@@ -247,18 +317,18 @@ func (s dbStore) Save(ctx context.Context, credential Credential, within func(co
 	if len(credential.CredentialID) == 0 || credential.AccountID == "" {
 		return errors.New("auth: credential needs an ID and an account")
 	}
-	tx, err := s.db.BeginTx(ctx, nil)
+	tx, err := beginTx(ctx, s.db)
 	if err != nil {
 		return err
 	}
-	defer tx.Rollback()
+	defer tx.rollback()
 	if _, err := tx.ExecContext(ctx, rebind(s.dialect, `INSERT INTO `+CredentialTable+` (credential_id, account_id, user_handle,
 		public_key, public_key_x, public_key_y, algorithm, sign_count, backup_eligible, backup_state,
 		transports, label, created_at, last_used_at)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)`),
 		credential.CredentialID, credential.AccountID, credential.UserHandle, credential.PublicKey,
 		credential.PublicKeyX, credential.PublicKeyY,
-		credential.Algorithm, credential.SignCount, credential.BackupEligible, credential.BackupState,
+		credential.Algorithm, credential.SignCount, flag(credential.BackupEligible), flag(credential.BackupState),
 		strings.Join(credential.Transports, ","), credential.Label, credential.CreatedAt); err != nil {
 		return err
 	}
@@ -266,11 +336,11 @@ func (s dbStore) Save(ctx context.Context, credential Credential, within func(co
 		// The callback activates the account and consumes the bootstrap
 		// credential. A partially applied enrollment is a defect, so it shares
 		// this transaction rather than running after it.
-		if err := within(withTx(ctx, tx)); err != nil {
+		if err := within(withTx(ctx, tx.SQLExecutor)); err != nil {
 			return err
 		}
 	}
-	return tx.Commit()
+	return tx.commit()
 }
 
 // UpdateOnAssertion moves the stored counter forward or changes nothing.
@@ -288,7 +358,7 @@ func (s dbStore) Save(ctx context.Context, credential Credential, within func(co
 func (s dbStore) UpdateOnAssertion(ctx context.Context, credentialID []byte, signCount uint32, backupState bool, usedAt time.Time) error {
 	statement := `UPDATE ` + CredentialTable + `
 		SET sign_count = ?, backup_state = ?, last_used_at = ? WHERE credential_id = ?`
-	arguments := []any{signCount, backupState, usedAt, credentialID}
+	arguments := []any{signCount, flag(backupState), usedAt, credentialID}
 	if signCount > 0 {
 		statement += ` AND sign_count < ?`
 		arguments = append(arguments, signCount)
@@ -313,11 +383,11 @@ func (s dbStore) Delete(ctx context.Context, accountID string, credentialID []by
 // rather than more methods on dbStore, because both interfaces declare Find and
 // they return different records.
 type bootstrapStore struct {
-	db      *sql.DB
+	db      sqlbind.SQLExecutor
 	dialect string
 }
 
-func (s bootstrapStore) executor(ctx context.Context) executor {
+func (s bootstrapStore) executor(ctx context.Context) sqlbind.SQLExecutor {
 	return dbStore(s).executor(ctx)
 }
 
@@ -339,7 +409,7 @@ func (s bootstrapStore) Find(ctx context.Context, loginID string) (BootstrapCred
 	}
 	var credential BootstrapCredential
 	var consumed sql.NullTime
-	err := s.executor(ctx).QueryRowContext(ctx, rebind(s.dialect, `SELECT login_id, account_id, secret_digest, purpose,
+	err := queryRow(ctx, s.executor(ctx), rebind(s.dialect, `SELECT login_id, account_id, secret_digest, purpose,
 		issued_at, expires_at, attempts_remaining, consumed_at FROM `+BootstrapTable+`
 		WHERE login_id = ? AND consumed_at IS NULL`), loginID).Scan(
 		&credential.LoginID, &credential.AccountID, &credential.SecretDigest, &credential.Purpose,
@@ -369,7 +439,7 @@ func (s bootstrapStore) RecordAttempt(ctx context.Context, loginID string) (int,
 		return 0, err
 	}
 	var remaining int
-	if err := s.executor(ctx).QueryRowContext(ctx,
+	if err := queryRow(ctx, s.executor(ctx),
 		rebind(s.dialect, `SELECT attempts_remaining FROM `+BootstrapTable+` WHERE login_id = ?`), loginID).Scan(&remaining); err != nil {
 		return 0, err
 	}
@@ -389,14 +459,26 @@ type rowScanner interface {
 	Scan(dest ...any) error
 }
 
+// flag spells a boolean the way its column is declared. Every supported engine
+// stores one as an integer, and only database/sql converts a Go bool into one
+// on the way in and back out: a native pool refuses the pair as a type
+// mismatch, so the conversion is written here instead of left to the driver.
+func flag(value bool) int64 {
+	if value {
+		return 1
+	}
+	return 0
+}
+
 func scanCredential(row rowScanner) (Credential, error) {
 	var credential Credential
 	var transports string
 	var lastUsed sql.NullTime
+	var backupEligible, backupState int64
 	err := row.Scan(&credential.CredentialID, &credential.AccountID, &credential.UserHandle,
 		&credential.PublicKey, &credential.PublicKeyX, &credential.PublicKeyY,
 		&credential.Algorithm, &credential.SignCount,
-		&credential.BackupEligible, &credential.BackupState, &transports, &credential.Label,
+		&backupEligible, &backupState, &transports, &credential.Label,
 		&credential.CreatedAt, &lastUsed)
 	if errors.Is(err, sql.ErrNoRows) {
 		return Credential{}, ErrUnknownCredential
@@ -404,6 +486,7 @@ func scanCredential(row rowScanner) (Credential, error) {
 	if err != nil {
 		return Credential{}, err
 	}
+	credential.BackupEligible, credential.BackupState = backupEligible != 0, backupState != 0
 	if transports != "" {
 		credential.Transports = strings.Split(transports, ",")
 	}

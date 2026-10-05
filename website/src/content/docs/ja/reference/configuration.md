@@ -530,7 +530,7 @@ CSRF の秘密もここの鍵ではありません。登録されたセッショ
 | キー | 既定値 | 意味 |
 | --- | --- | --- |
 | `enabled` | `false` | |
-| `backend` | `"rdb"` | ceremony、許可リスト、credential、bootstrap の保存先: `rdb`, `dynamo`, `firestore` |
+| `backend` | `"rdb"` | ceremony、許可リスト、credential、bootstrap の保存先: `rdb`, `dynamo`, `firestore`、またはアプリケーションが `auth.RegisterBackend` で登録した名前。リンクされていない名前は、リンク済みの一覧を添えて起動時に失敗する |
 | `mode` | `"oidc_only"` | ブラウザ用の各モードと、Bearer API 用の `jwt_only` |
 | `login_path` | `"/auth/login"` | プロバイダのフローを開始する |
 | `callback_path` | `"/auth/callback"` | 結果を検証してセッションを開始する |

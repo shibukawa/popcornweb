@@ -9,9 +9,9 @@ package sqlite
 
 import (
 	"context"
-	"database/sql"
 
 	"github.com/shibukawa/popcornweb/authstate"
+	"github.com/shibukawa/tinybind-go/sqlbind"
 )
 
 // Dialect is the registered engine name, which is also what a sqlite:// DSN
@@ -41,7 +41,7 @@ func createTable() string {
 
 // insert refuses to overwrite a record that has not expired, which is what
 // makes one ceremony key usable once.
-func insert(ctx context.Context, db *sql.DB, record authstate.SQLRecord) (bool, error) {
+func insert(ctx context.Context, db sqlbind.SQLExecutor, record authstate.SQLRecord) (bool, error) {
 	result, err := db.ExecContext(ctx, `
 		INSERT INTO `+authstate.TableName+`(namespace, "key", expires_at_ms, payload)
 		VALUES(?, ?, ?, ?)
@@ -62,17 +62,19 @@ func insert(ctx context.Context, db *sql.DB, record authstate.SQLRecord) (bool, 
 
 // take consumes the record in one statement, which SQLite supports through
 // RETURNING.
-func take(ctx context.Context, db *sql.DB, namespace, key string) (int64, []byte, error) {
-	var expiresAtMS int64
-	var payload []byte
-	err := db.QueryRowContext(ctx, `
+func take(ctx context.Context, db sqlbind.SQLExecutor, namespace, key string) (int64, []byte, error) {
+	rows, err := sqlbind.Query(ctx, db, `
 		DELETE FROM `+authstate.TableName+`
 		WHERE namespace = ? AND "key" = ?
-		RETURNING expires_at_ms, payload`, namespace, key).Scan(&expiresAtMS, &payload)
-	return expiresAtMS, payload, err
+		RETURNING expires_at_ms, payload`, namespace, key)
+	if err != nil {
+		return 0, nil, err
+	}
+	defer func() { _ = rows.Close() }()
+	return authstate.ScanRecord(rows)
 }
 
-func prune(ctx context.Context, db *sql.DB, namespace string, beforeMS int64, limit int) (int64, error) {
+func prune(ctx context.Context, db sqlbind.SQLExecutor, namespace string, beforeMS int64, limit int) (int64, error) {
 	result, err := db.ExecContext(ctx, `
 		DELETE FROM `+authstate.TableName+`
 		WHERE namespace = ? AND "key" IN (
@@ -87,12 +89,12 @@ func prune(ctx context.Context, db *sql.DB, namespace string, beforeMS int64, li
 	return result.RowsAffected()
 }
 
-func columns(ctx context.Context, db *sql.DB) ([]string, error) {
-	rows, err := db.QueryContext(ctx, `PRAGMA table_info(`+authstate.TableName+`)`)
+func columns(ctx context.Context, db sqlbind.SQLExecutor) ([]string, error) {
+	rows, err := sqlbind.Query(ctx, db, `PRAGMA table_info(`+authstate.TableName+`)`)
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 	var names []string
 	for rows.Next() {
 		var cid, notNull, primaryKey int

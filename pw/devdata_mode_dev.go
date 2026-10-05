@@ -28,7 +28,10 @@ func startDevelopmentData(resources pwruntime.Resources) {
 		// the ordinary case for a pwdev binary started by hand.
 		return
 	}
-	if resources.DB == nil {
+	// A pool served natively has no *sql.DB, so the connection set is asked as
+	// well: the pane reads through each connection's executor, and refusing a
+	// PostgreSQL project here told it that it had no database.
+	if resources.DB == nil && (resources.Connections == nil || resources.Connections.Count() == 0) {
 		// A console is running and expecting a pane, so silence here would
 		// leave the developer looking at a pane that never attaches with
 		// nothing to explain it.

@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"strings"
 	"sync"
+
+	"github.com/shibukawa/tinybind-go/sqlbind"
 )
 
 // AllowlistCandidate is one verified claim of a login offered to the store as a
@@ -71,7 +73,7 @@ func allowlistCandidates(claims []string, identity Identity) []AllowlistCandidat
 
 // resolveAllowlistStore prefers the application store and falls back to the
 // framework table, matching how the credential and bootstrap stores resolve.
-func resolveAllowlistStore(db *sql.DB, dialect string) AllowlistStore {
+func resolveAllowlistStore(db sqlbind.SQLExecutor, dialect string) AllowlistStore {
 	if store := installedAllowlistStore(); store != nil {
 		return store
 	}
@@ -81,7 +83,7 @@ func resolveAllowlistStore(db *sql.DB, dialect string) AllowlistStore {
 // sqlAllowlist reads the pre-registration table owned by this package. It is
 // used only when the application installed no store of its own.
 type sqlAllowlist struct {
-	db      *sql.DB
+	db      sqlbind.SQLExecutor
 	dialect string
 }
 
@@ -102,7 +104,7 @@ func (a sqlAllowlist) Registered(ctx context.Context, issuer string, candidates 
 	query := rebind(a.dialect, `SELECT 1 FROM `+AllowlistTable+` WHERE issuer = ? AND (`+
 		strings.Join(conditions, " OR ")+`) LIMIT 1`)
 	var found int
-	err := a.db.QueryRowContext(ctx, query, arguments...).Scan(&found)
+	err := queryRow(ctx, a.db, query, arguments...).Scan(&found)
 	if errors.Is(err, sql.ErrNoRows) {
 		return false, nil
 	}

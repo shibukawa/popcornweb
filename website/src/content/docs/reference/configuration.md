@@ -552,7 +552,7 @@ imports nothing authentication-related has no `[auth]` prefix to configure.
 | Key | Default | Meaning |
 | --- | --- | --- |
 | `enabled` | `false` | |
-| `backend` | `"rdb"` | storage for ceremony, allowlist, credential, and bootstrap records: `rdb`, `dynamo`, or `firestore` |
+| `backend` | `"rdb"` | storage for ceremony, allowlist, credential, and bootstrap records: `rdb`, `dynamo`, `firestore`, or a name the application registered with `auth.RegisterBackend`. A name nothing linked fails startup with the list of those that are |
 | `mode` | `"oidc_only"` | browser modes plus `jwt_only` for a bearer-token API |
 | `login_path` | `"/auth/login"` | starts the provider flow |
 | `callback_path` | `"/auth/callback"` | verifies the result and starts the session |

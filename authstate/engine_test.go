@@ -4,7 +4,6 @@ package authstate_test
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"os"
 	"path/filepath"
@@ -13,6 +12,7 @@ import (
 
 	"github.com/shibukawa/popcornweb/authstate"
 	"github.com/shibukawa/popcornweb/database"
+	"github.com/shibukawa/tinybind-go/sqlbind"
 
 	_ "github.com/shibukawa/popcornweb/authstate/mysql"
 	_ "github.com/shibukawa/popcornweb/authstate/postgres"
@@ -34,16 +34,23 @@ const (
 // differently per engine: MySQL has no RETURNING and no conditional upsert, so
 // it reaches the same behavior through a transaction.
 func TestEngineContract(t *testing.T) {
-	for _, engine := range []struct{ dialect, dsn string }{
-		{dialect: "sqlite", dsn: "sqlite://" + filepath.Join(t.TempDir(), "contract.db")},
-		{dialect: "postgres", dsn: os.Getenv(postgresDSNEnv)},
-		{dialect: "mysql", dsn: os.Getenv(mysqlDSNEnv)},
+	for _, engine := range []struct {
+		name, dialect, dsn string
+		// native runs the suite on the pool the request path uses for an
+		// engine that bypasses database/sql, which is the one a running
+		// application hands this store.
+		native bool
+	}{
+		{name: "sqlite", dialect: "sqlite", dsn: "sqlite://" + filepath.Join(t.TempDir(), "contract.db")},
+		{name: "postgres", dialect: "postgres", dsn: os.Getenv(postgresDSNEnv)},
+		{name: "postgres-native", dialect: "postgres", dsn: os.Getenv(postgresDSNEnv), native: true},
+		{name: "mysql", dialect: "mysql", dsn: os.Getenv(mysqlDSNEnv)},
 	} {
-		t.Run(engine.dialect, func(t *testing.T) {
+		t.Run(engine.name, func(t *testing.T) {
 			if engine.dsn == "" {
 				t.Skipf("set %s to run this engine", engine.dialect)
 			}
-			db := openEngine(t, engine.dsn)
+			db := openEngine(t, engine.dsn, engine.native)
 			now := time.Now().Truncate(time.Millisecond)
 			clock := func() time.Time { return now }
 			store, err := authstate.NewSQLStore[string](db, stringCodec{}, authstate.SQLOptions{
@@ -124,11 +131,22 @@ func TestEngineContract(t *testing.T) {
 	}
 }
 
-func openEngine(t *testing.T, dsn string) *sql.DB {
+func openEngine(t *testing.T, dsn string, native bool) sqlbind.SQLExecutor {
 	t.Helper()
 	target, err := database.Resolve(dsn)
 	if err != nil {
 		t.Fatal(err)
+	}
+	if native {
+		pool, err := target.OpenNative(t.Context(), database.PoolBounds{MaxOpenConns: 4})
+		if err != nil {
+			t.Fatal(err)
+		}
+		t.Cleanup(func() { _ = pool.Close() })
+		if err := pool.Ping(t.Context()); err != nil {
+			t.Fatal(err)
+		}
+		return pool
 	}
 	db, err := target.Open()
 	if err != nil {

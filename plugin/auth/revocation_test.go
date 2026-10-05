@@ -163,7 +163,7 @@ func TestBothFormsAreConsulted(t *testing.T) {
 // A store that cannot answer has not said the token is valid.
 func TestRevocationFailsClosedWhenTheStoreIsUnreachable(t *testing.T) {
 	store := revocationStore(t, RevocationBoth)
-	_ = store.db.Close()
+	_ = store.db.(*sql.DB).Close()
 	identity := bearerIdentity("https://issuer.example", "caller-1", "token-1", time.Now())
 
 	err := store.check(context.Background(), identity)
@@ -192,7 +192,7 @@ func TestRevocationAdmitOverrideKeepsServing(t *testing.T) {
 // error a deployment that revokes nothing should ever see.
 func TestRevocationOffConsultsNothing(t *testing.T) {
 	store := revocationStore(t, RevocationOff)
-	_ = store.db.Close()
+	_ = store.db.(*sql.DB).Close()
 	identity := bearerIdentity("https://issuer.example", "caller-1", "token-1", time.Now())
 	if err := store.check(context.Background(), identity); err != nil {
 		t.Fatalf("a deployment with revocation off consulted the store: %v", err)
@@ -271,7 +271,7 @@ func TestPruneRemovesEntriesThatOutlivedTheirTokens(t *testing.T) {
 		t.Fatal(err)
 	}
 	var remaining int
-	if err := store.db.QueryRow(`SELECT COUNT(*) FROM ` + RevocationTable).Scan(&remaining); err != nil {
+	if err := queryRow(ctx, store.db, `SELECT COUNT(*) FROM `+RevocationTable).Scan(&remaining); err != nil {
 		t.Fatal(err)
 	}
 	if remaining != 0 {

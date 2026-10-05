@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"sort"
 	"sync"
+
+	"github.com/shibukawa/tinybind-go/sqlbind"
 )
 
 // TableName is the table the SQL stores own.
@@ -19,6 +21,10 @@ var Columns = []string{"namespace", "key", "expires_at_ms", "payload"}
 // store performs. These are whole operations rather than statement fragments
 // because the engines differ in more than syntax: MySQL has no RETURNING, so
 // its single-use read is a transaction where the others are one statement.
+//
+// The executor is a *sql.DB or the native pool of an engine that bypasses
+// database/sql, so an engine reads through sqlbind.Query rather than through
+// QueryRowContext, which only database/sql can answer.
 type Dialect struct {
 	// Name is the dialect identifier rule:rdb-dsn-resolution resolves a DSN
 	// scheme to.
@@ -27,16 +33,16 @@ type Dialect struct {
 	CreateTable func() string
 	// Insert stores one record unless a live one already holds the key, and
 	// reports whether it stored.
-	Insert func(ctx context.Context, db *sql.DB, record SQLRecord) (bool, error)
+	Insert func(ctx context.Context, db sqlbind.SQLExecutor, record SQLRecord) (bool, error)
 	// Take removes one record and returns what it held. A missing record is
 	// sql.ErrNoRows, which the store reports as ErrNotFound.
-	Take func(ctx context.Context, db *sql.DB, namespace, key string) (expiresAtMS int64, payload []byte, err error)
+	Take func(ctx context.Context, db sqlbind.SQLExecutor, namespace, key string) (expiresAtMS int64, payload []byte, err error)
 	// Prune removes at most limit records of one namespace that expired
 	// before the given instant.
-	Prune func(ctx context.Context, db *sql.DB, namespace string, beforeMS int64, limit int) (int64, error)
+	Prune func(ctx context.Context, db sqlbind.SQLExecutor, namespace string, beforeMS int64, limit int) (int64, error)
 	// Columns lists the columns of the owned table in declaration order, or
 	// none at all when the table does not exist.
-	Columns func(ctx context.Context, db *sql.DB) ([]string, error)
+	Columns func(ctx context.Context, db sqlbind.SQLExecutor) ([]string, error)
 }
 
 // SQLRecord is one row an Insert writes. NowMS decides whether an existing row
@@ -119,7 +125,7 @@ func SchemaSQL(dialect string) (string, error) {
 
 // ScanColumns reads one column name per row, which is the shape every engine's
 // catalog query is written to return.
-func ScanColumns(rows *sql.Rows) ([]string, error) {
+func ScanColumns(rows sqlbind.Rows) ([]string, error) {
 	var names []string
 	for rows.Next() {
 		var name string
@@ -129,4 +135,20 @@ func ScanColumns(rows *sql.Rows) ([]string, error) {
 		names = append(names, name)
 	}
 	return names, rows.Err()
+}
+
+// ScanRecord reads the one row a Take statement returns, and reports
+// sql.ErrNoRows when it returned none. It is the QueryRowContext an engine
+// would otherwise call, written against the rows every executor can produce.
+func ScanRecord(rows sqlbind.Rows) (expiresAtMS int64, payload []byte, err error) {
+	if !rows.Next() {
+		if err := rows.Err(); err != nil {
+			return 0, nil, err
+		}
+		return 0, nil, sql.ErrNoRows
+	}
+	if err := rows.Scan(&expiresAtMS, &payload); err != nil {
+		return 0, nil, err
+	}
+	return expiresAtMS, payload, rows.Err()
 }

@@ -266,7 +266,7 @@ func registerConfigDefinition0() {
 		},
 		FlagMetas: []cliparser.FieldMeta{
 			{Prefix: "auth", Key: "enabled", Kind: cliparser.KindBool},
-			{Prefix: "auth", Key: "backend", Help: "storage backend of the authentication tables: rdb or dynamo", Enum: []string{"rdb", "dynamo"}},
+			{Prefix: "auth", Key: "backend", Help: "storage backend of the authentication tables: rdb, dynamo, firestore, or a name the application registered with auth.RegisterBackend"},
 			{Prefix: "auth", Key: "mode", Help: "oidc_only, oidc_passkey, passkey_only, oauth_only, or jwt_only", Enum: []string{"oidc_only", "oidc_passkey", "passkey_only", "oauth_only", "jwt_only"}},
 			{Prefix: "auth", Key: "login_path", Help: "path that starts the provider flow"},
 			{Prefix: "auth", Key: "callback_path"},
@@ -355,7 +355,7 @@ func registerConfigDefinition0() {
 		Apply: applyConfigDefinition0,
 		Scaffold: []configbind.ScaffoldField{
 			{Key: "enabled", Kind: configbind.ScaffoldBool, Default: "false"},
-			{Key: "backend", Kind: configbind.ScaffoldString, Default: "rdb", Help: "storage backend of the authentication tables: rdb or dynamo", Enum: []string{"rdb", "dynamo"}},
+			{Key: "backend", Kind: configbind.ScaffoldString, Default: "rdb", Help: "storage backend of the authentication tables: rdb, dynamo, firestore, or a name the application registered with auth.RegisterBackend"},
 			{Key: "mode", Kind: configbind.ScaffoldString, Default: "oidc_only", Help: "oidc_only, oidc_passkey, passkey_only, oauth_only, or jwt_only", Enum: []string{"oidc_only", "oidc_passkey", "passkey_only", "oauth_only", "jwt_only"}},
 			{Key: "login_path", Kind: configbind.ScaffoldString, Default: "/auth/login", Help: "path that starts the provider flow"},
 			{Key: "callback_path", Kind: configbind.ScaffoldString, Default: "/auth/callback"},
@@ -464,11 +464,6 @@ func applyConfigDefinition0(dst any, o *configbind.Overlay) error {
 		p.Enabled = false
 	}
 	if v, ok := o.GetString("auth.backend"); ok {
-		switch v {
-		case "rdb", "dynamo":
-		default:
-			return fmt.Errorf("configbind: auth.backend: %q must be one of: rdb, dynamo", v)
-		}
 		p.Backend = v
 	} else {
 		p.Backend = "rdb"

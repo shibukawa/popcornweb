@@ -7,6 +7,7 @@ import (
 	"fmt"
 
 	"github.com/shibukawa/popcornweb/authstate"
+	"github.com/shibukawa/tinybind-go/sqlbind"
 )
 
 // MigrationName is the stable name of the migration a project carries for the
@@ -233,9 +234,9 @@ func requiredTables(config Config) [][2]string {
 //
 // The migration is named without a version, because the version is whatever was
 // free in that project when the file was written.
-func verifyTables(ctx context.Context, db *sql.DB, config Config) error {
+func verifyTables(ctx context.Context, db sqlbind.SQLExecutor, dialect string, config Config) error {
 	for _, required := range requiredTables(config) {
-		exists, err := tableExists(ctx, db, required[0])
+		exists, err := tableExists(ctx, db, dialect, required[0])
 		if err != nil {
 			return err
 		}
@@ -247,10 +248,26 @@ func verifyTables(ctx context.Context, db *sql.DB, config Config) error {
 	return nil
 }
 
-func tableExists(ctx context.Context, db *sql.DB, table string) (bool, error) {
+// tableCatalogSQL is the catalog lookup of one table under one engine. Every
+// engine keeps its catalog somewhere else, and the two with schemas answer for
+// the one the connection resolves unqualified names in, which is where the
+// migration created the table.
+func tableCatalogSQL(dialect string) string {
+	switch dialect {
+	case "postgres":
+		return `SELECT table_name FROM information_schema.tables
+			WHERE table_name = $1 AND table_schema = current_schema()`
+	case "mysql":
+		return `SELECT table_name FROM information_schema.tables
+			WHERE table_name = ? AND table_schema = database()`
+	default:
+		return `SELECT name FROM sqlite_master WHERE type = 'table' AND name = ?`
+	}
+}
+
+func tableExists(ctx context.Context, db sqlbind.SQLExecutor, dialect, table string) (bool, error) {
 	var name string
-	err := db.QueryRowContext(ctx,
-		`SELECT name FROM sqlite_master WHERE type = 'table' AND name = ?`, table).Scan(&name)
+	err := queryRow(ctx, db, tableCatalogSQL(dialect), table).Scan(&name)
 	if errors.Is(err, sql.ErrNoRows) {
 		return false, nil
 	}

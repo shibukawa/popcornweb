@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"strings"
 	"time"
+
+	"github.com/shibukawa/tinybind-go/sqlbind"
 )
 
 const (
@@ -32,11 +34,11 @@ type SQLOptions struct {
 	MaxPruneBatch int
 }
 
-// SQLStore persists expiring, single-use authentication state in a
-// database/sql database. The engine is supplied by a registered Dialect, so
-// this type carries no SQL of its own beyond what every engine shares.
+// SQLStore persists expiring, single-use authentication state in a relational
+// database. The engine is supplied by a registered Dialect, so this type
+// carries no SQL of its own beyond what every engine shares.
 type SQLStore[T any] struct {
-	db            *sql.DB
+	db            sqlbind.SQLExecutor
 	dialect       Dialect
 	codec         Codec[T]
 	namespace     string
@@ -46,10 +48,11 @@ type SQLStore[T any] struct {
 	maxPruneBatch int
 }
 
-// NewSQLStore constructs a store over db under the named engine. The caller
-// retains ownership of db and must carry the migration, or call EnsureSchema,
-// before serving requests.
-func NewSQLStore[T any](db *sql.DB, codec Codec[T], options SQLOptions) (*SQLStore[T], error) {
+// NewSQLStore constructs a store over db under the named engine. db is a
+// *sql.DB or the native pool of an engine that bypasses database/sql. The
+// caller retains ownership of db and must carry the migration, or call
+// EnsureSchema, before serving requests.
+func NewSQLStore[T any](db sqlbind.SQLExecutor, codec Codec[T], options SQLOptions) (*SQLStore[T], error) {
 	if db == nil || codec == nil || !validNamespace(options.Namespace) ||
 		options.MaxKeyBytes < 0 || options.MaxKeyBytes > hardMaxKeyBytes ||
 		options.MaxValueBytes < 0 || options.MaxValueBytes > hardMaxValueBytes ||
@@ -224,6 +227,6 @@ var _ Store[string] = (*SQLStore[string])(nil)
 
 // NewSQLRawStore constructs a SQL store over already encoded payloads, which is
 // the form a storage backend supplies for a value type it cannot name.
-func NewSQLRawStore(db *sql.DB, options SQLOptions) (*SQLStore[[]byte], error) {
+func NewSQLRawStore(db sqlbind.SQLExecutor, options SQLOptions) (*SQLStore[[]byte], error) {
 	return NewSQLStore[[]byte](db, RawCodec{}, options)
 }

@@ -9,6 +9,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/shibukawa/tinybind-go/sqlbind"
 )
 
 // RevocationTable holds the tokens and identities this deployment has withdrawn.
@@ -55,7 +57,7 @@ func revocationExpiryIndexSQL() string {
 // how to refuse a revoked token, but only the application knows that an account
 // was compromised.
 type RevocationStore struct {
-	db     *sql.DB
+	db     sqlbind.SQLExecutor
 	config JWTRevocationConfig
 	// dialect selects the placeholder style and the upsert spelling. The three
 	// supported engines disagree on both, and a statement that runs on the
@@ -78,7 +80,7 @@ type cachedRevocation struct {
 	answeredAt time.Time
 }
 
-func newRevocationStore(db *sql.DB, dialect string, config JWTConfig) *RevocationStore {
+func newRevocationStore(db sqlbind.SQLExecutor, dialect string, config JWTConfig) *RevocationStore {
 	store := &RevocationStore{
 		db:       db,
 		config:   config.Revocation,
@@ -257,7 +259,7 @@ func (s *RevocationStore) read(ctx context.Context, issuer, kind, key string) (c
 		return cachedRevocation{}, errors.New("auth: revocation store is not available")
 	}
 	var revokedAt time.Time
-	err := s.db.QueryRowContext(ctx,
+	err := queryRow(ctx, s.db,
 		`SELECT revoked_at FROM `+RevocationTable+
 			` WHERE issuer = `+s.placeholder(1)+
 			` AND kind = `+s.placeholder(2)+
