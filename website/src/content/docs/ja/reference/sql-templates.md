@@ -31,9 +31,9 @@ WHERE id = {id}
 }
 ```
 
-ファイルは、生成コードが属する Go パッケージから始まります。1つのディレクトリの `.pw.sql`
-はすべて、そのディレクトリの `.pw.html` の出力と同じ `_pw_gen.go` にコンパイルされます。
-生成が読むのは `popcornweb.toml` の `generate.queries` が挙げるディレクトリだけで、
+ファイルは、生成コードが属する Go パッケージから始まります。`.pw.sql` は1ファイルごとに
+自分の `_pw_gen.go` にコンパイルされ、同じディレクトリのファイルはすべて同じ Go パッケージに
+入ります。生成が読むのは `popcornweb.toml` の `generate.queries` が挙げるディレクトリだけで、
 どれにも属さない `.pw.sql` は黙って飛ばされるのではなく報告されます。
 
 [コンポーネントパッケージ](/ja/guides/deployment/package/)では `generate.queries` が空で
@@ -46,6 +46,14 @@ WHERE id = {id}
 | `type Name { field: T … }` | 結果の形。同名の Go 構造体になる |
 | `statement name(…): kind { … }` | パッケージ内だけのステートメント |
 | `export statement Name(…): kind { … }` | 同じものを Go の API として公開する |
+
+`type` が見えるのは、それを宣言したファイルのステートメントだけです。それでも名前は
+ディレクトリ全体で一意でなければなりません。どのファイルの構造体も同じ Go パッケージに
+入るからです。この2つがぶつかるのは、2つのファイルが同じ形を返すときです。別のファイルが
+宣言した型を名指しすると `unknown type Name` で失敗し、同じ名前でもう一度宣言すると
+`duplicate generated template declaration Name` で失敗します。結果の型を共有する
+ステートメントは1つのファイルにまとめてください。どうしても分けるなら、ファイルごとに
+別の名前で同じ形を宣言します。片方が `NewProjectID`、もう片方が `NewTicketID` という具合です。
 
 ## ダイアレクト
 
@@ -301,10 +309,12 @@ ORDER BY id
 ```
 
 private な `sql.relation<T>` は `FROM subquery` や `JOIN subquery` で使える型付きの
-サブクエリです。
+サブクエリです。名前は大文字で始めます。`FROM subquery` が relation として読むのは
+その綴りだけなので、`activeUsers` と宣言すると使う側で
+`subquery relation name must be PascalCase` になります。
 
 ```sql
-statement activeUsers(minimumID: int): sql.relation<ActiveUser> {
+statement ActiveUsers(minimumID: int): sql.relation<ActiveUser> {
 SELECT id, name
 FROM users
 WHERE id >= {minimumID} AND active = TRUE
@@ -312,7 +322,7 @@ WHERE id >= {minimumID} AND active = TRUE
 
 export statement ListActiveUsers(minimumID: int, name: string): sql.many<ActiveUser> {
 SELECT active_users.id, active_users.name
-FROM subquery activeUsers(minimumID) AS active_users
+FROM subquery ActiveUsers(minimumID) AS active_users
 WHERE active_users.name = {name}
 ORDER BY active_users.id
 }
@@ -372,7 +382,9 @@ DELETE FROM users WHERE {if byID}id = {id}{else}name = {name}{/if}
 | `statement FindUser(…)` | — | エラー: `export` 無しでその名前は公開になってしまう |
 
 `sql.predicate` と `sql.relation` は例外です。実行されるのではなく他のステートメントの
-ビルダに埋め込まれるので、自分の名前の関数を生成せず、大小の制約もありません。
+ビルダに埋め込まれるので、自分の名前の関数を生成せず、`export` と揃えるものがありません。
+predicate はどちらの綴りでも通ります。relation は `export` なしのパスカルケースで書きます。
+[`FROM subquery`](#predicate-と-relation) がそれ以外の綴りを受け付けないからです。
 
 ## 生成されるシグネチャ
 
@@ -494,6 +506,8 @@ return sqlbind.ScanRows[Organization](rows)
 - 分岐ごとに括弧のネストが揃わない本文
 - `ctx` または `db` という名前のパラメータ（生成される全関数のコンテキストと実行体）
 - 再帰する `sql.relation`
+- 小文字で始まる名前の `sql.relation`
+- 宣言したファイルの外から使われた `type`、または1つのディレクトリの2つのファイルで宣言された `type`
 - ステートメント名の大小と食い違う `export`
 - コンポーネントパッケージの中の `.pw.sql`
 

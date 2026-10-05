@@ -27,6 +27,8 @@ WHERE id = {id}
 | `statement name(…): kind { … }` | a package-private statement |
 | `export statement Name(…): kind { … }` | the same, published as Go API |
 
+**A `type` is file-scoped but its name is directory-wide.** A statement can only name a `type` declared in its own `.pw.sql`; using one from another file fails with `unknown type Name`. Every file's struct still lands in one Go package, so declaring the same name in two files fails with `duplicate generated template declaration Name`. Keep statements that share a result type in one file; where they must stay apart, declare the shape per file under different names (`NewProjectID`, `NewTicketID`).
+
 The SQL body stays SQL — nothing is translated between engines. The only dialect-dependent output is the placeholder token, decided by `project.database` in `popcornweb.toml`: `$1, $2, …` for `postgres`, `?` for `mysql` and `sqlite`. You always write `{name}`. Everything else (`||`, `ON CONFLICT`, `RETURNING`) reaches the SQL verbatim; write for the engine you selected.
 
 ## Parameter and field types
@@ -147,7 +149,7 @@ ORDER BY id
 ```
 
 ```sql
-statement activeUsers(minimumID: int): sql.relation<ActiveUser> {
+statement ActiveUsers(minimumID: int): sql.relation<ActiveUser> {
 SELECT id, name
 FROM users
 WHERE id >= {minimumID} AND active = TRUE
@@ -155,7 +157,7 @@ WHERE id >= {minimumID} AND active = TRUE
 
 export statement ListActiveUsers(minimumID: int, name: string): sql.many<ActiveUser> {
 SELECT active_users.id, active_users.name
-FROM subquery activeUsers(minimumID) AS active_users
+FROM subquery ActiveUsers(minimumID) AS active_users
 WHERE active_users.name = {name}
 ORDER BY active_users.id
 }
@@ -163,10 +165,12 @@ ORDER BY active_users.id
 
 Subquery and outer arguments share one placeholder sequence in final SQL order. The alias is explicit and lower snake_case. Recursive relations are rejected.
 
+**A relation's name must be PascalCase** even though it is not exported: `FROM subquery activeUsers(…)` fails with `subquery relation name must be PascalCase`. A predicate's name takes either case.
+
 ## Safety rules
 
 - **UPDATE and DELETE require a WHERE clause**, proven at generation time across every conditional path. A `WHERE` inside a subquery, CTE, string literal, or comment does not count. The same proof covers a dynamic `SET` list (an UPDATE whose assignments are all conditional is an error) and applies to every cardinality. There is no opt-in for a full-table UPDATE/DELETE — write that as a migration.
-- **`export` must agree with name casing**: `export statement FindUser` → public `func FindUser`; `statement findUser` → package-private `func findUser`. `export statement findUser` and `statement FindUser` are both errors. `sql.predicate`/`sql.relation` names are unconstrained (they generate no function).
+- **`export` must agree with name casing**: `export statement FindUser` → public `func FindUser`; `statement findUser` → package-private `func findUser`. `export statement findUser` and `statement FindUser` are both errors. `sql.predicate`/`sql.relation` generate no function, so this rule does not apply to them: a predicate takes either case, and a relation is PascalCase **without** `export` (see above).
 
 ## Generated signatures and calling from handlers
 
@@ -326,6 +330,8 @@ In `dev`, every generated statement is logged with its SQL, args, and duration (
 - Passing an empty slice to an `IN ({ids})` expansion — runtime builder error.
 - Ignoring the per-row error while ranging over `sql.many`.
 - `export` and name casing disagreeing (`export statement findUser`, `statement FindUser`).
+- A lowercase `sql.relation` name (`statement activeUsers(…): sql.relation<T>`) — `FROM subquery` only accepts PascalCase.
+- Naming a `type` declared in another `.pw.sql` (`unknown type`), or declaring one name in two files of a directory (`duplicate generated template declaration`).
 - Expecting dialect translation — SQL text is emitted verbatim; a package generated for SQLite is not the one you ship on PostgreSQL.
 - Renumbering or editing an applied migration, or seeding/migrating with the wrong `APP_ENV` selected.
 - Using a migration for test rows (runs in production) or a seed for schema (never versioned, inserts again on rerun).

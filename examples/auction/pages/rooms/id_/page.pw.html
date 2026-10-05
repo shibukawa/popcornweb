@@ -108,8 +108,8 @@ component AuctionActivity(roomID: int, viewerAccountID: string): html {
 
 export component Page(room: AuctionRoom, viewerAccountID: string, displayName: string, email: string, bidPath: url, messagePath: url, closePath: url, live: bool): html {
   <script component>
-  export function setup(el, scope) {
-    scope.on("auction.closed", () => {
+  export function setup({ el, onSignal }) {
+    onSignal("auction.closed", () => {
       // A signal is best effort, so it only prompts a refresh. The closed state
       // and winning result remain server-rendered from the database.
       if (el.dataset.roomStatus === "open") window.location.reload();

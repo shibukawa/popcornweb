@@ -33,10 +33,10 @@ WHERE id = {id}
 }
 ```
 
-The file opens with the Go package its generated code joins. Every `.pw.sql` in
-one directory compiles into one `_pw_gen.go` alongside the `.pw.html` output of
-that directory, and generation reads only the directories `generate.queries`
-lists in `popcornweb.toml`. A `.pw.sql` outside every listed directory is
+The file opens with the Go package its generated code joins. Each `.pw.sql`
+compiles into a `_pw_gen.go` of its own, in the same Go package as every other
+file of its directory, and generation reads only the directories
+`generate.queries` lists in `popcornweb.toml`. A `.pw.sql` outside every listed directory is
 reported rather than silently skipped.
 
 `generate.queries` must be empty in a [component
@@ -49,6 +49,15 @@ placeholder syntax, and a package cannot know its consumer's.
 | `type Name { field: T … }` | a result shape; becomes a Go struct of the same name |
 | `statement name(…): kind { … }` | a package-private statement |
 | `export statement Name(…): kind { … }` | the same, published as Go API |
+
+A `type` is visible only to the statements of the file that declares it. Its
+name is nevertheless unique across the directory, because every file's struct
+lands in one Go package. The two rules meet when two files return the same
+shape: naming a type another file declared fails with `unknown type Name`, and
+declaring it again under the same name fails with `duplicate generated template
+declaration Name`. Keep the statements that share a result type in one file.
+Where they have to stay apart, each file declares the shape under a name of its
+own — `NewProjectID` in one, `NewTicketID` in the other.
 
 ## The dialect
 
@@ -322,10 +331,12 @@ ORDER BY id
 ```
 
 A private `sql.relation<T>` is a typed subquery usable in `FROM subquery` or
-`JOIN subquery`:
+`JOIN subquery`. Its name starts with an uppercase letter: that is the only
+spelling `FROM subquery` reads as a relation, so one declared as `activeUsers`
+fails where it is used, with `subquery relation name must be PascalCase`.
 
 ```sql
-statement activeUsers(minimumID: int): sql.relation<ActiveUser> {
+statement ActiveUsers(minimumID: int): sql.relation<ActiveUser> {
 SELECT id, name
 FROM users
 WHERE id >= {minimumID} AND active = TRUE
@@ -333,7 +344,7 @@ WHERE id >= {minimumID} AND active = TRUE
 
 export statement ListActiveUsers(minimumID: int, name: string): sql.many<ActiveUser> {
 SELECT active_users.id, active_users.name
-FROM subquery activeUsers(minimumID) AS active_users
+FROM subquery ActiveUsers(minimumID) AS active_users
 WHERE active_users.name = {name}
 ORDER BY active_users.id
 }
@@ -398,7 +409,9 @@ own case is what Go reads, and it has to agree with `export`:
 
 `sql.predicate` and `sql.relation` are the exception. They are embedded into
 another statement's builder rather than executed, so they generate no function
-of their own name and their case is unconstrained.
+of their own name and `export` has nothing to agree with. A predicate takes
+either case. A relation is written in PascalCase without `export`, because
+[`FROM subquery`](#predicates-and-relations) accepts no other spelling.
 
 ## Generated signatures
 
@@ -524,6 +537,8 @@ Generation:
 - branches that leave different parenthesis nesting
 - a parameter named `ctx` or `db`, which are the context and executor of every generated function
 - a recursive `sql.relation`
+- a `sql.relation` whose name starts with a lowercase letter
+- a `type` used from a file other than the one that declares it, or declared in two files of one directory
 - an `export` that disagrees with the statement name's casing
 - a `.pw.sql` in a component package
 
