@@ -5,10 +5,42 @@ import (
 	"errors"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"testing"
 	"testing/fstest"
 	"time"
 )
+
+// builtTree puts files where this build reads the application's own tree, and
+// returns the embedded half of it.
+//
+// The two build modes read different places on purpose. A deployed binary
+// answers from the embedded tree; the development loop answers from dist/public
+// under the working directory and never from the embedded one, so an edit shows
+// up without a rebuild. A test of anything that falls through to "the tree"
+// therefore has to put the file in the one this build falls through to.
+func builtTree(t *testing.T, files map[string]string) fstest.MapFS {
+	t.Helper()
+	embedded := fstest.MapFS{}
+	for name, body := range files {
+		embedded[name] = &fstest.MapFile{Data: []byte(body)}
+	}
+	if !publicDevelopment {
+		return embedded
+	}
+	t.Chdir(t.TempDir())
+	for name, body := range files {
+		path := filepath.Join(filepath.FromSlash(localPublicRoot), filepath.FromSlash(name))
+		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(path, []byte(body), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	return embedded
+}
 
 type fakeExternalSource struct {
 	objects map[string]ExternalAsset
@@ -25,13 +57,14 @@ func (source fakeExternalSource) OpenExternalAsset(_ context.Context, name strin
 
 // A registered source answers the external tree in place of the directory,
 // with the validators it knows and Range support from the whole body; a
-// name it lacks falls through to the embedded tree, and its failure is 500.
+// name it lacks falls through to the application's own tree, and its failure
+// is 500.
 func TestExternalAssetSourceServesTheExternalTree(t *testing.T) {
 	RegisterExternalAssetSource(fakeExternalSource{objects: map[string]ExternalAsset{
 		"video/intro.mp4": {Body: []byte("0123456789"), ETag: `"r2-etag"`, MediaType: "video/mp4", ModTime: time.Unix(1700000000, 0)},
 	}})
 	t.Cleanup(func() { RegisterExternalAssetSource(nil) })
-	embedded := fstest.MapFS{"app.css": &fstest.MapFile{Data: []byte("body{}")}}
+	embedded := builtTree(t, map[string]string{"app.css": "body{}"})
 	middleware, err := PublicAssets(PublicAssetConfig{Enabled: true, Mount: "/public"}, embedded)
 	if err != nil {
 		t.Fatal(err)
@@ -60,7 +93,7 @@ func TestExternalAssetSourceServesTheExternalTree(t *testing.T) {
 	recorder = httptest.NewRecorder()
 	handler.ServeHTTP(recorder, httptest.NewRequest(http.MethodGet, "/public/app.css", nil))
 	if recorder.Code != http.StatusOK || recorder.Body.String() != "body{}" {
-		t.Errorf("embedded tree lost behind the source: %d %q", recorder.Code, recorder.Body.String())
+		t.Errorf("the application's own tree lost behind the source: %d %q", recorder.Code, recorder.Body.String())
 	}
 
 	RegisterExternalAssetSource(fakeExternalSource{fail: true})
