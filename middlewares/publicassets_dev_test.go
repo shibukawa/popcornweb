@@ -52,3 +52,38 @@ func TestDevelopmentPublicAssetsUseOnlyLocalIdentity(t *testing.T) {
 		t.Fatalf("embedded fallback status = %d", missing.Code)
 	}
 }
+
+// The URL a document names has to be one this build serves. The generated
+// manifest is linked into a development binary too, and the loop answers from
+// the working tree without consulting it, so a revisioned URL there is a
+// stylesheet link that 404s on every page.
+func TestDevelopmentPublicAssetURLIsOneTheLoopServes(t *testing.T) {
+	root := t.TempDir()
+	t.Chdir(root)
+	if err := os.MkdirAll(filepath.FromSlash(localPublicRoot), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(filepath.FromSlash(localPublicRoot), "app.css"), []byte("live"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { publicManifestState.Store(nil) })
+	RegisterPublicManifest([]AssetEntry{{
+		URL: "app.css", CacheControl: "public, no-cache", Revision: "0123456789abcdef",
+		Representations: []AssetRepresentation{
+			{Path: "app.css", MediaType: "text/css; charset=utf-8", Length: 4, ETag: `"css"`},
+		},
+	}})
+	middleware, err := PublicAssets(PublicAssetConfig{Mount: "/public"}, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	named := PublicAssetURL("app.css")
+	if named != "/public/app.css" {
+		t.Fatalf("PublicAssetURL = %q, want the plain URL the loop serves", named)
+	}
+	response := httptest.NewRecorder()
+	middleware(http.NotFoundHandler()).ServeHTTP(response, httptest.NewRequest(http.MethodGet, named, nil))
+	if response.Code != http.StatusOK || response.Body.String() != "live" {
+		t.Fatalf("the named URL answered %d %q", response.Code, response.Body.String())
+	}
+}

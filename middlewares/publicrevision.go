@@ -61,6 +61,15 @@ func PublicAssetURL(name string) string {
 		// than being reshaped into a URL that looks deliberate.
 		return mount + strings.TrimPrefix(name, "/")
 	}
+	// The development loop serves the working tree and never consults the
+	// manifest, so it must not be asked for a URL only the manifest can
+	// resolve. The generated manifest is linked into a pwdev binary all the
+	// same — it is an init in the project's own package — which is why the
+	// build mode is asked here rather than whether one was registered: naming
+	// the revision there was a stylesheet link that 404ed on every page.
+	if publicDevelopment {
+		return mount + target
+	}
 	entry, found := manifestEntry(target)
 	if !found || entry.Revision == "" {
 		return mount + target
