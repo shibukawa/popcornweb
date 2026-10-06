@@ -6,6 +6,7 @@ import (
 	"testing/fstest"
 
 	"github.com/shibukawa/popcornweb/middlewares"
+	"github.com/shibukawa/popcornweb/pwruntime"
 	"github.com/shibukawa/tinygodriver/fasthttp"
 )
 
@@ -125,5 +126,41 @@ func TestAHeadRequestSendsTheHeadersWithoutTheBody(t *testing.T) {
 	}
 	if !strings.Contains(header, "Content-Length: 6") {
 		t.Errorf("a HEAD did not report the length:\n%s", header)
+	}
+}
+
+// The tree an application embeds reaches this runtime the way it reaches the
+// other one: through the registration its generated public.go makes at init.
+//
+// It used not to. The frame was installed only for a tree handed over as a
+// runtime option, which neither a scaffolded entry point nor an example passes,
+// so this build of an application answered 404 for every stylesheet and every
+// script it had just told the browser to load.
+func TestTheRegisteredPublicTreeIsServedWithoutBeingHandedOver(t *testing.T) {
+	skipWhenTheTreeIsNotRead(t)
+	previous := middlewares.SwapPublicFS(fstest.MapFS{"site.css": {Data: []byte("body{}")}})
+	t.Cleanup(func() { middlewares.SwapPublicFS(previous) })
+	publishChainSettings(t, pwruntime.ChainSettings{
+		Public: pwruntime.PublicAssetSettings{Enabled: true, Mount: "/public/"},
+	})
+	handler, err := Middlewares(func(r *fasthttp.RequestCtx) {
+		r.SetStatusCode(fasthttp.StatusNotFound)
+	}, RuntimeOptions{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if status, _, body := serve(t, handler, "/public/site.css"); status != fasthttp.StatusOK || body != "body{}" {
+		t.Fatalf("the registered tree answered %d %q", status, body)
+	}
+
+	// A tree handed over still wins, which is what the option is for.
+	handed, err := Middlewares(func(r *fasthttp.RequestCtx) {
+		r.SetStatusCode(fasthttp.StatusNotFound)
+	}, RuntimeOptions{PublicFS: fstest.MapFS{"site.css": {Data: []byte("p{}")}}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, _, body := serve(t, handed, "/public/site.css"); body != "p{}" {
+		t.Errorf("a tree handed over was not the one served: %q", body)
 	}
 }

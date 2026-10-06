@@ -48,6 +48,11 @@ func WriteHTMLChain(r *fasthttp.RequestCtx, wrappers []HTMLWrapper, leaf HTMLFra
 	// The handler, the layouts and the binding that produced this chain have
 	// already run, which is what makes a reconnect need no continuation: the
 	// reconstruction path is the render path.
+	//
+	// The token goes ahead of the caller's options, so one a caller passed
+	// still wins, and it is resolved before the live branch because that
+	// branch renders after this request value is gone.
+	options = append(appendCSRFOption(make([]HTMLOption, 0, len(options)+1), r), options...)
 	if ServeLive(r, wrappers, leaf, options...) {
 		return
 	}
@@ -58,6 +63,11 @@ func WriteHTMLChain(r *fasthttp.RequestCtx, wrappers []HTMLWrapper, leaf HTMLFra
 		WriteProblem(r, err)
 		return
 	}
+	// The composition's scoped scripts. This build renders every document
+	// buffered, so the marker is the only thing that ever tells a client which
+	// module belongs to which component; without it no component script
+	// started on this build at all.
+	_ = pwruntime.WriteDocumentScopes(&buffer, pwruntime.ScopeCatalog(wrappers, leaf))
 	varyOnDeclaredAxes(r, htmlbind.MergeVary(wrappers, leaf))
 	// The document answers from the same URL as a delta, a redraw and a live
 	// delivery, so it says which request headers told it apart from them. A
@@ -79,7 +89,7 @@ func WriteHTMLFragment(r *fasthttp.RequestCtx, fragment HTMLFragment) {
 	body := getRenderBuffer()
 	defer putRenderBuffer(body)
 	buffer := bytesWriter{buf: body}
-	if err := htmlbind.Render(&buffer, fragment); err != nil {
+	if err := htmlbind.Render(&buffer, fragment, appendCSRFOption(nil, r)...); err != nil {
 		WriteProblem(r, err)
 		return
 	}

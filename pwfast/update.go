@@ -84,7 +84,9 @@ func WriteUpdate(r *fasthttp.RequestCtx, status int, regions ...UpdateRegion) {
 	}
 	// Nothing is written until every region rendered, so a failure here can
 	// still choose its own status.
-	response, err := options.WriteUpdateStatus(r, status, regions)
+	// The regions are the page's own markup, and the one a rejected submission
+	// answers with is the form: it carries the token like the page did.
+	response, err := options.WriteUpdateStatus(r, status, regions, appendCSRFOption(nil, r)...)
 	if err != nil {
 		WriteProblem(r, InternalServerError(err))
 		return
@@ -176,7 +178,7 @@ func Redraw(r *fasthttp.RequestCtx) bool {
 // than a false, and it has already reached the failure hook by the time it
 // arrives here.
 func answerRedraw(r *fasthttp.RequestCtx, options fasthttpupdate.Options, registry *pwruntime.UpdateRegistry) bool {
-	response, answered := options.Redraw(r, registry)
+	response, answered := options.Redraw(r, registry, appendCSRFOption(nil, r)...)
 	if !answered {
 		return false
 	}
@@ -299,9 +301,16 @@ func ServeUpdate(r *fasthttp.RequestCtx, wrappers []HTMLWrapper, leaf HTMLFragme
 	// echoed back.
 	applyHeader(r, update.StreamHeaders(r, wrappers, leaf))
 	r.Response.Header.Set("Cache-Control", updateCacheControl)
+	// The scoped scripts of the composition this navigation arrives at. A
+	// delta naming no chain leaves the client with the owners it already knew,
+	// so a component the destination introduces is on screen with its script
+	// never started.
+	if scopes := pwruntime.ScopeCatalog(wrappers, leaf); scopes != "" {
+		r.Response.Header.Set(pwruntime.ScopeChainHeader, scopes)
+	}
 	ctx, cancel := boundedRenderContext(r, settings)
 	defer cancel()
-	render := append(settings.RenderOptions(ctx), options...)
+	render := append(appendCSRFOption(settings.RenderOptions(ctx), r), options...)
 	if err := update.RenderStreamAsync(ctx, r, wrappers, leaf, render...); err != nil {
 		// A delta commits with its first record, so a failure after that can
 		// only travel in band; the module writes it there and returns it here
