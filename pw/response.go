@@ -504,6 +504,13 @@ func WriteHTMLChain(w http.ResponseWriter, r *http.Request, wrappers []HTMLWrapp
 		LoggerContext(requestContext(r)).Log(requestContext(r), LevelError,
 			"document manifest write failed", Err(err))
 	}
+	// The scoped scripts of this composition, which nothing else on this branch
+	// would tell the client about. It follows the manifest for the same reason
+	// the manifest follows the document.
+	if err := writeDocumentScopes(body, encodeScopeChain(scopeCatalog(wrappers, leaf))); err != nil {
+		LoggerContext(requestContext(r)).Log(requestContext(r), LevelError,
+			"document scope catalog write failed", Err(err))
+	}
 	render.wrote(body.Len())
 	commitHTMLBody(w, r, body)
 }

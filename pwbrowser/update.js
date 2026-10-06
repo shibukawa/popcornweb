@@ -866,10 +866,17 @@ export function createUpdateRuntime(config) {
 		// A stream that ended with no terminator was cut off rather than finished.
 		if (!ended) return { fellBack: true, reason: "truncated" };
 		if (ended.reason === "failed") {
-			// Content already applied stays; what was not described is not
-			// claimed, so the manifest is not updated.
+			// The server failed after the response committed, so the status said
+			// 200 and this record is the only place the failure is stated. What
+			// was not described is not claimed, so the manifest is not updated.
 			emit("failed", { error: ended.error });
-			return { navigate: navigate };
+			// A directive that arrived with it is still followed. Otherwise this
+			// is a failure like any other and ends where they all do: the
+			// ordinary navigation, which shows whatever the server answers the
+			// document request with. Reporting it as applied told the caller a
+			// page that had just failed to render was on screen.
+			if (navigate) return { navigate: navigate };
+			return { fellBack: true, reason: "failed" };
 		}
 		replaceManifest(pending);
 		return { navigate: navigate, live: ended.reason === "live_pending" };
@@ -1125,6 +1132,22 @@ export function createUpdateRuntime(config) {
 				// first one landed.
 				return fall(location.href, "unreachable");
 			}
+			// A refusal is an answer, unlike the dropped connection above, and
+			// it is not one this client can apply: the handler failed or the
+			// request was refused, and what came back is a problem document
+			// rather than regions. Nothing redoes a mutation, so the page is
+			// left as it is — but not silently. A gesture has no caller to
+			// resolve to, and this used to end with the busy marker clearing
+			// and nothing else: a button that did nothing, with nothing in the
+			// console and no event to hang an error message on.
+			//
+			// Only a failing status is reported. A handler that answers 2xx with
+			// no regions performed the mutation and chose to redraw nothing.
+			if (served(response) !== "action" && !response.ok) {
+				emit("failed", { action: url, status: response.status });
+				console.error("Popcorn Web: the action at " + url + " answered " + response.status + " with no update to apply");
+				return { applied: false, reason: "refused", status: response.status };
+			}
 			return await apply(response);
 		} finally {
 			markBusy(false);
@@ -1170,8 +1193,17 @@ export function createUpdateRuntime(config) {
 	// Everything the browser should keep is left to it: a modified click, a
 	// target, a download, a non-GET submission — which is what keeps
 	// post-redirect-get working exactly as it did.
+	//
+	// Both listeners sit on window rather than on document. The check for
+	// defaultPrevented at the top of each is only worth anything if it runs
+	// after the page's own handlers, and a listener on document runs in
+	// registration order with every other listener on document — this module
+	// loads from the head, so it was first, read the flag before the
+	// application's handler had set it, and navigated a form the application
+	// had already claimed. Window is the last stop of the bubble, so everything
+	// on an element or on document has spoken by then.
 	function intercept() {
-		document.addEventListener("click", (event) => {
+		window.addEventListener("click", (event) => {
 			if (event.defaultPrevented || event.button !== 0) return;
 			if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
 			// An element naming a server function, where activating it fires no
@@ -1204,7 +1236,7 @@ export function createUpdateRuntime(config) {
 			event.preventDefault();
 			go(url.href, "push");
 		});
-		document.addEventListener("submit", (event) => {
+		window.addEventListener("submit", (event) => {
 			if (event.defaultPrevented) return;
 			const form = event.target;
 			if (!form || !form.getAttribute) return;

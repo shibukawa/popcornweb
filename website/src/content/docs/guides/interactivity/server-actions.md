@@ -124,7 +124,7 @@ func Rename(w http.ResponseWriter, r *http.Request) {
 	case pw.WantsUpdate(r):
 		// The runtime intercepted a gesture, so answer with the regions that
 		// changed and it applies them in place.
-		pw.WriteUpdate(w, r, pw.Replace("name", BindName(request.Name)))
+		pw.WriteUpdate(w, r, http.StatusOK, pw.Replace("name", Name(NameParams{Value: request.Name})))
 	default:
 		// A native submit, with a document waiting for a page.
 		pw.RedirectSeeOther(w, r, "/users/"+id)
@@ -197,6 +197,23 @@ A rejected submission returns `4xx` and the regions it carries are the
 validation errors. The runtime applies them whatever the status says, because
 that is the point of returning them — see
 [Forms](/guides/interactivity/forms/) for what the re-rendered form shows.
+
+A handler that fails outright is a different answer. A `500`, or a `403` from
+the CSRF check, comes back as a problem document rather than as regions, so
+there is nothing to apply, and nothing can safely redo a mutation. The runtime
+leaves the page as it is and reports it: an error in the console naming the
+action and its status, and a `failed` event to whatever listens through
+`window.popcornweb.subscribe`.
+
+```js
+window.popcornweb.subscribe((kind, detail) => {
+  if (kind === "failed" && detail.action) showToast("That did not go through.");
+});
+```
+
+That listener is where an application says so in its own words. Without one the
+control simply leaves its busy state, which reads to a user as a button that did
+nothing.
 
 ## When the check is off
 

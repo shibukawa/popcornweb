@@ -1201,6 +1201,23 @@ customElements.define("tb-stream-end", class extends HTMLElement {
 	}
 });
 
+// tb-scopes carries the scope catalog of a document that arrived whole.
+//
+// A streamed document names its scoped scripts on tb-stream-end and a
+// navigation names them in a header. A buffered document has neither, and
+// without this it mounted nothing: the components were on screen, their modules
+// were loaded, and no setup ever ran until a navigation came back to the page.
+//
+// The marker is the last markup of the document, so everything it could mount
+// is in place by the time it connects.
+customElements.define("tb-scopes", class extends HTMLElement {
+	connectedCallback() {
+		const value = this.getAttribute("value");
+		this.remove();
+		applyScopeCatalog(parseScopeCatalog(value));
+	}
+});
+
 // checkDocumentEnd decides whether this document ended or was cut off.
 //
 // readyState says when the question can be answered and the marker says what

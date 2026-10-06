@@ -100,8 +100,12 @@ function listen(store) {
 		store.get(name).push(handler);
 	};
 }
+// An event reaches document's listeners and then window's, which is the order
+// a bubbling event visits them in. The runtime intercepts on window precisely
+// so that it comes after everything registered on document.
 function dispatch(name, event) {
 	for (const handler of listeners.get(name) || []) handler(event);
+	for (const handler of windowListeners.get(name) || []) handler(event);
 	return event;
 }
 
@@ -1734,6 +1738,107 @@ for (const target of ["javascript:globalThis.__pwned = true", "data:text/html,<s
 	check(toast.length === 1, "a signal record on a delta stream is dispatched");
 	check(toast.length === 1 && toast[0].payload.text === "saved", "with its payload");
 	check(swapped.length === 1, "and the operations still applied");
+}
+
+// A handler of the application's own that claims a submission keeps it, however
+// the two were registered. The runtime loads from the head and so registers
+// first; listening on document it read defaultPrevented before the
+// application's listener had run, and sent the form's fields to the address bar
+// as a query the application never asked for.
+{
+	const runtime = fresh();
+	globalThis.document.addEventListener("submit", (event) => event.preventDefault());
+	globalThis.document.addEventListener("click", (event) => event.preventDefault());
+	const claimed = (target) => {
+		let prevented = false;
+		return {
+			button: 0,
+			target: target,
+			submitter: null,
+			get defaultPrevented() {
+				return prevented;
+			},
+			preventDefault() {
+				prevented = true;
+			},
+		};
+	};
+	const form = node("FORM", {});
+	form.fields = [["q", "secret-value"]];
+	dispatch("submit", claimed(form));
+	check(requests.length === 0, "a submission the application prevented was left alone");
+	check(historyEntries.length === 0 && assigned === null, "and nothing reached the address bar");
+
+	dispatch("click", claimed(node("A", { href: "/orders/7" })));
+	check(requests.length === 0, "a click the application prevented was left alone");
+}
+
+// A gesture whose handler refused or failed is reported. There is no caller to
+// resolve to, so before this the only trace of a 500 was the busy marker
+// clearing: a button that did nothing.
+{
+	const runtime = fresh();
+	const reported = [];
+	runtime.subscribe((kind, detail) => reported.push({ kind: kind, detail: detail }));
+	const logged = [];
+	const consoleError = console.error;
+	console.error = (...parts) => logged.push(parts.join(" "));
+	try {
+		element("panel");
+		nextResponse = response({
+			ok: false,
+			status: 500,
+			headers: { "Content-Type": "application/problem+json" },
+			json: { status: 500 },
+		});
+		const form = node("FORM", { "data-tb-action": "/_action/abc/Retire" });
+		form.fields = [["reason", "left"]];
+		dispatch("submit", submitEvent(form));
+		await new Promise((resolve) => setTimeout(resolve, 0));
+	} finally {
+		console.error = consoleError;
+	}
+	check(swapped.length === 0, "a refused action applied nothing");
+	check(assigned === null && reloaded === 0, "and did not reload, which would not redo the mutation");
+	check(
+		reported.some((entry) => entry.kind === "failed" && entry.detail.status === 500),
+		"a subscriber was told the action failed, with the status",
+	);
+	check(logged.some((line) => line.includes("500")), "and the console says so");
+
+	// A handler that answers 2xx with no regions performed the mutation and
+	// chose to redraw nothing, which is not a failure to report.
+	reported.length = 0;
+	nextResponse = response({ status: 204, headers: {} });
+	const quiet = node("FORM", { "data-tb-action": "/_action/abc/Touch" });
+	quiet.fields = [];
+	dispatch("submit", submitEvent(quiet));
+	await new Promise((resolve) => setTimeout(resolve, 0));
+	check(!reported.some((entry) => entry.kind === "failed"), "a 2xx with no regions is not reported as a failure");
+}
+
+// A delta whose server failed after the response committed arrives as a 200
+// with the failure in its last record. It used to be reported as applied: the
+// caller was told the page was on screen, the history entry was written, and
+// nothing said the render had failed.
+{
+	const runtime = fresh();
+	element("c1");
+	nextResponse = response({
+		headers: { "Pw-Render": "navigation", "Content-Type": "application/x-ndjson" },
+		lines: [
+			JSON.stringify({ r: "head", build: "build-1" }),
+			JSON.stringify({ r: "end", reason: "failed", error: "render failed" }),
+		],
+	});
+	const outcome = await runtime.navigate("/orders/9");
+	check(outcome.applied === false, "a failed delta was not reported as applied");
+	check(outcome.fellBack === true && outcome.reason === "failed", "it fell back, and says why");
+	check(assigned !== null || reloaded > 0, "to the navigation the browser would have performed");
+	check(
+		!historyEntries.some((entry) => String(entry.url).endsWith("/orders/9")),
+		"and wrote no history entry for a page that never rendered",
+	);
 }
 
 // The verdict, which must stay the last thing in this file: a case appended
