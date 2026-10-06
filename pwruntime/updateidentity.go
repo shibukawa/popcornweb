@@ -18,6 +18,9 @@ import (
 const (
 	// UpdateHeaderPrefix yields Pw-Render, Pw-Manifest, and Pw-Build.
 	UpdateHeaderPrefix = "Pw"
+	// UpdateRenderHeader is the request header every update request names its
+	// mode in, and a document request leaves out.
+	UpdateRenderHeader = UpdateHeaderPrefix + "-Render"
 	// UpdateAttributePrefix names the boundary attributes generation writes and
 	// the placeholder element the render option spells, so one document holds
 	// one spelling rather than two.

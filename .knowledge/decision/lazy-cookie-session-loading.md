@@ -20,7 +20,11 @@ Idle renewal becomes session-access activity rather than request activity. A req
 
 ## CSRF Dependency
 
-Lazy loading does not improve a request when `policy:csrf-protection` obtains a `Private` CSRF secret on every request. Safe requests issue a secret only when `Accept` negotiates `text/html` or `Sec-Fetch-Dest` identifies a document navigation. API safe-method requests avoid session access. Unsafe protected requests still validate origin and token. HTML form rendering receives a token before template execution.
+Lazy loading does not improve a request when `policy:csrf-protection` obtains a `Private` CSRF secret on every request. The check therefore hands a secret up front only to the safe requests that announce a render: `Accept` negotiating `text/html`, `Sec-Fetch-Dest` identifying a document navigation, or the browser runtime's own update and live headers. API safe-method requests avoid session access. Unsafe protected requests still validate origin and token. HTML form rendering receives a token before template execution.
+
+That up-front rule is a prediction and not the guarantee. A render reached by a request the prediction missed — a script's fetch, an htmx swap, curl, a Go test's `http.Get`, an unsafe request on an excluded path — asks the check's issuer for the secret itself (`middlewares.ResolveCSRFSecret`, and the same arrangement in `pwfast`), which reads the slot and mints only when the browser holds none. A request that renders nothing still resolves nothing, so the acceptance below is unchanged. Before 2026-10-06 the prediction was the whole rule, and every such request rendered a page holding an unsafe form as a 500.
+
+Every render entry of both runtimes supplies the token through `pwruntime.AppendCSRFOption`: the document chain, a fragment, an action response, a redraw, a navigation delta, a live delivery, and the HTML error page. An entry that omits it cannot render an unsafe form at all.
 
 ## Acceptance
 

@@ -2,6 +2,7 @@ package pw
 
 import (
 	"bytes"
+	"context"
 	"io"
 	"net/http"
 	"strconv"
@@ -36,7 +37,11 @@ func registeredHTMLErrorPage() HTMLErrorPage { return pwruntime.RegisteredHTMLEr
 //
 // The status went out with the shell, so this changes only what a reader sees.
 // The failure reaches an operator through Logger, never through the status line.
-func writeDocumentEscalation(w io.Writer, problem Problem) error {
+//
+// options are the failed render's own, so the error page is rendered the way
+// the page it replaces was: with the request's context, and with the token an
+// unsafe form on it needs.
+func writeDocumentEscalation(w io.Writer, problem Problem, options []htmlbind.Option) error {
 	// The application error page is handed the sanitized, environment-bounded
 	// problem, never the raw internal cause — the same reduction writeHTMLProblem
 	// applies. Without it a triggerable boundary failure (a driver error, an
@@ -48,7 +53,7 @@ func writeDocumentEscalation(w io.Writer, problem Problem) error {
 	if resolve := registeredHTMLErrorPage(); resolve != nil {
 		fragment := resolve(problem)
 		if fragment.Present() {
-			if err := htmlbind.Render(&body, fragment); err != nil {
+			if err := htmlbind.Render(&body, fragment, options...); err != nil {
 				// The error page is the last thing standing between a reader and
 				// a permanent loading state, so its own failure falls back to the
 				// built-in rather than propagating.
@@ -146,12 +151,31 @@ func writeHTMLProblem(w http.ResponseWriter, r *http.Request, wrappers []HTMLWra
 	// writer instead of WriteHTMLChain, so the policy that chain decides has to
 	// be asked for here rather than inherited.
 	writeChainCachePolicy(w, r, wrappers, fragment)
+	// The chain is the failed page's own, so it is rendered with that page's
+	// options. It used to be rendered with none, which a shell that only binds
+	// values survives and one holding a sign-out form does not: the render
+	// failed for want of a token, and a browser asking for a page was answered
+	// with the problem document instead of the application's error page.
+	//
+	// The context keeps the request's values and drops its cancellation. A
+	// request that ran out of time is one of the failures this page reports,
+	// and rendering the report under the deadline that just expired would fail
+	// it too.
+	ctx := requestContext(r)
+	config := ConfigContext[HTMLConfig](ctx)
+	options := renderOptions(context.WithoutCancel(ctx), config, false,
+		chainRenderOptions(config, csrfRenderToken(w, r), csrfDisabled(ctx)))
 	var body bytes.Buffer
-	if err := htmlbind.RenderChain(&body, wrappers, fragment); err != nil {
+	if err := htmlbind.RenderChain(&body, wrappers, fragment, options...); err != nil {
 		// Never let an error page's own failure recurse into another one.
 		LoggerContext(requestContext(r)).Log(requestContext(r), LevelError, "HTML error page render failed", Err(err))
 		writeProblemJSON(w, r, problem)
 		return
+	}
+	// The shell's scoped scripts, which an error document has as much use for
+	// as any other: the navigation a layout's script drives is still on screen.
+	if err := writeDocumentScopes(&body, encodeScopeChain(scopeCatalog(wrappers, fragment))); err != nil {
+		LoggerContext(ctx).Log(ctx, LevelError, "document scope catalog write failed", Err(err))
 	}
 	status := problem.Status
 	if status == 0 {

@@ -68,8 +68,12 @@ func CSRF(config CSRFConfig, cookie session.CookieOptions, sameSite http.SameSit
 		// Decided here rather than per request: a project with CSRF off gets
 		// the chain unchanged instead of a frame that answers the same way on
 		// every request.
+		csrfIssuer.Store(nil)
 		return func(next http.Handler) http.Handler { return next }, nil
 	}
+	// A render asks this issuer for the secret of a request the branch below
+	// let through without one.
+	csrfIssuer.Store(secrets)
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if safeMethod(r.Method) {
@@ -119,7 +123,8 @@ func CSRF(config CSRFConfig, cookie session.CookieOptions, sameSite http.SameSit
 // csrfHTMLRequest and safeMethod are this transport's header reads over the
 // shared decisions, so the two builds cannot drift on either answer.
 func csrfHTMLRequest(r *http.Request) bool {
-	return pwruntime.CSRFHTMLRequest(r.Header.Get("Sec-Fetch-Dest"), r.Header.Get("Accept"))
+	return pwruntime.CSRFRendersHTML(r.Header.Get("Sec-Fetch-Dest"), r.Header.Get("Accept"),
+		r.Header.Get(pwruntime.UpdateRenderHeader), r.Header.Get(pwruntime.ResponseModeHeader))
 }
 
 func safeMethod(method string) bool {

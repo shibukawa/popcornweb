@@ -492,7 +492,7 @@ func Redraw[P ReloadablePage](w http.ResponseWriter, r *http.Request, page func(
 	ctx, trace := startRenderTrace(requestContext(r), renderModeRedraw, Int("pw.render.layers", 1))
 	defer trace.end()
 	answer, _ := options.Redraw(trace.request(r), registry.(*htmlupdate.Registry),
-		redrawRenderOptions(ctx, config)...)
+		redrawRenderOptions(w, r, ctx, config)...)
 	writeUpdateResponse(w, r, answer, redrawCacheControl)
 	return true
 }
@@ -550,7 +550,7 @@ func RedrawComponents(w http.ResponseWriter, r *http.Request, components ...html
 	// second time.
 	ctx, trace := startRenderTrace(requestContext(r), renderModeRedraw, Int("pw.render.layers", 1))
 	defer trace.end()
-	answer, _ := options.Redraw(trace.request(r), registry, redrawRenderOptions(ctx, config)...)
+	answer, _ := options.Redraw(trace.request(r), registry, redrawRenderOptions(w, r, ctx, config)...)
 	writeUpdateResponse(w, r, answer, redrawCacheControl)
 	return true
 }
@@ -693,12 +693,13 @@ const minEncodedBodyBytes = 512
 // The document's head contribution is deliberately absent. The runtime tag and
 // its configuration are already in the page a redraw lands in, and a component's
 // own head tags travel in the response body for the client to install.
-func redrawRenderOptions(ctx context.Context, config HTMLConfig) []htmlbind.Option {
-	options := renderOptions(ctx, config, false, nil)
-	if token := csrfRenderToken(ctx); token != "" {
-		options = append(options, htmlbind.WithCSRFToken(token))
-	}
-	return options
+//
+// A deployment with the check turned off is told so, exactly as the page is.
+// This entry used to carry a token when there was one and say nothing
+// otherwise, so the same component rendered on the page and failed in the
+// redraw wherever a project had disabled the check.
+func redrawRenderOptions(w http.ResponseWriter, r *http.Request, ctx context.Context, config HTMLConfig) []htmlbind.Option {
+	return appendCSRFOption(renderOptions(ctx, config, false, nil), w, r)
 }
 
 // serveSequence answers a request for the static half of one fragment.
@@ -764,13 +765,13 @@ func serveRegisteredRedraw(w http.ResponseWriter, r *http.Request, config HTMLCo
 	// answer carries is the module's: it digests the body the module assembled,
 	// which a caller cannot produce without rendering the component twice.
 	if !renderTraced(ctx) {
-		answer, _ := options.Redraw(r, registry, redrawRenderOptions(ctx, config)...)
+		answer, _ := options.Redraw(r, registry, redrawRenderOptions(w, r, ctx, config)...)
 		writeUpdateResponse(w, r, answer, redrawCacheControl)
 		return true
 	}
 	ctx, trace := startRenderTrace(ctx, renderModeRedraw, Int("pw.render.layers", 1))
 	defer trace.end()
-	answer, _ := options.Redraw(trace.request(r), registry, redrawRenderOptions(ctx, config)...)
+	answer, _ := options.Redraw(trace.request(r), registry, redrawRenderOptions(w, r, ctx, config)...)
 	writeUpdateResponse(w, r, answer, redrawCacheControl)
 	return true
 }
@@ -816,8 +817,13 @@ func WriteUpdate(w http.ResponseWriter, r *http.Request, status int, regions ...
 	// at all: CSRFField refuses a render that supplied no token, so the
 	// documented way to answer a rejected submission — 422 carrying the form
 	// with its errors — answered 500 instead.
+	//
+	// The token is one of those options, and it was the one that comment was
+	// about and this call still left out: the shared builder has never carried
+	// it, because the document chain needs the same token for its head and
+	// supplies it itself. So the 422 kept answering 500.
 	answer, err := updateOptions(config).WriteUpdateStatus(r, status, regions,
-		renderOptions(ctx, config, false, nil)...)
+		appendCSRFOption(renderOptions(ctx, config, false, nil), w, r)...)
 	if err != nil {
 		// Nothing is written until every region rendered, so a failure here can
 		// still choose its own status.

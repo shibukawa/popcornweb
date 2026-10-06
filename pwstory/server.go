@@ -135,10 +135,15 @@ func renderStoryWith(t Template, shell bool, supplied string) rendering {
 			}
 		}()
 		fragment := t.Render(params)
+		// A story has no session behind it, so there is no token to hand its
+		// forms, and the render is told so. Told nothing, htmlbind refuses the
+		// first unsafe form it reaches, which is the right answer for a
+		// response and made every form component a failed story here. The
+		// field still renders, empty, exactly as generation wrote it.
 		if shell {
-			return htmlbind.RenderChain(&out, document(), fragment)
+			return htmlbind.RenderChain(&out, document(), fragment, htmlbind.WithoutCSRFToken())
 		}
-		return htmlbind.Render(&out, fragment)
+		return htmlbind.Render(&out, fragment, htmlbind.WithoutCSRFToken())
 	}()
 	if err != nil {
 		result.Failed = err.Error()
