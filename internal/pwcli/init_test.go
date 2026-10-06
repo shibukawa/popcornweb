@@ -1042,16 +1042,57 @@ func TestProjectConfigRoundTripsTheFastHTTPBuild(t *testing.T) {
 	}
 }
 
-// The entry point is the first file a new project opens, and an editor formats
-// it on save. Import specs in the order the scaffold happened to decide them
-// made that first save a diff nobody wrote.
-func TestScaffoldedEntryPointIsAlreadyFormatted(t *testing.T) {
+// Every Go file a scaffold writes is already what gofmt leaves, across the
+// options that change what is written. An editor formats on save, so a file
+// that is not is a diff nobody wrote on the first save of a new project — and
+// one field longer than its neighbours is all it takes, which is how the home
+// handler of every project with a login came out misaligned.
+func TestScaffoldedGoIsAlreadyFormatted(t *testing.T) {
+	seen := 0
+	for _, router := range []string{"registered", "discovered", "both"} {
+		for _, store := range []string{"--no-database", "--db=sqlite", "--db=postgres", "--db=mysql", "--no-database --dynamo"} {
+			for _, auth := range []string{"none", "oidc", "oidc-passkey", "passkey", "oauth"} {
+				for _, extra := range []string{"", "--tailwind", "--tinygo"} {
+					args := []string{"demo", "--router=" + router, "--auth=" + auth}
+					args = append(args, strings.Fields(store)...)
+					args = append(args, strings.Fields(extra)...)
+					options, err := parseInitArgs(args)
+					if err != nil {
+						// A combination the command refuses writes nothing.
+						continue
+					}
+					files := scaffoldFiles(options)
+					files["cmd/demo/main_fasthttp.go"] = fastMainScaffold(options)
+					for path, source := range files {
+						if !strings.HasSuffix(path, ".go") {
+							continue
+						}
+						seen++
+						formatted, err := format.Source([]byte(source))
+						if err != nil {
+							t.Fatalf("%v: %s does not parse: %v\n%s", args, path, err, source)
+						}
+						if string(formatted) != source {
+							t.Fatalf("%v: %s is not what gofmt leaves:\n%s", args, path, source)
+						}
+					}
+				}
+			}
+		}
+	}
+	if seen == 0 {
+		t.Fatal("no scaffolded Go file was checked")
+	}
+}
+
+// goimports reads a first path element without a dot as the standard library,
+// so the entry point keeps the project's own packages in a block of their own,
+// where neither it nor gofmt moves them.
+func TestScaffoldedEntryPointGroupsItsImports(t *testing.T) {
 	for _, args := range [][]string{
 		{"demo"},
-		{"demo", "--router=registered", "--no-database"},
 		{"demo", "--router=discovered", "--auth=oidc", "--devidp"},
 		{"demo", "--router=both", "--db=postgres", "--no-redis", "--auth=oidc", "--devidp", "--session=rdb"},
-		{"demo", "--router=both", "--no-database", "--dynamo", "--auth=oidc", "--session=dynamo"},
 		{"example.com/team/demo", "--db=mysql", "--auth=passkey"},
 	} {
 		options, err := parseInitArgs(args)
@@ -1062,16 +1103,6 @@ func TestScaffoldedEntryPointIsAlreadyFormatted(t *testing.T) {
 			"main.go":          mainScaffold(options),
 			"main_fasthttp.go": fastMainScaffold(options),
 		} {
-			formatted, err := format.Source([]byte(source))
-			if err != nil {
-				t.Fatalf("%v %s: %v\n%s", args, name, err, source)
-			}
-			if string(formatted) != source {
-				t.Errorf("%v: %s is not what gofmt leaves:\n%s", args, name, source)
-			}
-			// goimports reads a first path element without a dot as the
-			// standard library, so the project's own packages are kept in a
-			// block of their own where neither tool moves them.
 			if strings.Contains(source, "\"log\"\n\t\""+options.Name+"/") {
 				t.Errorf("%v: %s lists a project package with the standard library:\n%s", args, name, source)
 			}
