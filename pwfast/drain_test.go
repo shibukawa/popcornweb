@@ -108,14 +108,14 @@ func runOnAFreePort(t *testing.T, handler fasthttp.RequestHandler) *running {
 // fasthttp counts a connection as idle once a request has finished on it, and
 // closes those as soon as it is told to stop. One that has not begun a request
 // has no such moment, so it is waited for as though a request were on its way,
-// for the whole shutdown timeout and then as a failure. Browsers hold spare
-// connections open for exactly this reason, and so do the probes of some load
-// balancers, so a deploy's SIGTERM would wait on every one of them.
+// for the whole shutdown timeout and then as a failure. Browsers open spare
+// connections ahead of need, and a client that vanishes after its handshake
+// leaves one behind, so a deploy's SIGTERM would wait on every one of them.
 //
-// This is what TestRunServesAndShutsDownOnCancellation was failing on, one run
-// in four: its client dials a spare connection while a pooled one is being
-// returned, and parks it unused. That test arrives at the state by timing; this
-// one makes it.
+// This is what TestRunServesAndShutsDownOnCancellation was failing on,
+// intermittently: its client dials a spare connection while a pooled one is
+// being returned, and parks it unused. That test arrives at the state by
+// timing; this one makes it.
 func TestRunStopsPromptlyWithAConnectionThatNeverSpoke(t *testing.T) {
 	shortGrace(t, 100*time.Millisecond)
 	r := runOnAFreePort(t, hello())

@@ -18,10 +18,10 @@ import (
 // its request away, so a young connection gets the time such a client could
 // take: far longer than the gap between a handshake and the first byte of a
 // request, and well inside the shutdown timeout. Past it, silence means the
-// client is not going to — a browser holding a spare connection open, a probe
-// that connected and left — and a stop has no reason to wait for it. net/http
-// draws the same line for itself at five seconds; this one is shorter because an
-// operator is waiting on the stop.
+// client is not going to — a browser holding a spare connection open, a client
+// that vanished after its handshake — and a stop has no reason to wait for it.
+// net/http draws the same line for itself at five seconds; this one is shorter
+// because an operator is waiting on the stop.
 var quietGrace = time.Second
 
 // sweepInterval is how often a stop looks for connections whose grace has run
