@@ -11,6 +11,7 @@ import (
 
 	"github.com/shibukawa/popcornweb/internal/apidoc"
 	"github.com/shibukawa/popcornweb/internal/requestorigin"
+	"github.com/shibukawa/popcornweb/middlewares"
 	"github.com/shibukawa/popcornweb/pwruntime"
 	"github.com/shibukawa/popcornweb/session"
 	"github.com/shibukawa/tinygodriver/fasthttp"
@@ -233,8 +234,17 @@ func Middlewares(handler fasthttp.RequestHandler, options RuntimeOptions) (fasth
 	if settings.MaxRequestBody > 0 {
 		frames = append(frames, Frame{Slot: SlotMaxRequestBody, Name: "max_request_body", Middleware: MaxRequestBody(settings.MaxRequestBody)})
 	}
-	if options.PublicFS != nil && settings.Public.Enabled {
-		assets, err := PublicAssets(settings.Public, options.PublicFS)
+	// The tree is the one handed over, and otherwise the one the application's
+	// generated public.go registered at init — which is how every application
+	// supplies it, on either runtime. Reading only the option left this build
+	// with no asset frame at all: no entry point passes it, so every stylesheet
+	// and script a rendered page named answered 404.
+	publicFS := options.PublicFS
+	if publicFS == nil {
+		publicFS = middlewares.RegisteredPublicFS()
+	}
+	if publicFS != nil && settings.Public.Enabled {
+		assets, err := PublicAssets(settings.Public, publicFS)
 		if err != nil {
 			return nil, err
 		}

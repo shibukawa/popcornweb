@@ -3,14 +3,17 @@ package pwfast
 import (
 	"net"
 	"net/http"
+	"sync/atomic"
 	"time"
 
 	"github.com/shibukawa/popcornweb/internal/pathpattern"
 	"github.com/shibukawa/popcornweb/internal/requestorigin"
 	"github.com/shibukawa/popcornweb/middlewares"
+	"github.com/shibukawa/popcornweb/pwconfig"
 	"github.com/shibukawa/popcornweb/pwruntime"
 	"github.com/shibukawa/popcornweb/session"
 	"github.com/shibukawa/tinybind-go/fasthttpupdate"
+	"github.com/shibukawa/tinybind-go/htmlbind"
 	"github.com/shibukawa/tinygodriver/fasthttp"
 )
 
@@ -74,6 +77,14 @@ func CSRF(config CSRFConfig, cookie session.CookieOptions, sameSite http.SameSit
 	}
 	secrets := &csrfSecret{cookie: runtimeCookie, sameSite: sameSite, ttl: ttl}
 
+	// A render asks this issuer for the secret of a request the safe branch
+	// below let through without one. A check that is off publishes none, so a
+	// later build of the chain does not answer from an earlier one's.
+	if config.Enabled {
+		csrfIssuer.Store(secrets)
+	} else {
+		csrfIssuer.Store(nil)
+	}
 	return func(next fasthttp.RequestHandler) fasthttp.RequestHandler {
 		if !config.Enabled {
 			return next
@@ -142,20 +153,20 @@ type csrfSecret struct {
 // Every failure here leaves the request without a secret and the check that
 // follows refuses it, which is the safe direction: a request that could not be
 // given a secret is one whose token cannot be verified.
-func (c *csrfSecret) ensure(r *fasthttp.RequestCtx) {
+func (c *csrfSecret) ensure(r *fasthttp.RequestCtx) (string, bool) {
 	handle, ok := session.Value[CSRFSecret](r)
 	if !ok {
-		return
+		return "", false
 	}
 	held, present := handle.Get()
 	minted := false
 	if !present || held.Secret == "" {
 		secret, err := pwruntime.NewCSRFSecret(nil)
 		if err != nil {
-			return
+			return "", false
 		}
 		if err := handle.Set(CSRFSecret{Secret: secret}); err != nil {
-			return
+			return "", false
 		}
 		held, minted = CSRFSecret{Secret: secret}, true
 	}
@@ -165,7 +176,66 @@ func (c *csrfSecret) ensure(r *fasthttp.RequestCtx) {
 	if minted || len(r.Request.Header.Cookie(c.cookie.Name)) == 0 {
 		c.writeRuntimeCookie(r, held.Secret)
 	}
+	// Recorded on the request, so whoever asks next reads it from there and
+	// the cookie above is written once however many renders one request runs.
 	pwruntime.StoreCSRFSecret(r, held.Secret)
+	return held.Secret, true
+}
+
+// csrfIssuer is the issuer of the check this process built, published so that
+// a render can ask it for the secret a request was not handed. It is the other
+// transport's arrangement, for the reason given there: what a render needs
+// from the check is the cookie policy it was built with, which belongs to no
+// request, and carrying it on every request would charge an API read for
+// something only a page render asks.
+var csrfIssuer atomic.Pointer[csrfSecret]
+
+// csrfRenderToken derives the token every unsafe form of a render carries.
+//
+// The secret is the one the check recorded on the request, when it did. The
+// check hands one to the safe requests that announce a page and to nobody
+// else, so a render reached by any other request — a script's fetch, a swap
+// library's, a command line client's — asks the issuer here instead of
+// reaching its forms with nothing.
+//
+// A request with no secret to be had yields nothing, which fails a render that
+// reaches a form rather than emitting a field nothing could verify.
+func csrfRenderToken(r *fasthttp.RequestCtx) string {
+	secret, ok := pwruntime.CSRFSecret(r)
+	if !ok {
+		if csrfDisabled(r) {
+			return ""
+		}
+		issuer := csrfIssuer.Load()
+		if issuer == nil {
+			return ""
+		}
+		if secret, ok = issuer.ensure(r); !ok {
+			return ""
+		}
+	}
+	token, err := pwruntime.CSRFToken(secret, nil)
+	if err != nil {
+		return ""
+	}
+	return token
+}
+
+// csrfDisabled reports a deployment that turned the check off, which is the
+// setting rather than the absence of a secret.
+func csrfDisabled(r *fasthttp.RequestCtx) bool {
+	return !ConfigContext[pwconfig.SecurityConfig](r).CSRF.Enabled
+}
+
+// appendCSRFOption gives one render what it has to be told about the token.
+//
+// Every render entry of this runtime calls it. None of them did: the check
+// recorded a secret and verified submissions against it, and nothing ever
+// handed a render the token, so this build answered 500 for any page, fragment
+// or region holding an unsafe form. The rule itself is the shared leaf's, so
+// the two builds of one application cannot answer it differently.
+func appendCSRFOption(options []htmlbind.Option, r *fasthttp.RequestCtx) []htmlbind.Option {
+	return pwruntime.AppendCSRFOption(options, csrfRenderToken(r), csrfDisabled(r))
 }
 
 // writeRuntimeCookie hands the browser runtime a masked token.
@@ -211,8 +281,9 @@ func safeMethod(method string) bool {
 }
 
 func csrfHTMLRequest(r *fasthttp.RequestCtx) bool {
-	return pwruntime.CSRFHTMLRequest(string(r.Request.Header.Peek("Sec-Fetch-Dest")),
-		string(r.Request.Header.Peek("Accept")))
+	header := &r.Request.Header
+	return pwruntime.CSRFRendersHTML(string(header.Peek("Sec-Fetch-Dest")), string(header.Peek("Accept")),
+		string(header.Peek(pwruntime.UpdateRenderHeader)), string(header.Peek(pwruntime.ResponseModeHeader)))
 }
 
 // writeCSRFStatus answers a refused request.

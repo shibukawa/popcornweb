@@ -112,6 +112,14 @@ if (window.popcornweb) {
 `update()` replaces the whole query string, just as a GET form does. Read and
 pass back any parameters that should survive.
 
+Each call resolves to what happened rather than rejecting. `{ applied: true }`
+means the regions are in the DOM. Anything else did not land: a newer request
+superseded this one, or the request failed and the runtime performed the
+ordinary navigation instead, which resolves `{ applied: false, fellBack: true,
+reason }`. A render that fails on the server is one of those reasons, including
+one that fails after the response has started, so a caller that goes on to
+touch the new page checks `applied` first.
+
 An array value becomes one pair per element — `{ tag: ["boots", "hats"] }`
 writes `?tag=boots&tag=hats` — which is the repeated key a checkbox group
 submits and the only array spelling the server reads. An empty array writes
@@ -347,8 +355,12 @@ The comparison changes when either half of that statement stops being true.
 | a POST must always use ordinary browser semantics | post-redirect-get | refresh, history, and failure behavior stay native |
 
 The runtime also declines modified clicks, `target`, `download`, cross-origin
-URLs, fragment-only links, and non-GET forms. Add `data-tb-ignore` to an element
-or ancestor when an otherwise eligible link or GET form should remain native.
+URLs, fragment-only links, and non-GET forms. It declines a click or a
+submission your own handler already called `preventDefault()` on as well, as
+long as that handler is on an element or on `document`: the runtime listens on
+`window`, so it is the last to hear the event. Add `data-tb-ignore` to an
+element or ancestor when an otherwise eligible link or GET form should remain
+native.
 
 ## Before enabling it broadly
 

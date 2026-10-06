@@ -123,7 +123,7 @@ func Rename(w http.ResponseWriter, r *http.Request) {
 	case pw.WantsUpdate(r):
 		// ランタイムがジェスチャを横取りした。変わったリージョンを返せば
 		// その場で適用される。
-		pw.WriteUpdate(w, r, pw.Replace("name", BindName(request.Name)))
+		pw.WriteUpdate(w, r, http.StatusOK, pw.Replace("name", Name(NameParams{Value: request.Name})))
 	default:
 		// ネイティブ送信。ページを待っているドキュメントがある。
 		pw.RedirectSeeOther(w, r, "/users/"+id)
@@ -192,6 +192,21 @@ const p = await actions.profile({ id: "42" });   // デコードされた Profil
 エラーです。ステータスが何であれランタイムはそれを適用します。返している理由が
 それだからです。再描画されたフォームが何を見せるかは
 [フォーム](/ja/guides/interactivity/forms/)にあります。
+
+ハンドラそのものが失敗した場合は話が違います。`500` や、CSRF チェックの `403` は、
+リージョンではなく problem ドキュメントで返ってきます。適用するものがなく、
+変更系の操作を安全にやり直す方法もありません。ランタイムはページをそのままにして、
+失敗を知らせます。コンソールにはアクションとステータスを書いたエラーが出て、
+`window.popcornweb.subscribe` で聞いている相手には `failed` イベントが届きます。
+
+```js
+window.popcornweb.subscribe((kind, detail) => {
+  if (kind === "failed" && detail.action) showToast("送信できませんでした。");
+});
+```
+
+アプリケーションが自分の言葉で伝える場所は、このリスナーです。リスナーが無ければ
+コントロールは busy 状態から戻るだけで、利用者には何も起きなかったボタンに見えます。
 
 ## チェックを切っているとき
 

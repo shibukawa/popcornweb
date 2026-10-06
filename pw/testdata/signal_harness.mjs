@@ -714,6 +714,36 @@ function domNode(owner, children) {
 	check(globalThis.__pageModuleLeaves === 1, "a range release tears down what is inside it");
 }
 
+// A document that arrived whole names its scoped scripts on a marker of its
+// own. Without one nothing told the client which module belongs to which
+// owner, so a page opened directly mounted nothing.
+{
+	const ScopesElement = definitions.get("tb-scopes");
+	check(ScopesElement !== undefined, "the runtime defines tb-scopes");
+	const marker = new ScopesElement();
+	let removed = false;
+	marker.getAttribute = (name) => (name === "value" ? "Buffered:./testdata/pagemodule_fixture.mjs" : null);
+	marker.remove = () => {
+		removed = true;
+	};
+	marker.connectedCallback();
+	check(removed, "the marker removes itself once read");
+
+	globalThis.__pageModuleEnters = 0;
+	const instance = {
+		children: [],
+		getAttribute: (name) => (name === "data-tb-component" ? "Buffered" : null),
+		hasAttribute: (name) => name === "data-tb-component",
+		querySelectorAll: () => [],
+		addEventListener() {},
+		closest: () => instance,
+	};
+	runtime.mountScopesIn(instance);
+	await new Promise((resolve) => setTimeout(resolve, 60));
+	check(globalThis.__pageModuleEnters === 1, "a component named by the marker has its setup run");
+	runtime.releaseScopesIn(instance);
+}
+
 if (failures > 0) {
 	console.error(failures + " check(s) failed");
 	process.exit(1);

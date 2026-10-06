@@ -179,3 +179,125 @@ func TestRotationInvalidatesATokenMintedBeforeIt(t *testing.T) {
 		t.Fatal("a token minted before the rotation was accepted after it")
 	}
 }
+
+// The browser runtime's own requests render the page too. A partial update and
+// a live delivery are fetches: they carry no text/html in Accept, and they
+// render the chain the document did, sign-out form included. Read as a request
+// that renders nothing, each reached the templates with no secret and the page
+// answered 500 to every update of itself.
+func TestARuntimeRenderRequestCarriesTheSecret(t *testing.T) {
+	manager := csrfDeployment(t)
+	check, err := CSRF(enabledCSRF(), session.CookieOptions{Path: "/"}, http.SameSiteLaxMode, nil, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var secrets []string
+	handler := manager.Middleware(nil)(check(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		secret, _ := pwruntime.CSRFSecret(r.Context())
+		secrets = append(secrets, secret)
+		w.WriteHeader(http.StatusNoContent)
+	})))
+
+	// The document a browser loads first, which is where the secret is minted.
+	document := httptest.NewRecorder()
+	handler.ServeHTTP(document, htmlRequest(http.MethodGet, "/"))
+	if len(secrets) != 1 || secrets[0] == "" {
+		t.Fatalf("the document request carried no secret: %q", secrets)
+	}
+
+	for name, header := range map[string][2]string{
+		"update": {pwruntime.UpdateRenderHeader, "navigation"},
+		"live":   {pwruntime.ResponseModeHeader, pwruntime.LiveResponseMode},
+	} {
+		request := httptest.NewRequest(http.MethodGet, "/", nil)
+		request.Header.Set("Accept", "*/*")
+		request.Header.Set("Sec-Fetch-Dest", "empty")
+		request.Header.Set(header[0], header[1])
+		for _, cookie := range document.Result().Cookies() {
+			request.AddCookie(cookie)
+		}
+		before := len(secrets)
+		recorder := httptest.NewRecorder()
+		handler.ServeHTTP(recorder, request)
+		if len(secrets) != before+1 || secrets[before] != secrets[0] {
+			t.Errorf("%s: the request carried the secret %q, want the page's own %q", name, secrets[before:], secrets[0])
+		}
+	}
+}
+
+// A render asks for the secret when the check did not hand the request one,
+// and the answer is the session's own: the same secret a document request is
+// given, read from the slot rather than minted again.
+func TestResolveCSRFSecretReadsWhatTheSessionHolds(t *testing.T) {
+	manager := csrfDeployment(t)
+	check, err := CSRF(enabledCSRF(), session.CookieOptions{Path: "/"}, http.SameSiteLaxMode, nil, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		// A check that is off publishes no issuer, so the next test asks none.
+		_, _ = CSRF(DefaultCSRF(), session.CookieOptions{}, http.SameSiteLaxMode, nil, nil)
+	})
+	var handed, asked string
+	var askedOK bool
+	handler := manager.Middleware(nil)(check(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		handed, _ = pwruntime.CSRFSecret(r.Context())
+		asked, askedOK = ResolveCSRFSecret(w, r)
+		// Asking twice writes the companion cookie once.
+		if again, ok := ResolveCSRFSecret(w, r); !ok || again != asked {
+			t.Errorf("a second ask answered (%q, %v), want the first answer %q", again, ok, asked)
+		}
+		w.WriteHeader(http.StatusNoContent)
+	})))
+
+	// A client that announces nothing is handed nothing, and gets one by asking.
+	first := httptest.NewRecorder()
+	plain := httptest.NewRequest(http.MethodGet, "/", nil)
+	plain.Header.Set("Accept", "*/*")
+	handler.ServeHTTP(first, plain)
+	if handed != "" {
+		t.Fatalf("a request that announced no page was handed a secret up front")
+	}
+	if !askedOK || asked == "" {
+		t.Fatal("asking produced no secret")
+	}
+	minted := asked
+	companions := 0
+	for _, cookie := range first.Result().Cookies() {
+		if cookie.Name == pwruntime.CSRFCookieName {
+			companions++
+		}
+	}
+	if companions != 1 {
+		t.Errorf("the companion cookie was written %d times, want once", companions)
+	}
+
+	// The next request carries the session, and asking reads the same secret.
+	second := httptest.NewRecorder()
+	again := httptest.NewRequest(http.MethodGet, "/", nil)
+	again.Header.Set("Accept", "*/*")
+	for _, cookie := range first.Result().Cookies() {
+		again.AddCookie(cookie)
+	}
+	handler.ServeHTTP(second, again)
+	if asked != minted {
+		t.Errorf("asking minted a second secret for a session that already held one")
+	}
+	if cookies := second.Result().Cookies(); len(cookies) != 0 {
+		t.Errorf("reading a held secret wrote browser state: %v", cookies)
+	}
+}
+
+// With no check installed there is nobody to ask, and the answer says so
+// rather than minting a secret nothing would verify against.
+func TestResolveCSRFSecretAnswersNothingWithoutACheck(t *testing.T) {
+	if _, err := CSRF(DefaultCSRF(), session.CookieOptions{}, http.SameSiteLaxMode, nil, nil); err != nil {
+		t.Fatal(err)
+	}
+	manager := csrfDeployment(t)
+	manager.Middleware(nil)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if secret, ok := ResolveCSRFSecret(w, r); ok || secret != "" {
+			t.Errorf("a secret was produced with the check off: %q", secret)
+		}
+	})).ServeHTTP(httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/", nil))
+}

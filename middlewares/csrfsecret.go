@@ -2,6 +2,7 @@ package middlewares
 
 import (
 	"net/http"
+	"sync/atomic"
 	"time"
 
 	"github.com/shibukawa/popcornweb/pwruntime"
@@ -42,36 +43,97 @@ type csrfSecret struct {
 // ensure returns the request carrying a CSRF secret, minting one when the
 // browser has none.
 //
-// It runs for protected unsafe requests and for safe requests that negotiate
-// HTML, because those are the requests that validate or render a form token.
+// It runs for protected unsafe requests and for safe requests that say they
+// will render HTML, because those are the requests known up front to validate
+// or render a form token. A render the request did not announce asks through
+// ResolveCSRFSecret instead.
 func (c *csrfSecret) ensure(w http.ResponseWriter, r *http.Request) *http.Request {
+	secret, ok := c.resolve(w, r)
+	if !ok {
+		return r
+	}
+	return r.WithContext(pwruntime.WithCSRFSecret(r.Context(), secret))
+}
+
+// resolve reads the secret out of the session slot, minting one when the
+// browser has none, and keeps the companion cookie in step with it.
+//
+// Every failure leaves the caller without a secret, which is the safe
+// direction for both of them: the check refuses a request it could not give
+// one to, and a render that reaches a form fails rather than emitting a field
+// nothing can verify.
+func (c *csrfSecret) resolve(w http.ResponseWriter, r *http.Request) (string, bool) {
 	handle, ok := session.Value[CSRFSecret](r.Context())
 	if !ok {
-		// No session middleware, or the slot was not declared. The check that
-		// follows refuses rather than passing, which is the safe direction.
-		return r
+		// No session middleware, or the slot was not declared.
+		return "", false
 	}
 	held, present := handle.Get()
 	minted := false
 	if !present || held.Secret == "" {
+		// A secret minted now reaches the browser as two cookies, and a
+		// response that has already started cannot carry them. The form would
+		// hold a token for a secret the browser was never given, so its
+		// submission would be refused; no secret is the honest answer.
+		if Committed(w) {
+			return "", false
+		}
 		secret, err := pwruntime.NewCSRFSecret(nil)
 		if err != nil {
-			return r
+			return "", false
 		}
 		if err := handle.Set(CSRFSecret{Secret: secret}); err != nil {
 			// An oversized or unwritable slot leaves the request without a
-			// secret, and the check refuses it.
-			return r
+			// secret.
+			return "", false
 		}
 		held, minted = CSRFSecret{Secret: secret}, true
 	}
 	// The runtime reads its token from an ordinary cookie, so a newly minted
 	// secret needs one written beside it. A lost token cookie is rewritten too,
 	// which is what keeps the pair self-healing after a rotation.
-	if minted || !hasCookie(r, c.cookie.Name) {
+	//
+	// It is written once per response. The check asks once, but a render asks
+	// each time it runs, and a page that failed and then rendered its error
+	// page would otherwise send the same cookie twice under two masks.
+	if (minted || !hasCookie(r, c.cookie.Name)) && !Committed(w) && !setsCookie(w.Header(), c.cookie.Name) {
 		c.writeRuntimeCookie(w, held.Secret)
 	}
-	return r.WithContext(pwruntime.WithCSRFSecret(r.Context(), held.Secret))
+	return held.Secret, true
+}
+
+// csrfIssuer is the issuer of the check this process built, published so that
+// a render can ask it for the secret a request was not handed.
+//
+// It is process state for the reason the resolved chain settings are: one
+// process serves one chain, and what a render needs from it is the cookie
+// policy the check was constructed with, which is not a property of any
+// request. Carrying it on every request instead would cost an API read an
+// allocation for something only a page render ever asks.
+var csrfIssuer atomic.Pointer[csrfSecret]
+
+// ResolveCSRFSecret returns the request's CSRF secret for a render that turned
+// out to need one, minting it when the browser holds none. It reports false
+// when the check is not installed or the session has nowhere to keep one.
+//
+// The check decides up front which safe requests receive a secret, from what a
+// request says about itself, so that an API read never touches the session.
+// That is a prediction, and it is wrong about every client that renders a page
+// without announcing it: a script's fetch, a swap library's request, a command
+// line client, another server. Each of those reached the templates with no
+// secret, and a page holding an unsafe form answered them 500 — or, where the
+// session already held a secret, simply was not shown it.
+//
+// Asking here is what makes the prediction an optimization rather than a
+// requirement. The render is the one place that knows it needs a token, so it
+// is the place that asks, and a request that renders nothing still pays for
+// nothing.
+func ResolveCSRFSecret(w http.ResponseWriter, r *http.Request) (string, bool) {
+	issuer := csrfIssuer.Load()
+	if issuer == nil || w == nil || r == nil {
+		return "", false
+	}
+	return issuer.resolve(w, r)
 }
 
 // writeRuntimeCookie hands the browser runtime a masked token.
@@ -104,4 +166,14 @@ func (c *csrfSecret) writeRuntimeCookie(w http.ResponseWriter, secret string) {
 func hasCookie(r *http.Request, name string) bool {
 	cookie, err := r.Cookie(name)
 	return err == nil && cookie != nil && cookie.Value != ""
+}
+
+// setsCookie reports whether a response already carries a cookie of this name.
+func setsCookie(header http.Header, name string) bool {
+	for _, line := range header["Set-Cookie"] {
+		if len(line) > len(name) && line[len(name)] == '=' && line[:len(name)] == name {
+			return true
+		}
+	}
+	return false
 }

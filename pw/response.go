@@ -342,7 +342,7 @@ func WriteHTMLChain(w http.ResponseWriter, r *http.Request, wrappers []HTMLWrapp
 	// that produce a document need a tag installing a runtime the other branches
 	// are already being driven by. What that separation is worth is written at
 	// updateHeadNodes.
-	token := csrfRenderToken(requestContext(r))
+	token := csrfRenderToken(w, r)
 	options = append(chainRenderOptions(config, token, csrfDisabled(requestContext(r))), options...)
 	// The probes are properties of the composed chain, so they run once here
 	// and every branch below reads the same two answers. async is the cheapest
@@ -504,6 +504,13 @@ func WriteHTMLChain(w http.ResponseWriter, r *http.Request, wrappers []HTMLWrapp
 		LoggerContext(requestContext(r)).Log(requestContext(r), LevelError,
 			"document manifest write failed", Err(err))
 	}
+	// The scoped scripts of this composition, which nothing else on this branch
+	// would tell the client about. It follows the manifest for the same reason
+	// the manifest follows the document.
+	if err := writeDocumentScopes(body, encodeScopeChain(scopeCatalog(wrappers, leaf))); err != nil {
+		LoggerContext(requestContext(r)).Log(requestContext(r), LevelError,
+			"document scope catalog write failed", Err(err))
+	}
 	render.wrote(body.Len())
 	commitHTMLBody(w, r, body)
 }
@@ -520,29 +527,31 @@ func WriteHTMLChain(w http.ResponseWriter, r *http.Request, wrappers []HTMLWrapp
 // A fragment response renders no document, so it has no head to merge into and
 // decision:fragment-head-rejection refuses one that tries.
 func chainRenderOptions(config HTMLConfig, csrfToken string, csrfOff bool) []HTMLOption {
-	options := make([]HTMLOption, 0, 3)
-	switch {
-	case csrfToken != "":
-		options = append(options, htmlbind.WithCSRFToken(csrfToken))
-	case csrfOff:
-		// A deployment that turned the check off gets the form it asked for
-		// rather than a failed render. Generation writes the hidden field
-		// whatever this setting says, because the mode is not threaded into a
-		// page tree's compile, so the only place the two can be reconciled is
-		// here.
-		//
-		// This is not the case requirement:module-native-csrf refuses. What it
-		// refuses is treating an absent token as none wanted, which turns a
-		// forgotten option into an unprotected form nobody chose. Here the
-		// choice is in the configuration and this render is reading it.
-		options = append(options, htmlbind.WithoutCSRFToken())
-	}
+	// A deployment that turned the check off gets the form it asked for rather
+	// than a failed render. Generation writes the hidden field whatever this
+	// setting says, because the mode is not threaded into a page tree's
+	// compile, so the only place the two can be reconciled is the render.
+	//
+	// This is not the case requirement:module-native-csrf refuses. What it
+	// refuses is treating an absent token as none wanted, which turns a
+	// forgotten option into an unprotected form nobody chose. Here the choice
+	// is in the configuration and this render is reading it.
+	options := pwruntime.AppendCSRFOption(make([]HTMLOption, 0, 3), csrfToken, csrfOff)
 	if config.Update.Enabled {
 		// One prefix names the generated attributes, the placeholder element,
 		// and the boundary ids, so a document does not hold two spellings.
 		options = append(options, htmlbind.WithBoundaryPrefix(UpdateAttributePrefix))
 	}
 	return options
+}
+
+// csrfDisabled reports a deployment that turned the check off.
+//
+// It is the setting rather than the absence of a secret: a project with the
+// check on and no secret on this request is misconfigured — no session, or a
+// store that failed — and rendering an unprotected form for it would hide that.
+func csrfDisabled(ctx context.Context) bool {
+	return !ConfigContext[SecurityConfig](ctx).CSRF.Enabled
 }
 
 // csrfRenderToken derives the token every unsafe form of this render carries,
@@ -553,25 +562,41 @@ func chainRenderOptions(config HTMLConfig, csrfToken string, csrfOff bool) []HTM
 // mail body or a golden test and wrong for a response, where it would put an
 // unprotected form on screen and say nothing. Yielding nothing fails the render
 // instead, which is the outcome policy:csrf-protection asks for.
-// csrfDisabled reports a deployment that turned the check off.
 //
-// It is the setting rather than the absence of a secret: a project with the
-// check on and no secret on this request is misconfigured — no session, or a
-// store that failed — and rendering an unprotected form for it would hide that.
-func csrfDisabled(ctx context.Context) bool {
-	return !ConfigContext[SecurityConfig](ctx).CSRF.Enabled
-}
-
-func csrfRenderToken(ctx context.Context) string {
+// The secret is the one the check put on the request, when it did. The check
+// hands one to the safe requests that announce a page — a document navigation,
+// the runtime's own fetches — and to nobody else, so that an API read never
+// touches the session. A render reached by any other request asks for it here:
+// a script's fetch, a swap library's request, a command line client. Without
+// that, each of them rendered a page holding a form as a 500, although the
+// session had a secret all along.
+func csrfRenderToken(w http.ResponseWriter, r *http.Request) string {
+	ctx := requestContext(r)
 	secret, ok := pwruntime.CSRFSecret(ctx)
 	if !ok {
-		return ""
+		if csrfDisabled(ctx) {
+			// Nothing to resolve: the render is told the check is off instead.
+			return ""
+		}
+		if secret, ok = middlewares.ResolveCSRFSecret(w, r); !ok {
+			return ""
+		}
 	}
 	token, err := pwruntime.CSRFToken(secret, nil)
 	if err != nil {
 		return ""
 	}
 	return token
+}
+
+// appendCSRFOption gives one render what it has to be told about the token.
+//
+// It is for every entry that is not the document chain, which already holds
+// the token for its head. They each need it for the same reason: the markup
+// they render is the page's own, and an unsafe form in it carries the same
+// hidden field wherever it is rendered from.
+func appendCSRFOption(options []htmlbind.Option, w http.ResponseWriter, r *http.Request) []htmlbind.Option {
+	return pwruntime.AppendCSRFOption(options, csrfRenderToken(w, r), csrfDisabled(requestContext(r)))
 }
 
 // WriteHTMLFragment renders one generated template as the whole response, with
@@ -628,7 +653,12 @@ func WriteHTMLFragment(w http.ResponseWriter, r *http.Request, fragment HTMLFrag
 	defer cancel()
 	body := getHTMLBody()
 	defer putHTMLBody(body)
-	if err := htmlbind.Render(body, fragment, renderOptions(renderCtx, config, false, nil)...); err != nil {
+	// A fragment is a region of a page, and the region an inline edit or a
+	// dialog swaps in is as often as not a form. It carries the page's token
+	// like any other render of that markup; this entry passed none, so the
+	// first unsafe form in a fragment answered 500.
+	options := appendCSRFOption(renderOptions(renderCtx, config, false, nil), w, r)
+	if err := htmlbind.Render(body, fragment, options...); err != nil {
 		render.failed(err)
 		// Nothing is committed yet, so every failure still carries its real
 		// status. It goes out as a problem response rather than as the HTML error
@@ -714,7 +744,7 @@ func streamHTMLChain(w http.ResponseWriter, r *http.Request, wrappers []HTMLWrap
 			if errors.As(err, &unrecovered) {
 				logger.Log(ctx, LevelError, "await boundary failed with no recover clause",
 					String("boundary", unrecovered.BoundaryID), Err(unrecovered.Err))
-				if err := writeDocumentEscalation(writer, mapProblem(unrecovered.Err)); err != nil {
+				if err := writeDocumentEscalation(writer, mapProblem(unrecovered.Err), renderOptions(ctx, config, false, options)); err != nil {
 					logger.Log(ctx, LevelError, "HTML error page write failed", Err(err))
 				}
 				htmlbind.Flush(writer)

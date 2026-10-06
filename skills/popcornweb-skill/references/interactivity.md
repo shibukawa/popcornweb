@@ -118,7 +118,7 @@ func Rename(w http.ResponseWriter, r *http.Request) {
 Ask neither question and one response goes to everybody, which is right for a
 handler with nothing to return. A rejected submission returns `4xx` and the
 regions it carries are the validation errors; the runtime applies them whatever
-the status says.
+the status says. A handler that fails outright (`500`, a CSRF `403`) answers with a problem document rather than regions: nothing is applied and nothing is retried, and the runtime reports it — `console.error`, plus a `failed` event (`detail.action`, `detail.status`) to `window.popcornweb.subscribe((kind, detail) => …)` listeners, which is where an app shows its own error message.
 
 ### What is reachable, and what it grants
 

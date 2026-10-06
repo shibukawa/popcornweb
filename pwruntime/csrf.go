@@ -7,6 +7,8 @@ import (
 	"encoding/base64"
 	"io"
 	"strings"
+
+	"github.com/shibukawa/tinybind-go/htmlbind"
 )
 
 // CSRFCookieName is the companion cookie the browser runtime reads a token from.
@@ -158,6 +160,54 @@ func StoreCSRFSecret(store ValueStore, secret string) {
 	store.SetUserValue(csrfSecretKey{}, secret)
 }
 
+// AppendCSRFOption adds what a render has to be told about the token.
+//
+// Every render entry of both runtimes calls it, and that is the point of it
+// being one function: a render told nothing fails on the first unsafe form it
+// reaches, so an entry that forgets the option does not render a form at all.
+// The document entry had it and, one at a time, the others turned out not to —
+// a fragment, an action response, a redraw, the error page, and every entry of
+// the second runtime — each answering 500 for markup the page itself rendered.
+//
+// There are three answers. A token is carried. No token with the check turned
+// off says so, so a deployment that disabled the check gets the form it asked
+// for rather than a failed render. No token with the check on adds nothing,
+// which fails a render that reaches a form: policy:csrf-protection asks for
+// that rather than for a form nothing protects.
+func AppendCSRFOption(options []htmlbind.Option, token string, disabled bool) []htmlbind.Option {
+	switch {
+	case token != "":
+		return append(options, htmlbind.WithCSRFToken(token))
+	case disabled:
+		return append(options, htmlbind.WithoutCSRFToken())
+	}
+	return options
+}
+
+// CSRFRendersHTML reports whether a safe request announces that it will
+// render the page's templates, and therefore needs the token an unsafe form in
+// them carries. It takes the four header values it reads — Sec-Fetch-Dest,
+// Accept, UpdateRenderHeader, and ResponseModeHeader — rather than a reader, so
+// a transport whose header values are not strings converts only what is there.
+//
+// A document request says so itself, through CSRFHTMLRequest. The browser
+// runtime's own requests do not: a partial update and a live delivery are
+// fetches, so they arrive with no text/html in Accept and a Sec-Fetch-Dest of
+// empty, and they render the same chain the document did. Reading them as
+// "renders no HTML" left the secret out of the request, and a page whose
+// layout holds a sign-out form answered 500 to every update of itself.
+//
+// Neither header mints anything a document request would not have: a page
+// that sends one was rendered from this origin and already holds the secret.
+//
+// This is the prediction and not the rule. A render no header announced asks
+// for the secret itself when it runs, so answering false here costs a page
+// nothing but the session read it would have made anyway.
+func CSRFRendersHTML(secFetchDest, accept, updateRender, responseMode string) bool {
+	return CSRFHTMLRequest(secFetchDest, accept) ||
+		strings.TrimSpace(updateRender) != "" || strings.TrimSpace(responseMode) != ""
+}
+
 // CSRFSafeMethod reports whether a method is one the cross-site check lets
 // through — GET, HEAD, and OPTIONS, the set HTTP defines as not changing
 // state. TRACE is deliberately absent: nothing in this framework routes it,
@@ -177,6 +227,9 @@ func CSRFSafeMethod(method string) bool {
 // does not justify allocating session state merely in case the handler might
 // render a form. Both transports call this one function so the answer cannot
 // drift.
+//
+// CSRFRendersHTML is the question a middleware asks; this is the half of it a
+// browser's own navigation answers.
 func CSRFHTMLRequest(secFetchDest, accept string) bool {
 	if strings.EqualFold(strings.TrimSpace(secFetchDest), "document") {
 		return true

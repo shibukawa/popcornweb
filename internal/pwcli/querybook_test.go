@@ -172,3 +172,108 @@ func TestCallableBuilderFollowsTheExportRule(t *testing.T) {
 		}
 	}
 }
+
+// queriesProject lays out a module with one queries package holding one
+// generated file and the registration an earlier run wrote for it, linked into
+// the main package the way planQueryLink leaves it.
+func queriesProject(t *testing.T) (string, projectConfig) {
+	t.Helper()
+	root := t.TempDir()
+	write := func(relative, content string) {
+		t.Helper()
+		path := filepath.Join(root, filepath.FromSlash(relative))
+		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	write("go.mod", "module memoapp\n\ngo 1.27\n")
+	write("cmd/memoapp/main.go", "package main\n\nfunc main() {}\n")
+	write("cmd/memoapp/"+queryLinkFileName, "//go:build pwdev\n\npackage main\n\nimport _ \"memoapp/queries\"\n")
+	write("queries/users.pw.sql", "package queries\n")
+	write("queries/users_pw_gen.go", generatedQueries)
+	write("queries/"+queryRegistryFileName, "//go:build pwdev\n\npackage queries\n")
+	var config projectConfig
+	config.Main = "./cmd/memoapp"
+	config.Generate.Queries = []string{"queries"}
+	return root, config
+}
+
+// The registration is compiled only under pwdev, so one that outlives its
+// statements breaks pw dev and nothing else: it names builders that are gone,
+// and go build never reads the file. It is the storybook registration's
+// defect, in the step that was written beside it.
+func TestQueryRegistrationIsRemovedWithItsLastStatement(t *testing.T) {
+	for name, remove := range map[string]func(t *testing.T, root string){
+		// The source is gone, and the generated file with it once this run
+		// applies what it planned.
+		"the last .pw.sql was deleted": func(t *testing.T, root string) {
+			if err := os.Remove(filepath.Join(root, "queries", "users.pw.sql")); err != nil {
+				t.Fatal(err)
+			}
+		},
+		// The source stays and declares nothing any more, which is the shape
+		// the scaffold's commented starter has.
+		"the last statement was deleted": func(t *testing.T, root string) {},
+	} {
+		t.Run(name, func(t *testing.T) {
+			root, config := queriesProject(t)
+			remove(t, root)
+			generated := filepath.Join(root, "queries", "users_pw_gen.go")
+			// The template step has already planned the generated file's
+			// removal, and the file is still on disk while this step runs.
+			changes, err := planQueryRegistry(root, config, []fileChange{{path: generated, remove: true}})
+			if err != nil {
+				t.Fatal(err)
+			}
+			removed := removals(changes)
+			if !removed[filepath.Join(root, "queries", queryRegistryFileName)] {
+				t.Errorf("the registration of a package with no statement left was kept: %+v", changes)
+			}
+			if !removed[filepath.Join(root, "cmd", "memoapp", queryLinkFileName)] {
+				t.Errorf("the link to a package that registers nothing was kept: %+v", changes)
+			}
+		})
+	}
+}
+
+// A statement file deleted from a package that keeps another must leave the
+// registration in the same run: the generated file it was read from is still on
+// disk when the registration is planned, and a registration naming its builders
+// would not compile until the run after.
+func TestQueryRegistrationForgetsAFilePlannedForRemoval(t *testing.T) {
+	root, config := queriesProject(t)
+	queries := filepath.Join(root, "queries")
+	const kept = `package queries
+
+import _tinybindsql "github.com/shibukawa/tinybind-go/sqlbind"
+
+func _tinybindBuildKeptOne(b *_tinybindsql.Builder, id int) error { return nil }
+
+func BuildKeptOne(id int) (_tinybindsql.Statement, error) { return _tinybindsql.Statement{}, nil }
+`
+	if err := os.WriteFile(filepath.Join(queries, "kept.pw.sql"), []byte("package queries\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(queries, "kept_pw_gen.go"), []byte(kept), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	pending := []fileChange{{path: filepath.Join(queries, "users_pw_gen.go"), remove: true}}
+	changes, err := planQueryRegistry(root, config, pending)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, change := range changes {
+		if change.path != filepath.Join(queries, queryRegistryFileName) {
+			continue
+		}
+		source := string(change.source)
+		if !strings.Contains(source, "BuildKeptOne") || strings.Contains(source, "BuildFindExample") {
+			t.Fatalf("the registration names a builder whose generated file is being removed:\n%s", source)
+		}
+		return
+	}
+	t.Fatal("the registration was not rewritten")
+}

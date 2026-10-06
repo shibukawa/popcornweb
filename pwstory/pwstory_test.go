@@ -239,3 +239,37 @@ func TestUnparsableParametersAreReportedAndKept(t *testing.T) {
 		t.Errorf("params = %q, want what was typed", result.Params)
 	}
 }
+
+// A story of a component holding an unsafe form renders. There is no session
+// behind a story, so there is no token to give it, and the render has to be
+// told that: htmlbind refuses a form it was told nothing about, which made
+// every form component in a project a failed story.
+func TestAStoryOfAFormComponentRenders(t *testing.T) {
+	register(t)
+	ops := htmlbind.Builder[greetingParams]{}
+	plan := &htmlbind.Plan[greetingParams]{Ops: []htmlbind.Op[greetingParams]{
+		ops.Static(`<form method="post" action="/orders">`),
+		ops.CSRFField("_csrf"),
+		ops.Static(`<button>buy</button></form>`),
+	}}
+	Register(Template{
+		Package: "templates", Name: "orderForm", Exported: true,
+		NewParams: func() any { return new(greetingParams) },
+		Render:    func(p any) htmlbind.Fragment { return plan.Bind(*p.(*greetingParams)) },
+	})
+	form, ok := Lookup("templates", "orderForm")
+	if !ok {
+		t.Fatal("the form story was not registered")
+	}
+	for _, shell := range []bool{false, true} {
+		result := renderStory(form, shell)
+		if result.Failed != "" {
+			t.Fatalf("shell=%v: the story failed to render: %s", shell, result.Failed)
+		}
+		// The field is there because generation wrote it, and empty because a
+		// preview has nothing to verify a submission against.
+		if !strings.Contains(result.Raw, `name="_csrf" value=""`) {
+			t.Errorf("shell=%v: raw = %q, want the form with an empty token field", shell, result.Raw)
+		}
+	}
+}

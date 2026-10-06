@@ -32,11 +32,15 @@ func writeHTMLProblem(r *fasthttp.RequestCtx, problem Problem) bool {
 	wrappers := pwruntime.RegisteredHTMLDocument()
 	var body []byte
 	buffer := bytesWriter{buf: &body}
-	if err := htmlbind.RenderChain(&buffer, wrappers, fragment); err != nil {
+	// The shell is the application's own, and a shell holding a sign-out form
+	// needs the token to render at all. Without it the error page failed for
+	// every signed-in reader and the problem document went out instead.
+	if err := htmlbind.RenderChain(&buffer, wrappers, fragment, appendCSRFOption(nil, r)...); err != nil {
 		pwruntime.ReadLogger(r).Log(r, pwruntime.LevelError, "HTML error page render failed",
 			pwruntime.String("error", err.Error()))
 		return false
 	}
+	_ = pwruntime.WriteDocumentScopes(&buffer, pwruntime.ScopeCatalog(wrappers, fragment))
 	// The representation was chosen from a request header, so a cache keyed on
 	// the URL alone must not serve one client's answer to another.
 	addVaryHeader(r, "Accept")

@@ -1898,15 +1898,15 @@ func home(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	pw.WriteHTML(w, r, Home(HomeParams{
-		Name:        name,
-		Project:     ` + project + `,
-		SignedIn:    signedIn,
-		Account:     ` + accountLineExpression(options) + `,
-		LoginPath:   url.URL{Path: "/auth/login"},
-		LogoutPath:  url.URL{Path: "/auth/logout"},
-		Passkey:     ` + passkeyLiteral(usesPasskey(options.Auth)) + `,
+		Name:          name,
+		Project:       ` + project + `,
+		SignedIn:      signedIn,
+		Account:       ` + accountLineExpression(options) + `,
+		LoginPath:     url.URL{Path: "/auth/login"},
+		LogoutPath:    url.URL{Path: "/auth/logout"},
+		Passkey:       ` + passkeyLiteral(usesPasskey(options.Auth)) + `,
 		ProviderLogin: ` + passkeyLiteral(servesProviderLogin(options.Auth)) + `,
-		Bootstrap:   ` + passkeyLiteral(options.Auth == authPasskey) + `,
+		Bootstrap:     ` + passkeyLiteral(options.Auth == authPasskey) + `,
 	}))
 }
 `

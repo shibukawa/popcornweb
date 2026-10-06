@@ -90,6 +90,12 @@ func scanDeclaredQueries(directory string, sources plannedSources) ([]declaredQu
 		if !strings.HasSuffix(name, "_pw_gen.go") || name == queryRegistryFileName {
 			continue
 		}
+		// A file this run deletes is still on disk while the run is planned,
+		// and registering the builders in it would name functions that are
+		// gone by the time anything compiles.
+		if sources.removed[filepath.Join(directory, name)] {
+			continue
+		}
 		source, err := sources.read(filepath.Join(directory, name))
 		if err != nil {
 			continue
@@ -255,12 +261,23 @@ func writeQueryRegistration(out *strings.Builder, query declaredQuery) {
 // requirement:dev-data-pane, so registering from package initialisation is
 // enough — once something links the package, which is what the link file is
 // for.
+//
+// It also removes what an earlier run wrote and this one would not, for the
+// reason planStorybook does. The registration carries the pwdev constraint, so
+// one left in a package whose last statement was deleted names builders that
+// no longer exist and only pw dev compiles it: go build passes, and the project
+// stops starting in the mode it is developed in.
 func planQueryRegistry(root string, config projectConfig, changes []fileChange) ([]fileChange, error) {
 	sources := planned(changes)
 	directories := map[string]bool{}
+	// Every registration already on disk is stale until this run plans it.
+	stale := map[string]bool{}
 	err := walkSources(root, config.Generate.Queries, func(path string, entry fs.DirEntry) error {
 		if strings.HasSuffix(entry.Name(), ".pw.sql") {
 			directories[filepath.Dir(path)] = true
+		}
+		if entry.Name() == queryRegistryFileName {
+			stale[path] = true
 		}
 		return nil
 	})
@@ -277,14 +294,34 @@ func planQueryRegistry(root string, config projectConfig, changes []fileChange) 
 		if err != nil {
 			return nil, err
 		}
-		changes, err = appendIfChanged(changes,
-			filepath.Join(directory, queryRegistryFileName), registration)
+		target := filepath.Join(directory, queryRegistryFileName)
+		delete(stale, target)
+		changes, err = appendIfChanged(changes, target, registration)
 		if err != nil {
 			return nil, err
 		}
 		registered = append(registered, directory)
 	}
+	leftover := make([]string, 0, len(stale))
+	for path := range stale {
+		leftover = append(leftover, path)
+	}
+	sort.Strings(leftover)
+	for _, path := range leftover {
+		changes = append(changes, fileChange{path: path, remove: true})
+	}
 	return planQueryLink(root, config, registered, changes)
+}
+
+// removeQueryLink plans the removal of a link file that has nothing left to
+// link, when one is on disk.
+func removeQueryLink(target string, changes []fileChange) ([]fileChange, error) {
+	if _, err := os.Stat(target); err == nil {
+		return append(changes, fileChange{path: target, remove: true}), nil
+	} else if !os.IsNotExist(err) {
+		return nil, err
+	}
+	return changes, nil
 }
 
 // planQueryLink writes, or removes, the development-only import of the queries
@@ -293,12 +330,7 @@ func planQueryLink(root string, config projectConfig, directories []string, chan
 	mainDirectory := filepath.Clean(filepath.Join(root, filepath.FromSlash(config.Main)))
 	target := filepath.Join(mainDirectory, queryLinkFileName)
 	if len(directories) == 0 {
-		if _, err := os.Stat(target); err == nil {
-			return append(changes, fileChange{path: target, remove: true}), nil
-		} else if !os.IsNotExist(err) {
-			return nil, err
-		}
-		return changes, nil
+		return removeQueryLink(target, changes)
 	}
 	moduleSource, err := os.ReadFile(filepath.Join(root, "go.mod"))
 	if err != nil {
@@ -328,7 +360,9 @@ func planQueryLink(root string, config projectConfig, directories []string, chan
 	sort.Strings(imports)
 	imports = slicesCompact(imports)
 	if len(imports) == 0 {
-		return changes, nil
+		// Every registering package turned out to be the main package itself,
+		// so a link an earlier layout needed has nothing to import now.
+		return removeQueryLink(target, changes)
 	}
 	packageName, err := goPackageName(mainDirectory)
 	if err != nil {

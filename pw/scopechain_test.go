@@ -102,3 +102,27 @@ func TestStreamEndOmitsAnEmptyScopeChain(t *testing.T) {
 		t.Errorf("marker carries an empty scope chain: %s", out.String())
 	}
 }
+
+// A document that was not streamed has no end marker and answers no header, so
+// the catalog rides an element of its own. Without it a page opened directly
+// mounted nothing, while the same page reached by a navigation did.
+func TestABufferedDocumentCarriesItsScopeCatalog(t *testing.T) {
+	var out strings.Builder
+	if err := writeDocumentScopes(&out, "app.page.Probe:/public/generated/page.script.1a2b.js"); err != nil {
+		t.Fatal(err)
+	}
+	const want = `<tb-scopes value="app.page.Probe:/public/generated/page.script.1a2b.js"></tb-scopes>`
+	if out.String() != want {
+		t.Errorf("marker = %s, want %s", out.String(), want)
+	}
+
+	// A composition with no scoped script writes nothing rather than an empty
+	// marker the client would read as "release everything".
+	out.Reset()
+	if err := writeDocumentScopes(&out, ""); err != nil {
+		t.Fatal(err)
+	}
+	if out.Len() != 0 {
+		t.Errorf("an empty catalog wrote %q", out.String())
+	}
+}
