@@ -363,20 +363,24 @@ func newServer(config pwconfig.ServerConfig, handler fasthttp.RequestHandler) *f
 }
 
 // serveUntil serves until the listener fails or the context ends, then drains.
+//
+// Draining waits for the requests being answered, up to the timeout, and does
+// not wait for a connection that has sent nothing: see drainListener.
 func serveUntil(ctx context.Context, server *fasthttp.Server, listener net.Listener, timeout time.Duration) error {
+	drain := newDrainListener(listener)
 	result := make(chan error, 1)
-	go func() { result <- server.Serve(listener) }()
+	go func() { result <- server.Serve(drain) }()
 	select {
 	case err := <-result:
 		return err
 	case <-ctx.Done():
+		shutdownCtx := context.Background()
 		if timeout > 0 {
-			shutdownCtx, cancel := context.WithTimeout(context.Background(), timeout)
+			var cancel context.CancelFunc
+			shutdownCtx, cancel = context.WithTimeout(shutdownCtx, timeout)
 			defer cancel()
-			if err := server.ShutdownWithContext(shutdownCtx); err != nil {
-				return err
-			}
-		} else if err := server.Shutdown(); err != nil {
+		}
+		if err := drain.shutdown(shutdownCtx, server); err != nil {
 			return err
 		}
 		return <-result
