@@ -366,15 +366,18 @@ func ListenAndServe(ctx context.Context, address string, handler fasthttp.Reques
 // what a test and an application embedding this framework both need.
 func Serve(ctx context.Context, listener net.Listener, handler fasthttp.RequestHandler) error {
 	server := &fasthttp.Server{Handler: handler}
+	drain := newDrainListener(listener)
 	failed := make(chan error, 1)
-	go func() { failed <- server.Serve(listener) }()
+	go func() { failed <- server.Serve(drain) }()
 	select {
 	case err := <-failed:
 		return err
 	case <-ctx.Done():
-		// Shutdown closes the listener and waits for in-flight requests, so a
+		// The stop closes the listener and waits for in-flight requests, so a
 		// cancelled context ends the process without cutting a response in half.
-		if err := server.Shutdown(); err != nil {
+		// It has no deadline here, which is why it must not also wait on a
+		// connection that has sent nothing: that wait would have no end.
+		if err := drain.shutdown(context.Background(), server); err != nil {
 			return err
 		}
 		<-failed
