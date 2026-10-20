@@ -1,0 +1,209 @@
+id: decision:backend-specific-middleware
+type: decision
+title: Middleware Is Written Once Per Backend
+summary: Every framework middleware ships an implementation per backend, selected
+  by build tag; an application middleware is backend-specific source that the application
+  writes again, and neither kind reaches decision:transport-compatibility-fallback.
+facts:
+  legacy_body: "Every framework middleware ships an implementation per backend, selected\
+    \ by build tag; an application middleware is backend-specific source that the\
+    \ application writes again, and neither kind reaches decision:transport-compatibility-fallback.\n\
+    \n```yaml\nstatus: proposed\nserves: requirement:alternate-http-backend-readiness\n\
+    set: policy:web-middleware names the framework middleware, and all of them are\
+    \ ported rather than a selected subset\nwhy_middleware_cannot_be_adapted:\n  handler_case:\
+    \ adapting one handler costs that handler, which is what makes the fallback a\
+    \ per-route budget\n  middleware_case: a middleware wraps everything below it,\
+    \ so its adapter's next is a net/http handler and the whole downstream chain is\
+    \ inside the adapter with it\n  consequence: one adapted middleware at the top\
+    \ of the stack drags the entire application onto the slow path, and the per-route\
+    \ granularity the fallback is built on stops existing\n  therefore: middleware\
+    \ is native on each backend or it is not on that backend at all\nframework_middleware:\n\
+    \  coverage: the full set, so a project does not discover that its stack is half-ported\n\
+    \  form: one implementation per backend behind one build-tagged name, so data:middleware-runtime-config\
+    \ and the configured order are unchanged\n  cost: paid once by the framework,\
+    \ per middleware, which is the trade the whole design makes\napplication_middleware:\n\
+    \  originally_here: no portability promise at all, on the reasoning that a middleware\
+    \ body is mostly headers, status, and connection handling, the part of the two\
+    \ backends that agrees least\n  superseded: by the block below, since the transform\
+    \ reaches a middleware the same way it reaches a handler\n  seam_is_still_legal:\
+    \ next.ServeHTTP(w, r) remains an allowed use of w and r under decision:transport-handle-containment\n\
+    upstream_changed_both_halves_2026_08_09:\n  application_middleware:\n    was:\
+    \ backend-specific source with no portability promise, written again per backend\n\
+    \    now: subject to the same eligibility test as a handler, so an analyzable\
+    \ middleware is transformed like one and only a refused one needs a second copy\n\
+    \    why_it_moved: the transform closes over the same-package call graph, and\
+    \ a middleware is an ordinary function to it\n    what_survives: the whole-chain\
+    \ reasoning below still explains why no adapter could have covered it, which is\
+    \ the reason upstream shipped none\n  framework_middleware:\n    unchanged: both\
+    \ backends supplied, with composition order verified identical across the pair\n\
+    \    but_cheaper: the upstream framework-tag-boundary guidance keeps one import\
+    \ path and tags the type rather than its users, so a function whose signature\
+    \ names only framework types stays single-copy even where the type is defined\
+    \ twice\n    the_move: define the handler and middleware types under a build tag,\
+    \ and leave the registration, option, and ordering code untagged; only code reaching\
+    \ into the request needs two versions\n    propagation: an untagged function may\
+    \ call a tagged one only while the callee's signature is identical under both\
+    \ tags, and the moment it is not, the caller is tagged too\n    test: if tagging\
+    \ spreads past the request-handling layer, a signature that could have been transport-free\
+    \ is not, and making it so is cheaper than the second copy\n    correction: this\
+    \ decision estimated the full middleware set as the largest single item of framework\
+    \ work, and the tagged-type arrangement makes it markedly smaller than that\n\
+    considered:\n  single_source_over_aliases:\n    what: writing each middleware\
+    \ once against build-tagged pw handler and middleware aliases\n    blocker: the\
+    \ two backends spell a handler differently in kind, an interface with ServeHTTP\
+    \ against a function taking one value, so an alias covering both forces a function\
+    \ type whose net/http form takes two parameters and whose other form takes the\
+    \ same pointer twice\n    judgment: the abstraction would be paid in every middleware\
+    \ body to serve neither backend well, where two native files are each simpler\
+    \ than the one shared file\n  adapting_application_middleware: rejected above,\
+    \ on the whole-chain cost\nsettled_by_the_transform:\n  question_was: whether\
+    \ framework middleware is transformed rather than hand-written twice\n  answer:\
+    \ application middleware is transformed on the same terms as a handler; framework\
+    \ middleware stays a supplied pair, because it is the layer defining the tagged\
+    \ types rather than a user of them\n  still_true: a middleware calling next.ServeHTTP\
+    \ calls an interface method where the other backend's next is a plain function,\
+    \ which is exactly why the type is what carries the tag\nvalue_propagation_measured_2026_08_10:\n\
+    \  the_worry: a net/http frame changes what the rest of the chain sees by deriving\
+    \ a context and handing it on, and the other transport has one request value a\
+    \ frame cannot derive, so the recording half of every frame looked untranslatable\n\
+    \  what_was_measured: RequestCtx.Value answers from the same user-value store\
+    \ SetUserValue writes to, so a value written in place is read by an ordinary ctx.Value\
+    \ lookup\n  consequence: every reader in the shared leaf already works on both\
+    \ transports, and only the write side needed anything; that is one function rather\
+    \ than a second copy of each reader\n  shape: the writer is typed by a structural\
+    \ interface naming context.Context and SetUserValue, so the leaf still names no\
+    \ type from the fasthttp fork\n  first_frame: RequestID, whose shared half is\
+    \ the rule for what a client-supplied identifier may contain -- shared because\
+    \ it is a security check, the value arriving from the client and leaving in a\
+    \ response header, so a second copy of the rule would be a second chance to get\
+    \ it wrong\nconsequences:\n  - an application middleware is reported by rule:transport-handle-checks\
+    \ on the same terms as a handler, because the transform treats them the same and\
+    \ a separate entry would imply a remedy that differs\n  - a frame's portable part\
+    \ is what it decides rather than how it wraps, and the wrapping is the only part\
+    \ written twice\n  - a project intending to port keeps its own middleware analyzable,\
+    \ which the report makes concrete instead of leaving to taste\n  - the framework\
+    \ middleware set is still work this framework pays once, but the tagged-type arrangement\
+    \ makes it smaller than the estimate this decision first carried\n```"
+  status: proposed
+  serves: requirement:alternate-http-backend-readiness
+  set: policy:web-middleware names the framework middleware, and all of them are ported
+    rather than a selected subset
+  why_middleware_cannot_be_adapted:
+    handler_case: adapting one handler costs that handler, which is what makes the
+      fallback a per-route budget
+    middleware_case: a middleware wraps everything below it, so its adapter's next
+      is a net/http handler and the whole downstream chain is inside the adapter with
+      it
+    consequence: one adapted middleware at the top of the stack drags the entire application
+      onto the slow path, and the per-route granularity the fallback is built on stops
+      existing
+    therefore: middleware is native on each backend or it is not on that backend at
+      all
+  framework_middleware:
+    coverage: the full set, so a project does not discover that its stack is half-ported
+    form: one implementation per backend behind one build-tagged name, so data:middleware-runtime-config
+      and the configured order are unchanged
+    cost: paid once by the framework, per middleware, which is the trade the whole
+      design makes
+  application_middleware:
+    originally_here: no portability promise at all, on the reasoning that a middleware
+      body is mostly headers, status, and connection handling, the part of the two
+      backends that agrees least
+    superseded: by the block below, since the transform reaches a middleware the same
+      way it reaches a handler
+    seam_is_still_legal: next.ServeHTTP(w, r) remains an allowed use of w and r under
+      decision:transport-handle-containment
+  upstream_changed_both_halves_2026_08_09:
+    application_middleware:
+      was: backend-specific source with no portability promise, written again per
+        backend
+      now: subject to the same eligibility test as a handler, so an analyzable middleware
+        is transformed like one and only a refused one needs a second copy
+      why_it_moved: the transform closes over the same-package call graph, and a middleware
+        is an ordinary function to it
+      what_survives: the whole-chain reasoning below still explains why no adapter
+        could have covered it, which is the reason upstream shipped none
+    framework_middleware:
+      unchanged: both backends supplied, with composition order verified identical
+        across the pair
+      but_cheaper: the upstream framework-tag-boundary guidance keeps one import path
+        and tags the type rather than its users, so a function whose signature names
+        only framework types stays single-copy even where the type is defined twice
+      the_move: define the handler and middleware types under a build tag, and leave
+        the registration, option, and ordering code untagged; only code reaching into
+        the request needs two versions
+      propagation: an untagged function may call a tagged one only while the callee's
+        signature is identical under both tags, and the moment it is not, the caller
+        is tagged too
+      test: if tagging spreads past the request-handling layer, a signature that could
+        have been transport-free is not, and making it so is cheaper than the second
+        copy
+      correction: this decision estimated the full middleware set as the largest single
+        item of framework work, and the tagged-type arrangement makes it markedly
+        smaller than that
+  considered:
+    single_source_over_aliases:
+      what: writing each middleware once against build-tagged pw handler and middleware
+        aliases
+      blocker: the two backends spell a handler differently in kind, an interface
+        with ServeHTTP against a function taking one value, so an alias covering both
+        forces a function type whose net/http form takes two parameters and whose
+        other form takes the same pointer twice
+      judgment: the abstraction would be paid in every middleware body to serve neither
+        backend well, where two native files are each simpler than the one shared
+        file
+    adapting_application_middleware: rejected above, on the whole-chain cost
+  settled_by_the_transform:
+    question_was: whether framework middleware is transformed rather than hand-written
+      twice
+    answer: application middleware is transformed on the same terms as a handler;
+      framework middleware stays a supplied pair, because it is the layer defining
+      the tagged types rather than a user of them
+    still_true: a middleware calling next.ServeHTTP calls an interface method where
+      the other backend's next is a plain function, which is exactly why the type
+      is what carries the tag
+  value_propagation_measured_2026_08_10:
+    the_worry: a net/http frame changes what the rest of the chain sees by deriving
+      a context and handing it on, and the other transport has one request value a
+      frame cannot derive, so the recording half of every frame looked untranslatable
+    what_was_measured: RequestCtx.Value answers from the same user-value store SetUserValue
+      writes to, so a value written in place is read by an ordinary ctx.Value lookup
+    consequence: every reader in the shared leaf already works on both transports,
+      and only the write side needed anything; that is one function rather than a
+      second copy of each reader
+    shape: the writer is typed by a structural interface naming context.Context and
+      SetUserValue, so the leaf still names no type from the fasthttp fork
+    first_frame: RequestID, whose shared half is the rule for what a client-supplied
+      identifier may contain -- shared because it is a security check, the value arriving
+      from the client and leaving in a response header, so a second copy of the rule
+      would be a second chance to get it wrong
+  consequences:
+  - an application middleware is reported by rule:transport-handle-checks on the same
+    terms as a handler, because the transform treats them the same and a separate
+    entry would imply a remedy that differs
+  - a frame's portable part is what it decides rather than how it wraps, and the wrapping
+    is the only part written twice
+  - a project intending to port keeps its own middleware analyzable, which the report
+    makes concrete instead of leaving to taste
+  - the framework middleware set is still work this framework pays once, but the tagged-type
+    arrangement makes it smaller than the estimate this decision first carried
+lifecycle: proposed
+relations:
+- relation: mentions
+  to: data:middleware-runtime-config
+  resolution: resolved
+- relation: mentions
+  to: decision:transport-compatibility-fallback
+  resolution: resolved
+- relation: mentions
+  to: decision:transport-handle-containment
+  resolution: resolved
+- relation: mentions
+  to: policy:web-middleware
+  resolution: resolved
+- relation: mentions
+  to: requirement:alternate-http-backend-readiness
+  resolution: resolved
+- relation: mentions
+  to: rule:transport-handle-checks
+  resolution: resolved

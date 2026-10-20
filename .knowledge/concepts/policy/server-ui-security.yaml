@@ -1,0 +1,45 @@
+id: policy:server-ui-security
+type: policy
+title: Server UI Security and Correctness
+summary: Generated endpoints, streamed instructions, output contexts, and asynchronous
+  work remain server-validated and bounded.
+facts:
+  legacy_body: "Generated endpoints, streamed instructions, output contexts, and asynchronous\
+    \ work remain server-validated and bounded.\n\n```yaml\nrules:\n  - escape HTML,\
+    \ attribute, URL, JavaScript, JSON, SQL, and other contexts independently\n  -\
+    \ make raw output explicit and reviewable\n  - validate every action and refresh\
+    \ request on the server\n  - bind data:component-boundary to route, scope, and\
+    \ build version\n  - protect api:server-action with CSRF defenses\n  - streamed\
+    \ completions carry no inline script; the head runtime moves to a src reference\
+    \ under requirement:external-boundary-runtime so script-src 'self' suffices\n\
+    \  - hide server props, configuration, SQL, cache keys, and credentials\n  - limit\
+    \ body size, component depth, execution time, and async concurrency\n  - propagate\
+    \ cancellation to queries, external calls, and async components\n  - bound and\
+    \ redact async boundary work through policy:async-render-bounds\n  - order patches\
+    \ deterministically and reject stale build versions\n```"
+  rules:
+  - escape HTML, attribute, URL, JavaScript, JSON, SQL, and other contexts independently
+  - make raw output explicit and reviewable
+  - validate every action and refresh request on the server
+  - bind data:component-boundary to route, scope, and build version
+  - protect api:server-action with CSRF defenses
+  - streamed completions carry no inline script; the head runtime moves to a src reference
+    under requirement:external-boundary-runtime so script-src 'self' suffices
+  - hide server props, configuration, SQL, cache keys, and credentials
+  - limit body size, component depth, execution time, and async concurrency
+  - propagate cancellation to queries, external calls, and async components
+  - bound and redact async boundary work through policy:async-render-bounds
+  - order patches deterministically and reject stale build versions
+relations:
+- relation: mentions
+  to: api:server-action
+  resolution: resolved
+- relation: mentions
+  to: data:component-boundary
+  resolution: resolved
+- relation: mentions
+  to: policy:async-render-bounds
+  resolution: resolved
+- relation: mentions
+  to: requirement:external-boundary-runtime
+  resolution: resolved

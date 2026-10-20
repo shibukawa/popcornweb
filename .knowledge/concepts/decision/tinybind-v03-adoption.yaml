@@ -1,0 +1,130 @@
+id: decision:tinybind-v03-adoption
+type: decision
+title: Adopting TinyBind v0.3
+summary: api:cli-fmt cannot be added without moving the framework pin from v0.2.10
+  to v0.3; the move regenerates every component with an inert update-boundary plan
+  and changes no served byte, so adopt it as an ordinary dependency bump.
+facts:
+  legacy_body: "api:cli-fmt cannot be added without moving the framework pin from\
+    \ v0.2.10 to v0.3; the move regenerates every component with an inert update-boundary\
+    \ plan and changes no served byte, so adopt it as an ordinary dependency bump.\n\
+    \n```yaml\nstatus: adopted; the root pin is v0.3.5\nwhy_it_is_coupled:\n  - the\
+    \ formatter lives in the system:tinybind templatefmt package, which appears in\
+    \ v0.3.1; v0.3.2 added its idempotence guard and v0.3.5 is the newest\n  - pw\
+    \ is one Go module, so api:cli-fmt and api:cli-generate share one pin; there is\
+    \ no version of the CLI that formats with v0.3 and generates with v0.2\nmeasured:\n\
+    \  taken: 2026-08-03, bumping the root pin and reverting; repeated for v0.3.2\
+    \ and v0.3.5\n  go_build: clean\n  go_vet: clean\n  go_test: one failure, TestPagesFixtureGeneratedFilesAreCurrent,\
+    \ and nothing else\n  what_the_failure_is: not a break; the page tree fixture\
+    \ is stale because v0.3.x emits more\n  rendered_output:\n    method: generate\
+    \ a layout and a page against each of v0.3.1 through v0.3.5, then Render and RenderChain\
+    \ them\n    result: byte-identical on every version, and identical to what v0.2.10\
+    \ emits\ngenerated_output_change:\n  per_component: a Boundary value, a canonical\
+    \ input encoder, and a BoundaryAttr op, about 20 lines\n  who_gets_it: every exported,\
+    \ non-shell component with a single root element, which is the ordinary shape\n\
+    \  served_bytes: unchanged\n  why: the BoundaryAttr op writes nothing unless the\
+    \ renderer is collecting an update manifest, which only a partial-update render\
+    \ does; upstream states this in the op's own comment and measurement agrees\n\
+    \  what_it_actually_costs: dead generated code and whatever it adds to a linked\
+    \ binary, unmeasured and expected to be small\ncorrection:\n  earlier_claim: adopting\
+    \ v0.3 adds a data-tb-id attribute to served HTML, first said to affect page trees\
+    \ and then said to affect every project\n  status: withdrawn, both times wrong\n\
+    \  how_it_happened: the claim was read off the generated ops list without executing\
+    \ it; a plan carrying an attribute op is not the same as a render emitting one\n\
+    \  lesson: for a question about output bytes, render and compare bytes\ndecision:\n\
+    \  treat_as: an ordinary dependency bump, not a behavior change\n  order:\n  \
+    \  1: bump the pin and regenerate the page fixture, which is the whole diff\n\
+    \    2: add api:cli-fmt on top\n  reason: keeping them separate is still worth\
+    \ it for review, but the first step is now small rather than consequential\nresidual_risk:\n\
+    \  addressed: the mitigation below was carried out rather than left as advice\n\
+    \  end_to_end_check:\n    method: serve GET / from the helloworld example through\
+    \ its own handler test, before and after the bump, and diff the response body\n\
+    \    result: byte-identical, 2014 bytes, with BoundaryAttr present in the generated\
+    \ home component\n  still_unexercised: the other five examples, whose generated\
+    \ output is not committed and whose tests were not run against the bump\n  examples_pins:\
+    \ every example go.mod still names tinybind v0.2.8 and was left alone; they were\
+    \ already behind the root before this change, and no CI builds them\nupstream_requests:\
+    \ none blocking; the two formatter defects reported against v0.3.1 were fixed\
+    \ in v0.3.2\nalternatives_rejected:\n  nested_module_for_fmt:\n    what: put the\
+    \ formatter behind its own Go module the way the extension's WebAssembly entry\
+    \ is\n    why_not: the extension does that to ship a formatter the framework has\
+    \ not adopted; inside the CLI it would mean one binary linking two tinybind versions,\
+    \ which Go will not do\n  defer_the_command:\n    what: wait until the framework\
+    \ adopts v0.3 for its own reasons\n    why_not: the reason to defer was the served-HTML\
+    \ change, and there is none\n```"
+  status: adopted; the root pin is v0.3.5
+  why_it_is_coupled:
+  - the formatter lives in the system:tinybind templatefmt package, which appears
+    in v0.3.1; v0.3.2 added its idempotence guard and v0.3.5 is the newest
+  - pw is one Go module, so api:cli-fmt and api:cli-generate share one pin; there
+    is no version of the CLI that formats with v0.3 and generates with v0.2
+  measured:
+    taken: 2026-08-03, bumping the root pin and reverting; repeated for v0.3.2 and
+      v0.3.5
+    go_build: clean
+    go_vet: clean
+    go_test: one failure, TestPagesFixtureGeneratedFilesAreCurrent, and nothing else
+    what_the_failure_is: not a break; the page tree fixture is stale because v0.3.x
+      emits more
+    rendered_output:
+      method: generate a layout and a page against each of v0.3.1 through v0.3.5,
+        then Render and RenderChain them
+      result: byte-identical on every version, and identical to what v0.2.10 emits
+  generated_output_change:
+    per_component: a Boundary value, a canonical input encoder, and a BoundaryAttr
+      op, about 20 lines
+    who_gets_it: every exported, non-shell component with a single root element, which
+      is the ordinary shape
+    served_bytes: unchanged
+    why: the BoundaryAttr op writes nothing unless the renderer is collecting an update
+      manifest, which only a partial-update render does; upstream states this in the
+      op's own comment and measurement agrees
+    what_it_actually_costs: dead generated code and whatever it adds to a linked binary,
+      unmeasured and expected to be small
+  correction:
+    earlier_claim: adopting v0.3 adds a data-tb-id attribute to served HTML, first
+      said to affect page trees and then said to affect every project
+    status: withdrawn, both times wrong
+    how_it_happened: the claim was read off the generated ops list without executing
+      it; a plan carrying an attribute op is not the same as a render emitting one
+    lesson: for a question about output bytes, render and compare bytes
+  decision:
+    treat_as: an ordinary dependency bump, not a behavior change
+    order:
+      1: bump the pin and regenerate the page fixture, which is the whole diff
+      2: add api:cli-fmt on top
+    reason: keeping them separate is still worth it for review, but the first step
+      is now small rather than consequential
+  residual_risk:
+    addressed: the mitigation below was carried out rather than left as advice
+    end_to_end_check:
+      method: serve GET / from the helloworld example through its own handler test,
+        before and after the bump, and diff the response body
+      result: byte-identical, 2014 bytes, with BoundaryAttr present in the generated
+        home component
+    still_unexercised: the other five examples, whose generated output is not committed
+      and whose tests were not run against the bump
+    examples_pins: every example go.mod still names tinybind v0.2.8 and was left alone;
+      they were already behind the root before this change, and no CI builds them
+  upstream_requests: none blocking; the two formatter defects reported against v0.3.1
+    were fixed in v0.3.2
+  alternatives_rejected:
+    nested_module_for_fmt:
+      what: put the formatter behind its own Go module the way the extension's WebAssembly
+        entry is
+      why_not: the extension does that to ship a formatter the framework has not adopted;
+        inside the CLI it would mean one binary linking two tinybind versions, which
+        Go will not do
+    defer_the_command:
+      what: wait until the framework adopts v0.3 for its own reasons
+      why_not: the reason to defer was the served-HTML change, and there is none
+relations:
+- relation: mentions
+  to: api:cli-fmt
+  resolution: resolved
+- relation: mentions
+  to: api:cli-generate
+  resolution: resolved
+- relation: mentions
+  to: system:tinybind
+  resolution: resolved

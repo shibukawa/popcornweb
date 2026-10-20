@@ -1,0 +1,142 @@
+id: policy:migration-safety
+type: policy
+title: Migration Safety
+summary: Automatic migration is limited to environments the developer controls, and
+  every rollback is an explicit, acknowledged action.
+facts:
+  legacy_body: "Automatic migration is limited to environments the developer controls,\
+    \ and every rollback is an explicit, acknowledged action.\n\n```yaml\nautomatic_allowed:\n\
+    \  - api:cli-dev development loop\n  - api:test-run isolated database\nautomatic_forbidden:\n\
+    \  - production application startup by default\n  - any rollback action outside\
+    \ the api:cli-dev loop\nstartup_apply:\n  default: disabled\n  enable: explicit\
+    \ configuration plus an explicit non-default acknowledgement\n  scope: forward-only\
+    \ apply\nrollback:\n  published: api:cli-migrate down and down-to are supported\
+    \ operator actions\n  rules:\n    - an interactive invocation prompts with the\
+    \ target version and the migrations to be reversed\n    - a non-interactive invocation\
+    \ requires the explicit confirmation flag\n    - startup apply and tests never\
+    \ roll back automatically\n    - the api:cli-dev loop does, and only to reach\
+    \ an edited migration; it is bounded to a development database the developer is\
+    \ editing the schema of, it announces the versions it reverses, and it stops on\
+    \ a migration with no usable Down like every other caller\n    - a migration without\
+    \ a usable Down section fails before any statement runs\ncredentials:\n  - never\
+    \ pass a DSN as a child process argument\n  - use a single-use environment variable\
+    \ or stdin handshake for decision:migration-execution-split delegation\n  - redact\
+    \ DSN credentials from output, logs, and errors as required by data:middleware-runtime-config\n\
+    concurrency:\n  - one migrator at a time per database\n  - goose advisory locking\
+    \ is dialect-specific and absent for the first-class SQLite tier\n  - concurrent\
+    \ application instances must not rely on startup apply for coordination\ntransactions:\n\
+    \  - apply each migration transactionally where the dialect supports transactional\
+    \ DDL\n  - a migration marked no-transaction is reported as manually repairable\
+    \ on failure\ncontent_boundary:\n  rule: a migration carries schema, not sample\
+    \ rows\n  rows_belong_to: requirement:test-data-seeding, through api:cli-seed\
+    \ for a database and api:test-seed for a test\n  why_not_a_migration:\n    every_environment:\
+    \ one sequence is applied everywhere, so development fixtures reach production\
+    \ the first time production catches up\n    immutable: an applied file cannot\
+    \ be edited, so a wrong or stale row is corrected only by a later version that\
+    \ deletes it\n    forward_only: startup apply never rolls back, so there is no\
+    \ supported way to take those rows out again\n    no_expected_form: a data:seed-dataset\
+    \ can be reapplied and compared against; a migration runs once and answers no\
+    \ question about state\n  permitted_rows: rows a schema change needs to be correct,\
+    \ such as backfilling a new column or the lookup values a new foreign key points\
+    \ at, which belong to the version that created the need\n  test: whether the application\
+    \ would be wrong without the rows, or only less interesting to look at\n  documented_in:\
+    \ the migrations guide and the database tutorial chapter, because this is decided\
+    \ while writing the first migration and discovered much later\nintegrity:\n  -\
+    \ an applied migration file must not be edited, except while api:cli-dev is watching\
+    \ it, which is the phase before the file has been applied anywhere else\n  - a\
+    \ recorded version with no matching source is an error, not a warning\n  - a missing\
+    \ intermediate version is an error\nobservability:\n  - log each applied version,\
+    \ direction, and duration\n  - report the resulting version on both success and\
+    \ failure\n```"
+  automatic_allowed:
+  - api:cli-dev development loop
+  - api:test-run isolated database
+  automatic_forbidden:
+  - production application startup by default
+  - any rollback action outside the api:cli-dev loop
+  startup_apply:
+    default: disabled
+    enable: explicit configuration plus an explicit non-default acknowledgement
+    scope: forward-only apply
+  rollback:
+    published: api:cli-migrate down and down-to are supported operator actions
+    rules:
+    - an interactive invocation prompts with the target version and the migrations
+      to be reversed
+    - a non-interactive invocation requires the explicit confirmation flag
+    - startup apply and tests never roll back automatically
+    - the api:cli-dev loop does, and only to reach an edited migration; it is bounded
+      to a development database the developer is editing the schema of, it announces
+      the versions it reverses, and it stops on a migration with no usable Down like
+      every other caller
+    - a migration without a usable Down section fails before any statement runs
+  credentials:
+  - never pass a DSN as a child process argument
+  - use a single-use environment variable or stdin handshake for decision:migration-execution-split
+    delegation
+  - redact DSN credentials from output, logs, and errors as required by data:middleware-runtime-config
+  concurrency:
+  - one migrator at a time per database
+  - goose advisory locking is dialect-specific and absent for the first-class SQLite
+    tier
+  - concurrent application instances must not rely on startup apply for coordination
+  transactions:
+  - apply each migration transactionally where the dialect supports transactional
+    DDL
+  - a migration marked no-transaction is reported as manually repairable on failure
+  content_boundary:
+    rule: a migration carries schema, not sample rows
+    rows_belong_to: requirement:test-data-seeding, through api:cli-seed for a database
+      and api:test-seed for a test
+    why_not_a_migration:
+      every_environment: one sequence is applied everywhere, so development fixtures
+        reach production the first time production catches up
+      immutable: an applied file cannot be edited, so a wrong or stale row is corrected
+        only by a later version that deletes it
+      forward_only: startup apply never rolls back, so there is no supported way to
+        take those rows out again
+      no_expected_form: a data:seed-dataset can be reapplied and compared against;
+        a migration runs once and answers no question about state
+    permitted_rows: rows a schema change needs to be correct, such as backfilling
+      a new column or the lookup values a new foreign key points at, which belong
+      to the version that created the need
+    test: whether the application would be wrong without the rows, or only less interesting
+      to look at
+    documented_in: the migrations guide and the database tutorial chapter, because
+      this is decided while writing the first migration and discovered much later
+  integrity:
+  - an applied migration file must not be edited, except while api:cli-dev is watching
+    it, which is the phase before the file has been applied anywhere else
+  - a recorded version with no matching source is an error, not a warning
+  - a missing intermediate version is an error
+  observability:
+  - log each applied version, direction, and duration
+  - report the resulting version on both success and failure
+relations:
+- relation: mentions
+  to: api:cli-dev
+  resolution: resolved
+- relation: mentions
+  to: api:cli-migrate
+  resolution: resolved
+- relation: mentions
+  to: api:cli-seed
+  resolution: resolved
+- relation: mentions
+  to: api:test-run
+  resolution: resolved
+- relation: mentions
+  to: api:test-seed
+  resolution: resolved
+- relation: mentions
+  to: data:middleware-runtime-config
+  resolution: resolved
+- relation: mentions
+  to: data:seed-dataset
+  resolution: resolved
+- relation: mentions
+  to: decision:migration-execution-split
+  resolution: resolved
+- relation: mentions
+  to: requirement:test-data-seeding
+  resolution: resolved

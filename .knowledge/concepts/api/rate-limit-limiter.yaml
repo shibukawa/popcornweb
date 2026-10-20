@@ -1,0 +1,132 @@
+id: api:rate-limit-limiter
+type: api
+title: Rate Limit Limiter Surface
+summary: 'The shipped shape of requirement:rate-limit-enforcement: one transport-free
+  decision package, a frame pair per transport, and a counter-store seam that follows
+  api:session-registry.'
+facts:
+  legacy_body: "The shipped shape of requirement:rate-limit-enforcement: one transport-free\
+    \ decision package, a frame pair per transport, and a counter-store seam that\
+    \ follows api:session-registry.\n\n```yaml\nverified: 2026-08-14, by reading the\
+    \ tree\npackages:\n  pwratelimit: the decision half; Config and validation, the\
+    \ Counter contract, the store registry, the Limiter with Exempt, Identity, and\
+    \ Admit, and the built-in memory counter\n  middlewares: the net/http frames RateLimit\
+    \ and RateLimitProcess, which read the path and address and write the refusal\n\
+    \  pwfast: the same frame pair for the fasthttp build, per requirement:second-build-feature-parity;\
+    \ both drive one pwratelimit.Limiter so one configuration enforces one policy\
+    \ on either transport\n  pw: aliases only, so an application names pw.RegisterRateLimitStore\
+    \ and pw.RateLimitCounter without importing the leaf\n  ratelimitstore/redis:\
+    \ the shared-counter backend behind a blank import, mirroring sessionstore/redis\n\
+    registration:\n  mechanism: two entries through api:framework-extension; ratelimit.process\
+    \ in the outer stack where an unkeyed refusal costs least, and ratelimit below\
+    \ the authentication slot where the subject exists\n  store_memoized: both frames\
+    \ resolve one opened counter per startup, so the ceiling and the identity bucket\
+    \ count in one place\n  fasthttp: pwfast opens the store during run setup and\
+    \ installs the same two frames\ncounter_contract:\n  interface: Increment(ctx,\
+    \ key, window) returning the new total, which is the whole storage interface\n\
+    \  fixed_window: a backend sets the expiry when it creates the key and never extends\
+    \ it\n  registry: pwratelimit.RegisterStore from a plugin init, duplicate or empty\
+    \ name panics; OpenStore names the missing blank import when a configuration selects\
+    \ an unlinked backend\n  memory: built in and default, correct on one replica,\
+    \ N times the limit on N of them\n  redis: import _ ratelimitstore/redis; registration\
+    \ dials nothing, the client opens when ratelimit.backend selects it, and an unreachable\
+    \ server refuses startup rather than shipping a limiter that fails open permanently\n\
+    surface:\n  - pw.RegisterRateLimitStore(name, factory) and pwfast via pwratelimit.RegisterStore,\
+    \ for a deployment adding a backend\n  - pw.RateLimitStores() lists linked backends,\
+    \ which is what the unknown-backend error reports\n  - pwratelimit.NewLimiter(config,\
+    \ counter, exempt) returns nil for a disabled configuration, which a caller turns\
+    \ into a pass-through frame\n  - Limiter.Exempt(path) answers the fixed carve-out;\
+    \ an empty canonical path is counted, so an unreadable path is not a way out\n\
+    \  - Limiter.Identity(ctx, address) resolves subject-or-address and the count\
+    \ that governs it\n  - Limiter.Admit(ctx, key, limit, now) counts one arrival;\
+    \ a store error admits and reports, per the failure_mode of requirement:rate-limit-enforcement\n\
+    behavior_notes:\n  exemptions: computed from ServerConfig, the operational probes,\
+    \ the OpenAPI and API doc mounts, and the public asset mount, and not a deployment\
+    \ setting\n  refusal: through the framework error path, so a browser gets the\
+    \ application's 429 page and an API client a problem document with the requirement:rate-limit-problem-responses\
+    \ metadata\n  degraded: an admission without a working store logs at error level,\
+    \ since silently not limiting is the state worth knowing about\nconfiguration:\
+    \ data:rate-limit-runtime-config, bound at the top-level ratelimit section on\
+    \ both builds\ndocumented: 2026-08-14, guides/backend/rate-limiting in both locales\
+    \ and a ratelimit section in reference/configuration; the guide covers the two\
+    \ buckets, the process ceiling, the redis blank import, the fixed exemptions,\
+    \ and fail-open\n```"
+  verified: 2026-08-14, by reading the tree
+  packages:
+    pwratelimit: the decision half; Config and validation, the Counter contract, the
+      store registry, the Limiter with Exempt, Identity, and Admit, and the built-in
+      memory counter
+    middlewares: the net/http frames RateLimit and RateLimitProcess, which read the
+      path and address and write the refusal
+    pwfast: the same frame pair for the fasthttp build, per requirement:second-build-feature-parity;
+      both drive one pwratelimit.Limiter so one configuration enforces one policy
+      on either transport
+    pw: aliases only, so an application names pw.RegisterRateLimitStore and pw.RateLimitCounter
+      without importing the leaf
+    ratelimitstore/redis: the shared-counter backend behind a blank import, mirroring
+      sessionstore/redis
+  registration:
+    mechanism: two entries through api:framework-extension; ratelimit.process in the
+      outer stack where an unkeyed refusal costs least, and ratelimit below the authentication
+      slot where the subject exists
+    store_memoized: both frames resolve one opened counter per startup, so the ceiling
+      and the identity bucket count in one place
+    fasthttp: pwfast opens the store during run setup and installs the same two frames
+  counter_contract:
+    interface: Increment(ctx, key, window) returning the new total, which is the whole
+      storage interface
+    fixed_window: a backend sets the expiry when it creates the key and never extends
+      it
+    registry: pwratelimit.RegisterStore from a plugin init, duplicate or empty name
+      panics; OpenStore names the missing blank import when a configuration selects
+      an unlinked backend
+    memory: built in and default, correct on one replica, N times the limit on N of
+      them
+    redis: import _ ratelimitstore/redis; registration dials nothing, the client opens
+      when ratelimit.backend selects it, and an unreachable server refuses startup
+      rather than shipping a limiter that fails open permanently
+  surface:
+  - pw.RegisterRateLimitStore(name, factory) and pwfast via pwratelimit.RegisterStore,
+    for a deployment adding a backend
+  - pw.RateLimitStores() lists linked backends, which is what the unknown-backend
+    error reports
+  - pwratelimit.NewLimiter(config, counter, exempt) returns nil for a disabled configuration,
+    which a caller turns into a pass-through frame
+  - Limiter.Exempt(path) answers the fixed carve-out; an empty canonical path is counted,
+    so an unreadable path is not a way out
+  - Limiter.Identity(ctx, address) resolves subject-or-address and the count that
+    governs it
+  - Limiter.Admit(ctx, key, limit, now) counts one arrival; a store error admits and
+    reports, per the failure_mode of requirement:rate-limit-enforcement
+  behavior_notes:
+    exemptions: computed from ServerConfig, the operational probes, the OpenAPI and
+      API doc mounts, and the public asset mount, and not a deployment setting
+    refusal: through the framework error path, so a browser gets the application's
+      429 page and an API client a problem document with the requirement:rate-limit-problem-responses
+      metadata
+    degraded: an admission without a working store logs at error level, since silently
+      not limiting is the state worth knowing about
+  configuration: data:rate-limit-runtime-config, bound at the top-level ratelimit
+    section on both builds
+  documented: 2026-08-14, guides/backend/rate-limiting in both locales and a ratelimit
+    section in reference/configuration; the guide covers the two buckets, the process
+    ceiling, the redis blank import, the fixed exemptions, and fail-open
+relations:
+- relation: mentions
+  to: api:framework-extension
+  resolution: resolved
+- relation: mentions
+  to: api:session-registry
+  resolution: resolved
+- relation: mentions
+  to: data:rate-limit-runtime-config
+  resolution: resolved
+- relation: mentions
+  to: requirement:rate-limit-enforcement
+  resolution: resolved
+- relation: mentions
+  to: requirement:rate-limit-problem-responses
+  resolution: resolved
+- relation: mentions
+  to: requirement:second-build-feature-parity
+  resolution: resolved

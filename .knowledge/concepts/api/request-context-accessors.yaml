@@ -1,0 +1,99 @@
+id: api:request-context-accessors
+type: api
+title: Request Context Accessors
+summary: Users retrieve individual framework resources without observing data:request-context-capsule
+  or its context key.
+facts:
+  legacy_body: "Users retrieve individual framework resources without observing data:request-context-capsule\
+    \ or its context key.\n\n```yaml\nshape:\n  applied: 2026-08-18; each accessor\
+    \ takes the request handle, and the Context-suffixed form beside it takes context.Context\
+    \ for the layers below the handler\n  governed_by: policy:request-scoped-accessor-shape,\
+    \ which also records what deliberately stayed on the context\n  second_transport:\
+    \ each base form is registered per requirement:pw-call-registration, so the request\
+    \ argument collapses onto the fasthttp request value rather than refusing the\
+    \ handler; pwfast declares both spellings over one body\nsurface:\n  - pw.Context(r)\
+    \ returns the request's context.Context, and is the supported crossing between\
+    \ the two forms\n  - pw.Config[T](r) returns one immutable typed binding\n  -\
+    \ pw.Logger(r) returns api:logger bound to the current trace and request\n  -\
+    \ pw.DB(r) returns the *sql.DB of the effective group and presence\n  - pw.SelectDB\
+    \ pins a group, per api:database-selection\n  - generated SQL retrieves the active\
+    \ database or transaction executor\n  - session accessors return validated typed\
+    \ session state\n  - pw.StartSpan and pw.StartSpanKind open a child of the active\
+    \ span\n  - pw.TraceID, pw.SpanID, and pw.Traced report the current correlation\n\
+    \  - security accessors expose validated request security state\nrules:\n  - accessors\
+    \ accept nil or missing values without unchecked type assertion panic\n  - optional\
+    \ resources report absence explicitly\n  - config lookup uses the registered generated\
+    \ Go type identity\n  - logger lookup never returns nil, and the zero logger discards\
+    \ rather than panicking\n  - the request root span is opened by the framework,\
+    \ so a handler starts only spans describing its own work\n  - span creation is\
+    \ skipped entirely when nothing exports, because an unexported span is pure cost\n\
+    \  - authorization checks consume authenticated state, never unverified request\
+    \ credentials\n  - CSRF token access never exposes the session secret and token\
+    \ values must not be logged\n  - generated SQL context functions select the active\
+    \ executor\n  - executor and pool lookup resolve the effective group before the\
+    \ executor, per api:database-selection\n  - decision:tinybind-sql-runtime consumes\
+    \ the configured generated-code executor resolver\n  - api:transaction-runner\
+    \ is the only user-facing way to create a transaction-bearing child capsule\n\
+    \  - callers cannot enumerate or mutate capsule fields\n```"
+  shape:
+    applied: 2026-08-18; each accessor takes the request handle, and the Context-suffixed
+      form beside it takes context.Context for the layers below the handler
+    governed_by: policy:request-scoped-accessor-shape, which also records what deliberately
+      stayed on the context
+    second_transport: each base form is registered per requirement:pw-call-registration,
+      so the request argument collapses onto the fasthttp request value rather than
+      refusing the handler; pwfast declares both spellings over one body
+  surface:
+  - pw.Context(r) returns the request's context.Context, and is the supported crossing
+    between the two forms
+  - pw.Config[T](r) returns one immutable typed binding
+  - pw.Logger(r) returns api:logger bound to the current trace and request
+  - pw.DB(r) returns the *sql.DB of the effective group and presence
+  - pw.SelectDB pins a group, per api:database-selection
+  - generated SQL retrieves the active database or transaction executor
+  - session accessors return validated typed session state
+  - pw.StartSpan and pw.StartSpanKind open a child of the active span
+  - pw.TraceID, pw.SpanID, and pw.Traced report the current correlation
+  - security accessors expose validated request security state
+  rules:
+  - accessors accept nil or missing values without unchecked type assertion panic
+  - optional resources report absence explicitly
+  - config lookup uses the registered generated Go type identity
+  - logger lookup never returns nil, and the zero logger discards rather than panicking
+  - the request root span is opened by the framework, so a handler starts only spans
+    describing its own work
+  - span creation is skipped entirely when nothing exports, because an unexported
+    span is pure cost
+  - authorization checks consume authenticated state, never unverified request credentials
+  - CSRF token access never exposes the session secret and token values must not be
+    logged
+  - generated SQL context functions select the active executor
+  - executor and pool lookup resolve the effective group before the executor, per
+    api:database-selection
+  - decision:tinybind-sql-runtime consumes the configured generated-code executor
+    resolver
+  - api:transaction-runner is the only user-facing way to create a transaction-bearing
+    child capsule
+  - callers cannot enumerate or mutate capsule fields
+relations:
+- relation: mentions
+  to: api:database-selection
+  resolution: resolved
+- relation: mentions
+  to: api:logger
+  resolution: resolved
+- relation: mentions
+  to: api:transaction-runner
+  resolution: resolved
+- relation: mentions
+  to: data:request-context-capsule
+  resolution: resolved
+- relation: mentions
+  to: decision:tinybind-sql-runtime
+  resolution: resolved
+- relation: mentions
+  to: policy:request-scoped-accessor-shape
+  resolution: resolved
+- relation: mentions
+  to: requirement:pw-call-registration
+  resolution: resolved

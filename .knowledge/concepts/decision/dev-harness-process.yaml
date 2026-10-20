@@ -1,0 +1,152 @@
+id: decision:dev-harness-process
+type: decision
+title: Development Harness Process
+summary: A requirement:dev-console pane that must call the project's own generated
+  code does so through one generated pwdev main package pw builds and runs, rather
+  than inside the pw process or inside the application process.
+facts:
+  legacy_body: "A requirement:dev-console pane that must call the project's own generated\
+    \ code does so through one generated pwdev main package pw builds and runs, rather\
+    \ than inside the pw process or inside the application process.\n\n```yaml\nstatus:\
+    \ accepted\nsupersedes: the storybook-only reading of this mechanism, which was\
+    \ the first pane to need it and not the only one\nproblem:\n  - a generated template\
+    \ or query function is Go code in the project's own module, so only a process\
+    \ compiled from that module can call it\n  - pw is a released binary that never\
+    \ linked the project, per decision:host-tools-target-runtime\n  - the application\
+    \ is the one process that does link it, and policy:dev-console-boundary refuses\
+    \ to give it a development route\ndecision:\n  artifact: one main package api:cli-generate\
+    \ emits under the pwdev build constraint\n  content: blank imports of every package\
+    \ a pane needs, plus a server over the registries those packages register into\n\
+    \  location:\n    directory: .pwstorybook at the project root\n    why_dotted:\
+    \ the go tool skips a dot directory when it expands a wildcard, so go build ./...\
+    \ and go vet ./... never meet a main package whose only file a build constraint\
+    \ excludes, which would otherwise be an error in every project that has one\n\
+    \    reachable: an explicit path still resolves it, which is how pw runs it\n\
+    \  registration:\n    shape: one file per template package, generated inside it,\
+    \ so an unexported binder is registered from where it is reachable\n    source:\
+    \ the generated Go rather than the template source, because what the harness calls\
+    \ is the emitted function and its parameter type\n    timing: planned from the\
+    \ output the same run is about to write, not from the disk, so api:cli-check still\
+    \ reports drift without writing anything\n    sweep: the registration file is\
+    \ exempt from the stale-generated-file sweep, which runs before it and would otherwise\
+    \ delete on every run what this step writes on every run\n  address:\n    mechanism:\
+    \ pw reserves a loopback port and hands it to the harness, so the console can\
+    \ proxy to an address it chose rather than parse one out of a shared log stream\n\
+    \    pane_before_process: the pane is registered before the first generation run\
+    \ produces the harness, so the handler is an indirection over an address filled\
+    \ in later and reports its own absence until then\n  build: host Go with the pwdev\
+    \ tag, the way api:cli-dev already builds the application\n  lifetime: started\
+    \ with requirement:dev-console, rebuilt on the same watched changes, and stopped\
+    \ with the developer loop\n  mount: requirement:dev-console proxies each pane\
+    \ to it, so the developer still sees one listener and one URL\n  shared: one harness\
+    \ for every such pane, because a second one would double the build time of every\
+    \ edit for no isolation the panes need\ntinygo:\n  toolchain: host Go, never TinyGo,\
+    \ since nothing here is deployed and the harness never has to satisfy rule:tinygo-runtime-compatibility\n\
+    \  consequence: a pane may use a host-only engine the application could not link,\
+    \ which is what makes this placement worth its cost\n  precedent: decision:migration-execution-split\
+    \ already crosses this line in the other direction, delegating host-only system:goose\
+    \ work from a TinyGo application out to a pw child process\n  non_claim: a harness\
+    \ that runs is no evidence the same code links under TinyGo; api:cli-build and\
+    \ rule:tinygo-runtime-compatibility remain the only such evidence\nconsumers:\n\
+    \  - requirement:template-storybook\ndatabase:\n  rule: a harness pane opens no\
+    \ database connection\n  reason: requirement:contrib-sqlite is embedded, so the\
+    \ development connection is a process-local handle rather than an endpoint; an\
+    \ in-process sqlite://:memory: is unreachable outright, and a file-backed one\
+    \ would make the harness a second writer against a pool scaffolded at one connection\n\
+    \  instead: decision:dev-application-attachment serves any pane needing a live\
+    \ connection\n  boundary: this decision therefore covers panes that need generated\
+    \ code and nothing running, which is why requirement:template-storybook fits it\
+    \ and requirement:dev-query-runner does not\nalternatives_rejected:\n  reinterpret_in_pw:\n\
+    \    shape: parse .pw.html and .pw.sql in the pw process and execute them with\
+    \ a host-side implementation\n    why_not: it is a second implementation of flow:template-generation\
+    \ and flow:sql-generation, so a pane would drift from the code the application\
+    \ runs and would stop being evidence; it would also bypass api:instrumented-sql-executor\
+    \ and produce no requirement:query-diagnostics record\n  serve_from_the_application:\n\
+    \    shape: a pwdev route in the application process\n    why_not: policy:dev-console-boundary\
+    \ refuses a development route, and the pane would die with an application that\
+    \ is down most of the time between two working states\n  plugin_or_shared_object:\n\
+    \    shape: load the project's generated code into pw at runtime\n    why_not:\
+    \ Go plugins constrain toolchain and platform, and the release pipeline of data:release-artifact\
+    \ is a cross-compile that cannot promise a match\n  export_everything:\n    shape:\
+    \ make every generated symbol exported so an ordinary package could import it\n\
+    \    why_not: it changes the application's public surface to serve a development\
+    \ tool\ncost:\n  - one more process in the developer loop, and one more thing\
+    \ whose build can fail\n  - a harness build failure is reported as data:dev-loop-state\
+    \ like any other, disables the panes that need it, and never ends the loop\nrelations:\n\
+    \  generated_output: policy:generated-artifacts governs the emitted files, which\
+    \ are regenerated rather than edited\n  precedent: decision:passkey-test-authenticator\
+    \ already keeps a development-only implementation out of a package every application\
+    \ imports\n```"
+  legacy_parse_issues:
+  - kind: legacy_parse_error
+    block: 0
+    message: "mapping values are not allowed here\n  in \"<unicode string>\", line\
+      \ 35, column 162:\n     ... ; an in-process sqlite://:memory: is unreachable\
+      \ outright, and a ... \n                                         ^"
+relations:
+- relation: mentions
+  to: api:cli-build
+  resolution: resolved
+- relation: mentions
+  to: api:cli-check
+  resolution: resolved
+- relation: mentions
+  to: api:cli-dev
+  resolution: resolved
+- relation: mentions
+  to: api:cli-generate
+  resolution: resolved
+- relation: mentions
+  to: api:instrumented-sql-executor
+  resolution: resolved
+- relation: mentions
+  to: data:dev-loop-state
+  resolution: resolved
+- relation: mentions
+  to: data:release-artifact
+  resolution: resolved
+- relation: mentions
+  to: decision:dev-application-attachment
+  resolution: resolved
+- relation: mentions
+  to: decision:host-tools-target-runtime
+  resolution: resolved
+- relation: mentions
+  to: decision:migration-execution-split
+  resolution: resolved
+- relation: mentions
+  to: decision:passkey-test-authenticator
+  resolution: resolved
+- relation: mentions
+  to: flow:sql-generation
+  resolution: resolved
+- relation: mentions
+  to: flow:template-generation
+  resolution: resolved
+- relation: mentions
+  to: policy:dev-console-boundary
+  resolution: resolved
+- relation: mentions
+  to: policy:generated-artifacts
+  resolution: resolved
+- relation: mentions
+  to: requirement:contrib-sqlite
+  resolution: resolved
+- relation: mentions
+  to: requirement:dev-console
+  resolution: resolved
+- relation: mentions
+  to: requirement:dev-query-runner
+  resolution: resolved
+- relation: mentions
+  to: requirement:query-diagnostics
+  resolution: resolved
+- relation: mentions
+  to: requirement:template-storybook
+  resolution: resolved
+- relation: mentions
+  to: rule:tinygo-runtime-compatibility
+  resolution: resolved
+- relation: mentions
+  to: system:goose
+  resolution: resolved

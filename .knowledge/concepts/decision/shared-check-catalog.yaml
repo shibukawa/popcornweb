@@ -1,0 +1,120 @@
+id: decision:shared-check-catalog
+type: decision
+title: Shared Check Catalog
+summary: Startup validation and api:cli-doctor read one internal catalog of data:diagnostic-check
+  definitions, because the same condition implemented twice diverges.
+facts:
+  legacy_body: "Startup validation and api:cli-doctor read one internal catalog of\
+    \ data:diagnostic-check definitions, because the same condition implemented twice\
+    \ diverges.\n\n```yaml\nstatus: proposed\nproblem:\n  - api:application-lifecycle\
+    \ must reject a fatal misconfiguration before request acceptance\n  - requirement:project-diagnostics\
+    \ must report every condition, fatal or not, without starting anything\n  - the\
+    \ overlap is large, and a second implementation of \"session backend is not linked\"\
+    \ drifts in wording, severity, and edge cases\ndecision:\n  ownership: one internal\
+    \ package holds every check definition and its message\n  selection: a runner\
+    \ picks checks by declared inputs and phase, never by copying logic\n  startup:\n\
+    \    runs: checks whose inputs exist in-process and whose severity is fatal for\
+    \ the resolved environment\n    behavior: unchanged; the first fatal finding still\
+    \ fails before request acceptance\n    warnings: emitted as warnings where policy\
+    \ already says so, as policy:query-log-safety does, and never promoted to failures\n\
+    \  doctor:\n    runs: every check whose inputs it can build from the project\n\
+    \    behavior: collect all, rank, and report\n  vet:\n    runs: checks declaring\
+    \ typed application Go syntax as an input, which is rule:transport-handle-checks\
+    \ today\n    form: a go/analysis analyzer, so the runner is go vet or a linter\
+    \ rather than this framework's CLI\n    behavior: report positions in application\
+    \ source; startup and doctor skip these checks for lack of the input\ninput_asymmetry:\n\
+    \  startup_only: the deployment's environment variables, CLI arguments, live connections,\
+    \ and the actual registrations\n  doctor_only: project files, the import graph,\
+    \ data:route-table, generated artifacts, other environments' configuration files\n\
+    \  vet_only: the typed syntax of application Go packages, which decision:host-side-diagnostic-analysis\
+    \ keeps out of doctor\n  shared: the merged configuration values the check reads\n\
+    \  consequence: a check is not expected to run everywhere; its declared inputs\
+    \ decide, and each runner reports what it skipped\nrules:\n  - one condition has\
+    \ one identifier, one title, and one remedy, wherever it fires\n  - a check never\
+    \ reads a source outside its declared inputs, so a startup check cannot start\
+    \ depending on the filesystem\n  - adding a check is adding a catalog entry, and\
+    \ its documentation page follows from data:diagnostic-check\n  - the catalog is\
+    \ internal; applications and plugins do not register checks in the first release\n\
+    consequences:\n  - a message an operator saw at startup is the message doctor\
+    \ prints, which is what makes the identifier worth citing\n  - the catalog is\
+    \ the source for the generated diagnostics documentation\n  - a check whose inputs\
+    \ only doctor has is normal rather than an exception, which keeps startup from\
+    \ growing filesystem knowledge\n```"
+  status: proposed
+  problem:
+  - api:application-lifecycle must reject a fatal misconfiguration before request
+    acceptance
+  - requirement:project-diagnostics must report every condition, fatal or not, without
+    starting anything
+  - the overlap is large, and a second implementation of "session backend is not linked"
+    drifts in wording, severity, and edge cases
+  decision:
+    ownership: one internal package holds every check definition and its message
+    selection: a runner picks checks by declared inputs and phase, never by copying
+      logic
+    startup:
+      runs: checks whose inputs exist in-process and whose severity is fatal for the
+        resolved environment
+      behavior: unchanged; the first fatal finding still fails before request acceptance
+      warnings: emitted as warnings where policy already says so, as policy:query-log-safety
+        does, and never promoted to failures
+    doctor:
+      runs: every check whose inputs it can build from the project
+      behavior: collect all, rank, and report
+    vet:
+      runs: checks declaring typed application Go syntax as an input, which is rule:transport-handle-checks
+        today
+      form: a go/analysis analyzer, so the runner is go vet or a linter rather than
+        this framework's CLI
+      behavior: report positions in application source; startup and doctor skip these
+        checks for lack of the input
+  input_asymmetry:
+    startup_only: the deployment's environment variables, CLI arguments, live connections,
+      and the actual registrations
+    doctor_only: project files, the import graph, data:route-table, generated artifacts,
+      other environments' configuration files
+    vet_only: the typed syntax of application Go packages, which decision:host-side-diagnostic-analysis
+      keeps out of doctor
+    shared: the merged configuration values the check reads
+    consequence: a check is not expected to run everywhere; its declared inputs decide,
+      and each runner reports what it skipped
+  rules:
+  - one condition has one identifier, one title, and one remedy, wherever it fires
+  - a check never reads a source outside its declared inputs, so a startup check cannot
+    start depending on the filesystem
+  - adding a check is adding a catalog entry, and its documentation page follows from
+    data:diagnostic-check
+  - the catalog is internal; applications and plugins do not register checks in the
+    first release
+  consequences:
+  - a message an operator saw at startup is the message doctor prints, which is what
+    makes the identifier worth citing
+  - the catalog is the source for the generated diagnostics documentation
+  - a check whose inputs only doctor has is normal rather than an exception, which
+    keeps startup from growing filesystem knowledge
+lifecycle: proposed
+relations:
+- relation: mentions
+  to: api:application-lifecycle
+  resolution: resolved
+- relation: mentions
+  to: api:cli-doctor
+  resolution: resolved
+- relation: mentions
+  to: data:diagnostic-check
+  resolution: resolved
+- relation: mentions
+  to: data:route-table
+  resolution: resolved
+- relation: mentions
+  to: decision:host-side-diagnostic-analysis
+  resolution: resolved
+- relation: mentions
+  to: policy:query-log-safety
+  resolution: resolved
+- relation: mentions
+  to: requirement:project-diagnostics
+  resolution: resolved
+- relation: mentions
+  to: rule:transport-handle-checks
+  resolution: resolved

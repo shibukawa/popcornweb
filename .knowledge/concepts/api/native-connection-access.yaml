@@ -1,0 +1,173 @@
+id: api:native-connection-access
+type: api
+title: Native Connection Access
+summary: postgres.WithConn hands the pgx connection behind a requirement:pgx-native-execution
+  connection to a callback, so pgx capabilities stay reachable without a pgx type
+  entering the pw surface.
+facts:
+  legacy_body: "postgres.WithConn hands the pgx connection behind a requirement:pgx-native-execution\
+    \ connection to a callback, so pgx capabilities stay reachable without a pgx type\
+    \ entering the pw surface.\n\n```yaml\nstatus: implemented 2026-08-09\nrequirement:\
+    \ requirement:native-pgx-escape-hatch\nsurface:\n  - WithConn(context.Context,\
+    \ func(*pgx.Conn) error) error\npackage: the postgres engine package, which an\
+    \ application already blank-imports\n  to select the scheme; pw itself gains nothing\n\
+    resolution: >\n  pwruntime.SQLExecutor, so the effective group and any open transaction\
+    \ are\n  resolved by the same code one generated statement passes through, then\
+    \ the\n  query-diagnostics wrapper is peeled by a structural Unwrap assertion\
+    \ and the\n  result is matched against this package's own native handle types\n\
+    shape_source: the WithConn of system:tinygodriver, which solved the same problem\n\
+    \  for a *sql.DB and whose signature this keeps so the two read alike\ntype_identity:\n\
+    \  named_through: the tinygodriver database/pgx aliases, which are the upstream\n\
+    \    pgx types on host Go and the vendored fork under TinyGo\n  consequence: caller\
+    \ code written against those names compiles on both\n    compilers; code naming\
+    \ jackc pgx directly is host Go only, and no accessor\n    can fix that\nconnection:\n\
+    \  group: the effective group of the context, per api:database-selection\n  no_scope_open:\
+    \ lease a connection from the pool and release it after the\n    callback\n  scope_open:\
+    \ the connection the scope's transaction is executing on, per\n    decision:escape-hatch-transaction-scope\n\
+    \  wrong_engine: a named error identifying the dialect, never a panic and never\n\
+    \    a nil connection\nlifetime:\n  rule: nothing derived from the connection\
+    \ outlives the callback, including\n    BatchResults, Rows, and a LargeObjects\
+    \ handle\n  why: >\n    the pooled connection returns to the pool when the callback\
+    \ ends, and on a\n    leased conn the framework has no way to know a caller still\
+    \ holds a cursor\n    on it. A caller keeping rows copies them out inside the\
+    \ callback\n  streaming_is_fine: iterating Rows with Next inside the callback\
+    \ is normal;\n    what is forbidden is letting the value escape\nwhat_it_reaches:\n\
+    \  - SendBatch, whose per-engine standing is rule:batch-engine-capability\n  -\
+    \ CopyFrom, the bulk-ingest path deliberately excluded from any batch\n  - LISTEN\
+    \ and NOTIFY, through Exec and WaitForNotification\n  - errors.As against the\
+    \ pgx error type for SQLSTATE\nobservability:\n  gap: >\n    work inside the callback\
+    \ does not pass through\n    api:instrumented-sql-executor, so it produces no\
+    \ data:query-record of its\n    own and flow:query-diagnostics goes dark for the\
+    \ duration\n  closed_by_the_caller: >\n    the framework's general observability\
+    \ surface already covers it, and needs\n    no addition. A caller opens a span\
+    \ around the call and logs inside it;\n    because pw.Logger reads the span active\
+    \ on the context, those records\n    correlate with that span without being told\
+    \ to\n  recipe:\n    span: pw.StartSpanKind with pw.SpanKindClient, since the\
+    \ work leaves the\n      process, named for the operation rather than the statement\n\
+    \    log: pw.Logger inside that span, carrying the counts the caller cares about\n\
+    \      as pw.Int and pw.Duration attributes\n    scope: one span for the batch\
+    \ or copy as a whole, not one per queued\n      statement, because per-statement\
+    \ timing is what the hatch gave up\n    documented_in: the guide owned by requirement:native-pgx-escape-hatch\n\
+    \  why_not_instrumented_here: >\n    observing from inside would mean wrapping\
+    \ every pgx verb the callback might\n    reach, which is the surface widening\
+    \ this accessor exists to avoid, and the\n    wrapper would still see only the\
+    \ verbs it anticipated\n  the_seam_that_would:\n    what: pgx traces its own work\
+    \ through tracer interfaces installed on the\n      connection config, covering\
+    \ batches with no wrapping at all\n    blocked_by: system:tinygodriver aliases\
+    \ the query tracer but not the batch\n      one, so a framework-wide tracer needs\
+    \ that alias upstream first\n    standing: a later path, deliberately not part\
+    \ of this requirement\nrules:\n  - the callback runs on one connection, so a caller\
+    \ cannot fan out across the\n    pool from inside it\n  - the accessor opens,\
+    \ commits, and rolls back nothing, per\n    decision:explicit-transaction-boundary\n\
+    \  - a panic in the callback releases the connection before it propagates\n  -\
+    \ nothing here appears in pw; a project that never imports the engine package\n\
+    \    directly never sees a pgx type\n```"
+  status: implemented 2026-08-09
+  requirement: requirement:native-pgx-escape-hatch
+  surface:
+  - WithConn(context.Context, func(*pgx.Conn) error) error
+  package: the postgres engine package, which an application already blank-imports
+    to select the scheme; pw itself gains nothing
+  resolution: 'pwruntime.SQLExecutor, so the effective group and any open transaction
+    are resolved by the same code one generated statement passes through, then the
+    query-diagnostics wrapper is peeled by a structural Unwrap assertion and the result
+    is matched against this package''s own native handle types
+
+    '
+  shape_source: the WithConn of system:tinygodriver, which solved the same problem
+    for a *sql.DB and whose signature this keeps so the two read alike
+  type_identity:
+    named_through: the tinygodriver database/pgx aliases, which are the upstream pgx
+      types on host Go and the vendored fork under TinyGo
+    consequence: caller code written against those names compiles on both compilers;
+      code naming jackc pgx directly is host Go only, and no accessor can fix that
+  connection:
+    group: the effective group of the context, per api:database-selection
+    no_scope_open: lease a connection from the pool and release it after the callback
+    scope_open: the connection the scope's transaction is executing on, per decision:escape-hatch-transaction-scope
+    wrong_engine: a named error identifying the dialect, never a panic and never a
+      nil connection
+  lifetime:
+    rule: nothing derived from the connection outlives the callback, including BatchResults,
+      Rows, and a LargeObjects handle
+    why: 'the pooled connection returns to the pool when the callback ends, and on
+      a leased conn the framework has no way to know a caller still holds a cursor
+      on it. A caller keeping rows copies them out inside the callback
+
+      '
+    streaming_is_fine: iterating Rows with Next inside the callback is normal; what
+      is forbidden is letting the value escape
+  what_it_reaches:
+  - SendBatch, whose per-engine standing is rule:batch-engine-capability
+  - CopyFrom, the bulk-ingest path deliberately excluded from any batch
+  - LISTEN and NOTIFY, through Exec and WaitForNotification
+  - errors.As against the pgx error type for SQLSTATE
+  observability:
+    gap: 'work inside the callback does not pass through api:instrumented-sql-executor,
+      so it produces no data:query-record of its own and flow:query-diagnostics goes
+      dark for the duration
+
+      '
+    closed_by_the_caller: 'the framework''s general observability surface already
+      covers it, and needs no addition. A caller opens a span around the call and
+      logs inside it; because pw.Logger reads the span active on the context, those
+      records correlate with that span without being told to
+
+      '
+    recipe:
+      span: pw.StartSpanKind with pw.SpanKindClient, since the work leaves the process,
+        named for the operation rather than the statement
+      log: pw.Logger inside that span, carrying the counts the caller cares about
+        as pw.Int and pw.Duration attributes
+      scope: one span for the batch or copy as a whole, not one per queued statement,
+        because per-statement timing is what the hatch gave up
+      documented_in: the guide owned by requirement:native-pgx-escape-hatch
+    why_not_instrumented_here: 'observing from inside would mean wrapping every pgx
+      verb the callback might reach, which is the surface widening this accessor exists
+      to avoid, and the wrapper would still see only the verbs it anticipated
+
+      '
+    the_seam_that_would:
+      what: pgx traces its own work through tracer interfaces installed on the connection
+        config, covering batches with no wrapping at all
+      blocked_by: system:tinygodriver aliases the query tracer but not the batch one,
+        so a framework-wide tracer needs that alias upstream first
+      standing: a later path, deliberately not part of this requirement
+  rules:
+  - the callback runs on one connection, so a caller cannot fan out across the pool
+    from inside it
+  - the accessor opens, commits, and rolls back nothing, per decision:explicit-transaction-boundary
+  - a panic in the callback releases the connection before it propagates
+  - nothing here appears in pw; a project that never imports the engine package directly
+    never sees a pgx type
+relations:
+- relation: mentions
+  to: api:database-selection
+  resolution: resolved
+- relation: mentions
+  to: api:instrumented-sql-executor
+  resolution: resolved
+- relation: mentions
+  to: data:query-record
+  resolution: resolved
+- relation: mentions
+  to: decision:escape-hatch-transaction-scope
+  resolution: resolved
+- relation: mentions
+  to: decision:explicit-transaction-boundary
+  resolution: resolved
+- relation: mentions
+  to: flow:query-diagnostics
+  resolution: resolved
+- relation: mentions
+  to: requirement:native-pgx-escape-hatch
+  resolution: resolved
+- relation: mentions
+  to: requirement:pgx-native-execution
+  resolution: resolved
+- relation: mentions
+  to: rule:batch-engine-capability
+  resolution: resolved
+- relation: mentions
+  to: system:tinygodriver
+  resolution: resolved

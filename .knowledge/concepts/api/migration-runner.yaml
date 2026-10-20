@@ -1,0 +1,95 @@
+id: api:migration-runner
+type: api
+title: Migration Runner
+summary: The migration runner is the application-side surface that applies data:migration-source
+  through whichever backend decision:migration-execution-split selects.
+facts:
+  legacy_body: "The migration runner is the application-side surface that applies\
+    \ data:migration-source through whichever backend decision:migration-execution-split\
+    \ selects.\n\n```yaml\nopt_in: blank import of the migration engine package per\
+    \ decision:goose-migration-engine\nsurface:\n  - Migrate(context.Context, ...MigrateOption)\
+    \ (Result, error)\n  - Status(context.Context, ...MigrateOption) ([]VersionState,\
+    \ error)\n  - WithDir(path string)\n  - WithFS(fs.FS)\noptions:\n  default_source:\
+    \ data:project-config migration.dir\n  embedded_source: WithFS supplies an embed.FS\
+    \ of the same tree\nresult:\n  - previous version\n  - current version\n  - applied\
+    \ versions in order\ndatabase:\n  source: the pool owned by decision:config-driven-database\n\
+    \  rule: the runner never opens a second pool when the framework pool is available\n\
+    framework_action:\n  flag: --pw-print-dsn, a framework-owned action mirroring\
+    \ the api:subcommands built-in handling\n  purpose: lets system:pw-cli read the\
+    \ effective DSN without reimplementing configuration precedence\n  behavior: parse\
+    \ configuration, validate the configured driver and DSN, write the DSN to stdout,\
+    \ exit\n  boundary: the value crosses a pipe to the parent process only and is\
+    \ never logged\nstartup:\n  default: disabled\n  enabled_by: explicit configuration\
+    \ only\n  policy: policy:migration-safety\nbackends:\n  in_process: goose Provider\
+    \ linked into a host Go build\n  delegated: pw child process for a TinyGo build\n\
+    \  guarantee: identical Result, ordering, and error classification from both backends\n\
+    replay: rule:multi-statement-sql-execution governs how a snapshot is executed\n\
+    errors:\n  - pending migration source is unreadable\n  - recorded version is ahead\
+    \ of available sources\n  - a migration failed and was rolled back where the dialect\
+    \ allows it\n  - the delegated backend could not locate or run pw\n```"
+  opt_in: blank import of the migration engine package per decision:goose-migration-engine
+  surface:
+  - Migrate(context.Context, ...MigrateOption) (Result, error)
+  - Status(context.Context, ...MigrateOption) ([]VersionState, error)
+  - WithDir(path string)
+  - WithFS(fs.FS)
+  options:
+    default_source: data:project-config migration.dir
+    embedded_source: WithFS supplies an embed.FS of the same tree
+  result:
+  - previous version
+  - current version
+  - applied versions in order
+  database:
+    source: the pool owned by decision:config-driven-database
+    rule: the runner never opens a second pool when the framework pool is available
+  framework_action:
+    flag: --pw-print-dsn, a framework-owned action mirroring the api:subcommands built-in
+      handling
+    purpose: lets system:pw-cli read the effective DSN without reimplementing configuration
+      precedence
+    behavior: parse configuration, validate the configured driver and DSN, write the
+      DSN to stdout, exit
+    boundary: the value crosses a pipe to the parent process only and is never logged
+  startup:
+    default: disabled
+    enabled_by: explicit configuration only
+    policy: policy:migration-safety
+  backends:
+    in_process: goose Provider linked into a host Go build
+    delegated: pw child process for a TinyGo build
+    guarantee: identical Result, ordering, and error classification from both backends
+  replay: rule:multi-statement-sql-execution governs how a snapshot is executed
+  errors:
+  - pending migration source is unreadable
+  - recorded version is ahead of available sources
+  - a migration failed and was rolled back where the dialect allows it
+  - the delegated backend could not locate or run pw
+relations:
+- relation: mentions
+  to: api:subcommands
+  resolution: resolved
+- relation: mentions
+  to: data:migration-source
+  resolution: resolved
+- relation: mentions
+  to: data:project-config
+  resolution: resolved
+- relation: mentions
+  to: decision:config-driven-database
+  resolution: resolved
+- relation: mentions
+  to: decision:goose-migration-engine
+  resolution: resolved
+- relation: mentions
+  to: decision:migration-execution-split
+  resolution: resolved
+- relation: mentions
+  to: policy:migration-safety
+  resolution: resolved
+- relation: mentions
+  to: rule:multi-statement-sql-execution
+  resolution: resolved
+- relation: mentions
+  to: system:pw-cli
+  resolution: resolved

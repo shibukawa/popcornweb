@@ -1,0 +1,102 @@
+id: data:query-diagnostics-config
+type: data
+title: Query Diagnostics Config
+summary: The `observability.query` sub-binding configures requirement:query-diagnostics
+  as part of data:observability-runtime-config rather than as database pool configuration.
+facts:
+  legacy_body: "The `observability.query` sub-binding configures requirement:query-diagnostics\
+    \ as part of data:observability-runtime-config rather than as database pool configuration.\n\
+    \n```yaml\nplacement:\n  binding: observability\n  rationale: the feature produces\
+    \ log records, so it follows the logger lifecycle; data:middleware-runtime-config\
+    \ rdb fields stay pool-only\nfields:\n  enabled: auto, on, or off\n  level: severity\
+    \ for a normal record\n  slow_threshold: duration; zero disables slow detection,\
+    \ EXPLAIN, and reproduction\n  slow_level: severity for a record marked slow\n\
+    \  bind_values: auto, on, or off\n  explain: bool\n  reproduction: bool\n  max_sql_length:\
+    \ positive integer\n  max_value_length: positive integer\ndefaults:\n  enabled:\
+    \ auto\n  level: info\n  slow_threshold: 200ms\n  slow_level: warn\n  bind_values:\
+    \ auto\n  explain: true\n  reproduction: true\n  max_sql_length: 4096\n  max_value_length:\
+    \ 256\nlevel_default:\n  value: info rather than debug\n  reason: api:logger is\
+    \ still backed by the standard library logger and nothing builds a handler from\
+    \ minimum_level, so a debug record would be dropped; a development aid that is\
+    \ on by default has to be visible by default\nauto:\n  dev: enabled and bind_values\
+    \ resolve to on when data:runtime-environment is dev\n  other: both resolve to\
+    \ off\nrules:\n  - registration is automatic in pw, like the rest of data:observability-runtime-config\n\
+    \  - an explicit on outside dev is honored and surfaced through policy:query-log-safety\n\
+    \  - explain and reproduction have no effect while enabled resolves to off or\
+    \ slow_threshold is zero\n  - reproduction has no effect while bind_values resolves\
+    \ to off, per rule:query-reproduction-format\n  - level and slow_level are still\
+    \ filtered by the process logger, per policy:log-emission\n  - a zero bound means\
+    \ unset and takes its default, so a partial configuration is still bounded\n \
+    \ - reject an unknown enum value, a negative bound, a negative duration, and an\
+    \ unknown key at startup\n  - an invalid value disables diagnostics rather than\
+    \ half-enabling them; validation reports it before requests are served\n```"
+  placement:
+    binding: observability
+    rationale: the feature produces log records, so it follows the logger lifecycle;
+      data:middleware-runtime-config rdb fields stay pool-only
+  fields:
+    enabled: auto, on, or off
+    level: severity for a normal record
+    slow_threshold: duration; zero disables slow detection, EXPLAIN, and reproduction
+    slow_level: severity for a record marked slow
+    bind_values: auto, on, or off
+    explain: bool
+    reproduction: bool
+    max_sql_length: positive integer
+    max_value_length: positive integer
+  defaults:
+    enabled: auto
+    level: info
+    slow_threshold: 200ms
+    slow_level: warn
+    bind_values: auto
+    explain: true
+    reproduction: true
+    max_sql_length: 4096
+    max_value_length: 256
+  level_default:
+    value: info rather than debug
+    reason: api:logger is still backed by the standard library logger and nothing
+      builds a handler from minimum_level, so a debug record would be dropped; a development
+      aid that is on by default has to be visible by default
+  auto:
+    dev: enabled and bind_values resolve to on when data:runtime-environment is dev
+    other: both resolve to off
+  rules:
+  - registration is automatic in pw, like the rest of data:observability-runtime-config
+  - an explicit on outside dev is honored and surfaced through policy:query-log-safety
+  - explain and reproduction have no effect while enabled resolves to off or slow_threshold
+    is zero
+  - reproduction has no effect while bind_values resolves to off, per rule:query-reproduction-format
+  - level and slow_level are still filtered by the process logger, per policy:log-emission
+  - a zero bound means unset and takes its default, so a partial configuration is
+    still bounded
+  - reject an unknown enum value, a negative bound, a negative duration, and an unknown
+    key at startup
+  - an invalid value disables diagnostics rather than half-enabling them; validation
+    reports it before requests are served
+relations:
+- relation: mentions
+  to: api:logger
+  resolution: resolved
+- relation: mentions
+  to: data:middleware-runtime-config
+  resolution: resolved
+- relation: mentions
+  to: data:observability-runtime-config
+  resolution: resolved
+- relation: mentions
+  to: data:runtime-environment
+  resolution: resolved
+- relation: mentions
+  to: policy:log-emission
+  resolution: resolved
+- relation: mentions
+  to: policy:query-log-safety
+  resolution: resolved
+- relation: mentions
+  to: requirement:query-diagnostics
+  resolution: resolved
+- relation: mentions
+  to: rule:query-reproduction-format
+  resolution: resolved

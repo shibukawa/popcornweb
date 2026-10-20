@@ -1,0 +1,68 @@
+id: rule:template-source-layout
+type: rule
+title: Template Source Layout
+summary: Every .pw.html source the framework writes indents the body of a brace-delimited
+  block one level, so a template reads as the nesting it compiles to.
+facts:
+  legacy_body: "Every .pw.html source the framework writes indents the body of a brace-delimited\
+    \ block one level, so a template reads as the nesting it compiles to.\n\n```yaml\n\
+    applies_to:\n  - the api:cli-init scaffold, including ui:starter-landing-page,\
+    \ the requirement:nested-html-templates document shell, layouts, page-tree pages,\
+    \ and the error templates\n  - the templates api:cli-add and api:cli-new write\n\
+    \  - the template examples in documentation\nexcludes: policy:generated-artifacts\
+    \ output, which gofmt owns\nenforced_by: nothing; the api:cli-init .editorconfig\
+    \ carries the indent width so an editor does not undo it, and no command checks\
+    \ it\nlayout:\n  block_body: indented one level from the line that opens the block\n\
+    \  component_body: no exception; the component brace is a block like any other\n\
+    \  closing: the closing brace or closing tag sits at the level of the line that\
+    \ opened it\n  control_blocks: an if, else, or for block indents its body the\
+    \ same way, which is what they already did\ndefect_this_fixes:\n  before: the\
+    \ component body sat at column zero while the control blocks inside it were indented,\
+    \ so the outermost block was the only one whose nesting was invisible\n  effect:\
+    \ the markup read as if it were beside the component rather than inside it\nnon_goals:\n\
+    \  - a formatter command; this is how sources are written, not a check\n  - a\
+    \ rule over application-owned templates after the scaffold has written them\n\
+    ```"
+  applies_to:
+  - the api:cli-init scaffold, including ui:starter-landing-page, the requirement:nested-html-templates
+    document shell, layouts, page-tree pages, and the error templates
+  - the templates api:cli-add and api:cli-new write
+  - the template examples in documentation
+  excludes: policy:generated-artifacts output, which gofmt owns
+  enforced_by: nothing; the api:cli-init .editorconfig carries the indent width so
+    an editor does not undo it, and no command checks it
+  layout:
+    block_body: indented one level from the line that opens the block
+    component_body: no exception; the component brace is a block like any other
+    closing: the closing brace or closing tag sits at the level of the line that opened
+      it
+    control_blocks: an if, else, or for block indents its body the same way, which
+      is what they already did
+  defect_this_fixes:
+    before: the component body sat at column zero while the control blocks inside
+      it were indented, so the outermost block was the only one whose nesting was
+      invisible
+    effect: the markup read as if it were beside the component rather than inside
+      it
+  non_goals:
+  - a formatter command; this is how sources are written, not a check
+  - a rule over application-owned templates after the scaffold has written them
+relations:
+- relation: mentions
+  to: api:cli-add
+  resolution: resolved
+- relation: mentions
+  to: api:cli-init
+  resolution: resolved
+- relation: mentions
+  to: api:cli-new
+  resolution: resolved
+- relation: mentions
+  to: policy:generated-artifacts
+  resolution: resolved
+- relation: mentions
+  to: requirement:nested-html-templates
+  resolution: resolved
+- relation: mentions
+  to: ui:starter-landing-page
+  resolution: resolved

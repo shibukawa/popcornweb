@@ -1,0 +1,164 @@
+id: api:session-store
+type: api
+title: Session Store Contract
+summary: Session backends persist data:session-record values behind one context-aware
+  contract, and never learn what any slot in them means.
+facts:
+  legacy_body: "Session backends persist data:session-record values behind one context-aware\
+    \ contract, and never learn what any slot in them means.\n\n```yaml\nplacement_of:\
+    \ the session.Private tier of requirement:state-storage-tiers\nplugin_surface:\n\
+    \  - RawStore is the non-generic contract a backend implements over already encoded\
+    \ payloads\n  - RawRecord carries the encoded payload beside the record timestamps\n\
+    \  - session.Backend bundles a RawStore with its optional Close and Prune, per\
+    \ api:session-backend-plugin\nsurface:\n  - Store.Put(context.Context, keyHash,\
+    \ Record) error\n  - Store.Get(context.Context, keyHash) returns Record\n  - Store.Touch(context.Context,\
+    \ keyHash, lastSeenAt, idleExpiresAt) error\n  - Store.Delete(context.Context,\
+    \ keyHash) error\n  - RequestBinder.BindRequest(context.Context, http.ResponseWriter,\
+    \ *http.Request) context.Context, optional\nrequest_binding:\n  purpose: a store\
+    \ whose records live in the browser reaches the request and the response through\
+    \ it\n  caller: api:session-manager, before every store call it makes on behalf\
+    \ of a request\n  backend_stores: implement nothing and receive the context unchanged\n\
+    codec:\n  scope: the api:session-registry slot values only, one codec per slot\n\
+    \  reason: record timestamps stay in backend fields so renewal never rewrites\
+    \ the payload\n  default: session.JSONCodec[T] per slot\n  seam: the host encodes\
+    \ and decodes; a backend receives one opaque byte payload and never sees an application\
+    \ type\n  implemented: session.Typed[T](RawStore, Codec[T]) returns Store[T] over\
+    \ one payload, which the registry replaces\nerrors:\n  - not found or expired\n\
+    \  - unavailable with sanitized backend detail\n  - codec failure\nrules:\n  -\
+    \ honor cancellation and deadlines\n  - never accept or return the raw cookie\
+    \ token\n  - Put replaces one key atomically\n  - Touch never revives an expired\
+    \ or missing record\n  - Touch refuses a renewal past the absolute expiry\n  -\
+    \ Delete is idempotent\n  - returned typed data is treated as immutable\n  - expiry\
+    \ stored by the backend is authoritative over anything the browser presents\n\
+    backend_selection: requirement:state-storage-tiers\nadapters:\n  - session.CookieStore,\
+    \ in the session package itself\n  - imported RDB plugin over database/sql\n \
+    \ - imported Redis-compatible plugin through requirement:contrib-redis-valkey\n\
+    \  - imported DynamoDB plugin through requirement:dynamodb-store\ncookie:\n  backend_name:\
+    \ cookie\n  status: implemented\n  constructor: session.NewCookieStore[T](session.Codec[T],\
+    \ session.CookieStoreOptions)\n  storage: a second browser cookie beside the token\
+    \ cookie, named session.DefaultDataCookieName by default\n  protection: sealed\
+    \ under policy:cookie-value-protection, bound to the key hash of its own token\n\
+    \  expiry: the sealed stamp is authoritative over the cookie attributes the client\
+    \ controls\n  revocation: none; Delete only expires the client copy, per decision:cookie-session-storage\n\
+    \  bounds: the record must fit the browser cookie budget, and an oversized one\
+    \ is refused at the write\n  sweep: none, because nothing accumulates on the server\n\
+    redis:\n  backend_name: redis\n  servers: Redis or Valkey\n  compatibility: requirement:contrib-redis-valkey\n\
+    \  status: implemented\n  session_plugin: popcornweb/sessionstore/redis\n  constructor:\
+    \ redis.NewStore[T](go-redis UniversalClient, session.Codec[T], Options)\n  key_space:\
+    \ configured prefix and the key hash; the store never scans or enumerates\n  expiry:\
+    \ server TTL from the record deadline, with the stored deadline still authoritative\
+    \ on read\n  renewal: SET XX, so a renewal never recreates a collected key\n \
+    \ commands: GET, SET with expiry, SET XX, DEL\n  expiry_sweep: none; the server\
+    \ collects abandoned records\n  client_ownership: the caller opens and closes\
+    \ the client\nrdb:\n  backend_name: rdb\n  session_plugin: popcornweb/sessionstore,\
+    \ with one package per engine under it\n  status: implemented\n  constructor:\
+    \ sessionstore.NewStore(*sql.DB, Options) with the dialect of the resolved DSN\n\
+    \  owned_table: popcornweb_session\n  schema: MigrationSQL publishes the migration\
+    \ file; VerifySchema is the startup check\n  schema_ownership: rule:framework-owned-tables\n\
+    \  dialects: sqlite, postgres, and mysql, each contributed by its own blank import\n\
+    \  dialect_scope: an engine package supplies the DDL, the upsert, the bounded\
+    \ delete, and the catalog query; every other statement is shared\n  expiry_sweep:\
+    \ Prune removes records that expire without being revoked\n  driver_registration:\
+    \ separate popcornweb/database engine import\n  guaranteed_driver: requirement:contrib-sqlite\n\
+    \  in_memory: sqlite://:memory:\n  future_schemes: require implemented and verified\
+    \ drivers before configuration acceptance\n  shared_executor: session.rdb.source\
+    \ middleware uses the pool owned by api:rdb-middleware\ndynamo:\n  backend_name:\
+    \ dynamo\n  session_plugin: popcornweb/sessionstore/dynamo\n  status: designed,\
+    \ per requirement:dynamodb-session-store\n  owned_table: popcornweb_session, created\
+    \ by requirement:dynamodb-migration rather than by a migration file\n  schema:\
+    \ no migration file and no version table; the table definition is generated from\
+    \ the plugin's own tagged type\n  expiry_sweep: none, per decision:dynamodb-session-expiry;\
+    \ a record is judged expired on read and removed by TTL\n  atomic_touch: the renewal\
+    \ is one conditional UpdateItem, so no read-then-write window exists\n  read_consistency:\
+    \ decision:dynamodb-session-read-consistency\n  shared_client: the process client\
+    \ installed by api:dynamo-package; there is no dedicated form\nfirestore:\n  backend_name:\
+    \ firestore\n  session_plugin: popcornweb/sessionstore/firestore\n  status: designed,\
+    \ per requirement:firestore-session-store\n  owned_kind: popcornweb_session, which\
+    \ exists on first write and is neither created nor verified, per decision:firestore-no-schema-application\n\
+    \  schema: none; there is no migration file, no version table, and no table definition\n\
+    \  expiry_sweep: none, per decision:firestore-expiry-policy; a record is judged\
+    \ expired on read and removed by a field TTL policy the deployment applies\n \
+    \ atomic_touch: no; a renewal is a read then a write carrying the update-time\
+    \ precondition, per decision:firestore-conditional-writes\n  read_consistency:\
+    \ strong by default, so decision:dynamodb-session-read-consistency has no counterpart\
+    \ and no key\n  shared_client: the process client installed by api:firestore-package;\
+    \ there is no dedicated form\nplugins: decision:import-registered-session-plugins\n\
+    extension: applications may supply another Store[T] without changing session middleware\n\
+    selection: a configured backend is resolved by name through api:session-backend-plugin\n\
+    ```"
+  legacy_parse_issues:
+  - kind: legacy_parse_error
+    block: 0
+    message: "mapping values are not allowed here\n  in \"<unicode string>\", line\
+      \ 77, column 30:\n      in_memory: sqlite://:memory:\n                     \
+      \            ^"
+relations:
+- relation: mentions
+  to: api:dynamo-package
+  resolution: resolved
+- relation: mentions
+  to: api:firestore-package
+  resolution: resolved
+- relation: mentions
+  to: api:rdb-middleware
+  resolution: resolved
+- relation: mentions
+  to: api:session-backend-plugin
+  resolution: resolved
+- relation: mentions
+  to: api:session-manager
+  resolution: resolved
+- relation: mentions
+  to: api:session-registry
+  resolution: resolved
+- relation: mentions
+  to: data:session-record
+  resolution: resolved
+- relation: mentions
+  to: decision:cookie-session-storage
+  resolution: resolved
+- relation: mentions
+  to: decision:dynamodb-session-expiry
+  resolution: resolved
+- relation: mentions
+  to: decision:dynamodb-session-read-consistency
+  resolution: resolved
+- relation: mentions
+  to: decision:firestore-conditional-writes
+  resolution: resolved
+- relation: mentions
+  to: decision:firestore-expiry-policy
+  resolution: resolved
+- relation: mentions
+  to: decision:firestore-no-schema-application
+  resolution: resolved
+- relation: mentions
+  to: decision:import-registered-session-plugins
+  resolution: resolved
+- relation: mentions
+  to: policy:cookie-value-protection
+  resolution: resolved
+- relation: mentions
+  to: requirement:contrib-redis-valkey
+  resolution: resolved
+- relation: mentions
+  to: requirement:contrib-sqlite
+  resolution: resolved
+- relation: mentions
+  to: requirement:dynamodb-migration
+  resolution: resolved
+- relation: mentions
+  to: requirement:dynamodb-session-store
+  resolution: resolved
+- relation: mentions
+  to: requirement:dynamodb-store
+  resolution: resolved
+- relation: mentions
+  to: requirement:firestore-session-store
+  resolution: resolved
+- relation: mentions
+  to: requirement:state-storage-tiers
+  resolution: resolved
+- relation: mentions
+  to: rule:framework-owned-tables
+  resolution: resolved

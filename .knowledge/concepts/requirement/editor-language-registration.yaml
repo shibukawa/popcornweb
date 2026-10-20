@@ -1,0 +1,126 @@
+id: requirement:editor-language-registration
+type: requirement
+title: Editor Language Registration
+summary: Each concept:template-source-dialects suffix is a distinct editor language
+  with its own identity, icon, comment syntax, and bracket rules, so the editor stops
+  treating the file as plain text before any grammar runs.
+facts:
+  legacy_body: "Each concept:template-source-dialects suffix is a distinct editor\
+    \ language with its own identity, icon, comment syntax, and bracket rules, so\
+    \ the editor stops treating the file as plain text before any grammar runs.\n\n\
+    ```yaml\nstatus: implemented at tools/vscode, version 0.1.0\nstage: 1 of vision:editor-support\n\
+    platform: system:vscode\nlanguages:\n  pw-html:\n    extensions: [\".pw.html\"\
+    ]\n    aliases: [\"Popcorn Web HTML\"]\n    reason: a plain html association would\
+    \ apply an HTML formatter to a file whose header is not HTML\n  pw-sql:\n    extensions:\
+    \ [\".pw.sql\"]\n    aliases: [\"Popcorn Web SQL\"]\n    reason: a plain sql association\
+    \ would send the file to a SQL client extension as an executable script\n  pw-dynamo:\n\
+    \    extensions: [\".pw.dynamo\"]\n    aliases: [\"Popcorn Web DynamoDB\"]\nlanguage_configuration:\n\
+    \  comments: the header comment syntax; the body inherits the embedded language\
+    \ through the rule:template-grammar-scopes embeddedLanguages map\n  brackets_and_autoclosing:\
+    \ braces, parentheses, and angle brackets in pw-html; braces and parentheses elsewhere\n\
+    \  autoclosing_exclusion: no auto-close inside a string or comment scope\n  indentation:\
+    \ increase after an opening declaration brace and after an opening control form\n\
+    configuration_defaults:\n  - per-language defaults only, so a workspace-wide editor\
+    \ setting is untouched\n  - trim trailing whitespace is left to the user, because\
+    \ an HTML body may depend on it\nproject_awareness:\n  reads: data:project-config\
+    \ only to answer whether a suffix sits inside its generate purpose, and never\
+    \ to decide the language\n  absent_config: every feature of this stage works without\
+    \ popcornweb.toml\ngenerated_files:\n  fact: concept:project-layout scaffolds\
+    \ a .vscode/settings.json hiding **/*_pw_gen.go\n  behavior: the extension does\
+    \ not remove or duplicate that entry, and does not hide files on its own\n  proposed:\
+    \ api:cli-init also writes .vscode/extensions.json recommending the extension,\
+    \ deferred until requirement:extension-distribution publishes an identifier\n\
+    acceptance:\n  - opening a .pw.sql selects pw-sql and not sql\n  - opening a .pw.html\
+    \ selects pw-html and not html\n  - the language selector shows all three by their\
+    \ aliases\n  - toggling a comment on a header line uses the header comment syntax,\
+    \ and on an SQL body line uses the SQL one\n  - no setting outside the three language\
+    \ sections is written\n```"
+  status: implemented at tools/vscode, version 0.1.0
+  stage: 1 of vision:editor-support
+  platform: system:vscode
+  languages:
+    pw-html:
+      extensions:
+      - .pw.html
+      aliases:
+      - Popcorn Web HTML
+      reason: a plain html association would apply an HTML formatter to a file whose
+        header is not HTML
+    pw-sql:
+      extensions:
+      - .pw.sql
+      aliases:
+      - Popcorn Web SQL
+      reason: a plain sql association would send the file to a SQL client extension
+        as an executable script
+    pw-dynamo:
+      extensions:
+      - .pw.dynamo
+      aliases:
+      - Popcorn Web DynamoDB
+  language_configuration:
+    comments: the header comment syntax; the body inherits the embedded language through
+      the rule:template-grammar-scopes embeddedLanguages map
+    brackets_and_autoclosing: braces, parentheses, and angle brackets in pw-html;
+      braces and parentheses elsewhere
+    autoclosing_exclusion: no auto-close inside a string or comment scope
+    indentation: increase after an opening declaration brace and after an opening
+      control form
+  configuration_defaults:
+  - per-language defaults only, so a workspace-wide editor setting is untouched
+  - trim trailing whitespace is left to the user, because an HTML body may depend
+    on it
+  project_awareness:
+    reads: data:project-config only to answer whether a suffix sits inside its generate
+      purpose, and never to decide the language
+    absent_config: every feature of this stage works without popcornweb.toml
+  generated_files:
+    fact: concept:project-layout scaffolds a .vscode/settings.json hiding **/*_pw_gen.go
+    behavior: the extension does not remove or duplicate that entry, and does not
+      hide files on its own
+    proposed: api:cli-init also writes .vscode/extensions.json recommending the extension,
+      deferred until requirement:extension-distribution publishes an identifier
+  acceptance:
+  - opening a .pw.sql selects pw-sql and not sql
+  - opening a .pw.html selects pw-html and not html
+  - the language selector shows all three by their aliases
+  - toggling a comment on a header line uses the header comment syntax, and on an
+    SQL body line uses the SQL one
+  - no setting outside the three language sections is written
+acceptance:
+  item-a87548c54174ac77:
+    text: opening a .pw.sql selects pw-sql and not sql
+  item-d99b958190f0469c:
+    text: opening a .pw.html selects pw-html and not html
+  item-54a0784a802aadbc:
+    text: the language selector shows all three by their aliases
+  item-987f82ecc2d406bb:
+    text: toggling a comment on a header line uses the header comment syntax, and
+      on an SQL body line uses the SQL one
+  item-62fed994bd0436c3:
+    text: no setting outside the three language sections is written
+relations:
+- relation: mentions
+  to: api:cli-init
+  resolution: resolved
+- relation: mentions
+  to: concept:project-layout
+  resolution: resolved
+- relation: mentions
+  to: concept:template-source-dialects
+  resolution: resolved
+- relation: mentions
+  to: data:project-config
+  resolution: resolved
+- relation: mentions
+  to: requirement:extension-distribution
+  resolution: resolved
+- relation: mentions
+  to: rule:template-grammar-scopes
+  resolution: resolved
+- relation: mentions
+  to: system:vscode
+  resolution: resolved
+- relation: mentions
+  to: vision:editor-support
+  resolution: resolved

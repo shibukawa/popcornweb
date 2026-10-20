@@ -1,0 +1,219 @@
+id: requirement:dev-console
+type: requirement
+title: Development Console
+summary: api:cli-dev serves one loopback web console whose panes answer what the project
+  is, what it would serve, and what it just did, so the developer loop has a browser
+  surface beside its terminal stream.
+facts:
+  legacy_body: "api:cli-dev serves one loopback web console whose panes answer what\
+    \ the project is, what it would serve, and what it just did, so the developer\
+    \ loop has a browser surface beside its terminal stream.\n\n```yaml\naudience:\
+    \ actor:application-developer\nmechanism: decision:dev-console-consolidation\n\
+    hosting: decision:dev-console-self-sufficiency decides what the console answers\
+    \ itself and what it leaves to a tool the developer already has\nboundary: policy:dev-console-boundary\n\
+    delivery: decision:dev-console-delivery-order\nscope: api:cli-dev only; never\
+    \ api:cli-build, api:test-run, or any deployed environment\ndefault: enabled\n\
+    configuration: data:project-config dev.console\nlistener:\n  bind: loopback only\n\
+    \  port: dev.console.port, a fixed default rather than a reserved one, because\
+    \ a console is bookmarked and returned to; the precedent is the dev.idp.port pin\n\
+    \  collision: a bound port fails the console, reports the address, and leaves\
+    \ the developer loop running\n  mount: index plus every pane on one listener,\
+    \ so one printed URL reaches all of them\n  url: printed once at startup beside\
+    \ the requirement:contrib-devidp report\npanes:\n  telemetry:\n    concept: requirement:dev-telemetry-viewer\n\
+    \    scope: traces, logs, and per-request timing; the console adds no log pane\
+    \ and no profiler of its own\n  storybook: requirement:template-storybook\n  data:\n\
+    \    browsing: requirement:dev-data-pane\n    running: requirement:dev-query-runner\n\
+    \    shared: one pane and one decision:dev-application-attachment; the console\
+    \ proxies it because the application serves it\n  doctor:\n    shows: the api:cli-doctor\
+    \ report for the environment the loop is running\n    form: the command's own\
+    \ output, unaltered, with a re-run control\n    why_not_reformatted: doctor orders\
+    \ findings by severity and names a remedy for each, and reflowing that into a\
+    \ table would lose the ordering it means; a second rendering would also be a second\
+    \ thing to keep true\n    answers: what a merged configuration view would have\
+    \ been asked for, with the masking policy:startup-summary already applies and\
+    \ the remedies a raw dump would carry none of\n    offline: the api:cli-doctor\
+    \ default is kept, so opening the page contacts nothing\n  assets: requirement:dev-asset-inspector\n\
+    \  api: requirement:dev-api-reference\n  loop_state:\n    concept: requirement:dev-error-overlay\n\
+    \    surface: the index shows the current data:dev-loop-state, so a page that\
+    \ was never opened still reports the failure\nindex:\n  content: the project name,\
+    \ the diagnosed environment, the application URL, and one entry per enabled pane\n\
+    \  application_url:\n    announced: the address the application says it bound,\
+    \ per decision:dev-application-attachment, which is the only one that is not a\
+    \ guess\n    guessed: the best-effort read of the development configuration, used\
+    \ until the application has announced and correct whenever the configured port\
+    \ was free\n    why: an environment variable, a flag, or decision:development-port-shift\
+    \ outranks the file, and a link left on the configured port opens whatever else\
+    \ now holds it\n  reseed:\n    offered: when the project has seed datasets and\
+    \ seed.auto is on\n    action: api:cli-seed, the same call the loop makes after\
+    \ a migration cycle empties the database, rather than a second implementation\n\
+    \    why_here: seeding is clear-insert, so it is the way back from an editing\
+    \ session in requirement:dev-data-pane, and it is a pw-side action that needs\
+    \ no attachment\n    said_plainly: the button names what clear-insert does, because\
+    \ a control that empties tables should not read as a refresh\n  disabled_pane:\
+    \ named as disabled with the configuration key that enables it, rather than hidden\n\
+    shell:\n  mount_prefix:\n    problem: a pane serves itself and cannot know where\
+    \ it is mounted, because the console strips the prefix before the request arrives;\
+    \ a link written as an absolute path then resolves against the console root and\
+    \ misses\n    resolution: the mount tells the pane, on every request, and the\
+    \ pane prefixes its own links\n    why_not_guessed: a pane reached directly is\
+    \ at the root, so a pane that assumed a prefix would be wrong in the other direction\n\
+    \    way_back: a pane that sees a prefix knows it is inside a console and offers\
+    \ the link back to it, which is the other half of not stranding the developer\n\
+    \  form: one document per pane, navigated to by ordinary links from a nav the\
+    \ index and every pane repeat\n  not_a_single_document: one listener and one index\
+    \ do not imply one page; decision:dev-console-consolidation joined the listener,\
+    \ not the document\n  rationale:\n    third_party_isolation: an embedded renderer\
+    \ such as requirement:dev-api-reference ships global CSS written to own a document,\
+    \ and giving it one costs less than isolating it inside a shared shell\n    independent_failure:\
+    \ a pane whose bundle is broken breaks its own page and leaves the rest of the\
+    \ console usable\n    per_page_policy: a permissive third-party bundle takes a\
+    \ permissive response policy on its page alone, instead of lowering the whole\
+    \ console to its level\n    dogfood: concept:classic-web-style is what pw tells\
+    \ applications to do, and a console built any other way argues against its own\
+    \ framework\n  iframe:\n    used: for a pane the console does not render, and\
+    \ only there\n    revision: this was refused outright, on the grounds that same-origin\
+    \ pages need no frame for isolation. That reasoning holds for a page the console\
+    \ renders and fails for one it does not: navigating to the telemetry viewer left\
+    \ the developer inside a document with no way back, because a foreign page cannot\
+    \ carry the console navigation\n    rule: a pane the console renders carries the\
+    \ nav directly; a pane it does not render is shown inside a frame that does\n\
+    \    address: the frame takes the pane's own address and the pane moves one segment\
+    \ below it, because a file server canonicalises a request for its index into a\
+    \ redirect to the directory, which would otherwise load the frame inside itself\n\
+    \    still_refused: framing to keep two panes visible at once, or to preserve\
+    \ a pane's state while another is open\n  spa_panes: a pane whose renderer is\
+    \ a browser application is still one page; requirement:dev-telemetry-viewer is\
+    \ that case and needs no exception\nlifetime:\n  start: before the application\
+    \ process, like requirement:contrib-devidp\n  restart: the console keeps its listener,\
+    \ its port, and everything captured across regeneration, migration, rebuild, and\
+    \ restart\n  stop: with the developer loop\n  failure: report diagnostics and\
+    \ keep the loop alive, because an unobservable run is still a working one\ninjection:\n\
+    \  variable: the resolved console URL, on the application process only, by the\
+    \ mechanism requirement:dev-telemetry-viewer already uses\n  consumers:\n    -\
+    \ requirement:dev-error-overlay, which needs an address the served page can reach\n\
+    \    - requirement:dev-console-launcher, which links to that address from the\
+    \ page itself\n  rule: never exported to the developer shell\nharness:\n  concept:\
+    \ decision:dev-harness-process\n  needed_by: requirement:template-storybook, which\
+    \ runs the project's own generated code and reaches no database\n  effect: the\
+    \ pane is proxied rather than served, and its availability depends on a build\
+    \ succeeding\nattachment:\n  concept: decision:dev-application-attachment\n  needed_by:\
+    \ requirement:dev-data-pane and requirement:dev-query-runner, whose connection\
+    \ only the application can address\n  effect: the pane is available exactly while\
+    \ the application is up, which is the one pane for which that is true\npackaging:\n\
+    \  ui:\n    preference: take a third-party UI as a Go package from its own project,\
+    \ as requirement:dev-telemetry-viewer takes viewer/webui, rather than committing\
+    \ a build of it here\n    reason: a committed copy is refreshed by hand and drifts,\
+    \ and the divergence it hides is usually something the dependency can fix once\
+    \ for every embedder\n    constraint: however it arrives, it arrives as Go source,\
+    \ so data:release-artifact stays a pure-Go cross-compile with no Node toolchain\n\
+    \  boundary: host-only tooling under decision:host-tools-target-runtime, never\
+    \ linked into an application binary\n  attribution: a third-party build committed\
+    \ here would carry its upstream notice and SPDX expression; one linked as a package\
+    \ carries its own\nsecurity:\n  - loopback binding only\n  - no credential is\
+    \ held and no application route is served\n  - cross-origin reads from the application\
+    \ origin are allowed for loopback origins only, because the application and the\
+    \ console are different ports\nacceptance:\n  - pw dev with no console configuration\
+    \ serves the index on the configured loopback port and prints its URL\n  - the\
+    \ index names every enabled pane and every disabled one\n  - every link a pane\
+    \ writes resolves under the mount the console gave it\n  - every pane offers a\
+    \ way back to the console index\n  - an application restart preserves what the\
+    \ console captured before it\n  - dev.console.enabled false starts no listener\
+    \ and reserves no port\n  - a console that cannot listen reports the failure and\
+    \ leaves the loop running\n  - a binary produced by api:cli-build contains no\
+    \ console code\nnon_goals:\n  - sending application requests from the console,\
+    \ because a browser and an HTTP client already do it\n  - a log pane or a request\
+    \ profiler pane separate from requirement:dev-telemetry-viewer\n  - authentication\
+    \ on the console, which loopback binding already bounds\n  - persistence across\
+    \ pw dev runs\n  - opening a browser on restart; a single explicit open at startup\
+    \ is the most that is considered\n```"
+  legacy_parse_issues:
+  - kind: legacy_parse_error
+    block: 0
+    message: "mapping values are not allowed here\n  in \"<unicode string>\", line\
+      \ 62, column 190:\n     ... rs and fails for one it does not: navigating to\
+      \ the telemetry vi ... \n                                         ^"
+relations:
+- relation: mentions
+  to: actor:application-developer
+  resolution: resolved
+- relation: mentions
+  to: api:cli-build
+  resolution: resolved
+- relation: mentions
+  to: api:cli-dev
+  resolution: resolved
+- relation: mentions
+  to: api:cli-doctor
+  resolution: resolved
+- relation: mentions
+  to: api:cli-seed
+  resolution: resolved
+- relation: mentions
+  to: api:test-run
+  resolution: resolved
+- relation: mentions
+  to: concept:classic-web-style
+  resolution: resolved
+- relation: mentions
+  to: data:dev-loop-state
+  resolution: resolved
+- relation: mentions
+  to: data:project-config
+  resolution: resolved
+- relation: mentions
+  to: data:release-artifact
+  resolution: resolved
+- relation: mentions
+  to: decision:dev-application-attachment
+  resolution: resolved
+- relation: mentions
+  to: decision:dev-console-consolidation
+  resolution: resolved
+- relation: mentions
+  to: decision:dev-console-delivery-order
+  resolution: resolved
+- relation: mentions
+  to: decision:dev-console-self-sufficiency
+  resolution: resolved
+- relation: mentions
+  to: decision:dev-harness-process
+  resolution: resolved
+- relation: mentions
+  to: decision:development-port-shift
+  resolution: resolved
+- relation: mentions
+  to: decision:host-tools-target-runtime
+  resolution: resolved
+- relation: mentions
+  to: policy:dev-console-boundary
+  resolution: resolved
+- relation: mentions
+  to: policy:startup-summary
+  resolution: resolved
+- relation: mentions
+  to: requirement:contrib-devidp
+  resolution: resolved
+- relation: mentions
+  to: requirement:dev-api-reference
+  resolution: resolved
+- relation: mentions
+  to: requirement:dev-asset-inspector
+  resolution: resolved
+- relation: mentions
+  to: requirement:dev-console-launcher
+  resolution: resolved
+- relation: mentions
+  to: requirement:dev-data-pane
+  resolution: resolved
+- relation: mentions
+  to: requirement:dev-error-overlay
+  resolution: resolved
+- relation: mentions
+  to: requirement:dev-query-runner
+  resolution: resolved
+- relation: mentions
+  to: requirement:dev-telemetry-viewer
+  resolution: resolved
+- relation: mentions
+  to: requirement:template-storybook
+  resolution: resolved

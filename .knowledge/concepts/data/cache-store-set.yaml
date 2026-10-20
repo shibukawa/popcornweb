@@ -1,0 +1,135 @@
+id: data:cache-store-set
+type: data
+title: Cache Store Set
+summary: The framework-owned set of named cache stores, each configured as one `[[cache.stores]]`
+  element and addressed by name at the call site, in the shape data:database-connection-set
+  already uses for pools.
+facts:
+  legacy_body: "The framework-owned set of named cache stores, each configured as\
+    \ one `[[cache.stores]]` element and addressed by name at the call site, in the\
+    \ shape data:database-connection-set already uses for pools.\n\n```yaml\nstatus:\
+    \ built 2026-08-13 in pwruntime, bound as the cache section and aliased from pwconfig\n\
+    owner: api:data-cache\nwhy_named_and_configured:\n  not_a_constructed_value: a\
+    \ store outlives every request, carries an operational size, and may address a\
+    \ process outside this one, which is the same set of properties a database pool\
+    \ has\n  what_it_moves: ttl, stale window, scope, entry cap, and backend leave\
+    \ the call site, so a call names a policy rather than restating one\n  what_stays_at_the_call_site:\
+    \ the key and the fetch, which are the only two parts a caller actually owns\n\
+    store_fields:\n  name: required, unique, ASCII lower-case letters, digits, underscore,\
+    \ hyphen, matching the group-name rule of data:database-connection-set\n  backend:\
+    \ memory today; any other value names a process outside this one and is the seam\
+    \ rather than a shipped list\n  dsn: driver://dsn for a backend that has one,\
+    \ redacted per rule:dsn-redaction\n  ttl: how long an entry is fresh, required\
+    \ and positive\n  stale: how long past fresh an entry may still answer while one\
+    \ revalidation runs, default zero, which disables the window\n  scope: private\
+    \ or public, default private, per policy:component-cache-scope\n  max_entries:\
+    \ non-negative, memory backend only, zero meaning unbounded\n  fetch_timeout:\
+    \ bound on one coalesced fetch, default 30s; not in the first design and added\
+    \ by the build, because decision:data-cache-miss-coalescing detaches the fetch\
+    \ from every waiter and nothing else would ever stop it\nvalidation:\n  - enabled\
+    \ requires at least one stores element\n  - a name must be unique across the set,\
+    \ because a call site addresses it\n  - resolving a name the set does not hold\
+    \ is an error naming the configured stores, never a passthrough, since the alternative\
+    \ is a cache that quietly never caches; an application resolving its handle at\
+    \ setup per decision:memo-store-handle gets that failure at startup rather than\
+    \ on a first request\n  - ttl must be positive; a store that stores nothing is\
+    \ a store nobody should have configured\n  - stale must be zero or positive, and\
+    \ a positive one requires a backend that can hold two deadlines\n  - max_entries\
+    \ is refused on a backend that does not evict locally\n  - a backend with no dsn\
+    \ is refused unless it is memory, and memory refuses one\nsecret_input: the ${NAME}\
+    \ expansion of data:database-connection-set, for the same reason — an array element\
+    \ has no environment variable and no CLI option of its own, because its identity\
+    \ is its position in the file\nlifetime:\n  built: the set is keyed on a fingerprint\
+    \ of the configuration and rebuilt when that moves, exactly as the render store\
+    \ of requirement:component-output-cache is, so an operator resizes or disables\
+    \ without a restart and dropping the previous set is the eviction that change\
+    \ implies\n  revised_from: an earlier reading that called the set immutable after\
+    \ startup on the model of a pool\n  why_it_changed: only the memory backend exists,\
+    \ and it opens nothing; a set that could not be rebuilt would have cost a restart\
+    \ to resize while buying nothing back\n  what_reopens_it: a backend holding a\
+    \ connection, which would want opening once and closing on replacement rather\
+    \ than being dropped\n  cold_start_race: two goroutines can each build a set and\
+    \ one is dropped with whatever it collected, which costs a few repeated fetches\
+    \ once per process and needs no lock on a path every cached read takes\ndisabled:\
+    \ the whole section off means every Memo calls its fetch and returns, so a project\
+    \ removes caching without editing a call site\n```"
+  status: built 2026-08-13 in pwruntime, bound as the cache section and aliased from
+    pwconfig
+  owner: api:data-cache
+  why_named_and_configured:
+    not_a_constructed_value: a store outlives every request, carries an operational
+      size, and may address a process outside this one, which is the same set of properties
+      a database pool has
+    what_it_moves: ttl, stale window, scope, entry cap, and backend leave the call
+      site, so a call names a policy rather than restating one
+    what_stays_at_the_call_site: the key and the fetch, which are the only two parts
+      a caller actually owns
+  store_fields:
+    name: required, unique, ASCII lower-case letters, digits, underscore, hyphen,
+      matching the group-name rule of data:database-connection-set
+    backend: memory today; any other value names a process outside this one and is
+      the seam rather than a shipped list
+    dsn: driver://dsn for a backend that has one, redacted per rule:dsn-redaction
+    ttl: how long an entry is fresh, required and positive
+    stale: how long past fresh an entry may still answer while one revalidation runs,
+      default zero, which disables the window
+    scope: private or public, default private, per policy:component-cache-scope
+    max_entries: non-negative, memory backend only, zero meaning unbounded
+    fetch_timeout: bound on one coalesced fetch, default 30s; not in the first design
+      and added by the build, because decision:data-cache-miss-coalescing detaches
+      the fetch from every waiter and nothing else would ever stop it
+  validation:
+  - enabled requires at least one stores element
+  - a name must be unique across the set, because a call site addresses it
+  - resolving a name the set does not hold is an error naming the configured stores,
+    never a passthrough, since the alternative is a cache that quietly never caches;
+    an application resolving its handle at setup per decision:memo-store-handle gets
+    that failure at startup rather than on a first request
+  - ttl must be positive; a store that stores nothing is a store nobody should have
+    configured
+  - stale must be zero or positive, and a positive one requires a backend that can
+    hold two deadlines
+  - max_entries is refused on a backend that does not evict locally
+  - a backend with no dsn is refused unless it is memory, and memory refuses one
+  secret_input: the ${NAME} expansion of data:database-connection-set, for the same
+    reason — an array element has no environment variable and no CLI option of its
+    own, because its identity is its position in the file
+  lifetime:
+    built: the set is keyed on a fingerprint of the configuration and rebuilt when
+      that moves, exactly as the render store of requirement:component-output-cache
+      is, so an operator resizes or disables without a restart and dropping the previous
+      set is the eviction that change implies
+    revised_from: an earlier reading that called the set immutable after startup on
+      the model of a pool
+    why_it_changed: only the memory backend exists, and it opens nothing; a set that
+      could not be rebuilt would have cost a restart to resize while buying nothing
+      back
+    what_reopens_it: a backend holding a connection, which would want opening once
+      and closing on replacement rather than being dropped
+    cold_start_race: two goroutines can each build a set and one is dropped with whatever
+      it collected, which costs a few repeated fetches once per process and needs
+      no lock on a path every cached read takes
+  disabled: the whole section off means every Memo calls its fetch and returns, so
+    a project removes caching without editing a call site
+relations:
+- relation: mentions
+  to: api:data-cache
+  resolution: resolved
+- relation: mentions
+  to: data:database-connection-set
+  resolution: resolved
+- relation: mentions
+  to: decision:data-cache-miss-coalescing
+  resolution: resolved
+- relation: mentions
+  to: decision:memo-store-handle
+  resolution: resolved
+- relation: mentions
+  to: policy:component-cache-scope
+  resolution: resolved
+- relation: mentions
+  to: requirement:component-output-cache
+  resolution: resolved
+- relation: mentions
+  to: rule:dsn-redaction
+  resolution: resolved

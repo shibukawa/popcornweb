@@ -1,0 +1,205 @@
+id: requirement:telemetry-architecture-guide
+type: requirement
+title: Telemetry Architecture Guide
+summary: The documentation provides one end-to-end telemetry page at `website/src/content/docs/guides/architecture/telemetry.md`
+  and a Japanese peer under the Architecture navigation group.
+facts:
+  legacy_body: "The documentation provides one end-to-end telemetry page at `website/src/content/docs/guides/architecture/telemetry.md`\
+    \ and a Japanese peer under the Architecture navigation group.\n\n```yaml\naudience:\
+    \ application developers instrumenting, running, debugging, or operating a Popcorn\
+    \ Web application\npurpose:\n  - explain how logs, traces, query diagnostics,\
+    \ correlation, sinks, and development tools fit together\n  - provide the starting\
+    \ page that the current scattered references lack\npage_rule:\n  - describe the\
+    \ architecture once and link detailed API and configuration references\n  - distinguish\
+    \ api:cli-dev defaults from deployed-runtime behavior\n  - keep English and Japanese\
+    \ pages structurally equivalent\nsections:\n  mental_model:\n    covers: api:logger,\
+    \ data:log-attribute, data:framework-span-set, requirement:query-diagnostics,\
+    \ and trace/span correlation\n  emission_pipeline:\n    covers: policy:log-emission\
+    \ and flow:telemetry-export\n    contrasts: terminal plaintext, JSON stdout, local\
+    \ JSONL, OTLP, and the development viewer\n  application_logging:\n    covers:\
+    \ acquiring api:logger from context, levels, typed attributes, correlation, reserved\
+    \ fields, and safe attribute selection\n  configuration:\n    covers: data:observability-runtime-config,\
+    \ relevant environment variables, and data:project-config dev.otel and dev.logs\n\
+    \    links: configuration reference remains authoritative for every key and default\n\
+    \  development:\n    covers: api:cli-dev terminal output, requirement:dev-telemetry-viewer,\
+    \ requirement:local-jsonl-log-capture, run-file lifetime, .gitignore, and cleanup\n\
+    \  duckdb:\n    prerequisite: DuckDB is an optional external analysis tool, not\
+    \ a pw dependency\n    agent_workflow: requirement:agent-log-analysis-skill turns\
+    \ natural-language questions into reproducible queries over the same files\n \
+    \   load_all: \"SELECT * FROM read_ndjson_auto('.log/*.jsonl', union_by_name =\
+    \ true);\"\n    examples:\n      - filter by severity and time\n      - aggregate\
+    \ counts by message and service_name\n      - find a trace_id and order its records\
+    \ by timestamp\n      - inspect one invocation through the virtual filename column\
+    \ when supported by the installed DuckDB version\n    note: use name-based schema\
+    \ union because custom log attributes differ between records and runs\n  production:\n\
+    \    covers: JSON stdout for a collector, OTLP routing, queue and shutdown behavior,\
+    \ and why local files are pw dev only\n    routes: the relayed and direct routes\
+    \ of flow:telemetry-export as two named choices, with what each costs and the\
+    \ fact that tail sampling exists only on the first\n    sampling: requirement:trace-head-sampling\
+    \ and the environment-selected default of decision:sampling-default-follows-the-environment,\
+    \ stated as a number a reader will find in their startup summary rather than as\
+    \ a key they may set\n    counting_is_unaffected: requirement:framework-metrics\
+    \ survives any ratio, per decision:metrics-are-not-sampled, which is the paragraph\
+    \ that keeps a reader from raising the ratio to fix a dashboard\n  safety:\n \
+    \   covers: secrets, personal data, query bind values, local file permissions,\
+    \ retention, and deletion\nnavigation: files are discovered automatically under\
+    \ Architecture; no manual sidebar entry\n```\n\n```yaml\nacceptance:\n  - both\
+    \ locales build and appear under Architecture\n  - a reader can find the logger\
+    \ API, all observability configuration, local capture, viewer, OTLP, and DuckDB\
+    \ workflow from this page\n  - the page points agent users to requirement:agent-log-analysis-skill\
+    \ rather than requiring them to author SQL by hand\n  - examples use data:local-jsonl-log-record\
+    \ field names and execute against valid sample records\n  - DuckDB examples use\
+    \ newline-delimited JSON input and schema union by name\n  - the page does not\
+    \ imply that pw bundles, installs, or runs DuckDB\n  - the page does not claim\
+    \ traces or arbitrary process output are present in .log\n  - a reader can tell,\
+    \ from this page alone, whether their deployment is on the relayed or the direct\
+    \ route and what its trace sampling therefore is\n  - the page states that a low\
+    \ sampling ratio changes no metric\n```"
+  audience: application developers instrumenting, running, debugging, or operating
+    a Popcorn Web application
+  purpose:
+  - explain how logs, traces, query diagnostics, correlation, sinks, and development
+    tools fit together
+  - provide the starting page that the current scattered references lack
+  page_rule:
+  - describe the architecture once and link detailed API and configuration references
+  - distinguish api:cli-dev defaults from deployed-runtime behavior
+  - keep English and Japanese pages structurally equivalent
+  sections:
+    mental_model:
+      covers: api:logger, data:log-attribute, data:framework-span-set, requirement:query-diagnostics,
+        and trace/span correlation
+    emission_pipeline:
+      covers: policy:log-emission and flow:telemetry-export
+      contrasts: terminal plaintext, JSON stdout, local JSONL, OTLP, and the development
+        viewer
+    application_logging:
+      covers: acquiring api:logger from context, levels, typed attributes, correlation,
+        reserved fields, and safe attribute selection
+    configuration:
+      covers: data:observability-runtime-config, relevant environment variables, and
+        data:project-config dev.otel and dev.logs
+      links: configuration reference remains authoritative for every key and default
+    development:
+      covers: api:cli-dev terminal output, requirement:dev-telemetry-viewer, requirement:local-jsonl-log-capture,
+        run-file lifetime, .gitignore, and cleanup
+    duckdb:
+      prerequisite: DuckDB is an optional external analysis tool, not a pw dependency
+      agent_workflow: requirement:agent-log-analysis-skill turns natural-language
+        questions into reproducible queries over the same files
+      load_all: SELECT * FROM read_ndjson_auto('.log/*.jsonl', union_by_name = true);
+      examples:
+      - filter by severity and time
+      - aggregate counts by message and service_name
+      - find a trace_id and order its records by timestamp
+      - inspect one invocation through the virtual filename column when supported
+        by the installed DuckDB version
+      note: use name-based schema union because custom log attributes differ between
+        records and runs
+    production:
+      covers: JSON stdout for a collector, OTLP routing, queue and shutdown behavior,
+        and why local files are pw dev only
+      routes: the relayed and direct routes of flow:telemetry-export as two named
+        choices, with what each costs and the fact that tail sampling exists only
+        on the first
+      sampling: requirement:trace-head-sampling and the environment-selected default
+        of decision:sampling-default-follows-the-environment, stated as a number a
+        reader will find in their startup summary rather than as a key they may set
+      counting_is_unaffected: requirement:framework-metrics survives any ratio, per
+        decision:metrics-are-not-sampled, which is the paragraph that keeps a reader
+        from raising the ratio to fix a dashboard
+    safety:
+      covers: secrets, personal data, query bind values, local file permissions, retention,
+        and deletion
+  navigation: files are discovered automatically under Architecture; no manual sidebar
+    entry
+  acceptance:
+  - both locales build and appear under Architecture
+  - a reader can find the logger API, all observability configuration, local capture,
+    viewer, OTLP, and DuckDB workflow from this page
+  - the page points agent users to requirement:agent-log-analysis-skill rather than
+    requiring them to author SQL by hand
+  - examples use data:local-jsonl-log-record field names and execute against valid
+    sample records
+  - DuckDB examples use newline-delimited JSON input and schema union by name
+  - the page does not imply that pw bundles, installs, or runs DuckDB
+  - the page does not claim traces or arbitrary process output are present in .log
+  - a reader can tell, from this page alone, whether their deployment is on the relayed
+    or the direct route and what its trace sampling therefore is
+  - the page states that a low sampling ratio changes no metric
+acceptance:
+  item-c03707788ee3c0c7:
+    text: both locales build and appear under Architecture
+  item-0fd0cbf5ce97f843:
+    text: a reader can find the logger API, all observability configuration, local
+      capture, viewer, OTLP, and DuckDB workflow from this page
+  item-9268f6483575c323:
+    text: the page points agent users to requirement:agent-log-analysis-skill rather
+      than requiring them to author SQL by hand
+  item-21bef1ddc0ee6208:
+    text: examples use data:local-jsonl-log-record field names and execute against
+      valid sample records
+  item-229270217805aeb0:
+    text: DuckDB examples use newline-delimited JSON input and schema union by name
+  item-5f3f3ebb1e5c2b79:
+    text: the page does not imply that pw bundles, installs, or runs DuckDB
+  item-792ab518e7bd621c:
+    text: the page does not claim traces or arbitrary process output are present in
+      .log
+  item-ac972f49dbc7c892:
+    text: a reader can tell, from this page alone, whether their deployment is on
+      the relayed or the direct route and what its trace sampling therefore is
+  item-06c64ec02ea8fea1:
+    text: the page states that a low sampling ratio changes no metric
+relations:
+- relation: mentions
+  to: api:cli-dev
+  resolution: resolved
+- relation: mentions
+  to: api:logger
+  resolution: resolved
+- relation: mentions
+  to: data:framework-span-set
+  resolution: resolved
+- relation: mentions
+  to: data:local-jsonl-log-record
+  resolution: resolved
+- relation: mentions
+  to: data:log-attribute
+  resolution: resolved
+- relation: mentions
+  to: data:observability-runtime-config
+  resolution: resolved
+- relation: mentions
+  to: data:project-config
+  resolution: resolved
+- relation: mentions
+  to: decision:metrics-are-not-sampled
+  resolution: resolved
+- relation: mentions
+  to: decision:sampling-default-follows-the-environment
+  resolution: resolved
+- relation: mentions
+  to: flow:telemetry-export
+  resolution: resolved
+- relation: mentions
+  to: policy:log-emission
+  resolution: resolved
+- relation: mentions
+  to: requirement:agent-log-analysis-skill
+  resolution: resolved
+- relation: mentions
+  to: requirement:dev-telemetry-viewer
+  resolution: resolved
+- relation: mentions
+  to: requirement:framework-metrics
+  resolution: resolved
+- relation: mentions
+  to: requirement:local-jsonl-log-capture
+  resolution: resolved
+- relation: mentions
+  to: requirement:query-diagnostics
+  resolution: resolved
+- relation: mentions
+  to: requirement:trace-head-sampling
+  resolution: resolved

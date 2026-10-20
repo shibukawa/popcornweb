@@ -1,0 +1,43 @@
+id: policy:contrib-compatibility
+type: policy
+title: Contrib Compatibility Policy
+summary: Every contrib package must remain small, explicit about compatibility, and
+  continuously verified on host Go and supported TinyGo targets.
+facts:
+  legacy_body: "Every contrib package must remain small, explicit about compatibility,\
+    \ and continuously verified on host Go and supported TinyGo targets.\n\n```yaml\n\
+    requirements:\n  - public API documents supported and unsupported behavior\n \
+    \ - runtime code avoids reflection-driven field or method discovery\n  - avoid\
+    \ unsafe, assembly, and CGo unless a package-specific decision permits them\n\
+    \  - bound attacker-controlled allocation and recursion\n  - accept context.Context\
+    \ for blocking network or database operations\n  - expose deterministic shutdown\
+    \ and resource release\n  - host Go unit tests use upstream vectors when available\n\
+    \  - package target matrices compile supported imports with TinyGo\nmatrix:\n\
+    \  required:\n    - host Go linux amd64\n    - TinyGo linux amd64\n  planned:\n\
+    \    - TinyGo linux arm64\n    - TinyGo wasip1 when networking or C dependencies\
+    \ are absent\ncompatibility_labels:\n  - subset\n  - interoperable\n  - experimental\n\
+    \  - unsupported\nevidence: https://tinygo.org/docs/reference/lang-support/stdlib/\n\
+    ```"
+  requirements:
+  - public API documents supported and unsupported behavior
+  - runtime code avoids reflection-driven field or method discovery
+  - avoid unsafe, assembly, and CGo unless a package-specific decision permits them
+  - bound attacker-controlled allocation and recursion
+  - accept context.Context for blocking network or database operations
+  - expose deterministic shutdown and resource release
+  - host Go unit tests use upstream vectors when available
+  - package target matrices compile supported imports with TinyGo
+  matrix:
+    required:
+    - host Go linux amd64
+    - TinyGo linux amd64
+    planned:
+    - TinyGo linux arm64
+    - TinyGo wasip1 when networking or C dependencies are absent
+  compatibility_labels:
+  - subset
+  - interoperable
+  - experimental
+  - unsupported
+  evidence: https://tinygo.org/docs/reference/lang-support/stdlib/
+relations: []

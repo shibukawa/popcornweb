@@ -1,0 +1,137 @@
+id: vision:contrib
+type: vision
+title: TinyGo Contrib Vision
+summary: Popcorn Web contrib provides focused TinyGo-compatible server packages where
+  standard or common Go implementations are unavailable, incomplete, or too reflection-heavy.
+facts:
+  legacy_body: "Popcorn Web contrib provides focused TinyGo-compatible server packages\
+    \ where standard or common Go implementations are unavailable, incomplete, or\
+    \ too reflection-heavy.\n\n```yaml\nroot: contrib/\npackages:\n  - requirement:contrib-auth-common\n\
+    \  - requirement:contrib-auth-state\n  - requirement:contrib-auth-state-memory\n\
+    \  - requirement:contrib-auth-state-redis\n  - requirement:contrib-auth-state-sqlite\n\
+    \  - requirement:contrib-auth-state-dynamo\n  - requirement:contrib-passkey\n\
+    \  - requirement:contrib-otel\n  - requirement:contrib-jwt\n  - requirement:contrib-oauth\n\
+    \  - requirement:contrib-oauthprofile\n  - requirement:contrib-oidc\n  - requirement:contrib-html-template\n\
+    upstreamed_packages:\n  - package: requirement:contrib-cbor\n    destination:\
+    \ system:tinygodriver encoding/cbor, from v1.2.6\nhost_only_packages:\n  - package:\
+    \ requirement:contrib-devidp\n    reason: development identity provider that never\
+    \ links into an application binary\n    exemption: decision:devidp-scope-reduction\
+    \ waives the policy:contrib-compatibility TinyGo matrix\nprinciples:\n  - policy:contrib-compatibility\n\
+    \  - policy:outbound-transport-security\n  - decision:contrib-delivery-order\n\
+    \  - decision:passkey-first-authentication\nacceptance: requirement:contrib-acceptance\n\
+    compatibility:\n  - requirement:contrib-redis-valkey\n  - requirement:dynamodb-store\n\
+    external_networking: requirement:tinygodriver-adoption\nexternal_runtime_compatibility:\
+    \ requirement:tinygodriver-adoption\nscope_rule: implement explicit useful subsets;\
+    \ never claim full upstream compatibility without conformance evidence\n```"
+  root: contrib/
+  packages:
+  - requirement:contrib-auth-common
+  - requirement:contrib-auth-state
+  - requirement:contrib-auth-state-memory
+  - requirement:contrib-auth-state-redis
+  - requirement:contrib-auth-state-sqlite
+  - requirement:contrib-auth-state-dynamo
+  - requirement:contrib-passkey
+  - requirement:contrib-otel
+  - requirement:contrib-jwt
+  - requirement:contrib-oauth
+  - requirement:contrib-oauthprofile
+  - requirement:contrib-oidc
+  - requirement:contrib-html-template
+  upstreamed_packages:
+  - package: requirement:contrib-cbor
+    destination: system:tinygodriver encoding/cbor, from v1.2.6
+  host_only_packages:
+  - package: requirement:contrib-devidp
+    reason: development identity provider that never links into an application binary
+    exemption: decision:devidp-scope-reduction waives the policy:contrib-compatibility
+      TinyGo matrix
+  principles:
+  - policy:contrib-compatibility
+  - policy:outbound-transport-security
+  - decision:contrib-delivery-order
+  - decision:passkey-first-authentication
+  acceptance: requirement:contrib-acceptance
+  compatibility:
+  - requirement:contrib-redis-valkey
+  - requirement:dynamodb-store
+  external_networking: requirement:tinygodriver-adoption
+  external_runtime_compatibility: requirement:tinygodriver-adoption
+  scope_rule: implement explicit useful subsets; never claim full upstream compatibility
+    without conformance evidence
+relations:
+- relation: mentions
+  to: decision:contrib-delivery-order
+  resolution: resolved
+- relation: mentions
+  to: decision:devidp-scope-reduction
+  resolution: resolved
+- relation: mentions
+  to: decision:passkey-first-authentication
+  resolution: resolved
+- relation: mentions
+  to: policy:contrib-compatibility
+  resolution: resolved
+- relation: mentions
+  to: policy:outbound-transport-security
+  resolution: resolved
+- relation: mentions
+  to: requirement:contrib-acceptance
+  resolution: resolved
+- relation: mentions
+  to: requirement:contrib-auth-common
+  resolution: resolved
+- relation: mentions
+  to: requirement:contrib-auth-state
+  resolution: resolved
+- relation: mentions
+  to: requirement:contrib-auth-state-dynamo
+  resolution: resolved
+- relation: mentions
+  to: requirement:contrib-auth-state-memory
+  resolution: resolved
+- relation: mentions
+  to: requirement:contrib-auth-state-redis
+  resolution: resolved
+- relation: mentions
+  to: requirement:contrib-auth-state-sqlite
+  resolution: resolved
+- relation: mentions
+  to: requirement:contrib-cbor
+  resolution: resolved
+- relation: mentions
+  to: requirement:contrib-devidp
+  resolution: resolved
+- relation: mentions
+  to: requirement:contrib-html-template
+  resolution: resolved
+- relation: mentions
+  to: requirement:contrib-jwt
+  resolution: resolved
+- relation: mentions
+  to: requirement:contrib-oauth
+  resolution: resolved
+- relation: mentions
+  to: requirement:contrib-oauthprofile
+  resolution: resolved
+- relation: mentions
+  to: requirement:contrib-oidc
+  resolution: resolved
+- relation: mentions
+  to: requirement:contrib-otel
+  resolution: resolved
+- relation: mentions
+  to: requirement:contrib-passkey
+  resolution: resolved
+- relation: mentions
+  to: requirement:contrib-redis-valkey
+  resolution: resolved
+- relation: mentions
+  to: requirement:dynamodb-store
+  resolution: resolved
+- relation: mentions
+  to: requirement:tinygodriver-adoption
+  resolution: resolved
+- relation: mentions
+  to: system:tinygodriver
+  resolution: resolved

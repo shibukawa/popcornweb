@@ -1,0 +1,45 @@
+id: decision:testutil-testing-interface
+type: decision
+title: testutil TestingT Interface
+summary: testutil accepts a minimal TestingT interface instead of *testing.T so the
+  shipped framework package never imports testing.
+facts:
+  legacy_body: "testutil accepts a minimal TestingT interface instead of *testing.T\
+    \ so the shipped framework package never imports testing.\n\n```yaml\nstatus:\
+    \ accepted\nowner: api:test-run\nsurface:\n  name: testutil.TestingT\n  methods:\n\
+    \    - Helper()\n    - Cleanup(func())\n    - Fatalf(string, ...any)\n    - Errorf(string,\
+    \ ...any)\nrationale:\n  - testutil is a normal package inside the framework module,\
+    \ not a _test.go file\n  - importing testing from a shipped package pulls testing\
+    \ initialization into ordinary builds\n  - concept:public-package-boundaries keeps\
+    \ framework packages free of test-harness machinery\n  - the interface admits\
+    \ *testing.B, *testing.F, and application-owned T wrappers\n  - testutil can drive\
+    \ its own tests with a fake T\nrules:\n  - add a method only when an api:test-run\
+    \ or api:test-seed behavior requires it\n  - Fatalf marks setup failure that invalidates\
+    \ the test\n  - Errorf marks an assertion failure that lets the test continue\n\
+    \  - never widen to Context, Log, Skip, Run, or Deadline without a recorded need\n\
+    \  - *testing.T satisfies the interface, so widening it is source compatible for\
+    \ standard callers\nconsequences:\n  - system:dbtestify assertdb is unusable because\
+    \ it binds *testing.T and t.Context()\n  - api:test-seed builds its own seeding\
+    \ and assertion helpers on the dbtestify core package\n  - context comes from\
+    \ the caller or context.Background, never from a testing method\n```"
+  legacy_parse_issues:
+  - kind: legacy_parse_error
+    block: 0
+    message: "while scanning an alias\n  in \"<unicode string>\", line 21, column\
+      \ 5:\n      - *testing.T satisfies the interfa ... \n        ^\nexpected alphabetic\
+      \ or numeric character, but found '.'\n  in \"<unicode string>\", line 21, column\
+      \ 13:\n      - *testing.T satisfies the interface, so w ... \n             \
+      \   ^"
+relations:
+- relation: mentions
+  to: api:test-run
+  resolution: resolved
+- relation: mentions
+  to: api:test-seed
+  resolution: resolved
+- relation: mentions
+  to: concept:public-package-boundaries
+  resolution: resolved
+- relation: mentions
+  to: system:dbtestify
+  resolution: resolved

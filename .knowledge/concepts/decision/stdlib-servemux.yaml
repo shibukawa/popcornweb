@@ -1,0 +1,74 @@
+id: decision:stdlib-servemux
+type: decision
+title: Standard ServeMux Routing
+summary: Popcorn Web applications register Go 1.22+ ServeMux method-and-path patterns
+  through api:serve-mux so one pw import works on host Go and the decision:tinygo-042-baseline
+  target.
+facts:
+  legacy_body: "Popcorn Web applications register Go 1.22+ ServeMux method-and-path\
+    \ patterns through api:serve-mux so one pw import works on host Go and the decision:tinygo-042-baseline\
+    \ target.\n\n```yaml\nstatus: accepted\nrouter:\n  public: api:serve-mux\n  implementation:\
+    \ github.com/shibukawa/tinygodriver/httpmux\n  host: net/http ServeMux-compatible\
+    \ fallback\n  tinygo: tinygodriver ServeMux-compatible implementation\nminimum_go_syntax:\
+    \ \"Go 1.22 route patterns\"\nexample: 'mux.HandleFunc(\"POST /users/{id}\", updateUser)'\n\
+    discovery: rule:static-route-discovery\nscaffold_choice:\n  owner: decision:interactive-project-bootstrap\n\
+    \  host_only: api:cli-init scaffolds net/http.ServeMux directly and records project.toolchain\
+    \ as go, which is the default\n  tinygo: api:cli-init scaffolds api:serve-mux,\
+    \ taken by --tinygo or the wizard answer\n  invariant: api:cli-generate discovers\
+    \ both mux types, so generated artifacts are identical\nnon_goals:\n  - local\
+    \ ServeMux compatibility package\n  - custom router DSL\nrationale:\n  - compatible\
+    \ with system:tinybind route analysis\n  - requirement:tinygodriver-adoption centralizes\
+    \ reusable TinyGo compatibility outside Popcorn Web\n  - host builds retain standard\
+    \ net/http.ServeMux behavior\n  - familiar Go handler model\n```"
+  status: accepted
+  router:
+    public: api:serve-mux
+    implementation: github.com/shibukawa/tinygodriver/httpmux
+    host: net/http ServeMux-compatible fallback
+    tinygo: tinygodriver ServeMux-compatible implementation
+  minimum_go_syntax: Go 1.22 route patterns
+  example: mux.HandleFunc("POST /users/{id}", updateUser)
+  discovery: rule:static-route-discovery
+  scaffold_choice:
+    owner: decision:interactive-project-bootstrap
+    host_only: api:cli-init scaffolds net/http.ServeMux directly and records project.toolchain
+      as go, which is the default
+    tinygo: api:cli-init scaffolds api:serve-mux, taken by --tinygo or the wizard
+      answer
+    invariant: api:cli-generate discovers both mux types, so generated artifacts are
+      identical
+  non_goals:
+  - local ServeMux compatibility package
+  - custom router DSL
+  rationale:
+  - compatible with system:tinybind route analysis
+  - requirement:tinygodriver-adoption centralizes reusable TinyGo compatibility outside
+    Popcorn Web
+  - host builds retain standard net/http.ServeMux behavior
+  - familiar Go handler model
+lifecycle: accepted
+relations:
+- relation: mentions
+  to: api:cli-generate
+  resolution: resolved
+- relation: mentions
+  to: api:cli-init
+  resolution: resolved
+- relation: mentions
+  to: api:serve-mux
+  resolution: resolved
+- relation: mentions
+  to: decision:interactive-project-bootstrap
+  resolution: resolved
+- relation: mentions
+  to: decision:tinygo-042-baseline
+  resolution: resolved
+- relation: mentions
+  to: requirement:tinygodriver-adoption
+  resolution: resolved
+- relation: mentions
+  to: rule:static-route-discovery
+  resolution: resolved
+- relation: mentions
+  to: system:tinybind
+  resolution: resolved

@@ -1,0 +1,348 @@
+id: requirement:external-public-assets
+type: requirement
+title: External Public Assets
+summary: A second authored tree holds what should not enter the binary, is deployed
+  as itself rather than as a build output, and joins the embedded tree behind one
+  unchanged URL space.
+facts:
+  legacy_body: "A second authored tree holds what should not enter the binary, is\
+    \ deployed as itself rather than as a build output, and joins the embedded tree\
+    \ behind one unchanged URL space.\n\n```yaml\npriority: could\nstatus: implemented\
+    \ 2026-08-11\nas_built:\n  directory: public-external, authored and committed,\
+    \ outside dist because nothing transforms it\n  build: addExternalAssets walks\
+    \ it after the served tree is collected, verifies content from the leading window,\
+    \ writes manifest entries, and copies nothing\n  manifest: AssetRepresentation.External,\
+    \ with Length and ETag left zero so no validator can outlive its bytes\n  serving:\
+    \ http.ServeContent behind the manifest entry, which supplies Accept-Ranges, 206,\
+    \ If-Range, and Last-Modified\n  manifest_less_path: the external tree is consulted\
+    \ before the built one, so the loop and production agree on which wins\n  path_security:\
+    \ safeLocalPath, factored out of the local-overlay walk, so both trees refuse\
+    \ a symbolic link identically\n  collision: a warning naming both paths, external\
+    \ wins, and every representation of the shadowed URL is dropped rather than half\
+    \ of each\n  deployment:\n    container: one COPY in each scaffolded Dockerfile,\
+    \ with public-external/.keep written by api:cli-init because a COPY of a missing\
+    \ path fails the image build\n    serverless: copyExternalAssets places the tree\
+    \ at the stage root beside config.prod.toml, for both the process artifact of\
+    \ AWS Lambda and Azure Functions and the source bundle of Cloud Run functions\
+    \ and Vercel, since all four resolve it against the working directory the function\
+    \ runs with\n    source_bundle_exclusion: copyProjectForFunction skips the tree,\
+    \ because it would otherwise reach the artifact twice, once in the application\
+    \ subtree where nothing reads it\n    only_copy_site: this is the one place the\
+    \ tree is copied, once per deployment artifact rather than once per compile\n\
+    \  advisory: PW0132 over an already-compact kind above 4 MiB in the embedded tree\n\
+    \  decided_during_build:\n    collision_severity: proposed as an error here, settled\
+    \ as a warning by the user; with external precedence defined the ambiguity argument\
+    \ for an error no longer holds\n    advisory_kinds: json and csv are deliberately\
+    \ outside the advisory set, because they compress and the embedded tree is doing\
+    \ real work for them\nanswers: the large_media_in_an_embedded_tree question of\
+    \ requirement:public-asset-delivery\nshape:\n  source: two authored directories,\
+    \ one embedded and one not\n  url: both mount at the same prefix, so what a page\
+    \ names does not say which tree answered\n  build_does_to_the_second_tree: walks\
+    \ it, verifies content, writes manifest entries, and copies nothing\n  deployment:\
+    \ the container scaffold copies the authored directory itself\nwhy_it_beats_the_earlier_sketches:\n\
+    \  the_copy_is_the_point:\n    problem_it_removes: selecting by media kind at\
+    \ build time means the build must separate the two out of one directory, which\
+    \ is a byte-for-byte copy of the largest files in the project on every build\n\
+    \    why_the_copy_was_pure_cost: policy:asset-transform-matrix already classifies\
+    \ these kinds as already_compact, whose action is \"verbatim copy, no precompression\"\
+    , so the build output would have been identical to its input\n    conclusion:\
+    \ dist/public exists because authored files are transformed into it; a tree nothing\
+    \ transforms has nothing to gain from a staging copy\n  selection_needs_no_mechanism:\
+    \ placement decides, so there is no kind table to keep current, no override list,\
+    \ and no threshold whose meaning changes as a file grows\n  the_url_space_is_untouched:\
+    \ nothing is renamed and no reference is rewritten, which is what makes this additive\
+    \ rather than a migration\nwhat_it_gives_up:\n  no_help_for_the_unaware: an author\
+    \ who does not know the second tree exists puts a video in the first one and it\
+    \ is compiled into the binary, where the kind table would have moved it unasked\n\
+    \  how_to_get_it_back_cheaply:\n    form: an advisory naming a large file of an\
+    \ already_compact kind in the embedded tree, with the second tree as its remedy\n\
+    \    why_this_is_the_right_place_for_a_size_rule: a threshold that only decides\
+    \ whether to speak is safe, where one that decides where bytes live makes the\
+    \ same asset embedded in one build and external in the next\n    it_already_has_a_home:\
+    \ the size advisory recorded under requirement:public-asset-delivery, which until\
+    \ now had no remedy to name\n    reads_the_same_table: already_compact tells it\
+    \ which kinds are worth mentioning, so the kind table survives as the advisory's\
+    \ input rather than as the router's\nrules_it_must_state:\n  collision: one URL\
+    \ reachable from both trees is a build error, since nothing else could decide\
+    \ which bytes the entry means\n  resolution: the manifest entry names which tree\
+    \ holds the bytes and the handler goes straight there, never probing one and falling\
+    \ back to the other\n  why_resolution_is_worth_a_rule: data:public-asset-manifest\
+    \ exists so serving is manifest-driven rather than filesystem-driven, and the\
+    \ read_local layering of policy:public-asset-resolution already needed an explicit\
+    \ rule that a local original never falls back to an embedded sidecar, because\
+    \ mixing layers within one URL was a real defect\n  development: decision:derived-tree-development\
+    \ gains a second root and nothing else, since both trees are already files on\
+    \ disk in the loop\n  determinism: an external entry records its path, media type,\
+    \ and cache policy and no digest or timestamp, so policy:generated-artifacts --check\
+    \ still compares two builds\nthe_missing_requirement:\n  range_requests:\n   \
+    \ fact: api:public-asset-middleware supports none; it sets Content-Length and\
+    \ copies the whole body, with no Accept-Ranges and no 206 anywhere\n    consequence:\
+    \ a video element cannot seek, and playing from the middle downloads the file\
+    \ from the start; a large asset that cannot be ranged is transferred rather than\
+    \ served\n    why_it_belongs_here: if the motivating kind is video, a mechanism\
+    \ that keeps the bytes out of the binary and still cannot range them has not solved\
+    \ the case it was built for\n    what_makes_it_cheap: an external file is a real\
+    \ file, so http.ServeContent supplies Range, If-Range, and the validator from\
+    \ an io.ReadSeeker with no protocol code written here\n    independent_value:\
+    \ the same handler serves a large PDF or a download identically, so it is worth\
+    \ building whether or not the rest of this is\n    conclusion: the external tree\
+    \ is its own handler rather than a flag on the existing one, because the existing\
+    \ one throws the ReadSeeker away\ncaching:\n  problem: the tree is deployed as\
+    \ its own artifact, so a build-time strong ETag can describe bytes the deployment\
+    \ replaced\n  why_that_is_the_specific_failure_to_avoid: data:public-asset-manifest\
+    \ exists so a response never claims what the build did not produce, and api:public-asset-middleware\
+    \ already treats a manifest naming an absent file as a 500 for exactly this reason\n\
+    \  recommendation: no build-time digest; http.ServeContent takes size and modification\
+    \ time from the file it is handed, so the validator is honest without the manifest\
+    \ carrying anything that could go stale\n  the_thing_that_cannot_be_had: independent\
+    \ deployment and an immutable URL at once, since immutable is only honest for\
+    \ a name carrying the digest of its own bytes, per requirement:derived-asset-pipeline\
+    \ caching\n  so: these URLs revalidate, and that is the trade the mechanism is\n\
+    deployment:\n  who_copies_it: the api:cli-init container scaffold, which already\
+    \ COPYs the binary and the production configuration explicitly and gains one more\
+    \ line naming a directory that needs no build stage\n  narrows_to: a container\
+    \ or bundle deployment, which is every target of decision:serverless-target-scope\n\
+    \  bare_binary: a project shipping a binary by itself has no step that would carry\
+    \ a directory, so the build says it produced one rather than assuming something\
+    \ will notice\n  refused_targets: requirement:cloudflare-workers-hosting has no\
+    \ filesystem, so a build for it fails naming the target rather than emitting an\
+    \ artifact that 404s in production\nunchanged_by_this:\n  verification: requirement:asset-content-verification\
+    \ reads only the leading window for anything but SVG, so checking a large file\
+    \ costs what checking a small one costs, and the second tree is checked like the\
+    \ first\n  precompression: policy:public-asset-precompression already excludes\
+    \ audio and video, so nothing changes for the motivating kind\n  transforms: nothing\
+    \ in the second tree is converted, which is what makes it the second tree\nopen_questions:\n\
+    \  naming: bundle already means the script build in this project, so a directory\
+    \ named for bundling reads as an instruction to the JavaScript pipeline rather\
+    \ than a statement about the binary; the distinction the name has to carry is\
+    \ which artifact the bytes ship in\n  existing_projects: concept:project-layout\
+    \ scaffolds public.go once and never rewrites it, so an existing project acquires\
+    \ the second tree by hand, as requirement:derived-asset-pipeline already found\
+    \ for dist/public\n  first_request_latency: an embedded read is a slice of the\
+    \ binary image and an external read is a file open, which is the right trade for\
+    \ a video and worth measuring before anything small is moved\nacceptance_sketch:\n\
+    \  - a video in the second tree is absent from the binary, present in the image,\
+    \ served under its ordinary URL, and seekable\n  - the embedded tree of the same\
+    \ project builds byte-identically to a build before this existed\n  - no large\
+    \ file is copied by the build\n  - one URL reachable from both trees fails the\
+    \ build naming both paths\n  - a URL the manifest does not name is 404 whatever\
+    \ either tree holds\n  - a target that cannot carry a directory fails the build\
+    \ naming the target, rather than at the first request\n  - a page referencing\
+    \ an asset does not say, and cannot tell, which tree answered\nnon_goals:\n  -\
+    \ uploading anything anywhere, which stays operator state per decision:serverless-target-scope\n\
+    \  - a media hosting story, a CDN integration, or an object storage client\n \
+    \ - transcoding, which policy:asset-transform-matrix already refuses at request\
+    \ time and this does not reopen\n  - a second mount or a second configuration\
+    \ key for the URL space, which stays contiguous\n  - moving a file between the\
+    \ trees automatically, which is the threshold problem this shape exists to avoid\n\
+    ```"
+  priority: could
+  status: implemented 2026-08-11
+  as_built:
+    directory: public-external, authored and committed, outside dist because nothing
+      transforms it
+    build: addExternalAssets walks it after the served tree is collected, verifies
+      content from the leading window, writes manifest entries, and copies nothing
+    manifest: AssetRepresentation.External, with Length and ETag left zero so no validator
+      can outlive its bytes
+    serving: http.ServeContent behind the manifest entry, which supplies Accept-Ranges,
+      206, If-Range, and Last-Modified
+    manifest_less_path: the external tree is consulted before the built one, so the
+      loop and production agree on which wins
+    path_security: safeLocalPath, factored out of the local-overlay walk, so both
+      trees refuse a symbolic link identically
+    collision: a warning naming both paths, external wins, and every representation
+      of the shadowed URL is dropped rather than half of each
+    deployment:
+      container: one COPY in each scaffolded Dockerfile, with public-external/.keep
+        written by api:cli-init because a COPY of a missing path fails the image build
+      serverless: copyExternalAssets places the tree at the stage root beside config.prod.toml,
+        for both the process artifact of AWS Lambda and Azure Functions and the source
+        bundle of Cloud Run functions and Vercel, since all four resolve it against
+        the working directory the function runs with
+      source_bundle_exclusion: copyProjectForFunction skips the tree, because it would
+        otherwise reach the artifact twice, once in the application subtree where
+        nothing reads it
+      only_copy_site: this is the one place the tree is copied, once per deployment
+        artifact rather than once per compile
+    advisory: PW0132 over an already-compact kind above 4 MiB in the embedded tree
+    decided_during_build:
+      collision_severity: proposed as an error here, settled as a warning by the user;
+        with external precedence defined the ambiguity argument for an error no longer
+        holds
+      advisory_kinds: json and csv are deliberately outside the advisory set, because
+        they compress and the embedded tree is doing real work for them
+  answers: the large_media_in_an_embedded_tree question of requirement:public-asset-delivery
+  shape:
+    source: two authored directories, one embedded and one not
+    url: both mount at the same prefix, so what a page names does not say which tree
+      answered
+    build_does_to_the_second_tree: walks it, verifies content, writes manifest entries,
+      and copies nothing
+    deployment: the container scaffold copies the authored directory itself
+  why_it_beats_the_earlier_sketches:
+    the_copy_is_the_point:
+      problem_it_removes: selecting by media kind at build time means the build must
+        separate the two out of one directory, which is a byte-for-byte copy of the
+        largest files in the project on every build
+      why_the_copy_was_pure_cost: policy:asset-transform-matrix already classifies
+        these kinds as already_compact, whose action is "verbatim copy, no precompression",
+        so the build output would have been identical to its input
+      conclusion: dist/public exists because authored files are transformed into it;
+        a tree nothing transforms has nothing to gain from a staging copy
+    selection_needs_no_mechanism: placement decides, so there is no kind table to
+      keep current, no override list, and no threshold whose meaning changes as a
+      file grows
+    the_url_space_is_untouched: nothing is renamed and no reference is rewritten,
+      which is what makes this additive rather than a migration
+  what_it_gives_up:
+    no_help_for_the_unaware: an author who does not know the second tree exists puts
+      a video in the first one and it is compiled into the binary, where the kind
+      table would have moved it unasked
+    how_to_get_it_back_cheaply:
+      form: an advisory naming a large file of an already_compact kind in the embedded
+        tree, with the second tree as its remedy
+      why_this_is_the_right_place_for_a_size_rule: a threshold that only decides whether
+        to speak is safe, where one that decides where bytes live makes the same asset
+        embedded in one build and external in the next
+      it_already_has_a_home: the size advisory recorded under requirement:public-asset-delivery,
+        which until now had no remedy to name
+      reads_the_same_table: already_compact tells it which kinds are worth mentioning,
+        so the kind table survives as the advisory's input rather than as the router's
+  rules_it_must_state:
+    collision: one URL reachable from both trees is a build error, since nothing else
+      could decide which bytes the entry means
+    resolution: the manifest entry names which tree holds the bytes and the handler
+      goes straight there, never probing one and falling back to the other
+    why_resolution_is_worth_a_rule: data:public-asset-manifest exists so serving is
+      manifest-driven rather than filesystem-driven, and the read_local layering of
+      policy:public-asset-resolution already needed an explicit rule that a local
+      original never falls back to an embedded sidecar, because mixing layers within
+      one URL was a real defect
+    development: decision:derived-tree-development gains a second root and nothing
+      else, since both trees are already files on disk in the loop
+    determinism: an external entry records its path, media type, and cache policy
+      and no digest or timestamp, so policy:generated-artifacts --check still compares
+      two builds
+  the_missing_requirement:
+    range_requests:
+      fact: api:public-asset-middleware supports none; it sets Content-Length and
+        copies the whole body, with no Accept-Ranges and no 206 anywhere
+      consequence: a video element cannot seek, and playing from the middle downloads
+        the file from the start; a large asset that cannot be ranged is transferred
+        rather than served
+      why_it_belongs_here: if the motivating kind is video, a mechanism that keeps
+        the bytes out of the binary and still cannot range them has not solved the
+        case it was built for
+      what_makes_it_cheap: an external file is a real file, so http.ServeContent supplies
+        Range, If-Range, and the validator from an io.ReadSeeker with no protocol
+        code written here
+      independent_value: the same handler serves a large PDF or a download identically,
+        so it is worth building whether or not the rest of this is
+      conclusion: the external tree is its own handler rather than a flag on the existing
+        one, because the existing one throws the ReadSeeker away
+  caching:
+    problem: the tree is deployed as its own artifact, so a build-time strong ETag
+      can describe bytes the deployment replaced
+    why_that_is_the_specific_failure_to_avoid: data:public-asset-manifest exists so
+      a response never claims what the build did not produce, and api:public-asset-middleware
+      already treats a manifest naming an absent file as a 500 for exactly this reason
+    recommendation: no build-time digest; http.ServeContent takes size and modification
+      time from the file it is handed, so the validator is honest without the manifest
+      carrying anything that could go stale
+    the_thing_that_cannot_be_had: independent deployment and an immutable URL at once,
+      since immutable is only honest for a name carrying the digest of its own bytes,
+      per requirement:derived-asset-pipeline caching
+    so: these URLs revalidate, and that is the trade the mechanism is
+  deployment:
+    who_copies_it: the api:cli-init container scaffold, which already COPYs the binary
+      and the production configuration explicitly and gains one more line naming a
+      directory that needs no build stage
+    narrows_to: a container or bundle deployment, which is every target of decision:serverless-target-scope
+    bare_binary: a project shipping a binary by itself has no step that would carry
+      a directory, so the build says it produced one rather than assuming something
+      will notice
+    refused_targets: requirement:cloudflare-workers-hosting has no filesystem, so
+      a build for it fails naming the target rather than emitting an artifact that
+      404s in production
+  unchanged_by_this:
+    verification: requirement:asset-content-verification reads only the leading window
+      for anything but SVG, so checking a large file costs what checking a small one
+      costs, and the second tree is checked like the first
+    precompression: policy:public-asset-precompression already excludes audio and
+      video, so nothing changes for the motivating kind
+    transforms: nothing in the second tree is converted, which is what makes it the
+      second tree
+  open_questions:
+    naming: bundle already means the script build in this project, so a directory
+      named for bundling reads as an instruction to the JavaScript pipeline rather
+      than a statement about the binary; the distinction the name has to carry is
+      which artifact the bytes ship in
+    existing_projects: concept:project-layout scaffolds public.go once and never rewrites
+      it, so an existing project acquires the second tree by hand, as requirement:derived-asset-pipeline
+      already found for dist/public
+    first_request_latency: an embedded read is a slice of the binary image and an
+      external read is a file open, which is the right trade for a video and worth
+      measuring before anything small is moved
+  acceptance_sketch:
+  - a video in the second tree is absent from the binary, present in the image, served
+    under its ordinary URL, and seekable
+  - the embedded tree of the same project builds byte-identically to a build before
+    this existed
+  - no large file is copied by the build
+  - one URL reachable from both trees fails the build naming both paths
+  - a URL the manifest does not name is 404 whatever either tree holds
+  - a target that cannot carry a directory fails the build naming the target, rather
+    than at the first request
+  - a page referencing an asset does not say, and cannot tell, which tree answered
+  non_goals:
+  - uploading anything anywhere, which stays operator state per decision:serverless-target-scope
+  - a media hosting story, a CDN integration, or an object storage client
+  - transcoding, which policy:asset-transform-matrix already refuses at request time
+    and this does not reopen
+  - a second mount or a second configuration key for the URL space, which stays contiguous
+  - moving a file between the trees automatically, which is the threshold problem
+    this shape exists to avoid
+relations:
+- relation: mentions
+  to: api:cli-init
+  resolution: resolved
+- relation: mentions
+  to: api:public-asset-middleware
+  resolution: resolved
+- relation: mentions
+  to: concept:project-layout
+  resolution: resolved
+- relation: mentions
+  to: data:public-asset-manifest
+  resolution: resolved
+- relation: mentions
+  to: decision:derived-tree-development
+  resolution: resolved
+- relation: mentions
+  to: decision:serverless-target-scope
+  resolution: resolved
+- relation: mentions
+  to: policy:asset-transform-matrix
+  resolution: resolved
+- relation: mentions
+  to: policy:generated-artifacts
+  resolution: resolved
+- relation: mentions
+  to: policy:public-asset-precompression
+  resolution: resolved
+- relation: mentions
+  to: policy:public-asset-resolution
+  resolution: resolved
+- relation: mentions
+  to: requirement:asset-content-verification
+  resolution: resolved
+- relation: mentions
+  to: requirement:cloudflare-workers-hosting
+  resolution: resolved
+- relation: mentions
+  to: requirement:derived-asset-pipeline
+  resolution: resolved
+- relation: mentions
+  to: requirement:public-asset-delivery
+  resolution: resolved

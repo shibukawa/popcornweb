@@ -1,0 +1,37 @@
+id: decision:wasi-http-deferred
+type: decision
+title: Defer WASI HTTP Adapter
+summary: The first Popcorn Web release targets TinyGo native executables and defers
+  component-model WASI HTTP hosting to a later adapter.
+facts:
+  legacy_body: "The first Popcorn Web release targets TinyGo native executables and\
+    \ defers component-model WASI HTTP hosting to a later adapter.\n\n```yaml\nstatus:\
+    \ accepted_for_mvp\nmvp_target: TinyGo native executable using net/http\ndeferred:\n\
+    \  - WASI Preview 2 HTTP component adapter\n  - runtime-specific WIT packaging\n\
+    reason:\n  - system:tinybind public handlers use net/http types\n  - WASI HTTP\
+    \ hosts require runtime-specific transport integration\nfuture_boundary: keep\
+    \ handler business logic separable from listener startup\nkept_by: requirement:alternate-http-backend-readiness,\
+    \ which generalizes this boundary to any non-net/http backend and gives it decision:transport-handle-containment\
+    \ as an enforced form\n```"
+  status: accepted_for_mvp
+  mvp_target: TinyGo native executable using net/http
+  deferred:
+  - WASI Preview 2 HTTP component adapter
+  - runtime-specific WIT packaging
+  reason:
+  - system:tinybind public handlers use net/http types
+  - WASI HTTP hosts require runtime-specific transport integration
+  future_boundary: keep handler business logic separable from listener startup
+  kept_by: requirement:alternate-http-backend-readiness, which generalizes this boundary
+    to any non-net/http backend and gives it decision:transport-handle-containment
+    as an enforced form
+relations:
+- relation: mentions
+  to: decision:transport-handle-containment
+  resolution: resolved
+- relation: mentions
+  to: requirement:alternate-http-backend-readiness
+  resolution: resolved
+- relation: mentions
+  to: system:tinybind
+  resolution: resolved

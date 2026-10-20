@@ -1,0 +1,93 @@
+id: policy:cookie-value-protection
+type: policy
+title: Cookie Value Protection
+summary: A cookie carries application data under one of three protections, chosen
+  by what the client may read and what it may change.
+facts:
+  legacy_body: "A cookie carries application data under one of three protections,\
+    \ chosen by what the client may read and what it may change.\n\n```yaml\nmodes:\n\
+    \  plain:\n    client_reads: yes\n    client_writes: yes\n    encoding: base64url\
+    \ of the payload, decodable in one browser call\n    use: display preferences\
+    \ and other client-owned state\n    rule: a decoded value is request input and\
+    \ is validated like any other\n  signed:\n    client_reads: yes\n    client_writes:\
+    \ no\n    mechanism: HMAC-SHA256 over the versioned value\n    use: values the\
+    \ client may see but not choose\n  sealed:\n    client_reads: no\n    client_writes:\
+    \ no\n    mechanism: AES-256-GCM\n    use: anything the client must not read,\
+    \ including a data:session-record\nformat:\n  layout: format version, mode tag,\
+    \ then the body\n  encoding: base64url without padding, so no value needs cookie\
+    \ quoting\n  authenticated_context: format version, mode, cookie name, and one\
+    \ caller binding string\n  expiry: absolute stamp inside the authenticated payload\
+    \ of a protected value\nkeys:\n  secret: 32 or more random bytes, carried as base64\n\
+    \  derivation: one purpose-separated subkey per mode, so one secret serves both\n\
+    \  rotation: the first secret writes and retired secrets only read\nrules:\n \
+    \ - the reader fixes the mode: a value written in another mode is rejected, never\
+    \ decoded\n  - a value moved to another cookie name or presented under another\
+    \ binding is rejected\n  - a protected value past its embedded expiry is rejected\
+    \ whatever the cookie attributes say\n  - a plain value carries no expiry, because\
+    \ a client that keeps it can also rewrite it\n  - reject a secret shorter than\
+    \ 256 bits and an empty keyring\n  - never log a cookie value, a secret, or the\
+    \ text of a rejected secret\n  - refuse a value beyond the browser size budget\
+    \ instead of writing one the browser drops\n  - promoting a cookie to a stronger\
+    \ mode invalidates values written under the weaker one\nsurface: api:cookie-jar\n\
+    tier_selection: requirement:state-storage-tiers decides which mode a piece of\
+    \ state needs\nsession_records: policy:session-security still governs what a session\
+    \ cookie may hold\n```"
+  modes:
+    plain:
+      client_reads: true
+      client_writes: true
+      encoding: base64url of the payload, decodable in one browser call
+      use: display preferences and other client-owned state
+      rule: a decoded value is request input and is validated like any other
+    signed:
+      client_reads: true
+      client_writes: false
+      mechanism: HMAC-SHA256 over the versioned value
+      use: values the client may see but not choose
+    sealed:
+      client_reads: false
+      client_writes: false
+      mechanism: AES-256-GCM
+      use: anything the client must not read, including a data:session-record
+  format:
+    layout: format version, mode tag, then the body
+    encoding: base64url without padding, so no value needs cookie quoting
+    authenticated_context: format version, mode, cookie name, and one caller binding
+      string
+    expiry: absolute stamp inside the authenticated payload of a protected value
+  keys:
+    secret: 32 or more random bytes, carried as base64
+    derivation: one purpose-separated subkey per mode, so one secret serves both
+    rotation: the first secret writes and retired secrets only read
+  rules:
+  - the reader fixes the mode: a value written in another mode is rejected, never
+      decoded
+  - a value moved to another cookie name or presented under another binding is rejected
+  - a protected value past its embedded expiry is rejected whatever the cookie attributes
+    say
+  - a plain value carries no expiry, because a client that keeps it can also rewrite
+    it
+  - reject a secret shorter than 256 bits and an empty keyring
+  - never log a cookie value, a secret, or the text of a rejected secret
+  - refuse a value beyond the browser size budget instead of writing one the browser
+    drops
+  - promoting a cookie to a stronger mode invalidates values written under the weaker
+    one
+  surface: api:cookie-jar
+  tier_selection: requirement:state-storage-tiers decides which mode a piece of state
+    needs
+  session_records: policy:session-security still governs what a session cookie may
+    hold
+relations:
+- relation: mentions
+  to: api:cookie-jar
+  resolution: resolved
+- relation: mentions
+  to: data:session-record
+  resolution: resolved
+- relation: mentions
+  to: policy:session-security
+  resolution: resolved
+- relation: mentions
+  to: requirement:state-storage-tiers
+  resolution: resolved

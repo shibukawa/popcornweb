@@ -1,0 +1,138 @@
+id: requirement:live-error-report-off-lock
+type: requirement
+title: Report A Live Failure Without Holding The Boundary
+summary: A live boundary must not hold its lock while calling the render error reporter,
+  because the reporter is the caller's logger and a subscription that stalls behind
+  a log write stops updating a screen nobody can see is stale.
+facts:
+  legacy_body: "A live boundary must not hold its lock while calling the render error\
+    \ reporter, because the reporter is the caller's logger and a subscription that\
+    \ stalls behind a log write stops updating a screen nobody can see is stale.\n\
+    \n```yaml\nowner: system:tinybind\nstatus: implemented upstream in v0.2.8, taken\
+    \ first of the three live integration requests because it was nearly free and\
+    \ the only one that was a defect rather than a missing capability\nshipped:\n\
+    \  shape: the render callback returns the failure to report instead of reporting\
+    \ in place, and the pump hands it to the reporter after releasing the delivery\
+    \ lock\n  scope: the synchronous entry runs the same pump and had the same problem,\
+    \ so both paths are covered\n  no_signature_change: the caller's reporter is unchanged,\
+    \ and no caller can observe the difference except by not stalling\npriority: should\n\
+    when_it_bites:\n  path: the live entry only; an await boundary already reports\
+    \ off the lock\n  trigger: a live source yielding an error, a delivery whose render\
+    \ fails, or a recovered panic in a source\n  amplifier: a logger that blocks —\
+    \ a full pipe, a slow stdout, a synchronous exporter, a rotating file handler\n\
+    \  correlated: the case that produces a burst of failure deliveries is usually\
+    \ the same outage that slows the log pipeline, so the two arrive together rather\
+    \ than independently\n  consequence: the boundary cannot take another delivery\
+    \ until the log write returns, so the region freezes while the rest of the page\
+    \ keeps updating\n  worse_than_a_delay:\n    correction: an earlier reading here\
+    \ called this freshness only, which was wrong\n    fact: the reporter takes no\
+    \ context, so a reporter that blocks indefinitely holds the clause's goroutines\
+    \ and sources rather than only delaying them, and cancellation does not free them\n\
+    \    bounded_by: the response itself still ends, because the consumer returns\
+    \ on its own context\nwhat_it_costs_here:\n  today: nothing measured; api:logger\
+    \ writes are fast on a healthy host, which is what makes this a latent fault rather\
+    \ than a visible one\n  exposure: policy:live-subscription-bounds requires that\
+    \ a reporter passed by api:html-response must not block, which is a constraint\
+    \ the framework states and cannot enforce\nworkaround_difficulty:\n  possible:\
+    \ yes, and rejected\n  shape: hand each report to a buffered channel or a goroutine,\
+    \ so the reporter returns immediately\n  cost: roughly 40 lines plus tests, a\
+    \ dropped-record counter, and a queue depth to choose\n  why_rejected:\n    -\
+    \ it trades an error record for freshness, which is the wrong way round: an operator\
+    \ loses the log line describing the outage precisely during the outage\n    -\
+    \ it puts a log queue inside the response path, which policy:log-emission keeps\
+    \ out of the framework deliberately\n    - it reorders records against every other\
+    \ log this process writes, so a live failure would no longer sit between the requests\
+    \ around it\n  narrower_alternative: a reporter that drops only when it would\
+    \ block, which is the same trade in a smaller package\ndownstream_effect:\n  code:\
+    \ none; api:html-response passes an api:logger write, which was already the reporter\
+    \ this needed\n  constraint_lifted: policy:live-subscription-bounds no longer\
+    \ has to require a non-blocking reporter, which was a rule the framework stated\
+    \ and could not enforce\nacceptance:\n  - a reporter that blocks for a second\
+    \ delays no delivery of any boundary\n  - a failure delivery is still reported\
+    \ exactly once, in the order it occurred for that boundary\n  - the await path's\
+    \ behaviour is unchanged\n```"
+  owner: system:tinybind
+  status: implemented upstream in v0.2.8, taken first of the three live integration
+    requests because it was nearly free and the only one that was a defect rather
+    than a missing capability
+  shipped:
+    shape: the render callback returns the failure to report instead of reporting
+      in place, and the pump hands it to the reporter after releasing the delivery
+      lock
+    scope: the synchronous entry runs the same pump and had the same problem, so both
+      paths are covered
+    no_signature_change: the caller's reporter is unchanged, and no caller can observe
+      the difference except by not stalling
+  priority: should
+  when_it_bites:
+    path: the live entry only; an await boundary already reports off the lock
+    trigger: a live source yielding an error, a delivery whose render fails, or a
+      recovered panic in a source
+    amplifier: a logger that blocks — a full pipe, a slow stdout, a synchronous exporter,
+      a rotating file handler
+    correlated: the case that produces a burst of failure deliveries is usually the
+      same outage that slows the log pipeline, so the two arrive together rather than
+      independently
+    consequence: the boundary cannot take another delivery until the log write returns,
+      so the region freezes while the rest of the page keeps updating
+    worse_than_a_delay:
+      correction: an earlier reading here called this freshness only, which was wrong
+      fact: the reporter takes no context, so a reporter that blocks indefinitely
+        holds the clause's goroutines and sources rather than only delaying them,
+        and cancellation does not free them
+      bounded_by: the response itself still ends, because the consumer returns on
+        its own context
+  what_it_costs_here:
+    today: nothing measured; api:logger writes are fast on a healthy host, which is
+      what makes this a latent fault rather than a visible one
+    exposure: policy:live-subscription-bounds requires that a reporter passed by api:html-response
+      must not block, which is a constraint the framework states and cannot enforce
+  workaround_difficulty:
+    possible: yes, and rejected
+    shape: hand each report to a buffered channel or a goroutine, so the reporter
+      returns immediately
+    cost: roughly 40 lines plus tests, a dropped-record counter, and a queue depth
+      to choose
+    why_rejected:
+    - it trades an error record for freshness, which is the wrong way round: an operator
+        loses the log line describing the outage precisely during the outage
+    - it puts a log queue inside the response path, which policy:log-emission keeps
+      out of the framework deliberately
+    - it reorders records against every other log this process writes, so a live failure
+      would no longer sit between the requests around it
+    narrower_alternative: a reporter that drops only when it would block, which is
+      the same trade in a smaller package
+  downstream_effect:
+    code: none; api:html-response passes an api:logger write, which was already the
+      reporter this needed
+    constraint_lifted: policy:live-subscription-bounds no longer has to require a
+      non-blocking reporter, which was a rule the framework stated and could not enforce
+  acceptance:
+  - a reporter that blocks for a second delays no delivery of any boundary
+  - a failure delivery is still reported exactly once, in the order it occurred for
+    that boundary
+  - the await path's behaviour is unchanged
+acceptance:
+  item-45005bbe09688b37:
+    text: a reporter that blocks for a second delays no delivery of any boundary
+  item-5627a59a9798cd65:
+    text: a failure delivery is still reported exactly once, in the order it occurred
+      for that boundary
+  item-aedc25c30129ba6b:
+    text: the await path's behaviour is unchanged
+relations:
+- relation: mentions
+  to: api:html-response
+  resolution: resolved
+- relation: mentions
+  to: api:logger
+  resolution: resolved
+- relation: mentions
+  to: policy:live-subscription-bounds
+  resolution: resolved
+- relation: mentions
+  to: policy:log-emission
+  resolution: resolved
+- relation: mentions
+  to: system:tinybind
+  resolution: resolved

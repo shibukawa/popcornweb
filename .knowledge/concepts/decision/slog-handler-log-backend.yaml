@@ -1,0 +1,79 @@
+id: decision:slog-handler-log-backend
+type: decision
+title: slog Handler as the Log Encoder
+summary: api:logger is a framework type with scalar attributes, and log/slog is used
+  underneath it as the stdout encoder rather than as the API.
+facts:
+  legacy_body: "api:logger is a framework type with scalar attributes, and log/slog\
+    \ is used underneath it as the stdout encoder rather than as the API.\n\n```yaml\n\
+    status: accepted\nproblem: the framework passed *slog.Logger through pwruntime.Resources,\
+    \ every middleware, and every accessor, so the logging API was slog's and could\
+    \ not carry trace correlation or OTLP routing\napi_is_not_slog:\n  - attributes\
+    \ are scalars only, so a record can never fail to encode while a request is being\
+    \ served\n  - one Attribute type is shared with requirement:contrib-otel spans,\
+    \ so a value annotates both without conversion\n  - no Fatal or Panic, because\
+    \ logging must not decide whether the process lives\n  - correlation is captured\
+    \ at acquisition, which slog has no place for\nslog_is_the_encoder:\n  - JSON\
+    \ and plaintext already exist and are tested upstream\n  - an application can\
+    \ substitute any slog.Handler it already uses\n  - severity numbers are slog's,\
+    \ so a substituted handler filters correctly with no mapping table\n  - it works\
+    \ under TinyGo, per decision:tinygo-042-baseline\ntinygo_limit:\n  fact: runtime.Callers\
+    \ is a stub, so slog silently omits source locations\n  consequence: no severity,\
+    \ field, or acceptance criterion of api:logger depends on a source location\n\
+    sink_shape:\n  contract: Sink.Emit receives a finished Record; the backend holds\
+    \ a severity floor and an ordered sink list\n  nil_discipline: a constructor returns\
+    \ the Sink interface, because a typed nil pointer in an interface is not nil and\
+    \ would make an unconfigured destination look configured\n  correlation: the OTLP\
+    \ sink restores the captured span on the context before emitting, since the provider\
+    \ reads correlation from there and the severity methods take no context\ngroup_removal:\n\
+    \  fact: policy:startup-summary previously used nested slog groups\n  now: dotted\
+    \ keys, because a record attribute is a scalar and the same record has to survive\
+    \ OTLP export\n```"
+  status: accepted
+  problem: the framework passed *slog.Logger through pwruntime.Resources, every middleware,
+    and every accessor, so the logging API was slog's and could not carry trace correlation
+    or OTLP routing
+  api_is_not_slog:
+  - attributes are scalars only, so a record can never fail to encode while a request
+    is being served
+  - one Attribute type is shared with requirement:contrib-otel spans, so a value annotates
+    both without conversion
+  - no Fatal or Panic, because logging must not decide whether the process lives
+  - correlation is captured at acquisition, which slog has no place for
+  slog_is_the_encoder:
+  - JSON and plaintext already exist and are tested upstream
+  - an application can substitute any slog.Handler it already uses
+  - severity numbers are slog's, so a substituted handler filters correctly with no
+    mapping table
+  - it works under TinyGo, per decision:tinygo-042-baseline
+  tinygo_limit:
+    fact: runtime.Callers is a stub, so slog silently omits source locations
+    consequence: no severity, field, or acceptance criterion of api:logger depends
+      on a source location
+  sink_shape:
+    contract: Sink.Emit receives a finished Record; the backend holds a severity floor
+      and an ordered sink list
+    nil_discipline: a constructor returns the Sink interface, because a typed nil
+      pointer in an interface is not nil and would make an unconfigured destination
+      look configured
+    correlation: the OTLP sink restores the captured span on the context before emitting,
+      since the provider reads correlation from there and the severity methods take
+      no context
+  group_removal:
+    fact: policy:startup-summary previously used nested slog groups
+    now: dotted keys, because a record attribute is a scalar and the same record has
+      to survive OTLP export
+lifecycle: accepted
+relations:
+- relation: mentions
+  to: api:logger
+  resolution: resolved
+- relation: mentions
+  to: decision:tinygo-042-baseline
+  resolution: resolved
+- relation: mentions
+  to: policy:startup-summary
+  resolution: resolved
+- relation: mentions
+  to: requirement:contrib-otel
+  resolution: resolved

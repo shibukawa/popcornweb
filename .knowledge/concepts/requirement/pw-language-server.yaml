@@ -1,0 +1,332 @@
+id: requirement:pw-language-server
+type: requirement
+title: Popcorn Web Language Server
+summary: One Go language server, reached through api:cli-lsp, answers every editor
+  feature past highlighting by reusing the parsers, the project loader, and the check
+  catalog the CLI already runs.
+facts:
+  legacy_body: "One Go language server, reached through api:cli-lsp, answers every\
+    \ editor feature past highlighting by reusing the parsers, the project loader,\
+    \ and the check catalog the CLI already runs.\n\n```yaml\nstatus: implemented\
+    \ at internal/pwlsp for the stage_2 capabilities marked below, over the project\
+    \ model this file describes; nothing resolves a type yet, so every stage_3 answer\
+    \ is still absent\nstage: 2 of vision:editor-support\nmechanism: decision:language-server-in-pw-cli\n\
+    surface: api:cli-lsp\ndocuments:\n  kinds: the three concept:template-source-dialects\
+    \ suffixes, plus popcornweb.toml for requirement:editor-diagnostics\n  go_sources:\
+    \ read for resolution, never served; gopls owns Go documents\n  generated: a *_pw_gen.go\
+    \ is an input to navigation and never a document the server offers to change;\
+    \ requirement:editor-generated-peek is how its content is read, and requirement:template-source-positions\
+    \ is what makes a position in it resolvable\nproject_model:\n  loaded_by: the\
+    \ CLI's own data:project-config reader, injected rather than reimplemented, so\
+    \ the server and api:cli-generate cannot disagree about which directory carries\
+    \ which dialect\n  index: every .pw.* source the purposes list, parsed once and\
+    \ held as its declarations; rebuilt whole on a reload, because a purpose change\
+    \ adds and removes directories and reconciling that costs more than the walk\n\
+    \  freshness: an open buffer supersedes its indexed copy, so a declaration added\
+    \ and not yet saved is findable and an indexed position is never handed out stale\n\
+    \  type_graph:\n    what: every declaration with its parameters, output, fields,\
+    \ and the package it belongs to, plus each file's imports, so a name resolves\
+    \ across files and across packages\n    built_from: the parse, because these dialects\
+    \ declare their types; resolving a name is a lookup rather than an inference\n\
+    \    lowered_go: taken from system:tinybind's own Signatures where the module\
+    \ analyzes cleanly, never derived here; a buffer mid-edit usually does not analyze,\
+    \ and losing the Go type costs a line of hover rather than the answer\n    visibility:\
+    \ a file sees its own package's declarations and the exported declarations of\
+    \ each package it imports; a local declaration shadows an imported one, as generation\
+    \ resolves it\n    overlay: the open buffers replace their indexed files per request\
+    \ rather than mutating the index, so a closed buffer's declarations do not outlive\
+    \ it\n    limit: the identifier under the caret is resolved, not the body position\
+    \ it was written in, so a name inside a string literal resolves as a reference;\
+    \ deciding that needs the body AST rather than the graph\n    scope_layer: a second\
+    \ walk over the body AST collects the val bindings, loop variables, and await\
+    \ bindings in a declaration, which is what an inlay hint annotates and what an\
+    \ expression completion offers; a binding's type is filled only where its expression\
+    \ is a call of a declaration the graph knows, and left empty otherwise\n    completion_position:\
+    \ decided from the text around the caret rather than from the body AST, because\
+    \ a buffer mid-keystroke usually does not parse and a completion that only works\
+    \ on a parseable document never appears\n    not_covered: the Go directions of\
+    \ requirement:editor-navigation, which need generated output and the call sites\
+    \ gopls indexes\n  root: the nearest popcornweb.toml, per data:project-config\n\
+    \  purposes: decision:explicit-generation-sources decides which directory contributes\
+    \ which source kind, so the server answers the same scope api:cli-generate reads\n\
+    \  no_project: parse-only mode, announced once over window/logMessage; syntax\
+    \ diagnostics still work and every resolved feature reports unavailable rather\
+    \ than guessing\n  unreadable: a diagnostic on the popcornweb.toml that would\
+    \ not load, cleared by the next load that succeeds, with syntax analysis unaffected\n\
+    \  outside_every_purpose: a source no purpose lists is absent from the index and\
+    \ from workspace/symbol whether or not it is open, and still gets syntax diagnostics;\
+    \ it is not reported as misplaced, because decision:shared-check-catalog has no\
+    \ such check for api:cli-generate to have produced first\n  reload: a popcornweb.toml\
+    \ change reloads the project model without restarting the process, over workspace/didChangeWatchedFiles;\
+    \ the client owns the watch, so the server registers none and every open document\
+    \ is republished after\ncapabilities:\n  stage_2:\n    - textDocument/publishDiagnostics,\
+    \ per requirement:editor-diagnostics; implemented for the syntax source\n    -\
+    \ textDocument/documentSymbol, listing declarations of the open file; implemented\n\
+    \    - workspace/symbol, per requirement:editor-workspace-symbols; implemented\n\
+    \    - textDocument/semanticTokens, refining rule:template-grammar-scopes rather\
+    \ than replacing it\n    - textDocument/foldingRange and textDocument/selectionRange,\
+    \ over declaration bodies and control forms, which the grammar cannot nest reliably\
+    \ across an embedded body\n  stage_3:\n    - textDocument/definition, references,\
+    \ and hover, per requirement:editor-navigation; implemented for the template-to-template\
+    \ half over the type graph below\n    - textDocument/completion, per requirement:editor-completion;\
+    \ implemented\n    - textDocument/inlayHint, per requirement:editor-inlay-hints;\
+    \ implemented\n  own_methods:\n    why: three surfaces stage 3 asks for have no\
+    \ LSP method, and inventing a use for one that exists would make a client that\
+    \ knows LSP guess wrong\n    namespaced: pw/, so a client cannot mistake one for\
+    \ a standard capability and a client that does not know them never sends one\n\
+    \    pw/generatedFor: the emitted Go of the declaration at a position, per requirement:editor-generated-peek\n\
+    \    pw/routes: the concept:page-tree routes, per requirement:editor-route-explorer\n\
+    \    pw/storyFor: the requirement:template-storybook URL of a component, per requirement:editor-story-preview\n\
+    \    pw/project: the loaded project's root, name, and console URL, so a client\
+    \ builds a URL without reading data:project-config itself\n    pw/declarationFor:\
+    \ the .pw.* declaration behind a generated Go symbol, named by the client because\
+    \ the document it was read from is Go and gopls owns those\n  stage_4:\n    -\
+    \ textDocument/rename, delegated to requirement:declaration-rename rather than\
+    \ implemented here, because the edit set reaches handwritten Go; implemented,\
+    \ and answering with the whole set so a client shows it before anything is written\n\
+    \    - textDocument/codeAction, per requirement:editor-code-actions; implemented\
+    \ for the one finding that has a mechanical repair\n  deferred:\n    - formatting\
+    \ over LSP, because requirement:editor-formatting already delivers it through\
+    \ decision:formatter-delivery and a third path would be a third answer to the\
+    \ same question\nperformance:\n  budget: a keystroke reparse of one document stays\
+    \ interactive; a whole-project analysis runs on save and on project load\n  incremental:\
+    \ parse the open document only; resolution reuses the cached project model\n \
+    \ no_generation: the server never writes generated output, per policy:editor-tool-execution\n\
+    transport:\n  framing: the LSP base protocol, written in the server rather than\
+    \ taken from a library, because the pw binary carries it and a protocol package\
+    \ would bring a type set far wider than the capabilities above\n  sync: full documents,\
+    \ since the parsers take a whole buffer and an incremental path would add a patch\
+    \ to reconcile for nothing\n  reach: the buffers the client sends and nothing\
+    \ else; a request about a document that was never opened is refused rather than\
+    \ answered from disk, which is what keeps policy:editor-tool-execution's read-only\
+    \ promise checkable\nlifecycle:\n  start: on the first document of a registered\
+    \ language in a trusted workspace\n  stop: with the window, or on an explicit\
+    \ restart command\n  crash: the client restarts a bounded number of times and\
+    \ then falls back to stage-1 behavior with a single notification\nacceptance:\n\
+    \  - a syntax error in an open document is reported without saving\n  - a file\
+    \ opened outside any project still reports syntax diagnostics and reports no project-scoped\
+    \ diagnostic\n  - a popcornweb.toml edit changing a generate purpose changes which\
+    \ files report the out-of-purpose diagnostic, with no restart\n  - the server\
+    \ writes no file in the workspace during an editing session\n  - semantic tokens\
+    \ and grammar scopes never disagree on the same range\n```"
+  status: implemented at internal/pwlsp for the stage_2 capabilities marked below,
+    over the project model this file describes; nothing resolves a type yet, so every
+    stage_3 answer is still absent
+  stage: 2 of vision:editor-support
+  mechanism: decision:language-server-in-pw-cli
+  surface: api:cli-lsp
+  documents:
+    kinds: the three concept:template-source-dialects suffixes, plus popcornweb.toml
+      for requirement:editor-diagnostics
+    go_sources: read for resolution, never served; gopls owns Go documents
+    generated: a *_pw_gen.go is an input to navigation and never a document the server
+      offers to change; requirement:editor-generated-peek is how its content is read,
+      and requirement:template-source-positions is what makes a position in it resolvable
+  project_model:
+    loaded_by: the CLI's own data:project-config reader, injected rather than reimplemented,
+      so the server and api:cli-generate cannot disagree about which directory carries
+      which dialect
+    index: every .pw.* source the purposes list, parsed once and held as its declarations;
+      rebuilt whole on a reload, because a purpose change adds and removes directories
+      and reconciling that costs more than the walk
+    freshness: an open buffer supersedes its indexed copy, so a declaration added
+      and not yet saved is findable and an indexed position is never handed out stale
+    type_graph:
+      what: every declaration with its parameters, output, fields, and the package
+        it belongs to, plus each file's imports, so a name resolves across files and
+        across packages
+      built_from: the parse, because these dialects declare their types; resolving
+        a name is a lookup rather than an inference
+      lowered_go: taken from system:tinybind's own Signatures where the module analyzes
+        cleanly, never derived here; a buffer mid-edit usually does not analyze, and
+        losing the Go type costs a line of hover rather than the answer
+      visibility: a file sees its own package's declarations and the exported declarations
+        of each package it imports; a local declaration shadows an imported one, as
+        generation resolves it
+      overlay: the open buffers replace their indexed files per request rather than
+        mutating the index, so a closed buffer's declarations do not outlive it
+      limit: the identifier under the caret is resolved, not the body position it
+        was written in, so a name inside a string literal resolves as a reference;
+        deciding that needs the body AST rather than the graph
+      scope_layer: a second walk over the body AST collects the val bindings, loop
+        variables, and await bindings in a declaration, which is what an inlay hint
+        annotates and what an expression completion offers; a binding's type is filled
+        only where its expression is a call of a declaration the graph knows, and
+        left empty otherwise
+      completion_position: decided from the text around the caret rather than from
+        the body AST, because a buffer mid-keystroke usually does not parse and a
+        completion that only works on a parseable document never appears
+      not_covered: the Go directions of requirement:editor-navigation, which need
+        generated output and the call sites gopls indexes
+    root: the nearest popcornweb.toml, per data:project-config
+    purposes: decision:explicit-generation-sources decides which directory contributes
+      which source kind, so the server answers the same scope api:cli-generate reads
+    no_project: parse-only mode, announced once over window/logMessage; syntax diagnostics
+      still work and every resolved feature reports unavailable rather than guessing
+    unreadable: a diagnostic on the popcornweb.toml that would not load, cleared by
+      the next load that succeeds, with syntax analysis unaffected
+    outside_every_purpose: a source no purpose lists is absent from the index and
+      from workspace/symbol whether or not it is open, and still gets syntax diagnostics;
+      it is not reported as misplaced, because decision:shared-check-catalog has no
+      such check for api:cli-generate to have produced first
+    reload: a popcornweb.toml change reloads the project model without restarting
+      the process, over workspace/didChangeWatchedFiles; the client owns the watch,
+      so the server registers none and every open document is republished after
+  capabilities:
+    stage_2:
+    - textDocument/publishDiagnostics, per requirement:editor-diagnostics; implemented
+      for the syntax source
+    - textDocument/documentSymbol, listing declarations of the open file; implemented
+    - workspace/symbol, per requirement:editor-workspace-symbols; implemented
+    - textDocument/semanticTokens, refining rule:template-grammar-scopes rather than
+      replacing it
+    - textDocument/foldingRange and textDocument/selectionRange, over declaration
+      bodies and control forms, which the grammar cannot nest reliably across an embedded
+      body
+    stage_3:
+    - textDocument/definition, references, and hover, per requirement:editor-navigation;
+      implemented for the template-to-template half over the type graph below
+    - textDocument/completion, per requirement:editor-completion; implemented
+    - textDocument/inlayHint, per requirement:editor-inlay-hints; implemented
+    own_methods:
+      why: three surfaces stage 3 asks for have no LSP method, and inventing a use
+        for one that exists would make a client that knows LSP guess wrong
+      namespaced: pw/, so a client cannot mistake one for a standard capability and
+        a client that does not know them never sends one
+      pw/generatedFor: the emitted Go of the declaration at a position, per requirement:editor-generated-peek
+      pw/routes: the concept:page-tree routes, per requirement:editor-route-explorer
+      pw/storyFor: the requirement:template-storybook URL of a component, per requirement:editor-story-preview
+      pw/project: the loaded project's root, name, and console URL, so a client builds
+        a URL without reading data:project-config itself
+      pw/declarationFor: the .pw.* declaration behind a generated Go symbol, named
+        by the client because the document it was read from is Go and gopls owns those
+    stage_4:
+    - textDocument/rename, delegated to requirement:declaration-rename rather than
+      implemented here, because the edit set reaches handwritten Go; implemented,
+      and answering with the whole set so a client shows it before anything is written
+    - textDocument/codeAction, per requirement:editor-code-actions; implemented for
+      the one finding that has a mechanical repair
+    deferred:
+    - formatting over LSP, because requirement:editor-formatting already delivers
+      it through decision:formatter-delivery and a third path would be a third answer
+      to the same question
+  performance:
+    budget: a keystroke reparse of one document stays interactive; a whole-project
+      analysis runs on save and on project load
+    incremental: parse the open document only; resolution reuses the cached project
+      model
+    no_generation: the server never writes generated output, per policy:editor-tool-execution
+  transport:
+    framing: the LSP base protocol, written in the server rather than taken from a
+      library, because the pw binary carries it and a protocol package would bring
+      a type set far wider than the capabilities above
+    sync: full documents, since the parsers take a whole buffer and an incremental
+      path would add a patch to reconcile for nothing
+    reach: the buffers the client sends and nothing else; a request about a document
+      that was never opened is refused rather than answered from disk, which is what
+      keeps policy:editor-tool-execution's read-only promise checkable
+  lifecycle:
+    start: on the first document of a registered language in a trusted workspace
+    stop: with the window, or on an explicit restart command
+    crash: the client restarts a bounded number of times and then falls back to stage-1
+      behavior with a single notification
+  acceptance:
+  - a syntax error in an open document is reported without saving
+  - a file opened outside any project still reports syntax diagnostics and reports
+    no project-scoped diagnostic
+  - a popcornweb.toml edit changing a generate purpose changes which files report
+    the out-of-purpose diagnostic, with no restart
+  - the server writes no file in the workspace during an editing session
+  - semantic tokens and grammar scopes never disagree on the same range
+acceptance:
+  item-b780160fed1a3082:
+    text: a syntax error in an open document is reported without saving
+  item-d421b7ff241ad681:
+    text: a file opened outside any project still reports syntax diagnostics and reports
+      no project-scoped diagnostic
+  item-7f26589db32c4f0f:
+    text: a popcornweb.toml edit changing a generate purpose changes which files report
+      the out-of-purpose diagnostic, with no restart
+  item-460bf337c82f23c6:
+    text: the server writes no file in the workspace during an editing session
+  item-b0fe7380d16f467f:
+    text: semantic tokens and grammar scopes never disagree on the same range
+relations:
+- relation: mentions
+  to: api:cli-generate
+  resolution: resolved
+- relation: mentions
+  to: api:cli-lsp
+  resolution: resolved
+- relation: mentions
+  to: concept:page-tree
+  resolution: resolved
+- relation: mentions
+  to: concept:template-source-dialects
+  resolution: resolved
+- relation: mentions
+  to: data:project-config
+  resolution: resolved
+- relation: mentions
+  to: decision:explicit-generation-sources
+  resolution: resolved
+- relation: mentions
+  to: decision:formatter-delivery
+  resolution: resolved
+- relation: mentions
+  to: decision:language-server-in-pw-cli
+  resolution: resolved
+- relation: mentions
+  to: decision:shared-check-catalog
+  resolution: resolved
+- relation: mentions
+  to: policy:editor-tool-execution
+  resolution: resolved
+- relation: mentions
+  to: requirement:declaration-rename
+  resolution: resolved
+- relation: mentions
+  to: requirement:editor-code-actions
+  resolution: resolved
+- relation: mentions
+  to: requirement:editor-completion
+  resolution: resolved
+- relation: mentions
+  to: requirement:editor-diagnostics
+  resolution: resolved
+- relation: mentions
+  to: requirement:editor-formatting
+  resolution: resolved
+- relation: mentions
+  to: requirement:editor-generated-peek
+  resolution: resolved
+- relation: mentions
+  to: requirement:editor-inlay-hints
+  resolution: resolved
+- relation: mentions
+  to: requirement:editor-navigation
+  resolution: resolved
+- relation: mentions
+  to: requirement:editor-route-explorer
+  resolution: resolved
+- relation: mentions
+  to: requirement:editor-story-preview
+  resolution: resolved
+- relation: mentions
+  to: requirement:editor-workspace-symbols
+  resolution: resolved
+- relation: mentions
+  to: requirement:template-source-positions
+  resolution: resolved
+- relation: mentions
+  to: requirement:template-storybook
+  resolution: resolved
+- relation: mentions
+  to: rule:template-grammar-scopes
+  resolution: resolved
+- relation: mentions
+  to: system:tinybind
+  resolution: resolved
+- relation: mentions
+  to: vision:editor-support
+  resolution: resolved

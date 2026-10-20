@@ -1,0 +1,162 @@
+id: requirement:cli-distribution
+type: requirement
+title: pw CLI Distribution
+summary: system:pw-cli is installable without a Go toolchain through a Nix flake and
+  a Homebrew tap, both fed by one tagged GitHub release.
+facts:
+  legacy_body: "system:pw-cli is installable without a Go toolchain through a Nix\
+    \ flake and a Homebrew tap, both fed by one tagged GitHub release.\n\n```yaml\n\
+    motivation: decision:host-tools-target-runtime makes pw a prerequisite of every\
+    \ project, so installation must precede any Go setup\nchannels:\n  nix: decision:nix-flake-packaging\n\
+    \  homebrew: decision:homebrew-tap-channel\n  go_install: retained as the toolchain-native\
+    \ path, never the documented default\nsingle_source:\n  tag: one semantic version\
+    \ tag drives every channel\n  artifacts: data:release-artifact\n  pipeline: decision:cli-release-pipeline\n\
+    \  flow: flow:cli-release\nversion_surface: api:cli-version\nintegrity: policy:release-integrity\n\
+    supported_targets:\n  - darwin/arm64\n  - darwin/amd64\n  - linux/amd64\n  - linux/arm64\n\
+    \  - windows/amd64\nchannel_coverage:\n  note: the Nix channel omits intel macOS\
+    \ per decision:nix-flake-packaging; every other target is served by both channels\
+    \ or by the archive\nlicense:\n  own_code: Apache-2.0\n  bundled: the requirement:contrib-mysql\
+    \ TinyGo fork is MPL-2.0, so an artifact that links it ships that notice alongside\
+    \ the Apache-2.0 one\n  reason: api:cli-migrate and api:cli-seed serve any project,\
+    \ so one binary links every rule:rdb-dsn-resolution engine rather than the one\
+    \ a project selected\nbuild_mode:\n  cgo: disabled\n  sqlite_backend: modernc.org/sqlite\
+    \ selected by decision:sqlite-backend-selection non-cgo constraint\n  server_sql_backends:\
+    \ the standard-Go pgx and go-sql-driver backends, which need no C toolchain\n\
+    \  consequence: every target cross-compiles from one linux runner with no C toolchain\n\
+    acceptance:\n  - nix run github:shibukawa/popcornweb#pw prints usage on a clean\
+    \ machine\n  - nix profile install github:shibukawa/popcornweb installs pw into\
+    \ the profile\n  - brew install shibukawa/tap/pw installs pw on darwin arm64 and\
+    \ amd64\n  - both channels report the released tag through api:cli-version\n \
+    \ - a released archive extracts exactly the data:release-artifact contents with\
+    \ no directory prefix\n  - checksums published with the release verify every archive\n\
+    \  - api:cli-migrate and api:cli-init succeed from an installed binary with no\
+    \ Go toolchain present\n  - the release job fails, and publishes nothing, when\
+    \ any target fails to build or any smoke test fails\n  - re-running the release\
+    \ for an existing tag does not overwrite published artifacts\nnon_goals:\n  -\
+    \ homebrew-core submission in this iteration; see decision:homebrew-tap-channel\n\
+    \  - nixpkgs submission in this iteration; see decision:nix-flake-packaging\n\
+    \  - Linux distribution packages, container images, and Windows package managers\n\
+    \  - a curl-to-shell install script\n  - self-update inside pw\n```"
+  motivation: decision:host-tools-target-runtime makes pw a prerequisite of every
+    project, so installation must precede any Go setup
+  channels:
+    nix: decision:nix-flake-packaging
+    homebrew: decision:homebrew-tap-channel
+    go_install: retained as the toolchain-native path, never the documented default
+  single_source:
+    tag: one semantic version tag drives every channel
+    artifacts: data:release-artifact
+    pipeline: decision:cli-release-pipeline
+    flow: flow:cli-release
+  version_surface: api:cli-version
+  integrity: policy:release-integrity
+  supported_targets:
+  - darwin/arm64
+  - darwin/amd64
+  - linux/amd64
+  - linux/arm64
+  - windows/amd64
+  channel_coverage:
+    note: the Nix channel omits intel macOS per decision:nix-flake-packaging; every
+      other target is served by both channels or by the archive
+  license:
+    own_code: Apache-2.0
+    bundled: the requirement:contrib-mysql TinyGo fork is MPL-2.0, so an artifact
+      that links it ships that notice alongside the Apache-2.0 one
+    reason: api:cli-migrate and api:cli-seed serve any project, so one binary links
+      every rule:rdb-dsn-resolution engine rather than the one a project selected
+  build_mode:
+    cgo: disabled
+    sqlite_backend: modernc.org/sqlite selected by decision:sqlite-backend-selection
+      non-cgo constraint
+    server_sql_backends: the standard-Go pgx and go-sql-driver backends, which need
+      no C toolchain
+    consequence: every target cross-compiles from one linux runner with no C toolchain
+  acceptance:
+  - nix run github:shibukawa/popcornweb#pw prints usage on a clean machine
+  - nix profile install github:shibukawa/popcornweb installs pw into the profile
+  - brew install shibukawa/tap/pw installs pw on darwin arm64 and amd64
+  - both channels report the released tag through api:cli-version
+  - a released archive extracts exactly the data:release-artifact contents with no
+    directory prefix
+  - checksums published with the release verify every archive
+  - api:cli-migrate and api:cli-init succeed from an installed binary with no Go toolchain
+    present
+  - the release job fails, and publishes nothing, when any target fails to build or
+    any smoke test fails
+  - re-running the release for an existing tag does not overwrite published artifacts
+  non_goals:
+  - homebrew-core submission in this iteration; see decision:homebrew-tap-channel
+  - nixpkgs submission in this iteration; see decision:nix-flake-packaging
+  - Linux distribution packages, container images, and Windows package managers
+  - a curl-to-shell install script
+  - self-update inside pw
+acceptance:
+  item-7aeb8e167acfea48:
+    text: nix run github:shibukawa/popcornweb#pw prints usage on a clean machine
+  item-bc7e95e553c19ccf:
+    text: nix profile install github:shibukawa/popcornweb installs pw into the profile
+  item-62b1fcb0d8d14b01:
+    text: brew install shibukawa/tap/pw installs pw on darwin arm64 and amd64
+  item-53b795c0f51fab3b:
+    text: both channels report the released tag through api:cli-version
+  item-92ab38c9ae97c8a1:
+    text: a released archive extracts exactly the data:release-artifact contents with
+      no directory prefix
+  item-f591eec3359d4fc0:
+    text: checksums published with the release verify every archive
+  item-fc61659683436384:
+    text: api:cli-migrate and api:cli-init succeed from an installed binary with no
+      Go toolchain present
+  item-22fd6721849c0531:
+    text: the release job fails, and publishes nothing, when any target fails to build
+      or any smoke test fails
+  item-c1b428e64c4b0397:
+    text: re-running the release for an existing tag does not overwrite published
+      artifacts
+relations:
+- relation: mentions
+  to: api:cli-init
+  resolution: resolved
+- relation: mentions
+  to: api:cli-migrate
+  resolution: resolved
+- relation: mentions
+  to: api:cli-seed
+  resolution: resolved
+- relation: mentions
+  to: api:cli-version
+  resolution: resolved
+- relation: mentions
+  to: data:release-artifact
+  resolution: resolved
+- relation: mentions
+  to: decision:cli-release-pipeline
+  resolution: resolved
+- relation: mentions
+  to: decision:homebrew-tap-channel
+  resolution: resolved
+- relation: mentions
+  to: decision:host-tools-target-runtime
+  resolution: resolved
+- relation: mentions
+  to: decision:nix-flake-packaging
+  resolution: resolved
+- relation: mentions
+  to: decision:sqlite-backend-selection
+  resolution: resolved
+- relation: mentions
+  to: flow:cli-release
+  resolution: resolved
+- relation: mentions
+  to: policy:release-integrity
+  resolution: resolved
+- relation: mentions
+  to: requirement:contrib-mysql
+  resolution: resolved
+- relation: mentions
+  to: rule:rdb-dsn-resolution
+  resolution: resolved
+- relation: mentions
+  to: system:pw-cli
+  resolution: resolved

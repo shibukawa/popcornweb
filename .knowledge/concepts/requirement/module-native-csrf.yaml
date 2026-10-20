@@ -1,0 +1,222 @@
+id: requirement:module-native-csrf
+type: requirement
+title: Module Native CSRF
+summary: system:tinybind v0.3.3 puts the CSRF token in every unsafe form itself, so
+  a template author writes nothing, the value never enters template scope, and what
+  this framework owns narrows to the secret, its lifecycle, and the middleware that
+  checks it.
+facts:
+  legacy_body: "system:tinybind v0.3.3 puts the CSRF token in every unsafe form itself,\
+    \ so a template author writes nothing, the value never enters template scope,\
+    \ and what this framework owns narrows to the secret, its lifecycle, and the middleware\
+    \ that checks it.\n\n```yaml\nsupersedes: the framework-supplied csrf-token element\
+    \ this catalog planned, and the interim external returning html that stood in\
+    \ for it; neither is built and neither is needed\nwhy_it_moved: an author forgetting\
+    \ a hidden field is a form that silently stops working the moment protection is\
+    \ enabled, and no framework seam placed above the template can catch that\nwhat_the_module_does:\n\
+    \  insertion: a hidden field as the first child of every unsafe form, meaning\
+    \ post, put, patch, and delete\n  authoring_cost: none; there is no element to\
+    \ write, no import, and no declaration\n  scope_containment: the value is never\
+    \ bound to a name, so no template can interpolate it into a URL, an attribute,\
+    \ or a log line\n  one_call_per_render: the token is produced at most once and\
+    \ every occurrence shares it, so the hidden field and the header cannot disagree\
+    \ by construction rather than by this framework's care\n  header: the merged runtime\
+    \ attaches it to every request it issues\n  verification: a module entry reads\
+    \ the header first, then the body, and compares in constant time\ntoken_supply:\n\
+    \  channel: a render option carrying the token, not the request context, because\
+    \ htmlbind holds no context keys and could not read one\n  where_pw_supplies_it:\
+    \ the page and streaming render entries, reading the value through api:request-context-accessors\n\
+    \  not_in_the_shared_option_builder: the fragment path shares that builder and\
+    \ renders no document, so the option is added above it exactly as decision:runtime-tag-injection\
+    \ adds the runtime tag\n  sessionless: this framework supplies no option at all,\
+    \ so an unsafe form fails the render\n  correction: an earlier revision here said\
+    \ to pass the module's explicit no-token option; reading it showed that option\
+    \ renders the field with an empty value rather than failing, which the module\
+    \ documents for a render that is not a response such as a mail body, a static\
+    \ export, or a golden test\n  why_that_matters: using it on the HTTP path would\
+    \ put an unprotected form on screen and say nothing, which is the failure this\
+    \ whole capability exists to prevent\n  missing: an unsafe form with no token\
+    \ supplied fails the render, because an empty field would submit, be rejected,\
+    \ and leave nothing pointing at the cause\ngeneration_refusals:\n  get_form: no\
+    \ token, since a GET form's fields become the query string and a token there reaches\
+    \ history, logs, and referrers\n  static_cross_origin_action: a generation error,\
+    \ because it would hand the session's secret to a third party\n  dynamic_method:\
+    \ a generation error, because an undecidable method either leaks the token to\
+    \ a GET or leaves the form unprotected\n  existing_field_of_the_same_name: left\
+    \ alone, so a project migrating from a hand-written token is not broken\nwhat_this_framework_still_owns:\n\
+    \  secret_and_delivery: requirement:csrf-token-lifecycle, which mints the value\
+    \ with the session, keeps it in data:session-record, and carries it on the cookie,\
+    \ the header, and the render\n  middleware: the path scoping, the origin check,\
+    \ the 403 through api:error-renderer, and the exclusions; none of this moved\n\
+    \  configuration: the field and header names, kept at the module defaults unless\
+    \ a project has a reason\nruntime_token_transport:\n  module_default: the token\
+    \ travels in the runtime configuration on the script tag, which is written once\
+    \ at render\n  consequence: a page held open across a rotation holds a stale token\
+    \ and its next action is refused\n  this_framework_deviates: the shipped runtime\
+    \ reads the token from a cookie at the moment a request is issued, so a rotation\
+    \ reaches an open page through an ordinary set-cookie\n  built: in the boundary\
+    \ runtime that already exists, which issues a credentialed request for the live\
+    \ delivery stream; the merged asset of requirement:unified-update-runtime inherits\
+    \ the same helper rather than introducing it\n  prior_art: Django, Laravel, and\
+    \ Spring's SPA configuration all read at request time rather than from something\
+    \ embedded in the page\n  unchanged_either_way: a form rendered before a rotation\
+    \ is refused after it, which is a security boundary working\ncaching_constraint:\n\
+    \  rule: a component containing an unsafe form cannot be output-cached, and the\
+    \ check walks the call graph\n  why: a stored body would hand one session's token\
+    \ to the next visitor\n  shape_it_pushes: split the cacheable list from the form\
+    \ that carries the token, and compose both in the page\n  escape: turning the\
+    \ module's CSRF mode off removes the constraint, for a deployment that decided\
+    \ on origin checks alone\nas_built:\n  where: the option is added in the one document\
+    \ render entry every page branch funnels through, so the buffered, streaming,\
+    \ and live paths all carry it and the fragment path does not\n  precedence: framework\
+    \ first, caller last, so an application option still wins\n  proved_by: a page\
+    \ with a form emits a token that verifies against the session secret, two responses\
+    \ emit different bytes, a sessionless render fails rather than emitting an empty\
+    \ field, and a page with no form is byte-identical with and without a session\n\
+    acceptance:\n  - a template author writes nothing and every unsafe form posts\
+    \ successfully\n  - the token never appears in template scope, a URL, or a log\
+    \ line\n  - the hidden field and the header always carry the same value within\
+    \ one render\n  - a GET form carries no token\n  - a cross-origin or dynamic-method\
+    \ form fails generation, naming the file, line, and column\n  - a component with\
+    \ an unsafe form inside a cached one fails generation\n  - a render with no token\
+    \ supplied fails rather than emitting an empty field\n  - a rotated token reaches\
+    \ an already-open page through the cookie transport\n  - a project with no unsafe\
+    \ form regenerates byte-identical output\n```"
+  supersedes: the framework-supplied csrf-token element this catalog planned, and
+    the interim external returning html that stood in for it; neither is built and
+    neither is needed
+  why_it_moved: an author forgetting a hidden field is a form that silently stops
+    working the moment protection is enabled, and no framework seam placed above the
+    template can catch that
+  what_the_module_does:
+    insertion: a hidden field as the first child of every unsafe form, meaning post,
+      put, patch, and delete
+    authoring_cost: none; there is no element to write, no import, and no declaration
+    scope_containment: the value is never bound to a name, so no template can interpolate
+      it into a URL, an attribute, or a log line
+    one_call_per_render: the token is produced at most once and every occurrence shares
+      it, so the hidden field and the header cannot disagree by construction rather
+      than by this framework's care
+    header: the merged runtime attaches it to every request it issues
+    verification: a module entry reads the header first, then the body, and compares
+      in constant time
+  token_supply:
+    channel: a render option carrying the token, not the request context, because
+      htmlbind holds no context keys and could not read one
+    where_pw_supplies_it: the page and streaming render entries, reading the value
+      through api:request-context-accessors
+    not_in_the_shared_option_builder: the fragment path shares that builder and renders
+      no document, so the option is added above it exactly as decision:runtime-tag-injection
+      adds the runtime tag
+    sessionless: this framework supplies no option at all, so an unsafe form fails
+      the render
+    correction: an earlier revision here said to pass the module's explicit no-token
+      option; reading it showed that option renders the field with an empty value
+      rather than failing, which the module documents for a render that is not a response
+      such as a mail body, a static export, or a golden test
+    why_that_matters: using it on the HTTP path would put an unprotected form on screen
+      and say nothing, which is the failure this whole capability exists to prevent
+    missing: an unsafe form with no token supplied fails the render, because an empty
+      field would submit, be rejected, and leave nothing pointing at the cause
+  generation_refusals:
+    get_form: no token, since a GET form's fields become the query string and a token
+      there reaches history, logs, and referrers
+    static_cross_origin_action: a generation error, because it would hand the session's
+      secret to a third party
+    dynamic_method: a generation error, because an undecidable method either leaks
+      the token to a GET or leaves the form unprotected
+    existing_field_of_the_same_name: left alone, so a project migrating from a hand-written
+      token is not broken
+  what_this_framework_still_owns:
+    secret_and_delivery: requirement:csrf-token-lifecycle, which mints the value with
+      the session, keeps it in data:session-record, and carries it on the cookie,
+      the header, and the render
+    middleware: the path scoping, the origin check, the 403 through api:error-renderer,
+      and the exclusions; none of this moved
+    configuration: the field and header names, kept at the module defaults unless
+      a project has a reason
+  runtime_token_transport:
+    module_default: the token travels in the runtime configuration on the script tag,
+      which is written once at render
+    consequence: a page held open across a rotation holds a stale token and its next
+      action is refused
+    this_framework_deviates: the shipped runtime reads the token from a cookie at
+      the moment a request is issued, so a rotation reaches an open page through an
+      ordinary set-cookie
+    built: in the boundary runtime that already exists, which issues a credentialed
+      request for the live delivery stream; the merged asset of requirement:unified-update-runtime
+      inherits the same helper rather than introducing it
+    prior_art: Django, Laravel, and Spring's SPA configuration all read at request
+      time rather than from something embedded in the page
+    unchanged_either_way: a form rendered before a rotation is refused after it, which
+      is a security boundary working
+  caching_constraint:
+    rule: a component containing an unsafe form cannot be output-cached, and the check
+      walks the call graph
+    why: a stored body would hand one session's token to the next visitor
+    shape_it_pushes: split the cacheable list from the form that carries the token,
+      and compose both in the page
+    escape: turning the module's CSRF mode off removes the constraint, for a deployment
+      that decided on origin checks alone
+  as_built:
+    where: the option is added in the one document render entry every page branch
+      funnels through, so the buffered, streaming, and live paths all carry it and
+      the fragment path does not
+    precedence: framework first, caller last, so an application option still wins
+    proved_by: a page with a form emits a token that verifies against the session
+      secret, two responses emit different bytes, a sessionless render fails rather
+      than emitting an empty field, and a page with no form is byte-identical with
+      and without a session
+  acceptance:
+  - a template author writes nothing and every unsafe form posts successfully
+  - the token never appears in template scope, a URL, or a log line
+  - the hidden field and the header always carry the same value within one render
+  - a GET form carries no token
+  - a cross-origin or dynamic-method form fails generation, naming the file, line,
+    and column
+  - a component with an unsafe form inside a cached one fails generation
+  - a render with no token supplied fails rather than emitting an empty field
+  - a rotated token reaches an already-open page through the cookie transport
+  - a project with no unsafe form regenerates byte-identical output
+acceptance:
+  item-b0a603269b20ee04:
+    text: a template author writes nothing and every unsafe form posts successfully
+  item-12f162a5d644fdf2:
+    text: the token never appears in template scope, a URL, or a log line
+  item-d1968969f153acad:
+    text: the hidden field and the header always carry the same value within one render
+  item-b7ac80115fc40544:
+    text: a GET form carries no token
+  item-ec5f264778f482cd:
+    text: a cross-origin or dynamic-method form fails generation, naming the file,
+      line, and column
+  item-f985fbdde341e531:
+    text: a component with an unsafe form inside a cached one fails generation
+  item-cb5f985c36476e5b:
+    text: a render with no token supplied fails rather than emitting an empty field
+  item-bd71512200ae3d5c:
+    text: a rotated token reaches an already-open page through the cookie transport
+  item-a5006a0b6a3d0b3e:
+    text: a project with no unsafe form regenerates byte-identical output
+relations:
+- relation: mentions
+  to: api:error-renderer
+  resolution: resolved
+- relation: mentions
+  to: api:request-context-accessors
+  resolution: resolved
+- relation: mentions
+  to: data:session-record
+  resolution: resolved
+- relation: mentions
+  to: decision:runtime-tag-injection
+  resolution: resolved
+- relation: mentions
+  to: requirement:csrf-token-lifecycle
+  resolution: resolved
+- relation: mentions
+  to: requirement:unified-update-runtime
+  resolution: resolved
+- relation: mentions
+  to: system:tinybind
+  resolution: resolved

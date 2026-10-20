@@ -1,0 +1,96 @@
+id: decision:dynamodb-auth-compensating-registration
+type: decision
+title: Passkey-Only Registration Is A Compensating Sequence On DynamoDB
+summary: The DynamoDB auth backend cannot make flow:passkey-only-registration one
+  unit of work, so it fixes an order whose every partial outcome is safe, and names
+  the one state that needs an administrator.
+facts:
+  legacy_body: "The DynamoDB auth backend cannot make flow:passkey-only-registration\
+    \ one unit of work, so it fixes an order whose every partial outcome is safe,\
+    \ and names the one state that needs an administrator.\n\n```yaml\nstatus: accepted\n\
+    decided: user 2026-08-01\nconstraint:\n  what: system:tinygodriver-dynamodb exposes\
+    \ GetItem, PutItem, UpdateItem, DeleteItem, Query, Scan, BatchGetItem, and BatchWriteItem,\
+    \ and no TransactWriteItems\n  batch_is_not_atomic: BatchWriteItem can partially\
+    \ succeed by design, so it is not the missing primitive\n  contrast: api:auth-credential-store\
+    \ Save opens a SQL transaction and runs the activation callback inside it, which\
+    \ is what makes the relational path one unit\n  scope: only flow:passkey-only-registration\
+    \ and the recovery flow need three writes together; passkey login, passkey enrollment\
+    \ onto an active account, and every OIDC flow are single writes and are unaffected\n\
+    rejected_alternatives:\n  wait_for_transactions:\n    what: rank TransactWriteItems\
+    \ up in system:tinygodriver-dynamodb and leave the credential and bootstrap stores\
+    \ unwritten\n    why_not: it blocks requirement:dynamodb-auth-backend on an upstream\
+    \ item that decision:dynamodb-framework-scope already ranked third, behind two\
+    \ others\n  drop_the_flow:\n    what: support oidc_only and passkey login, and\
+    \ require a relational database for bootstrap registration\n    why_not: passkey_only\
+    \ is the mode with no identity provider, which is exactly the deployment most\
+    \ likely to have no relational database either\norder:\n  1_spend: UpdateItem\
+    \ on the bootstrap record, conditioned on it being unconsumed, unexpired, and\
+    \ having attempts left, marking it consumed and returning the record\n  2_persist:\
+    \ PutItem the credential, conditioned on that credential ID being absent\n  3_activate:\
+    \ the activation callback, which promotes the provisional data:user-account and\
+    \ belongs to the application\n  why_this_order: the bootstrap credential is the\
+    \ single-use authorization for the whole sequence, so spending it first makes\
+    \ the sequence itself single-use; a credential written before it could be written\
+    \ twice by two parallel redemptions\nreachable_states:\n  after_1: bootstrap spent,\
+    \ no credential, account still provisional\n  after_2: bootstrap spent, credential\
+    \ stored, account still provisional\n  after_3: complete\n  never: a credential\
+    \ stored without its bootstrap credential being spent, which is the state that\
+    \ would let one issued secret enroll two authenticators\nrecovery:\n  after_1:\
+    \ the account has no credential and no redeemable secret; an administrator issues\
+    \ a new bootstrap credential, which policy:account-recovery already covers\n \
+    \ after_2: the stored credential belongs to an account that cannot create a session,\
+    \ because data:user-account forbids a provisional account from doing so; the account\
+    \ is activated by retrying the callback or by the same administrator path\n  named:\
+    \ this is a defined outcome of a failed registration rather than a corrupt state,\
+    \ and the guide says so\n  no_compensation_rollback: the backend does not delete\
+    \ the credential or unspend the bootstrap record after a failure, because a rollback\
+    \ that itself fails leaves a state nobody specified\nretry:\n  same_secret: refused;\
+    \ the bootstrap record is consumed, so step 1 fails closed with the enumeration-safe\
+    \ error api:auth-credential-store already returns\n  idempotence: step 2 is conditioned\
+    \ on absence, so a retried request that already stored the credential is a conditional-check\
+    \ failure rather than a second credential\ndivergence_from_the_relational_path:\n\
+    \  what: api:auth-credential-store states that a partially applied ceremony is\
+    \ a defect, not a recoverable state\n  now: that holds for the relational default,\
+    \ and this backend narrows it to a bounded, enumerated set of partial states with\
+    \ a named operator action\n  documented: the guide states the difference where\
+    \ auth.backend is described, because a deployment choosing this backend is accepting\
+    \ it\nseam:\n  problem: api:auth-credential-store Save takes one opaque callback\
+    \ that bundles activation and the bootstrap spend, so a store receiving it cannot\
+    \ order the two\n  answer: auth.FirstEnrollmentStore, an optional interface taking\
+    \ the two steps apart; the framework prefers it when the installed store offers\
+    \ it\n  why_optional: adding a method to CredentialStore would break every application\
+    \ that implements it, and a relational store needs none of this\n  built: 2026-08-05\n\
+    revisit_if:\n  - system:tinygodriver-dynamodb gains TransactWriteItems, after\
+    \ which the three writes become one and this decision is superseded rather than\
+    \ amended\nrelated:\n  - requirement:dynamodb-auth-backend\n  - requirement:dynamodb-auth-stores\n\
+    \  - api:auth-credential-store\n  - flow:passkey-only-registration\n  - policy:account-recovery\n\
+    ```"
+  legacy_parse_issues:
+  - kind: legacy_parse_error
+    block: 0
+    message: Object of type date is not JSON serializable
+relations:
+- relation: mentions
+  to: api:auth-credential-store
+  resolution: resolved
+- relation: mentions
+  to: data:user-account
+  resolution: resolved
+- relation: mentions
+  to: decision:dynamodb-framework-scope
+  resolution: resolved
+- relation: mentions
+  to: flow:passkey-only-registration
+  resolution: resolved
+- relation: mentions
+  to: policy:account-recovery
+  resolution: resolved
+- relation: mentions
+  to: requirement:dynamodb-auth-backend
+  resolution: resolved
+- relation: mentions
+  to: requirement:dynamodb-auth-stores
+  resolution: resolved
+- relation: mentions
+  to: system:tinygodriver-dynamodb
+  resolution: resolved

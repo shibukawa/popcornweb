@@ -1,0 +1,105 @@
+id: system:pw-cli
+type: system
+title: pw CLI
+summary: The pw CLI owns project bootstrap, generation, development, and builds while
+  runtime behavior remains in the application and standard net/http-compatible packages.
+facts:
+  legacy_body: "The pw CLI owns project bootstrap, generation, development, and builds\
+    \ while runtime behavior remains in the application and standard net/http-compatible\
+    \ packages.\n\n```yaml\nbinary: pw\ncommands:\n  - api:cli-init\n  - api:cli-generate\n\
+    \  - api:cli-check\n  - api:cli-dev\n  - api:cli-build\n  - api:cli-migrate\n\
+    \  - api:cli-seed\n  - api:cli-doctor\n  - api:cli-version\n  - api:cli-fmt\n\
+    \  - api:cli-lsp, proposed by decision:language-server-in-pw-cli\n  - api:cli-request,\
+    \ first slice built 2026-09-11 per requirement:cli-request\nconfiguration: data:project-config\n\
+    runtime_dependency_policy: concept:public-package-boundaries\nexecution_split:\
+    \ decision:host-tools-target-runtime\ndistribution: requirement:cli-distribution\n\
+    initial_exclusions:\n  - no pw schema-init command; requirement:database-migration\
+    \ replaced it\n  - no pw test command; use go test ./...\n  - no standalone pw\
+    \ check command; pw generate --check answers generated drift and api:cli-doctor\
+    \ answers configuration and wiring, reversed by requirement:cli-generate-check-rename\
+    \ once --check stopped being a flag on a command that writes\n```"
+  binary: pw
+  commands:
+  - api:cli-init
+  - api:cli-generate
+  - api:cli-check
+  - api:cli-dev
+  - api:cli-build
+  - api:cli-migrate
+  - api:cli-seed
+  - api:cli-doctor
+  - api:cli-version
+  - api:cli-fmt
+  - api:cli-lsp, proposed by decision:language-server-in-pw-cli
+  - api:cli-request, first slice built 2026-09-11 per requirement:cli-request
+  configuration: data:project-config
+  runtime_dependency_policy: concept:public-package-boundaries
+  execution_split: decision:host-tools-target-runtime
+  distribution: requirement:cli-distribution
+  initial_exclusions:
+  - no pw schema-init command; requirement:database-migration replaced it
+  - no pw test command; use go test ./...
+  - no standalone pw check command; pw generate --check answers generated drift and
+    api:cli-doctor answers configuration and wiring, reversed by requirement:cli-generate-check-rename
+    once --check stopped being a flag on a command that writes
+relations:
+- relation: mentions
+  to: api:cli-build
+  resolution: resolved
+- relation: mentions
+  to: api:cli-check
+  resolution: resolved
+- relation: mentions
+  to: api:cli-dev
+  resolution: resolved
+- relation: mentions
+  to: api:cli-doctor
+  resolution: resolved
+- relation: mentions
+  to: api:cli-fmt
+  resolution: resolved
+- relation: mentions
+  to: api:cli-generate
+  resolution: resolved
+- relation: mentions
+  to: api:cli-init
+  resolution: resolved
+- relation: mentions
+  to: api:cli-lsp
+  resolution: resolved
+- relation: mentions
+  to: api:cli-migrate
+  resolution: resolved
+- relation: mentions
+  to: api:cli-request
+  resolution: resolved
+- relation: mentions
+  to: api:cli-seed
+  resolution: resolved
+- relation: mentions
+  to: api:cli-version
+  resolution: resolved
+- relation: mentions
+  to: concept:public-package-boundaries
+  resolution: resolved
+- relation: mentions
+  to: data:project-config
+  resolution: resolved
+- relation: mentions
+  to: decision:host-tools-target-runtime
+  resolution: resolved
+- relation: mentions
+  to: decision:language-server-in-pw-cli
+  resolution: resolved
+- relation: mentions
+  to: requirement:cli-distribution
+  resolution: resolved
+- relation: mentions
+  to: requirement:cli-generate-check-rename
+  resolution: resolved
+- relation: mentions
+  to: requirement:cli-request
+  resolution: resolved
+- relation: mentions
+  to: requirement:database-migration
+  resolution: resolved

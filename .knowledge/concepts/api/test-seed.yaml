@@ -1,0 +1,107 @@
+id: api:test-seed
+type: api
+title: Test Seeding and Assertion
+summary: testutil seeds an api:test-run server from data:seed-dataset files and compares
+  the resulting database state against expected datasets.
+facts:
+  legacy_body: "testutil seeds an api:test-run server from data:seed-dataset files\
+    \ and compares the resulting database state against expected datasets.\n\n```yaml\n\
+    package: github.com/shibukawa/popcornweb/testutil\nsurface:\n  - WithSeed(files\
+    \ ...string) RunOption\n  - WithSeedDir(directory string) RunOption\n  - (*Server).Seed(t\
+    \ TestingT, files ...string)\n  - (*Server).AssertDB(t TestingT, files ...string)\n\
+    shape:\n  seed: RunOption so the database is ready before the first request\n\
+    \  assert: explicit Server method so comparison timing is caller controlled\n\
+    run_option_order:\n  - open the copied pool through api:test-run\n  - install\
+    \ the api:test-run migration schema\n  - apply WithSeed files in declared order\n\
+    \  - begin the api:test-run WithTransaction test transaction\n  - start the HTTP\
+    \ server\ntransaction_interaction:\n  with_seed: commits before the test transaction\
+    \ opens, so datasets are the shared baseline and only per-test writes roll back\n\
+    \  server_methods: Seed and AssertDB run on the test transaction when one is active,\
+    \ and on the pool otherwise\n  mechanism: pwruntime TransactionScope Tx feeds\
+    \ the system:dbtestify executor connector\n  under_transaction:\n    - seeded\
+    \ rows are visible to requests and disappear with the rollback\n    - assertions\
+    \ observe request writes before any commit\n    - no second connection is taken\
+    \ from a pool the transaction already holds\nconnector:\n  pool: the api:test-run\
+    \ owned *sql.DB; no second pool is opened\n  construction: decision:dbtestify-integration\
+    \ NewDBConnectorFromDB, or NewDBConnectorFromTx inside a test transaction\n  dialect:\
+    \ resolved from the copied data:middleware-runtime-config rdb DSN scheme\nfailure_reporting:\n\
+    \  interface: decision:testutil-testing-interface\n  requires: Errorf added to\
+    \ TestingT for this API\n  seed: TestingT Fatalf; a failed seed invalidates the\
+    \ test\n  assert: TestingT Errorf per mismatching table with an uncolored diff,\
+    \ then the test continues\n  disabled_rdb: Fatalf when middleware.rdb.enabled\
+    \ is false\n  context: caller context or context.Background; TestingT exposes\
+    \ no Context\nrules:\n  - Seed may run again mid-test to reset state between phases\n\
+    \  - AssertDB may run more than once against different expected datasets\n  -\
+    \ AssertDB compares committed state, so streaming or auto-transaction responses\
+    \ must be complete first\n  - dataset paths resolve through data:seed-dataset\
+    \ test root resolution\n  - no method mutates the seed directory or writes datasets\
+    \ back\nnon_goals:\n  - automatic assertion on Server.Close\n  - HTTP response\
+    \ body assertion\n  - snapshot capture of a live database into a dataset\n```"
+  package: github.com/shibukawa/popcornweb/testutil
+  surface:
+  - WithSeed(files ...string) RunOption
+  - WithSeedDir(directory string) RunOption
+  - (*Server).Seed(t TestingT, files ...string)
+  - (*Server).AssertDB(t TestingT, files ...string)
+  shape:
+    seed: RunOption so the database is ready before the first request
+    assert: explicit Server method so comparison timing is caller controlled
+  run_option_order:
+  - open the copied pool through api:test-run
+  - install the api:test-run migration schema
+  - apply WithSeed files in declared order
+  - begin the api:test-run WithTransaction test transaction
+  - start the HTTP server
+  transaction_interaction:
+    with_seed: commits before the test transaction opens, so datasets are the shared
+      baseline and only per-test writes roll back
+    server_methods: Seed and AssertDB run on the test transaction when one is active,
+      and on the pool otherwise
+    mechanism: pwruntime TransactionScope Tx feeds the system:dbtestify executor connector
+    under_transaction:
+    - seeded rows are visible to requests and disappear with the rollback
+    - assertions observe request writes before any commit
+    - no second connection is taken from a pool the transaction already holds
+  connector:
+    pool: the api:test-run owned *sql.DB; no second pool is opened
+    construction: decision:dbtestify-integration NewDBConnectorFromDB, or NewDBConnectorFromTx
+      inside a test transaction
+    dialect: resolved from the copied data:middleware-runtime-config rdb DSN scheme
+  failure_reporting:
+    interface: decision:testutil-testing-interface
+    requires: Errorf added to TestingT for this API
+    seed: TestingT Fatalf; a failed seed invalidates the test
+    assert: TestingT Errorf per mismatching table with an uncolored diff, then the
+      test continues
+    disabled_rdb: Fatalf when middleware.rdb.enabled is false
+    context: caller context or context.Background; TestingT exposes no Context
+  rules:
+  - Seed may run again mid-test to reset state between phases
+  - AssertDB may run more than once against different expected datasets
+  - AssertDB compares committed state, so streaming or auto-transaction responses
+    must be complete first
+  - dataset paths resolve through data:seed-dataset test root resolution
+  - no method mutates the seed directory or writes datasets back
+  non_goals:
+  - automatic assertion on Server.Close
+  - HTTP response body assertion
+  - snapshot capture of a live database into a dataset
+relations:
+- relation: mentions
+  to: api:test-run
+  resolution: resolved
+- relation: mentions
+  to: data:middleware-runtime-config
+  resolution: resolved
+- relation: mentions
+  to: data:seed-dataset
+  resolution: resolved
+- relation: mentions
+  to: decision:dbtestify-integration
+  resolution: resolved
+- relation: mentions
+  to: decision:testutil-testing-interface
+  resolution: resolved
+- relation: mentions
+  to: system:dbtestify
+  resolution: resolved

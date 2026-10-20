@@ -1,0 +1,139 @@
+id: decision:ingress-tls-termination
+type: decision
+title: Ingress TLS Is Declared, Not Inferred
+summary: The framework serves plaintext and terminates no inbound TLS today; a deployment
+  that terminates its own declares it in configuration, and nothing infers the boundary
+  from a header or an absence.
+facts:
+  legacy_body: "The framework serves plaintext and terminates no inbound TLS today;\
+    \ a deployment that terminates its own declares it in configuration, and nothing\
+    \ infers the boundary from a header or an absence.\n\n```yaml\nstatus: proposed\n\
+    serves: requirement:proxied-request-identity\ndistinct_from: decision:local-tls-proxy-boundary,\
+    \ which is about egress to external systems; inbound termination was never decided,\
+    \ only left undone\ntoday:\n  verified: 2026-08-10, by reading the tree\n  fact:\
+    \ no ListenAndServeTLS, ServeTLS, or TLSConfig exists in the serving path; api:application-lifecycle\
+    \ Serve calls ListenAndServe even when handed a server carrying a TLS configuration\n\
+    \  consequence: r.TLS is nil on every request of every deployment that starts\
+    \ through a framework entry point, so the r.TLS branches of requestorigin and\
+    \ the policy:security-response-headers middleware are unreachable in practice\n\
+    \  escape_hatch: an application taking the handler and running its own server\
+    \ can terminate TLS, at the price of leaving the lifecycle, the validated timeouts,\
+    \ and shutdown behind; that shape is outside what api:cli-doctor can observe at\
+    \ all\nwhy_this_matters_beyond_tls:\n  fact: an advisory cannot distinguish a\
+    \ proxied deployment from a directly served one when neither is declared\n  effect:\
+    \ every check in the proxy group of rule:configuration-advisories was written\
+    \ as a warning for want of that distinction, which is a weaker finding than the\
+    \ situation deserves\n  resolution: make the boundary a declared fact, and the\
+    \ checks become determinate\nthe_decision:\n  declare: server.tls.cert_file and\
+    \ server.tls.key_file; their presence selects ListenAndServeTLS and is the sole\
+    \ signal that this deployment terminates its own TLS\n  absent: plaintext, and\
+    \ every consumer of requirement:proxied-request-identity treats the deployment\
+    \ as proxied\n  refused:\n    acme: no automatic certificate issuance, renewal,\
+    \ or challenge handling; that is what the boundary in front is for, and an ACME\
+    \ client is a subsystem rather than a flag\n    redirect: no built-in http-to-https\
+    \ redirect listener, for the same reason\n    cipher_policy: the Go default, not\
+    \ a configuration surface\n  reload: out of scope for the first release; a certificate\
+    \ change is a restart, which is what a container deployment does anyway\n  tinygo:\n\
+    \    status: net/http only\n    reason: a TLS server is the class of incompleteness\
+    \ decision:local-tls-proxy-boundary already names on the client side, and policy:contrib-compatibility\
+    \ bounds it\n    shape: the keys validate and the entry point refuses on a target\
+    \ that cannot serve TLS, rather than the configuration being silently ignored\n\
+    why_add_it_at_all:\n  small: two keys and one branch at the call site, against\
+    \ a serving path that already centralizes server construction\n  buys: a declared\
+    \ deployment shape, which is what turns four warnings into determinate checks\
+    \ and removes the need for a per-advisory off switch\n  and: a single-binary deployment\
+    \ with no proxy is a real shape this framework otherwise cannot serve safely,\
+    \ since policy:cookie-value-protection and the session cookie secure default assume\
+    \ https reaches the browser\nno_advisory_off_switch:\n  considered: a flag silencing\
+    \ csrf-trusted-origins-unset for a deployment that does not need it\n  rejected:\
+    \ an off switch records that someone was tired of a message, while server.tls\
+    \ records what the deployment is; the second suppresses the advisory as a consequence\
+    \ and stays true when the deployment changes\n  precedent: every other advisory\
+    \ in rule:configuration-advisories keys off a configured fact rather than a mute,\
+    \ and one mute invites the next\n```"
+  status: proposed
+  serves: requirement:proxied-request-identity
+  distinct_from: decision:local-tls-proxy-boundary, which is about egress to external
+    systems; inbound termination was never decided, only left undone
+  today:
+    verified: 2026-08-10, by reading the tree
+    fact: no ListenAndServeTLS, ServeTLS, or TLSConfig exists in the serving path;
+      api:application-lifecycle Serve calls ListenAndServe even when handed a server
+      carrying a TLS configuration
+    consequence: r.TLS is nil on every request of every deployment that starts through
+      a framework entry point, so the r.TLS branches of requestorigin and the policy:security-response-headers
+      middleware are unreachable in practice
+    escape_hatch: an application taking the handler and running its own server can
+      terminate TLS, at the price of leaving the lifecycle, the validated timeouts,
+      and shutdown behind; that shape is outside what api:cli-doctor can observe at
+      all
+  why_this_matters_beyond_tls:
+    fact: an advisory cannot distinguish a proxied deployment from a directly served
+      one when neither is declared
+    effect: every check in the proxy group of rule:configuration-advisories was written
+      as a warning for want of that distinction, which is a weaker finding than the
+      situation deserves
+    resolution: make the boundary a declared fact, and the checks become determinate
+  the_decision:
+    declare: server.tls.cert_file and server.tls.key_file; their presence selects
+      ListenAndServeTLS and is the sole signal that this deployment terminates its
+      own TLS
+    absent: plaintext, and every consumer of requirement:proxied-request-identity
+      treats the deployment as proxied
+    refused:
+      acme: no automatic certificate issuance, renewal, or challenge handling; that
+        is what the boundary in front is for, and an ACME client is a subsystem rather
+        than a flag
+      redirect: no built-in http-to-https redirect listener, for the same reason
+      cipher_policy: the Go default, not a configuration surface
+    reload: out of scope for the first release; a certificate change is a restart,
+      which is what a container deployment does anyway
+    tinygo:
+      status: net/http only
+      reason: a TLS server is the class of incompleteness decision:local-tls-proxy-boundary
+        already names on the client side, and policy:contrib-compatibility bounds
+        it
+      shape: the keys validate and the entry point refuses on a target that cannot
+        serve TLS, rather than the configuration being silently ignored
+  why_add_it_at_all:
+    small: two keys and one branch at the call site, against a serving path that already
+      centralizes server construction
+    buys: a declared deployment shape, which is what turns four warnings into determinate
+      checks and removes the need for a per-advisory off switch
+    and: a single-binary deployment with no proxy is a real shape this framework otherwise
+      cannot serve safely, since policy:cookie-value-protection and the session cookie
+      secure default assume https reaches the browser
+  no_advisory_off_switch:
+    considered: a flag silencing csrf-trusted-origins-unset for a deployment that
+      does not need it
+    rejected: an off switch records that someone was tired of a message, while server.tls
+      records what the deployment is; the second suppresses the advisory as a consequence
+      and stays true when the deployment changes
+    precedent: every other advisory in rule:configuration-advisories keys off a configured
+      fact rather than a mute, and one mute invites the next
+lifecycle: proposed
+relations:
+- relation: mentions
+  to: api:application-lifecycle
+  resolution: resolved
+- relation: mentions
+  to: api:cli-doctor
+  resolution: resolved
+- relation: mentions
+  to: decision:local-tls-proxy-boundary
+  resolution: resolved
+- relation: mentions
+  to: policy:contrib-compatibility
+  resolution: resolved
+- relation: mentions
+  to: policy:cookie-value-protection
+  resolution: resolved
+- relation: mentions
+  to: policy:security-response-headers
+  resolution: resolved
+- relation: mentions
+  to: requirement:proxied-request-identity
+  resolution: resolved
+- relation: mentions
+  to: rule:configuration-advisories
+  resolution: resolved

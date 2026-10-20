@@ -1,0 +1,134 @@
+id: requirement:contrib-otel
+type: requirement
+title: Minimal OpenTelemetry Trace and Log
+summary: contrib/otel provides interoperable trace propagation, manual spans, correlated
+  structured logs, and bounded export without runtime instrumentation magic.
+facts:
+  legacy_body: "contrib/otel provides interoperable trace propagation, manual spans,\
+    \ correlated structured logs, and bounded export without runtime instrumentation\
+    \ magic.\n\n```yaml\npackages:\n  trace: contrib/otel/trace\n  log: contrib/otel/log\n\
+    \  propagation: contrib/otel/propagation\n  outbound_http: contrib/otel/otelhttp\n\
+    \  exporter: contrib/otel/exporter/otlphttp\ntrace_api:\n  - Provider.Tracer(name)\n\
+    \  - Tracer.Start(context, name, options) returns context and Span\n  - Span.SetAttributes\n\
+    \  - Span.RecordError\n  - Span.SetStatus\n  - Span.End\n  - Span.Parent and Span.Root,\
+    \ a pointer chain fixed at Start so ancestor access walks no context, per requirement:context-lookup-performance;\
+    \ nil parent for a root or a remote extracted parent\n  - SpanContextFromContext\n\
+    \  - SpanFromContext returning the innermost local span\nlog_api:\n  - Logger.Emit(context,\
+    \ Record)\n  - severity, body, timestamp, attributes, event name\n  - automatic\
+    \ trace_id, span_id, and trace_flags correlation\nattributes:\n  supported:\n\
+    \    - string\n    - bool\n    - int64\n    - float64\nplanned:\n  metric_api:\
+    \ requirement:framework-metrics, which adds counter, up_down_counter, histogram,\
+    \ and observable instruments plus a /v1/metrics path, and whose inventory is data:framework-metric-set\n\
+    \  sampler: requirement:trace-head-sampling, which moves the record-everything\
+    \ rule of the trace package into a configured decision at the root span\n  separation:\
+    \ decision:metrics-are-not-sampled, which keeps the two additions from being one\n\
+    propagation:\n  required: W3C traceparent and tracestate HTTP extract and inject\n\
+    \  extract: the server middleware, on every transport, sharing one validator per\
+    \ decision:propagation-header-access\n  inject: whatever opened the client span,\
+    \ per decision:outbound-trace-propagation\n  never_injected_for: the exporter's\
+    \ own client, which would make exporting a span open a span\nexport:\n  - flow:telemetry-export\n\
+    \  - synchronous processor for tests\n  - bounded batch processor for production\n\
+    otlp_http:\n  encoding: OTLP JSON Protobuf mapping\n  traces_path: /v1/traces\n\
+    \  logs_path: /v1/logs\n  configuration:\n    - base endpoint or per-signal endpoint\n\
+    \    - injected http.Client\n    - copied static headers\n    - request timeout\n\
+    non_goals:\n  - baggage\n  - gRPC exporter\n  - stdout exporter or failure fallback\n\
+    \  - auto-instrumentation\n  - tail sampling, which requirement:trace-head-sampling\
+    \ leaves to a collector and which is therefore unavailable on the direct route\
+    \ of flow:telemetry-export\n  - full API compatibility with go.opentelemetry.io/otel\n\
+    standards:\n  trace_context: https://www.w3.org/TR/trace-context/\n  trace_api:\
+    \ https://opentelemetry.io/docs/specs/otel/trace/api/\n  log_model: https://opentelemetry.io/docs/specs/otel/logs/data-model/\n\
+    \  otlp: https://opentelemetry.io/docs/specs/otlp/\n```"
+  packages:
+    trace: contrib/otel/trace
+    log: contrib/otel/log
+    propagation: contrib/otel/propagation
+    outbound_http: contrib/otel/otelhttp
+    exporter: contrib/otel/exporter/otlphttp
+  trace_api:
+  - Provider.Tracer(name)
+  - Tracer.Start(context, name, options) returns context and Span
+  - Span.SetAttributes
+  - Span.RecordError
+  - Span.SetStatus
+  - Span.End
+  - Span.Parent and Span.Root, a pointer chain fixed at Start so ancestor access walks
+    no context, per requirement:context-lookup-performance; nil parent for a root
+    or a remote extracted parent
+  - SpanContextFromContext
+  - SpanFromContext returning the innermost local span
+  log_api:
+  - Logger.Emit(context, Record)
+  - severity, body, timestamp, attributes, event name
+  - automatic trace_id, span_id, and trace_flags correlation
+  attributes:
+    supported:
+    - string
+    - bool
+    - int64
+    - float64
+  planned:
+    metric_api: requirement:framework-metrics, which adds counter, up_down_counter,
+      histogram, and observable instruments plus a /v1/metrics path, and whose inventory
+      is data:framework-metric-set
+    sampler: requirement:trace-head-sampling, which moves the record-everything rule
+      of the trace package into a configured decision at the root span
+    separation: decision:metrics-are-not-sampled, which keeps the two additions from
+      being one
+  propagation:
+    required: W3C traceparent and tracestate HTTP extract and inject
+    extract: the server middleware, on every transport, sharing one validator per
+      decision:propagation-header-access
+    inject: whatever opened the client span, per decision:outbound-trace-propagation
+    never_injected_for: the exporter's own client, which would make exporting a span
+      open a span
+  export:
+  - flow:telemetry-export
+  - synchronous processor for tests
+  - bounded batch processor for production
+  otlp_http:
+    encoding: OTLP JSON Protobuf mapping
+    traces_path: /v1/traces
+    logs_path: /v1/logs
+    configuration:
+    - base endpoint or per-signal endpoint
+    - injected http.Client
+    - copied static headers
+    - request timeout
+  non_goals:
+  - baggage
+  - gRPC exporter
+  - stdout exporter or failure fallback
+  - auto-instrumentation
+  - tail sampling, which requirement:trace-head-sampling leaves to a collector and
+    which is therefore unavailable on the direct route of flow:telemetry-export
+  - full API compatibility with go.opentelemetry.io/otel
+  standards:
+    trace_context: https://www.w3.org/TR/trace-context/
+    trace_api: https://opentelemetry.io/docs/specs/otel/trace/api/
+    log_model: https://opentelemetry.io/docs/specs/otel/logs/data-model/
+    otlp: https://opentelemetry.io/docs/specs/otlp/
+relations:
+- relation: mentions
+  to: data:framework-metric-set
+  resolution: resolved
+- relation: mentions
+  to: decision:metrics-are-not-sampled
+  resolution: resolved
+- relation: mentions
+  to: decision:outbound-trace-propagation
+  resolution: resolved
+- relation: mentions
+  to: decision:propagation-header-access
+  resolution: resolved
+- relation: mentions
+  to: flow:telemetry-export
+  resolution: resolved
+- relation: mentions
+  to: requirement:context-lookup-performance
+  resolution: resolved
+- relation: mentions
+  to: requirement:framework-metrics
+  resolution: resolved
+- relation: mentions
+  to: requirement:trace-head-sampling
+  resolution: resolved

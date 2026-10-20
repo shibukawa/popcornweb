@@ -1,0 +1,68 @@
+id: decision:development-session-modes
+type: decision
+title: Development Session Intent Modes
+summary: Development configuration names intent rather than storage mechanics.
+facts:
+  legacy_body: "Development configuration names intent rather than storage mechanics.\n\
+    \n```yaml\nmodes:\n  dev-volatile:\n    meaning: discard session records when\
+    \ the process restarts\n    implementation: decision:development-memory-session-backend\n\
+    \    default: generated development config when no session mode was explicitly\
+    \ selected\n    cookies: opaque session token and masked CSRF token; no sealed\
+    \ record cookie when every protected slot is server-placed\n    keyring: required\
+    \ only for independently signed cookie slots such as ReadOnly\n  dev-persist:\n\
+    \    meaning: keep development session records across process restarts\n    implementation:\
+    \ decision:cookie-session-storage\n    cookies: opaque session token, sealed session\
+    \ record, and masked CSRF token when enabled\n    keyring: stable development\
+    \ keyring required\nconstraints:\n  environment: both names are rejected unless\
+    \ the resolved environment is dev\n  explicit_choice: api:cli-init preserves an\
+    \ explicitly selected general backend\n  general_cookie_backend: cookie remains\
+    \ available outside development and is not renamed\n  internal_name: memory is\
+    \ an implementation identifier, not public configuration vocabulary\nmigration:\n\
+    \  memory: removed as a public name before release; no compatibility alias\n```\n\
+    \n`dev-volatile` favors schema and codec iteration. `dev-persist` favors authentication\
+    \ and workflow iteration where repeated login after each restart is disruptive.\
+    \ Startup summaries and generated comments state the restart behavior.\n\n`data:session-runtime-config`\
+    \ owns parsing and environment validation. Storage semantics remain under `api:session-store`;\
+    \ handlers observe the same `api:session-manager` API in either mode."
+  modes:
+    dev-volatile:
+      meaning: discard session records when the process restarts
+      implementation: decision:development-memory-session-backend
+      default: generated development config when no session mode was explicitly selected
+      cookies: opaque session token and masked CSRF token; no sealed record cookie
+        when every protected slot is server-placed
+      keyring: required only for independently signed cookie slots such as ReadOnly
+    dev-persist:
+      meaning: keep development session records across process restarts
+      implementation: decision:cookie-session-storage
+      cookies: opaque session token, sealed session record, and masked CSRF token
+        when enabled
+      keyring: stable development keyring required
+  constraints:
+    environment: both names are rejected unless the resolved environment is dev
+    explicit_choice: api:cli-init preserves an explicitly selected general backend
+    general_cookie_backend: cookie remains available outside development and is not
+      renamed
+    internal_name: memory is an implementation identifier, not public configuration
+      vocabulary
+  migration:
+    memory: removed as a public name before release; no compatibility alias
+relations:
+- relation: mentions
+  to: api:cli-init
+  resolution: resolved
+- relation: mentions
+  to: api:session-manager
+  resolution: resolved
+- relation: mentions
+  to: api:session-store
+  resolution: resolved
+- relation: mentions
+  to: data:session-runtime-config
+  resolution: resolved
+- relation: mentions
+  to: decision:cookie-session-storage
+  resolution: resolved
+- relation: mentions
+  to: decision:development-memory-session-backend
+  resolution: resolved

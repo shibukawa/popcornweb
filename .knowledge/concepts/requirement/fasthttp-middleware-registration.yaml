@@ -1,0 +1,128 @@
+id: requirement:fasthttp-middleware-registration
+type: requirement
+title: Application Middleware Registration On The fasthttp Build
+summary: An application serving on the fasthttp build must be able to position its
+  own middleware on the shared slot line of requirement:application-middleware-registration
+  without assembling the chain by hand; only the registration seam is required, because
+  decision:backend-specific-middleware already settles that the body is written per
+  transport.
+facts:
+  legacy_body: "An application serving on the fasthttp build must be able to position\
+    \ its own middleware on the shared slot line of requirement:application-middleware-registration\
+    \ without assembling the chain by hand; only the registration seam is required,\
+    \ because decision:backend-specific-middleware already settles that the body is\
+    \ written per transport.\n\n```yaml\nstatus: implemented 2026-08-17, in pwfast/registermiddleware.go\n\
+    audience: actor:application-developer\nserves: requirement:second-build-feature-parity\n\
+    extends: requirement:application-middleware-registration, whose number line and\
+    \ refusals this reuses unchanged\ncurrent_state:\n  net_http: pw.RegisterMiddleware(slot,\
+    \ name, middleware) called from main, delegating to the pwextension registry,\
+    \ per requirement:application-middleware-registration\n  fasthttp:\n    registration_function:\
+    \ none; pwfast exports no RegisterMiddleware and no equivalent\n    only_seam:\
+    \ RuntimeOptions.Extra []Frame, documented as what a plugin's frames travel in\n\
+    \    reachable_from_run: pwfast.WithRuntimeOptions(func(o pwfast.RuntimeOptions)\
+    \ pwfast.RuntimeOptions { o.Extra = append(o.Extra, pwfast.Frame{...}); return\
+    \ o })\n    verdict: an application can do it and nothing says so; the seam is\
+    \ spelled for a plugin, takes a closure over a runtime struct, and is checked\
+    \ nowhere\n  unchecked_today:\n    nil_middleware: pwruntime.Compose skips it,\
+    \ so the frame is silently absent where pw panics\n    duplicate_name: accepted,\
+    \ where pw panics\n    fixed_slots: SlotOperational and SlotAPIDoc accept a frame,\
+    \ which then runs inside the framework frame that shares the number because equal\
+    \ slots keep append order; pw refuses both\n  parity_record_is_wrong:\n    where:\
+    \ requirement:second-build-feature-parity already_holds says middleware is per\
+    \ backend by design and not a gap, citing decision:backend-specific-middleware\n\
+    \    why_wrong: that decision settles the middleware body, not the registration\
+    \ surface; the body being per transport is what makes a per-transport registration\
+    \ call necessary rather than optional\n    action: that entry moves from already_holds\
+    \ to this requirement\n  documentation: guides/backend/middlewares.md and its\
+    \ ja twin describe pw only, so a project building with -tags fasthttp finds no\
+    \ answer at all\nconstraints:\n  no_shared_middleware_type: decision:backend-specific-middleware;\
+    \ func(fasthttp.RequestHandler) fasthttp.RequestHandler against func(http.Handler)\
+    \ http.Handler, and an adapter would pull the whole downstream chain onto the\
+    \ other transport\n  no_import_time_registry: api:pwfast-package absent_and_why;\
+    \ a chain assembled from arguments must not gain a frame because a package was\
+    \ imported, so the seam has to be named by the application rather than reached\
+    \ from an init\n  main_is_already_per_tag: cmd/<app>/main.go and main_fasthttp.go\
+    \ are separate build-tagged files, so a per-transport spelling costs the project\
+    \ nothing it is not already paying\n  slot_numbers_are_shared: pwruntime.Slot,\
+    \ aliased by both pw and pwfast; a second number line would make the two builds\
+    \ different applications\n  serverless_capture: pw build --target rewrites the\
+    \ entry point's Run into pwfast.Start(ctx, handler, options...) per requirement:serverless-source-entrypoints,\
+    \ so anything carried as an Option reaches the serverless chain with no second\
+    \ mechanism\nsurface:\n  chosen: pwfast.RegisterMiddleware(slot Slot, name string,\
+    \ middleware Middleware)\n  why_that_shape: the call is the pw one with one word\
+    \ changed, so the two build-tagged mains differ only in the middleware body --\
+    \ which is the difference decision:backend-specific-middleware already requires\
+    \ and the only one a project should have to think about\n  caller: main, before\
+    \ Run, Start or Middlewares composes; a registration after composition joins nothing,\
+    \ exactly as on the other build\n  read_by: Middlewares, so the chain a test assembles\
+    \ through it is the chain Run serves; a registry read only by Run would make the\
+    \ two differ silently, which is the failure the parity is for\n  serverless: main\
+    \ runs to its Run call before the generated wrapper captures it, so a registration\
+    \ made there is already in the registry when Start composes\n  low_level_seam:\
+    \ RuntimeOptions.Extra is unchanged and stays the plugin's, so authfast and a\
+    \ caller assembling its own frames are untouched\n  refusals: nil middleware,\
+    \ duplicate name, and a frame at SlotOperational or SlotAPIDoc, each a panic at\
+    \ registration -- the pw wording and the pw timing, because a project reads one\
+    \ rule for both builds\n  not_checked: RuntimeOptions.Extra keeps taking what\
+    \ it is given, which is the pw arrangement too: pw.RegisterExtension does not\
+    \ refuse a fixed slot either\ninvariant_amended:\n  was: api:pwfast-package absent_and_why,\
+    \ no registry here, because a chain assembled from arguments cannot silently gain\
+    \ a frame because something was imported\n  still_true_for: an imported capability;\
+    \ a plugin installs frames through RuntimeOptions.Extra and is named by the application,\
+    \ and pwextension.SetupProcess still refuses a net/http frame by name\n  now_excepted:\
+    \ the application's own registration from its own main, which is not something\
+    \ an import did\n  the_cost_accepted: a registry cannot tell an application's\
+    \ main from a third-party init, so a package could register a frame the application\
+    \ never named; the same cost is already accepted on the other build, and rule\
+    \ coverage rather than the absence of the function is what keeps a plugin out\
+    \ of it\n  to_update_on_implementation: api:pwfast-package absent_and_why extension_registry,\
+    \ and requirement:second-build-feature-parity already_holds middleware\nalternative_rejected:\n\
+    \  shape: pwfast.WithMiddleware(slot, name, middleware) Option passed to Run and\
+    \ Start\n  for: keeps the argument-assembled chain literally true, refuses by\
+    \ returning an error before the port binds, and reaches serverless through the\
+    \ same option capture\n  against: a second spelling for one idea, so every guide\
+    \ sentence and every project note forks by build; the refusals arrive as an error\
+    \ where pw panics, so the two builds fail differently for the same mistake; and\
+    \ an application calling pwfast.Middlewares directly would still need the closure\n\
+    ordering: unchanged from requirement:application-middleware-registration; ascending\
+    \ slot, smallest outermost, equal slots in append order with framework frames\
+    \ first\nacceptance:\n  - pwfast.RegisterMiddleware takes the pw argument list\
+    \ with this transport's middleware type, and a main pair differs only in the middleware\
+    \ body\n  - the frame runs at its slot relative to the framework frames, verified\
+    \ against a real listener rather than a synthesized request value\n  - two middlewares\
+    \ at one slot run in registration order\n  - a nil middleware, a duplicate name,\
+    \ and a registration at either fixed slot each panic with the pw wording\n  -\
+    \ the chain pwfast.Middlewares returns is the chain pwfast.Run serves, registered\
+    \ middleware included\n  - a serverless build carries the registered middleware,\
+    \ because main registered before the captured Start composed\n  - guides/backend/middlewares.md\
+    \ says where an application middleware goes on each build, and the ja page says\
+    \ the same\nnon_goals:\n  - a portable middleware type or an adapter between the\
+    \ two shapes, refused by decision:backend-specific-middleware\n  - an import-time\
+    \ extension registry on this transport\n  - per-route middleware, which belongs\
+    \ to the mux on both builds\n  - removing or reordering a framework frame; configuration\
+    \ disables frames and numbers only order them\n```"
+  legacy_parse_issues:
+  - kind: legacy_parse_error
+    block: 0
+    message: "mapping values are not allowed here\n  in \"<unicode string>\", line\
+      \ 35, column 99:\n     ...  which is the pw arrangement too: pw.RegisterExtension\
+      \ does not  ... \n                                         ^"
+relations:
+- relation: mentions
+  to: actor:application-developer
+  resolution: resolved
+- relation: mentions
+  to: api:pwfast-package
+  resolution: resolved
+- relation: mentions
+  to: decision:backend-specific-middleware
+  resolution: resolved
+- relation: mentions
+  to: requirement:application-middleware-registration
+  resolution: resolved
+- relation: mentions
+  to: requirement:second-build-feature-parity
+  resolution: resolved
+- relation: mentions
+  to: requirement:serverless-source-entrypoints
+  resolution: resolved

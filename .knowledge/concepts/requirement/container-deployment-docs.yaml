@@ -1,0 +1,189 @@
+id: requirement:container-deployment-docs
+type: requirement
+title: Container Deployment Documentation
+summary: The Deployment guide explains the Dockerfile requirement:container-image-scaffold
+  wrote, line by line, so a reader can change it rather than only run it.
+facts:
+  legacy_body: "The Deployment guide explains the Dockerfile requirement:container-image-scaffold\
+    \ wrote, line by line, so a reader can change it rather than only run it.\n\n\
+    ```yaml\naudience: actor:application-developer holding a scaffolded project and\
+    \ a platform to put it on\nmotivation:\n  - a scaffolded file that is never explained\
+    \ is a file nobody edits and everybody copies wrong into the second project\n\
+    \  - rule:container-build-inputs is the one thing about this build that is not\
+    \ standard Go, and it is invisible until it fails\n  - decision:separate-tinygo-dockerfile\
+    \ puts a real trade in front of the reader, and the guide is where the trade is\
+    \ priced\n  - the current Health and Readiness page carries a Dockerfile and a\
+    \ Compose example it inherited for lack of a page to hold them\npages:\n  container_images:\n\
+    \    path: guides/deployment/container-images\n    order: 2\n    covers:\n   \
+    \   - why a Popcorn Web build is not go build, per rule:container-build-inputs,\
+    \ stated before the first Dockerfile\n      - the scaffolded Dockerfile walked\
+    \ stage by stage, naming what each line exists for\n      - the runtime stage\
+    \ choices of policy:container-runtime-image: the base image, nonroot, the working\
+    \ directory, APP_ENV, and why no secret is copied\n      - .dockerignore and what\
+    \ breaks when an entry is removed\n      - Dockerfile.tinygo, its builder image,\
+    \ and the rule:tinygo-container-operations shutdown and migration consequences,\
+    \ priced against the size it buys\n      - api:cli-migrate as a separate step,\
+    \ because policy:migration-safety keeps startup apply out of production\n    \
+    \  - requirement:dockerless-image-builders as one note-level admonition, placed\
+    \ after the host-phase section it depends on rather than at the end\n    links_out_to:\n\
+    \      - the pw build page for cross-compiling and the TinyGo netdev registration,\
+    \ rather than restating them\n      - the Health and Readiness page for what the\
+    \ probe answers\n      - the Configuration page for how APP_ENV selects a file\n\
+    boundary_with_the_probe_page:\n  rule: the Health and Readiness page owns the\
+    \ probe and every platform that invokes it; this page owns the build\n  consequence:\
+    \ the Docker, Compose, and Kubernetes subsections stay where they are, because\
+    \ all three answer how a platform asks the question that page is about, and splitting\
+    \ Compose from Kubernetes would separate two answers to one question\n  moved:\
+    \ the multi-stage build recipe only\n  why_it_had_to_move: the recipe on that\
+    \ page ran plain go build, so a reader who followed it got the rule:container-build-inputs\
+    \ failure; it was wrong rather than merely misplaced\nedits_to_existing_pages:\n\
+    \  operational_endpoints:\n    keeps: the HEALTHCHECK instruction, the probe,\
+    \ Compose, and Kubernetes\n    loses: the multi-stage build recipe\n    gains:\
+    \ a link to the container images page\n  package:\n    change: sidebar order 2\
+    \ becomes 3, since the one new page sits between it and Health and Readiness\n\
+    \  pw_build:\n    change: the cross-compiling section names the command that leaves\
+    \ a compilable tree rather than the narrower generation that never did, and links\
+    \ to the container images page\n    now: both are api:cli-generate, per requirement:cli-generate-check-rename,\
+    \ so the section names one command and the distinction it used to draw is gone\n\
+    \  pw_overview:\n    change: the command that stops before the compiler was added\
+    \ to the project command table, and is api:cli-generate\nlocalization: an English\
+    \ page and its Japanese counterpart for every page above, per the parity rule\
+    \ the documentation site already enforces\nacceptance:\n  - a reader who has never\
+    \ seen a Popcorn Web project can say why COPY . . and go build fails, after the\
+    \ first section\n  - every line of the scaffolded Dockerfile is accounted for\
+    \ by the page\n  - the TinyGo section states the SIGTERM consequence plainly rather\
+    \ than as a caveat\n  - the Compose example appears once on the site\n  - no page\
+    \ restates the pw build cross-compiling instructions\n  - the ko and Buildpacks\
+    \ note fits in one admonition and names no builder version\n  - no page shows\
+    \ a Dockerfile that reaches a compiler without the host phase\nnon_goals:\n  -\
+    \ a platform tutorial for a specific cloud\n  - a Kubernetes manifest reference,\
+    \ which is the platform's documentation and not this framework's\n  - an image\
+    \ size comparison table, which goes stale between releases\n```"
+  audience: actor:application-developer holding a scaffolded project and a platform
+    to put it on
+  motivation:
+  - a scaffolded file that is never explained is a file nobody edits and everybody
+    copies wrong into the second project
+  - rule:container-build-inputs is the one thing about this build that is not standard
+    Go, and it is invisible until it fails
+  - decision:separate-tinygo-dockerfile puts a real trade in front of the reader,
+    and the guide is where the trade is priced
+  - the current Health and Readiness page carries a Dockerfile and a Compose example
+    it inherited for lack of a page to hold them
+  pages:
+    container_images:
+      path: guides/deployment/container-images
+      order: 2
+      covers:
+      - why a Popcorn Web build is not go build, per rule:container-build-inputs,
+        stated before the first Dockerfile
+      - the scaffolded Dockerfile walked stage by stage, naming what each line exists
+        for
+      - the runtime stage choices of policy:container-runtime-image: the base image,
+          nonroot, the working directory, APP_ENV, and why no secret is copied
+      - .dockerignore and what breaks when an entry is removed
+      - Dockerfile.tinygo, its builder image, and the rule:tinygo-container-operations
+        shutdown and migration consequences, priced against the size it buys
+      - api:cli-migrate as a separate step, because policy:migration-safety keeps
+        startup apply out of production
+      - requirement:dockerless-image-builders as one note-level admonition, placed
+        after the host-phase section it depends on rather than at the end
+      links_out_to:
+      - the pw build page for cross-compiling and the TinyGo netdev registration,
+        rather than restating them
+      - the Health and Readiness page for what the probe answers
+      - the Configuration page for how APP_ENV selects a file
+  boundary_with_the_probe_page:
+    rule: the Health and Readiness page owns the probe and every platform that invokes
+      it; this page owns the build
+    consequence: the Docker, Compose, and Kubernetes subsections stay where they are,
+      because all three answer how a platform asks the question that page is about,
+      and splitting Compose from Kubernetes would separate two answers to one question
+    moved: the multi-stage build recipe only
+    why_it_had_to_move: the recipe on that page ran plain go build, so a reader who
+      followed it got the rule:container-build-inputs failure; it was wrong rather
+      than merely misplaced
+  edits_to_existing_pages:
+    operational_endpoints:
+      keeps: the HEALTHCHECK instruction, the probe, Compose, and Kubernetes
+      loses: the multi-stage build recipe
+      gains: a link to the container images page
+    package:
+      change: sidebar order 2 becomes 3, since the one new page sits between it and
+        Health and Readiness
+    pw_build:
+      change: the cross-compiling section names the command that leaves a compilable
+        tree rather than the narrower generation that never did, and links to the
+        container images page
+      now: both are api:cli-generate, per requirement:cli-generate-check-rename, so
+        the section names one command and the distinction it used to draw is gone
+    pw_overview:
+      change: the command that stops before the compiler was added to the project
+        command table, and is api:cli-generate
+  localization: an English page and its Japanese counterpart for every page above,
+    per the parity rule the documentation site already enforces
+  acceptance:
+  - a reader who has never seen a Popcorn Web project can say why COPY . . and go
+    build fails, after the first section
+  - every line of the scaffolded Dockerfile is accounted for by the page
+  - the TinyGo section states the SIGTERM consequence plainly rather than as a caveat
+  - the Compose example appears once on the site
+  - no page restates the pw build cross-compiling instructions
+  - the ko and Buildpacks note fits in one admonition and names no builder version
+  - no page shows a Dockerfile that reaches a compiler without the host phase
+  non_goals:
+  - a platform tutorial for a specific cloud
+  - a Kubernetes manifest reference, which is the platform's documentation and not
+    this framework's
+  - an image size comparison table, which goes stale between releases
+acceptance:
+  item-2badcacdadce05bc:
+    text: a reader who has never seen a Popcorn Web project can say why COPY . . and
+      go build fails, after the first section
+  item-7e5a2cfc9c446d5e:
+    text: every line of the scaffolded Dockerfile is accounted for by the page
+  item-63218fb5864a6040:
+    text: the TinyGo section states the SIGTERM consequence plainly rather than as
+      a caveat
+  item-8c47c8080714ae02:
+    text: the Compose example appears once on the site
+  item-42b44434e583e890:
+    text: no page restates the pw build cross-compiling instructions
+  item-37c311189399b107:
+    text: the ko and Buildpacks note fits in one admonition and names no builder version
+  item-479131510655ba3d:
+    text: no page shows a Dockerfile that reaches a compiler without the host phase
+relations:
+- relation: mentions
+  to: actor:application-developer
+  resolution: resolved
+- relation: mentions
+  to: api:cli-generate
+  resolution: resolved
+- relation: mentions
+  to: api:cli-migrate
+  resolution: resolved
+- relation: mentions
+  to: decision:separate-tinygo-dockerfile
+  resolution: resolved
+- relation: mentions
+  to: policy:container-runtime-image
+  resolution: resolved
+- relation: mentions
+  to: policy:migration-safety
+  resolution: resolved
+- relation: mentions
+  to: requirement:cli-generate-check-rename
+  resolution: resolved
+- relation: mentions
+  to: requirement:container-image-scaffold
+  resolution: resolved
+- relation: mentions
+  to: requirement:dockerless-image-builders
+  resolution: resolved
+- relation: mentions
+  to: rule:container-build-inputs
+  resolution: resolved
+- relation: mentions
+  to: rule:tinygo-container-operations
+  resolution: resolved

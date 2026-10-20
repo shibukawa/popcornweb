@@ -1,0 +1,53 @@
+id: api:cli-version
+type: api
+title: pw version
+summary: pw version prints the version of the installed binary so every channel of
+  requirement:cli-distribution has one verifiable install check.
+facts:
+  legacy_body: "pw version prints the version of the installed binary so every channel\
+    \ of requirement:cli-distribution has one verifiable install check.\n\n```yaml\n\
+    usage: pw version\nalso_accepts:\n  - pw --version\n  - pw -v\noutput:\n  line:\
+    \ \"pw {version} ({commit}, {os}/{arch}, go{toolchain})\"\n  stream: stdout\n\
+    \  exit: 0\nresolution_order:\n  - the value injected by the data:release-artifact\
+    \ ldflags\n  - runtime/debug.ReadBuildInfo Main.Version for a plain go install\n\
+    \  - the vcs.revision and vcs.modified build settings for a local build\n  - the\
+    \ literal devel when nothing is available\nimplementation:\n  variable: an unexported\
+    \ package-level string in internal/pwcli set through -X\n  rule: the variable\
+    \ is written only by the linker; no build step rewrites source\nconstraints:\n\
+    \  - the command opens no file, reads no configuration, and needs no project root\n\
+    \  - the output line is stable enough for the formula and derivation install checks\
+    \ to match on it\n  - the version string never contains a leading v when it came\
+    \ from a tag\nusage_in_packaging:\n  homebrew: the formula test block asserts\
+    \ the version substring\n  nix: the installCheck phase asserts the derivation\
+    \ version\n```"
+  usage: pw version
+  also_accepts:
+  - pw --version
+  - pw -v
+  output:
+    line: pw {version} ({commit}, {os}/{arch}, go{toolchain})
+    stream: stdout
+    exit: 0
+  resolution_order:
+  - the value injected by the data:release-artifact ldflags
+  - runtime/debug.ReadBuildInfo Main.Version for a plain go install
+  - the vcs.revision and vcs.modified build settings for a local build
+  - the literal devel when nothing is available
+  implementation:
+    variable: an unexported package-level string in internal/pwcli set through -X
+    rule: the variable is written only by the linker; no build step rewrites source
+  constraints:
+  - the command opens no file, reads no configuration, and needs no project root
+  - the output line is stable enough for the formula and derivation install checks
+    to match on it
+  - the version string never contains a leading v when it came from a tag
+  usage_in_packaging:
+    homebrew: the formula test block asserts the version substring
+    nix: the installCheck phase asserts the derivation version
+relations:
+- relation: mentions
+  to: data:release-artifact
+  resolution: resolved
+- relation: mentions
+  to: requirement:cli-distribution
+  resolution: resolved

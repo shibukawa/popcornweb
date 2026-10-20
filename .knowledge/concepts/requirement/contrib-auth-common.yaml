@@ -1,0 +1,56 @@
+id: requirement:contrib-auth-common
+type: requirement
+title: Authentication Security Primitives
+summary: contrib authentication packages share small bounded primitives without sharing
+  protocol-specific signature policy.
+facts:
+  legacy_body: "contrib authentication packages share small bounded primitives without\
+    \ sharing protocol-specific signature policy.\n\n```yaml\npackage: contrib/internal/authn\n\
+    consumers:\n  - requirement:contrib-jwt\n  - requirement:contrib-passkey\n  -\
+    \ requirement:contrib-oauth\n  - requirement:contrib-oidc\nrequired:\n  - crypto/rand\
+    \ Base64url secret generation with explicit byte count\n  - constant-time exact\
+    \ secret comparison\n  - strict bounded Base64url decoding\n  - injectable clock\
+    \ and expiry validation\n  - PKCE verifier validation and S256 challenge derivation\n\
+    \  - bounded duplicate-aware JSON parsing\n  - bounded HTTP response reading and\
+    \ redirect policy hooks\n  - policy:outbound-transport-security integration hooks\
+    \ for external endpoints\nboundaries:\n  - challenge, state, nonce, and verifier\
+    \ remain distinct protocol types\n  - JWT algorithm and key selection remain in\
+    \ requirement:contrib-jwt\n  - WebAuthn COSE key and ES256 verification remain\
+    \ in requirement:contrib-passkey\n  - no generic algorithm selected from attacker-controlled\
+    \ input\n```"
+  package: contrib/internal/authn
+  consumers:
+  - requirement:contrib-jwt
+  - requirement:contrib-passkey
+  - requirement:contrib-oauth
+  - requirement:contrib-oidc
+  required:
+  - crypto/rand Base64url secret generation with explicit byte count
+  - constant-time exact secret comparison
+  - strict bounded Base64url decoding
+  - injectable clock and expiry validation
+  - PKCE verifier validation and S256 challenge derivation
+  - bounded duplicate-aware JSON parsing
+  - bounded HTTP response reading and redirect policy hooks
+  - policy:outbound-transport-security integration hooks for external endpoints
+  boundaries:
+  - challenge, state, nonce, and verifier remain distinct protocol types
+  - JWT algorithm and key selection remain in requirement:contrib-jwt
+  - WebAuthn COSE key and ES256 verification remain in requirement:contrib-passkey
+  - no generic algorithm selected from attacker-controlled input
+relations:
+- relation: mentions
+  to: policy:outbound-transport-security
+  resolution: resolved
+- relation: mentions
+  to: requirement:contrib-jwt
+  resolution: resolved
+- relation: mentions
+  to: requirement:contrib-oauth
+  resolution: resolved
+- relation: mentions
+  to: requirement:contrib-oidc
+  resolution: resolved
+- relation: mentions
+  to: requirement:contrib-passkey
+  resolution: resolved

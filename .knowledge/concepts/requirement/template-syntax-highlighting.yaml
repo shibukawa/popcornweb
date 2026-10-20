@@ -1,0 +1,124 @@
+id: requirement:template-syntax-highlighting
+type: requirement
+title: Template Syntax Highlighting
+summary: A .pw.html, .pw.sql, or .pw.dynamo file highlights its declaration header,
+  its template expressions, and its embedded HTML, SQL, or clause body, with no server
+  and no project.
+facts:
+  legacy_body: "A .pw.html, .pw.sql, or .pw.dynamo file highlights its declaration\
+    \ header, its template expressions, and its embedded HTML, SQL, or clause body,\
+    \ with no server and no project.\n\n```yaml\nstatus: implemented at tools/vscode,\
+    \ version 0.1.0\nstage: 1 of vision:editor-support\nsource: concept:template-source-dialects\n\
+    mechanism: decision:textmate-grammar-first\nscopes: rule:template-grammar-scopes\n\
+    registration: requirement:editor-language-registration\nbehavior:\n  - the header\
+    \ colors keywords, the declaration name, parameter names, primitive types, and\
+    \ the output type\n  - an annotation line colors its name and its string argument\
+    \ values\n  - a body region colors as its embedded language, and every \"{\" expression\
+    \ reopens the template scope inside it\n  - a control form colors its keyword\
+    \ and its braces, and its body keeps the embedded language\n  - \"a {{ ... }}\
+    \ region colors as literal text and never as an expression\"\n  - an SQL literal,\
+    \ quoted identifier, comment, or dollar-quoted region stays inside the SQL scope\n\
+    \  - script and style content follows the tinybind raw-text insertion gate, so\
+    \ a spaced CSS block brace and a \"${}\" placeholder stay authored code while\
+    \ a tight call shape stays an insertion\n  - a dynamo body colors table and key\
+    \ as clauses, with parameters as expressions and attribute names as plain identifiers\n\
+    bracket_and_comment:\n  source: the language configuration of requirement:editor-language-registration\
+    \ and the embeddedLanguages map\n  effect: comment toggling and bracket matching\
+    \ follow the region the cursor is in\nnon_goals:\n  - distinguishing a declared\
+    \ parameter from any other identifier, which needs resolution\n  - marking an\
+    \ unbalanced or unknown construct as an error, per decision:textmate-grammar-first\n\
+    \  - highlighting a generated *_pw_gen.go file as anything but Go\n  - a Popcorn\
+    \ Web color theme\nacceptance:\n  - opening each of the repository's own .pw.html,\
+    \ .pw.sql, and .pw.dynamo sources produces the token sequence its fixture records\n\
+    \  - a file opened with no workspace, no popcornweb.toml, and no pw binary highlights\
+    \ identically\n  - \"a SELECT containing '{' inside a string literal is not tokenized\
+    \ as an expression\"\n  - an HTML attribute value containing an expression colors\
+    \ the expression and keeps the attribute scope around it\n  - a dynamo body carries\
+    \ no source.sql scope anywhere\n  - an unterminated body degrades to unscoped\
+    \ text and reports nothing\nverification:\n  behavioral: one test per acceptance\
+    \ line, run against the same TextMate engine system:vscode runs\n  corpus: the\
+    \ drift_guard snapshot of rule:template-grammar-scopes\n  not_covered: the visual\
+    \ result in a real editor window, which no automated check here asserts\n```"
+  status: implemented at tools/vscode, version 0.1.0
+  stage: 1 of vision:editor-support
+  source: concept:template-source-dialects
+  mechanism: decision:textmate-grammar-first
+  scopes: rule:template-grammar-scopes
+  registration: requirement:editor-language-registration
+  behavior:
+  - the header colors keywords, the declaration name, parameter names, primitive types,
+    and the output type
+  - an annotation line colors its name and its string argument values
+  - a body region colors as its embedded language, and every "{" expression reopens
+    the template scope inside it
+  - a control form colors its keyword and its braces, and its body keeps the embedded
+    language
+  - a {{ ... }} region colors as literal text and never as an expression
+  - an SQL literal, quoted identifier, comment, or dollar-quoted region stays inside
+    the SQL scope
+  - script and style content follows the tinybind raw-text insertion gate, so a spaced
+    CSS block brace and a "${}" placeholder stay authored code while a tight call
+    shape stays an insertion
+  - a dynamo body colors table and key as clauses, with parameters as expressions
+    and attribute names as plain identifiers
+  bracket_and_comment:
+    source: the language configuration of requirement:editor-language-registration
+      and the embeddedLanguages map
+    effect: comment toggling and bracket matching follow the region the cursor is
+      in
+  non_goals:
+  - distinguishing a declared parameter from any other identifier, which needs resolution
+  - marking an unbalanced or unknown construct as an error, per decision:textmate-grammar-first
+  - highlighting a generated *_pw_gen.go file as anything but Go
+  - a Popcorn Web color theme
+  acceptance:
+  - opening each of the repository's own .pw.html, .pw.sql, and .pw.dynamo sources
+    produces the token sequence its fixture records
+  - a file opened with no workspace, no popcornweb.toml, and no pw binary highlights
+    identically
+  - a SELECT containing '{' inside a string literal is not tokenized as an expression
+  - an HTML attribute value containing an expression colors the expression and keeps
+    the attribute scope around it
+  - a dynamo body carries no source.sql scope anywhere
+  - an unterminated body degrades to unscoped text and reports nothing
+  verification:
+    behavioral: one test per acceptance line, run against the same TextMate engine
+      system:vscode runs
+    corpus: the drift_guard snapshot of rule:template-grammar-scopes
+    not_covered: the visual result in a real editor window, which no automated check
+      here asserts
+acceptance:
+  item-417fb9d5b5061989:
+    text: opening each of the repository's own .pw.html, .pw.sql, and .pw.dynamo sources
+      produces the token sequence its fixture records
+  item-d3fb840499753062:
+    text: a file opened with no workspace, no popcornweb.toml, and no pw binary highlights
+      identically
+  item-5b2191473dbfea06:
+    text: a SELECT containing '{' inside a string literal is not tokenized as an expression
+  item-77b681e35c19bf2c:
+    text: an HTML attribute value containing an expression colors the expression and
+      keeps the attribute scope around it
+  item-ac5f5d76ba2a62ed:
+    text: a dynamo body carries no source.sql scope anywhere
+  item-71cbc4d1b063c71c:
+    text: an unterminated body degrades to unscoped text and reports nothing
+relations:
+- relation: mentions
+  to: concept:template-source-dialects
+  resolution: resolved
+- relation: mentions
+  to: decision:textmate-grammar-first
+  resolution: resolved
+- relation: mentions
+  to: requirement:editor-language-registration
+  resolution: resolved
+- relation: mentions
+  to: rule:template-grammar-scopes
+  resolution: resolved
+- relation: mentions
+  to: system:vscode
+  resolution: resolved
+- relation: mentions
+  to: vision:editor-support
+  resolution: resolved

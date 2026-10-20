@@ -1,0 +1,81 @@
+id: decision:dynamodb-observability-seam
+type: decision
+title: Observe DynamoDB At The HTTP Client
+summary: Popcorn Web instruments the DynamoDB path by supplying the driver's HTTP
+  client, because there is no executor seam the way api:instrumented-sql-executor
+  has one.
+facts:
+  legacy_body: "Popcorn Web instruments the DynamoDB path by supplying the driver's\
+    \ HTTP client, because there is no executor seam the way api:instrumented-sql-executor\
+    \ has one.\n\n```yaml\nstatus: accepted\nproblem:\n  sql: generated SQL resolves\
+    \ an executor from the request context, so api:instrumented-sql-executor decorates\
+    \ it without changing generated output\n  dynamo: generated dynamobind code calls\
+    \ the driver with a *dynamodb.Client the caller passed, so there is nothing between\
+    \ the call and the wire to decorate\nseam:\n  option: WithHTTPClient on the driver\
+    \ constructor, per system:tinygodriver-dynamodb\n  owner: api:dynamo-package,\
+    \ at startup\n  form: a http.RoundTripper wrapping the transport the driver would\
+    \ otherwise build\nobservable_at_that_layer:\n  - the operation, from the X-Amz-Target\
+    \ header\n  - the table, from the request body\n  - status, latency, retry count,\
+    \ and the x-amzn-RequestId of the reply\n  - consumed capacity, when the request\
+    \ asked for it\n  not_observable: the Go call site and the application type, both\
+    \ of which are gone by the time the request is built\nconsequence:\n  close: the\
+    \ driver leaves a caller-supplied HTTP client alone on Close, so api:dynamo-package\
+    \ owns closing the transport it built\n  pool: the max_idle_conns setting of data:dynamodb-runtime-config\
+    \ is applied to the supplied client, not by the driver\nalignment:\n  query_diagnostics:\
+    \ the record shape follows data:query-record where it fits, so one viewer shows\
+    \ both stores\n  safety: policy:query-log-safety governs it; a key value and an\
+    \ expression value are data and are not logged\nframework_owned_tables_are_excluded:\n\
+    \  rule: policy:query-log-safety, which records nothing for framework storage\
+    \ traffic in any store\n  why_it_matters_more_here: the reproduction value of\
+    \ decision:dynamodb-framework-scope comes from the captured body being the exact\
+    \ request, so for requirement:dynamodb-session-store an included record would\
+    \ carry the key hash, the CSRF secret, and the payload verbatim\n  where_the_filter_sits:\
+    \ at this seam, on the table the request names, before it is sent\n  otel: the\
+    \ span is a client span with the operation and table as attributes, per requirement:modern-observability\n\
+    enabled_by: the same observability configuration that enables SQL query diagnostics,\
+    \ so an operator turns on one switch\nrejected_alternative:\n  form: a pw wrapper\
+    \ around every dynamobind call that records before delegating\n  why_not: decision:dynamodb-no-runtime-abstraction\
+    \ refuses exactly that wrapper, and it would still miss a retry the driver performs\
+    \ internally\nrelated:\n  - api:dynamo-package\n  - api:instrumented-sql-executor\n\
+    \  - requirement:query-diagnostics\n```"
+  legacy_parse_issues:
+  - kind: legacy_parse_error
+    block: 0
+    message: "while parsing a block collection\n  in \"<unicode string>\", line 10,\
+      \ column 3:\n      - the operation, from the X-Amz- ... \n      ^\nexpected\
+      \ <block end>, but found '?'\n  in \"<unicode string>\", line 14, column 3:\n\
+      \      not_observable: the Go call site ... \n      ^"
+relations:
+- relation: mentions
+  to: api:dynamo-package
+  resolution: resolved
+- relation: mentions
+  to: api:instrumented-sql-executor
+  resolution: resolved
+- relation: mentions
+  to: data:dynamodb-runtime-config
+  resolution: resolved
+- relation: mentions
+  to: data:query-record
+  resolution: resolved
+- relation: mentions
+  to: decision:dynamodb-framework-scope
+  resolution: resolved
+- relation: mentions
+  to: decision:dynamodb-no-runtime-abstraction
+  resolution: resolved
+- relation: mentions
+  to: policy:query-log-safety
+  resolution: resolved
+- relation: mentions
+  to: requirement:dynamodb-session-store
+  resolution: resolved
+- relation: mentions
+  to: requirement:modern-observability
+  resolution: resolved
+- relation: mentions
+  to: requirement:query-diagnostics
+  resolution: resolved
+- relation: mentions
+  to: system:tinygodriver-dynamodb
+  resolution: resolved

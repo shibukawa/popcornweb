@@ -1,0 +1,49 @@
+id: requirement:classic-rendering
+type: requirement
+title: Classic Rendering
+summary: Generated typed templates produce complete responses and reusable presentational
+  components from already-loaded data.
+facts:
+  legacy_body: "Generated typed templates produce complete responses and reusable\
+    \ presentational components from already-loaded data.\n\n```yaml\nfeatures:\n\
+    \  - requirement:nested-html-templates layouts and nested presentational components\n\
+    \  - requirement:html-fragment-rendering partial responses for a swap library\n\
+    \  - contextual automatic escaping via policy:template-escaping\n  - explicit\
+    \ narrow raw-output escape hatch\n  - status and headers selected before body\
+    \ write\n  - HTML, redirect, download, JSON, XML, CSV, and declared output modes\n\
+    constraint: presentational components do not fetch data\nimplementation: requirement:contrib-html-template\n\
+    response_composition: api:html-response uses decision:implicit-document-shell\
+    \ and api:render-html-chain\n```"
+  features:
+  - requirement:nested-html-templates layouts and nested presentational components
+  - requirement:html-fragment-rendering partial responses for a swap library
+  - contextual automatic escaping via policy:template-escaping
+  - explicit narrow raw-output escape hatch
+  - status and headers selected before body write
+  - HTML, redirect, download, JSON, XML, CSV, and declared output modes
+  constraint: presentational components do not fetch data
+  implementation: requirement:contrib-html-template
+  response_composition: api:html-response uses decision:implicit-document-shell and
+    api:render-html-chain
+relations:
+- relation: mentions
+  to: api:html-response
+  resolution: resolved
+- relation: mentions
+  to: api:render-html-chain
+  resolution: resolved
+- relation: mentions
+  to: decision:implicit-document-shell
+  resolution: resolved
+- relation: mentions
+  to: policy:template-escaping
+  resolution: resolved
+- relation: mentions
+  to: requirement:contrib-html-template
+  resolution: resolved
+- relation: mentions
+  to: requirement:html-fragment-rendering
+  resolution: resolved
+- relation: mentions
+  to: requirement:nested-html-templates
+  resolution: resolved

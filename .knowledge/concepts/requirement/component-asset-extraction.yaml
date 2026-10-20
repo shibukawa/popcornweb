@@ -1,0 +1,221 @@
+id: requirement:component-asset-extraction
+type: requirement
+title: Component Asset Extraction
+summary: A component's style and script blocks become content-hashed files under the
+  project public tree instead of inline markup in the merged head, so a page links
+  them, a browser caches them, and a policy can forbid inline style and script outright.
+facts:
+  legacy_body: "A component's style and script blocks become content-hashed files\
+    \ under the project public tree instead of inline markup in the merged head, so\
+    \ a page links them, a browser caches them, and a policy can forbid inline style\
+    \ and script outright.\n\n```yaml\nsource: gap found while surveying system:tinybind\
+    \ v0.3.0\nnot_this_delivery:\n  scope: this is about assets an application component\
+    \ declares, and is unrelated to how the framework's own runtime reaches the page\n\
+    \  that_is: decision:runtime-tag-injection, which contributes the framework script\
+    \ at the render call so no application file can drop it\n  standing: a real gap\
+    \ worth closing on its own schedule, deliberately not sequenced with the update\
+    \ capabilities\ntoday: api:cli-generate configures neither asset option, so every\
+    \ component style and script reaches the response inline; the extraction exists\
+    \ upstream and this project does not ask for it\nmotivation:\n  caching: inline\
+    \ bytes are re-sent with every document and cached with none of them\n  policy:\
+    \ policy:security-response-headers cannot narrow style-src or script-src while\
+    \ a component can emit an inline block\n  authored_islands: the authored-islands\
+    \ tier of concept:interaction-cost-ladder is the one that needs a component to\
+    \ ship JavaScript, and today that JavaScript has nowhere to be but the head\n\
+    generation:\n  options: the public directory and the URL base of system:tinybind,\
+    \ set by api:cli-generate rather than by each project\n  paths: aligned with requirement:public-asset-delivery,\
+    \ so extracted files land under the project public tree the embed and the middleware\
+    \ already cover\n  naming: the generation unit name, the asset kind, and a content\
+    \ hash, so the URL is immutably cacheable and an unchanged project regenerates\
+    \ identical names\n  bundling: styles of one template file bundle into one stylesheet,\
+    \ while each component script stays its own file so author attributes survive\
+    \ on its tag\n  passthrough: a script or link already naming an external URL contributes\
+    \ its tag unchanged and produces no file\n  determinism: identical sources produce\
+    \ identical names and bytes, which is what lets rule:project-integrity-checks\
+    \ compare a regeneration\n  generated_artifact: >\n    an extracted file is a\
+    \ generated artifact under policy:generated-artifacts, so\n    it is never hand\
+    \ edited; it is not reviewable beside its source in an\n    application, because\
+    \ decision:generated-public-asset-version-control excludes\n    it there and a\
+    \ package is where it is committed and reviewed\ndelivery:\n  serving: api:public-asset-middleware,\
+    \ unchanged; an extracted file is an ordinary public asset\n  precompression:\
+    \ flow:public-asset-build compresses it like any other, per policy:public-asset-precompression\n\
+    \  development: decision:development-public-assets serves it from disk, so a regeneration\
+    \ is visible without a rebuild\n  disabled_endpoint: a project disabling requirement:public-asset-delivery\
+    \ while a component declares an asset is a startup failure, since the reference\
+    \ would resolve to nothing\n  distinct_from: requirement:framework-script-assets,\
+    \ which serves framework-owned scripts from a reserved path and is never an extracted\
+    \ artifact\nfragment_path:\n  rule: decision:fragment-head-rejection is unchanged;\
+    \ a fragment response still refuses a component declaring head contributions,\
+    \ and an asset reference is one\n  reason: the reference lives in the head, so\
+    \ a swapped region cannot carry it, and dropping it silently would swap in an\
+    \ unstyled region\nupdate_path:\n  problem: a navigation delta or a redraw can\
+    \ insert a component whose script the first render never linked\n  handled_by:\
+    \ the head operations of requirement:navigation-delta-rendering, which install\
+    \ a first-appearing component's tags before its markup is applied\n  closed_v0_3_3:\
+    \ the redraw registry reports the head and assets every published component needs,\
+    \ so the document shell carries them once at startup, and a redraw whose component\
+    \ contributes head also announces it on a response header\nscope_today:\n  covered:\
+    \ a component declared in a template file of the generation unit being compiled\n\
+    \  not_covered: a component a library registers or declares in another package,\
+    \ which owns no route and no shell and therefore cannot reference its own file\n\
+    \  shipped_v0_3_3: the required-asset set is on the bound value and readable before\
+    \ rendering, folded across the call graph and through slots, identified by the\
+    \ same content-hashed name extraction already computes\n  still_missing: the embedded\
+    \ byte table and the caller-supplied URL function, which is what a TinyGo target\
+    \ with no filesystem needs\nacceptance:\n  - a component shipping a style and\
+    \ a script produces two files and two head tags, and no inline block reaches any\
+    \ response\n  - an unchanged project regenerates identical file names, so caches\
+    \ stay valid\n  - a component referencing an external CDN script emits a tag and\
+    \ no file\n  - a page linking an extracted asset is served correctly with the\
+    \ public endpoint enabled, and fails at startup with it disabled\n  - policy:security-response-headers\
+    \ can be tightened to forbid inline style and script without breaking a scaffolded\
+    \ project\n  - a project declaring no component asset regenerates byte-identical\
+    \ output\n```"
+  source: gap found while surveying system:tinybind v0.3.0
+  not_this_delivery:
+    scope: this is about assets an application component declares, and is unrelated
+      to how the framework's own runtime reaches the page
+    that_is: decision:runtime-tag-injection, which contributes the framework script
+      at the render call so no application file can drop it
+    standing: a real gap worth closing on its own schedule, deliberately not sequenced
+      with the update capabilities
+  today: api:cli-generate configures neither asset option, so every component style
+    and script reaches the response inline; the extraction exists upstream and this
+    project does not ask for it
+  motivation:
+    caching: inline bytes are re-sent with every document and cached with none of
+      them
+    policy: policy:security-response-headers cannot narrow style-src or script-src
+      while a component can emit an inline block
+    authored_islands: the authored-islands tier of concept:interaction-cost-ladder
+      is the one that needs a component to ship JavaScript, and today that JavaScript
+      has nowhere to be but the head
+  generation:
+    options: the public directory and the URL base of system:tinybind, set by api:cli-generate
+      rather than by each project
+    paths: aligned with requirement:public-asset-delivery, so extracted files land
+      under the project public tree the embed and the middleware already cover
+    naming: the generation unit name, the asset kind, and a content hash, so the URL
+      is immutably cacheable and an unchanged project regenerates identical names
+    bundling: styles of one template file bundle into one stylesheet, while each component
+      script stays its own file so author attributes survive on its tag
+    passthrough: a script or link already naming an external URL contributes its tag
+      unchanged and produces no file
+    determinism: identical sources produce identical names and bytes, which is what
+      lets rule:project-integrity-checks compare a regeneration
+    generated_artifact: 'an extracted file is a generated artifact under policy:generated-artifacts,
+      so it is never hand edited; it is not reviewable beside its source in an application,
+      because decision:generated-public-asset-version-control excludes it there and
+      a package is where it is committed and reviewed
+
+      '
+  delivery:
+    serving: api:public-asset-middleware, unchanged; an extracted file is an ordinary
+      public asset
+    precompression: flow:public-asset-build compresses it like any other, per policy:public-asset-precompression
+    development: decision:development-public-assets serves it from disk, so a regeneration
+      is visible without a rebuild
+    disabled_endpoint: a project disabling requirement:public-asset-delivery while
+      a component declares an asset is a startup failure, since the reference would
+      resolve to nothing
+    distinct_from: requirement:framework-script-assets, which serves framework-owned
+      scripts from a reserved path and is never an extracted artifact
+  fragment_path:
+    rule: decision:fragment-head-rejection is unchanged; a fragment response still
+      refuses a component declaring head contributions, and an asset reference is
+      one
+    reason: the reference lives in the head, so a swapped region cannot carry it,
+      and dropping it silently would swap in an unstyled region
+  update_path:
+    problem: a navigation delta or a redraw can insert a component whose script the
+      first render never linked
+    handled_by: the head operations of requirement:navigation-delta-rendering, which
+      install a first-appearing component's tags before its markup is applied
+    closed_v0_3_3: the redraw registry reports the head and assets every published
+      component needs, so the document shell carries them once at startup, and a redraw
+      whose component contributes head also announces it on a response header
+  scope_today:
+    covered: a component declared in a template file of the generation unit being
+      compiled
+    not_covered: a component a library registers or declares in another package, which
+      owns no route and no shell and therefore cannot reference its own file
+    shipped_v0_3_3: the required-asset set is on the bound value and readable before
+      rendering, folded across the call graph and through slots, identified by the
+      same content-hashed name extraction already computes
+    still_missing: the embedded byte table and the caller-supplied URL function, which
+      is what a TinyGo target with no filesystem needs
+  acceptance:
+  - a component shipping a style and a script produces two files and two head tags,
+    and no inline block reaches any response
+  - an unchanged project regenerates identical file names, so caches stay valid
+  - a component referencing an external CDN script emits a tag and no file
+  - a page linking an extracted asset is served correctly with the public endpoint
+    enabled, and fails at startup with it disabled
+  - policy:security-response-headers can be tightened to forbid inline style and script
+    without breaking a scaffolded project
+  - a project declaring no component asset regenerates byte-identical output
+acceptance:
+  item-9e392b5a32208205:
+    text: a component shipping a style and a script produces two files and two head
+      tags, and no inline block reaches any response
+  item-c041d8f070880070:
+    text: an unchanged project regenerates identical file names, so caches stay valid
+  item-690d62b0b6487a53:
+    text: a component referencing an external CDN script emits a tag and no file
+  item-664dcd7886db701a:
+    text: a page linking an extracted asset is served correctly with the public endpoint
+      enabled, and fails at startup with it disabled
+  item-f66eace515f3e285:
+    text: policy:security-response-headers can be tightened to forbid inline style
+      and script without breaking a scaffolded project
+  item-8c81b8869ddf971c:
+    text: a project declaring no component asset regenerates byte-identical output
+relations:
+- relation: mentions
+  to: api:cli-generate
+  resolution: resolved
+- relation: mentions
+  to: api:public-asset-middleware
+  resolution: resolved
+- relation: mentions
+  to: concept:interaction-cost-ladder
+  resolution: resolved
+- relation: mentions
+  to: decision:development-public-assets
+  resolution: resolved
+- relation: mentions
+  to: decision:fragment-head-rejection
+  resolution: resolved
+- relation: mentions
+  to: decision:generated-public-asset-version-control
+  resolution: resolved
+- relation: mentions
+  to: decision:runtime-tag-injection
+  resolution: resolved
+- relation: mentions
+  to: flow:public-asset-build
+  resolution: resolved
+- relation: mentions
+  to: policy:generated-artifacts
+  resolution: resolved
+- relation: mentions
+  to: policy:public-asset-precompression
+  resolution: resolved
+- relation: mentions
+  to: policy:security-response-headers
+  resolution: resolved
+- relation: mentions
+  to: requirement:framework-script-assets
+  resolution: resolved
+- relation: mentions
+  to: requirement:navigation-delta-rendering
+  resolution: resolved
+- relation: mentions
+  to: requirement:public-asset-delivery
+  resolution: resolved
+- relation: mentions
+  to: rule:project-integrity-checks
+  resolution: resolved
+- relation: mentions
+  to: system:tinybind
+  resolution: resolved

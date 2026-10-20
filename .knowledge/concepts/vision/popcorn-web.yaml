@@ -1,0 +1,83 @@
+id: vision:popcorn-web
+type: vision
+title: Popcorn Web Vision
+summary: Popcorn Web is a compact Go and TinyGo web application framework that preserves
+  net/http familiarity while removing routine binding, rendering, SQL, serialization,
+  and lifecycle boilerplate.
+facts:
+  legacy_body: "Popcorn Web is a compact Go and TinyGo web application framework that\
+    \ preserves net/http familiarity while removing routine binding, rendering, SQL,\
+    \ serialization, and lifecycle boilerplate.\n\n```yaml\ngoals:\n  - a useful application\
+    \ starts with pw init, devbox shell, and pw dev\n  - handwritten application code\
+    \ normally imports only github.com/shibukawa/popcornweb/pw\n  - generated binding,\
+    \ HTML, SQL, and serialization remain reviewable beside their sources\n  - standard\
+    \ net/http handlers and custom server lifecycles remain available\n  - the same\
+    \ application structure works with Go and TinyGo\nprinciples:\n  - concept:public-package-boundaries\n\
+    \  - decision:host-tools-target-runtime\n  - decision:stdlib-servemux\n  - policy:generated-artifacts\n\
+    non_goals:\n  - custom router DSL\n  - runtime dependency injection container\n\
+    \  - ORM\n  - browser frontend framework\n  - WASI HTTP support in the first release\n\
+    primary_actor: actor:application-developer\nacceptance: requirement:mvp-acceptance\n\
+    authoritative_experience: requirement:application-user-experience\nruntime_expansion:\
+    \ vision:contrib\nthird_party_expansion: requirement:component-package-distribution,\
+    \ which opens the same reach to modules published outside this repository\napplication_styles:\
+    \ vision:web-application-styles\neditor_experience: vision:editor-support\n```"
+  goals:
+  - a useful application starts with pw init, devbox shell, and pw dev
+  - handwritten application code normally imports only github.com/shibukawa/popcornweb/pw
+  - generated binding, HTML, SQL, and serialization remain reviewable beside their
+    sources
+  - standard net/http handlers and custom server lifecycles remain available
+  - the same application structure works with Go and TinyGo
+  principles:
+  - concept:public-package-boundaries
+  - decision:host-tools-target-runtime
+  - decision:stdlib-servemux
+  - policy:generated-artifacts
+  non_goals:
+  - custom router DSL
+  - runtime dependency injection container
+  - ORM
+  - browser frontend framework
+  - WASI HTTP support in the first release
+  primary_actor: actor:application-developer
+  acceptance: requirement:mvp-acceptance
+  authoritative_experience: requirement:application-user-experience
+  runtime_expansion: vision:contrib
+  third_party_expansion: requirement:component-package-distribution, which opens the
+    same reach to modules published outside this repository
+  application_styles: vision:web-application-styles
+  editor_experience: vision:editor-support
+relations:
+- relation: mentions
+  to: actor:application-developer
+  resolution: resolved
+- relation: mentions
+  to: concept:public-package-boundaries
+  resolution: resolved
+- relation: mentions
+  to: decision:host-tools-target-runtime
+  resolution: resolved
+- relation: mentions
+  to: decision:stdlib-servemux
+  resolution: resolved
+- relation: mentions
+  to: policy:generated-artifacts
+  resolution: resolved
+- relation: mentions
+  to: requirement:application-user-experience
+  resolution: resolved
+- relation: mentions
+  to: requirement:component-package-distribution
+  resolution: resolved
+- relation: mentions
+  to: requirement:mvp-acceptance
+  resolution: resolved
+- relation: mentions
+  to: vision:contrib
+  resolution: resolved
+- relation: mentions
+  to: vision:editor-support
+  resolution: resolved
+- relation: mentions
+  to: vision:web-application-styles
+  resolution: resolved

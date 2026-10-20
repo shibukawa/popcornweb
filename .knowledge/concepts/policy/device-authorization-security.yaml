@@ -1,0 +1,70 @@
+id: policy:device-authorization-security
+type: policy
+title: Device Authorization Security Policy
+summary: Device authorization treats the constrained application as a public client
+  and protects the human code, polling channel, and approval ceremony independently.
+facts:
+  legacy_body: "Device authorization treats the constrained application as a public\
+    \ client and protects the human code, polling channel, and approval ceremony independently.\n\
+    \n```yaml\nclient:\n  - embedded client secrets are not credentials; public clients\
+    \ send client_id and no secret\n  - confidential authentication is used only when\
+    \ a deployment provisions a secret outside the device image\n  - device_authorization_endpoint\
+    \ and token endpoint follow policy:outbound-transport-security and policy:oidc-security\
+    \ host restrictions\ncodes:\n  - device_code uses requirement:contrib-auth-common\
+    \ high-entropy randomness and constant-time comparison\n  - user_code uses an\
+    \ unambiguous, case-insensitive human alphabet with formatting ignored on input\n\
+    \  - both codes expire together, bind client and requested scopes, and reach one\
+    \ terminal result\n  - approval, denial, token issuance, and expiry cannot be\
+    \ reversed or replayed\nprovider:\n  - rate-limit user-code guesses per source\
+    \ and per pending transaction\n  - enforce the advertised poll interval and return\
+    \ slow_down to early or excessive pollers\n  - bound pending records globally\
+    \ and per client, sweep expiry, and reveal no record existence beyond protocol\
+    \ responses\napproval:\n  - show user_code, client identity, requested scopes,\
+    \ and a warning that another device will receive access\n  - require explicit\
+    \ approve or deny after roster selection; verification_uri_complete never approves\
+    \ automatically\n  - never display device_code in the browser\ntokens:\n  - issue\
+    \ only after approval to the same client that owns device_code\n  - return no\
+    \ refresh token in the initial scope\n  - never log device_code, access token,\
+    \ refresh token, ID Token, or confidential client secret\n```"
+  client:
+  - embedded client secrets are not credentials; public clients send client_id and
+    no secret
+  - confidential authentication is used only when a deployment provisions a secret
+    outside the device image
+  - device_authorization_endpoint and token endpoint follow policy:outbound-transport-security
+    and policy:oidc-security host restrictions
+  codes:
+  - device_code uses requirement:contrib-auth-common high-entropy randomness and constant-time
+    comparison
+  - user_code uses an unambiguous, case-insensitive human alphabet with formatting
+    ignored on input
+  - both codes expire together, bind client and requested scopes, and reach one terminal
+    result
+  - approval, denial, token issuance, and expiry cannot be reversed or replayed
+  provider:
+  - rate-limit user-code guesses per source and per pending transaction
+  - enforce the advertised poll interval and return slow_down to early or excessive
+    pollers
+  - bound pending records globally and per client, sweep expiry, and reveal no record
+    existence beyond protocol responses
+  approval:
+  - show user_code, client identity, requested scopes, and a warning that another
+    device will receive access
+  - require explicit approve or deny after roster selection; verification_uri_complete
+    never approves automatically
+  - never display device_code in the browser
+  tokens:
+  - issue only after approval to the same client that owns device_code
+  - return no refresh token in the initial scope
+  - never log device_code, access token, refresh token, ID Token, or confidential
+    client secret
+relations:
+- relation: mentions
+  to: policy:oidc-security
+  resolution: resolved
+- relation: mentions
+  to: policy:outbound-transport-security
+  resolution: resolved
+- relation: mentions
+  to: requirement:contrib-auth-common
+  resolution: resolved

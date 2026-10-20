@@ -1,0 +1,59 @@
+id: decision:sqlite-backend-selection
+type: decision
+title: SQLite Backend Selection
+summary: system:tinygodriver preserves one SQLite API and driver name while build
+  constraints select the runtime backend.
+facts:
+  legacy_body: "system:tinygodriver preserves one SQLite API and driver name while\
+    \ build constraints select the runtime backend.\n\n```yaml\nstatus: accepted\n\
+    facade: github.com/shibukawa/tinygodriver/database/sql/sqlite\ndriver_name: sqlite\n\
+    selection:\n  - constraint: \"tinygo || force_tinygo_logic\"\n    backend: requirement:contrib-cgosqlite\n\
+    \  - constraint: \"!tinygo && !force_tinygo_logic && cgo\"\n    backend: github.com/mattn/go-sqlite3\n\
+    \  - constraint: \"!tinygo && !force_tinygo_logic && !cgo\"\n    backend: modernc.org/sqlite\n\
+    registration:\n  - every selection exposes DriverName equal to sqlite\n  - facade\
+    \ import registers exactly one driver under sqlite\n  - mattn native sqlite3 registration\
+    \ may remain but is not the facade contract\ncompatibility:\n  - common API and\
+    \ portable DSN subset remain identical across selections\n  - backend-specific\
+    \ DSN parameters are not part of the facade contract\n  - decision:force-tinygo-logic\
+    \ selection requires a working C toolchain for SQLite tests\ntests:\n  - host\
+    \ Go with CGo enabled selects mattn\n  - host Go with CGo disabled selects modernc\n\
+    \  - forced host Go selects requirement:contrib-cgosqlite\n  - TinyGo selects\
+    \ requirement:contrib-cgosqlite\n  - shared create, insert, query, prepared statement,\
+    \ transaction, rollback, null, and cancellation fixtures pass\n```"
+  status: accepted
+  facade: github.com/shibukawa/tinygodriver/database/sql/sqlite
+  driver_name: sqlite
+  selection:
+  - constraint: tinygo || force_tinygo_logic
+    backend: requirement:contrib-cgosqlite
+  - constraint: '!tinygo && !force_tinygo_logic && cgo'
+    backend: github.com/mattn/go-sqlite3
+  - constraint: '!tinygo && !force_tinygo_logic && !cgo'
+    backend: modernc.org/sqlite
+  registration:
+  - every selection exposes DriverName equal to sqlite
+  - facade import registers exactly one driver under sqlite
+  - mattn native sqlite3 registration may remain but is not the facade contract
+  compatibility:
+  - common API and portable DSN subset remain identical across selections
+  - backend-specific DSN parameters are not part of the facade contract
+  - decision:force-tinygo-logic selection requires a working C toolchain for SQLite
+    tests
+  tests:
+  - host Go with CGo enabled selects mattn
+  - host Go with CGo disabled selects modernc
+  - forced host Go selects requirement:contrib-cgosqlite
+  - TinyGo selects requirement:contrib-cgosqlite
+  - shared create, insert, query, prepared statement, transaction, rollback, null,
+    and cancellation fixtures pass
+lifecycle: accepted
+relations:
+- relation: mentions
+  to: decision:force-tinygo-logic
+  resolution: resolved
+- relation: mentions
+  to: requirement:contrib-cgosqlite
+  resolution: resolved
+- relation: mentions
+  to: system:tinygodriver
+  resolution: resolved

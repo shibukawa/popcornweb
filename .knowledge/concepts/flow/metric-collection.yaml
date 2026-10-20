@@ -1,0 +1,170 @@
+id: flow:metric-collection
+type: flow
+title: Metric Collection Flow
+summary: 'Metric export is interval-driven rather than record-driven: a reader wakes,
+  collects every instrument and observable of data:framework-metric-set into one aggregation,
+  and posts it once, which is why it shares the exporter of flow:telemetry-export
+  and none of its queue.'
+facts:
+  legacy_body: "Metric export is interval-driven rather than record-driven: a reader\
+    \ wakes, collects every instrument and observable of data:framework-metric-set\
+    \ into one aggregation, and posts it once, which is why it shares the exporter\
+    \ of flow:telemetry-export and none of its queue.\n\n```yaml\nflow:\n  trigger:\
+    \ the reader interval elapses, or shutdown begins\n  steps:\n    - id: collect_synchronous\n\
+    \      action: read the accumulated aggregation of every counter, up_down_counter,\
+    \ and histogram recorded on a request or statement path\n      note: recording\
+    \ is an add into an existing attribute set, so the request path never touches\
+    \ this step\n    - id: collect_observable\n      action: invoke each registered\
+    \ callback once — one per pwruntime Connection for the pool group, one per data:cache-store-set\
+    \ store, one for the go runtime group\n      bound: a callback that blocks blocks\
+    \ the interval, so each reads an already-computed value and performs no query\n\
+    \      failure: a callback that fails omits its series for that interval and reports\
+    \ once, rather than failing the export\n    - id: aggregate\n      action: resolve\
+    \ one data point per instrument per attribute set, with the configured temporality\n\
+    \    - id: encode\n      action: encode the OTLP metric message with the same\
+    \ JSON Protobuf mapping requirement:contrib-otel already uses for spans and records\n\
+    \    - id: send\n      action: POST to /v1/metrics, derived from the base endpoint\
+    \ the way the traces and logs paths already are\n    - id: retry\n      action:\
+    \ the bounded exponential backoff of flow:telemetry-export, on the same client\
+    \ and the same timeout\n      exhausted: the interval is lost; see loss below\n\
+    \  shutdown:\n    - stop the interval\n    - collect and export once more within\
+    \ the context deadline, so the counts of the final interval are not the ones discarded\n\
+    \    - return the exporter error, with no stdout fallback, per data:observability-runtime-config\n\
+    why_not_the_batch_queue:\n  fact: flow:telemetry-export queues one record per\
+    \ span and per log entry and drops on a full queue\n  contrast: a metric has no\
+    \ records; the aggregation is bounded by the attribute-set count and does not\
+    \ grow with traffic, so there is nothing to bound and nothing to drop\n  consequence:\
+    \ the queue_size and max_export_size of data:observability-runtime-config do not\
+    \ apply here, and the reader interval is a separate key from flush_interval because\
+    \ one is how often a batch leaves and the other is how coarse every chart becomes\n\
+    \  shared: the endpoint, the headers, the client, the timeout, and the retry policy,\
+    \ since it is one exporter with a third path\nloss:\n  delta:\n    behavior: each\
+    \ export carries what happened since the previous one, so a failed export loses\
+    \ those counts permanently\n    suits: requirement:dev-telemetry-viewer, whose\
+    \ pane charts a session and differences nothing, and an instance short enough\
+    \ that a cumulative total never becomes meaningful\n  cumulative:\n    behavior:\
+    \ each export carries the total since process start, so a failed export is repaired\
+    \ by the next one\n    suits: a long-lived deployment, at the cost of a reader\
+    \ that has to know when the series restarted\n  therefore: temporality is the\
+    \ open key of requirement:framework-metrics rather than a constant, and this is\
+    \ the fact that decides it\n  visible_downstream: system:localotelviewer reads\
+    \ the temporality of each point and charts a cumulative histogram from the latest\
+    \ point alone, so both choices already display correctly\ncost:\n  disabled: no\
+    \ reader goroutine, no ticker, and no registered callback\n  enabled_idle: one\
+    \ wake per interval producing one export of whatever the instruments hold, including\
+    \ nothing\ntiming:\n  interval: an observability.metrics key, defaulting near\
+    \ the flush_interval of the trace path so a dev loop shows both signals on one\
+    \ rhythm\n  alignment: not aligned to a wall clock, because two instances aligned\
+    \ to one boundary export together and a backend sees the sum arrive in bursts\n\
+    open:\n  no_background_interval:\n    where: requirement:cloudflare-workers-hosting,\
+    \ where nothing runs between requests\n    consequence: a reader with no time\
+    \ of its own has to collect and export on the request path, which is a different\
+    \ flow rather than a tuning of this one\n    deferred: that target emits no supported\
+    \ artifact today, so this is recorded and not designed\n```"
+  flow:
+    trigger: the reader interval elapses, or shutdown begins
+    steps:
+    - id: collect_synchronous
+      action: read the accumulated aggregation of every counter, up_down_counter,
+        and histogram recorded on a request or statement path
+      note: recording is an add into an existing attribute set, so the request path
+        never touches this step
+    - id: collect_observable
+      action: invoke each registered callback once — one per pwruntime Connection
+        for the pool group, one per data:cache-store-set store, one for the go runtime
+        group
+      bound: a callback that blocks blocks the interval, so each reads an already-computed
+        value and performs no query
+      failure: a callback that fails omits its series for that interval and reports
+        once, rather than failing the export
+    - id: aggregate
+      action: resolve one data point per instrument per attribute set, with the configured
+        temporality
+    - id: encode
+      action: encode the OTLP metric message with the same JSON Protobuf mapping requirement:contrib-otel
+        already uses for spans and records
+    - id: send
+      action: POST to /v1/metrics, derived from the base endpoint the way the traces
+        and logs paths already are
+    - id: retry
+      action: the bounded exponential backoff of flow:telemetry-export, on the same
+        client and the same timeout
+      exhausted: the interval is lost; see loss below
+    shutdown:
+    - stop the interval
+    - collect and export once more within the context deadline, so the counts of the
+      final interval are not the ones discarded
+    - return the exporter error, with no stdout fallback, per data:observability-runtime-config
+  why_not_the_batch_queue:
+    fact: flow:telemetry-export queues one record per span and per log entry and drops
+      on a full queue
+    contrast: a metric has no records; the aggregation is bounded by the attribute-set
+      count and does not grow with traffic, so there is nothing to bound and nothing
+      to drop
+    consequence: the queue_size and max_export_size of data:observability-runtime-config
+      do not apply here, and the reader interval is a separate key from flush_interval
+      because one is how often a batch leaves and the other is how coarse every chart
+      becomes
+    shared: the endpoint, the headers, the client, the timeout, and the retry policy,
+      since it is one exporter with a third path
+  loss:
+    delta:
+      behavior: each export carries what happened since the previous one, so a failed
+        export loses those counts permanently
+      suits: requirement:dev-telemetry-viewer, whose pane charts a session and differences
+        nothing, and an instance short enough that a cumulative total never becomes
+        meaningful
+    cumulative:
+      behavior: each export carries the total since process start, so a failed export
+        is repaired by the next one
+      suits: a long-lived deployment, at the cost of a reader that has to know when
+        the series restarted
+    therefore: temporality is the open key of requirement:framework-metrics rather
+      than a constant, and this is the fact that decides it
+    visible_downstream: system:localotelviewer reads the temporality of each point
+      and charts a cumulative histogram from the latest point alone, so both choices
+      already display correctly
+  cost:
+    disabled: no reader goroutine, no ticker, and no registered callback
+    enabled_idle: one wake per interval producing one export of whatever the instruments
+      hold, including nothing
+  timing:
+    interval: an observability.metrics key, defaulting near the flush_interval of
+      the trace path so a dev loop shows both signals on one rhythm
+    alignment: not aligned to a wall clock, because two instances aligned to one boundary
+      export together and a backend sees the sum arrive in bursts
+  open:
+    no_background_interval:
+      where: requirement:cloudflare-workers-hosting, where nothing runs between requests
+      consequence: a reader with no time of its own has to collect and export on the
+        request path, which is a different flow rather than a tuning of this one
+      deferred: that target emits no supported artifact today, so this is recorded
+        and not designed
+relations:
+- relation: mentions
+  to: data:cache-store-set
+  resolution: resolved
+- relation: mentions
+  to: data:framework-metric-set
+  resolution: resolved
+- relation: mentions
+  to: data:observability-runtime-config
+  resolution: resolved
+- relation: mentions
+  to: flow:telemetry-export
+  resolution: resolved
+- relation: mentions
+  to: requirement:cloudflare-workers-hosting
+  resolution: resolved
+- relation: mentions
+  to: requirement:contrib-otel
+  resolution: resolved
+- relation: mentions
+  to: requirement:dev-telemetry-viewer
+  resolution: resolved
+- relation: mentions
+  to: requirement:framework-metrics
+  resolution: resolved
+- relation: mentions
+  to: system:localotelviewer
+  resolution: resolved

@@ -1,0 +1,78 @@
+id: ui:devidp-login
+type: ui
+title: Development IdP Login Screen
+summary: The requirement:contrib-devidp login screen lists the data:devidp-config
+  roster so a developer signs in by choosing an identity, with no credential input
+  anywhere on the page.
+facts:
+  legacy_body: "The requirement:contrib-devidp login screen lists the data:devidp-config\
+    \ roster so a developer signs in by choosing an identity, with no credential input\
+    \ anywhere on the page.\n\n```yaml\nui:\n  root:\n    kind: browser\n    id: screen.devidp-login\n\
+    \    title: Select a development user\n    children:\n      - kind: banner\n \
+    \       id: dev-warning\n        label: Development identity provider; no password\
+    \ is checked\n        state: always visible\n      - kind: text\n        id: client-context\n\
+    \        label: requesting client id and granted scopes\n      - kind: list\n\
+    \        id: user-roster\n        columns:\n          - display_name\n       \
+    \   - subject\n          - extra_claims summary\n        children:\n         \
+    \ - kind: button\n            id: select-user\n            label: Sign in as this\
+    \ user\n            action: flow:devidp-user-selection\n      - kind: button\n\
+    \        id: cancel\n        label: Cancel\n        action: return access_denied\
+    \ to the client\nrules:\n  - no password, passcode, or one-time-code field exists\
+    \ on this screen\n  - selection is a POST carrying the pending authorization identifier,\
+    \ protected by policy:csrf-protection\n  - the roster is rendered from configuration\
+    \ only and never from request parameters\n  - claim values are escaped as text\
+    \ under policy:template-escaping\n  - the screen is skipped entirely when automatic\
+    \ login is configured\n  - the warning banner cannot be disabled by configuration\n\
+    ```"
+  ui:
+    root:
+      kind: browser
+      id: screen.devidp-login
+      title: Select a development user
+      children:
+      - kind: banner
+        id: dev-warning
+        label: Development identity provider; no password is checked
+        state: always visible
+      - kind: text
+        id: client-context
+        label: requesting client id and granted scopes
+      - kind: list
+        id: user-roster
+        columns:
+        - display_name
+        - subject
+        - extra_claims summary
+        children:
+        - kind: button
+          id: select-user
+          label: Sign in as this user
+          action: flow:devidp-user-selection
+      - kind: button
+        id: cancel
+        label: Cancel
+        action: return access_denied to the client
+  rules:
+  - no password, passcode, or one-time-code field exists on this screen
+  - selection is a POST carrying the pending authorization identifier, protected by
+    policy:csrf-protection
+  - the roster is rendered from configuration only and never from request parameters
+  - claim values are escaped as text under policy:template-escaping
+  - the screen is skipped entirely when automatic login is configured
+  - the warning banner cannot be disabled by configuration
+relations:
+- relation: mentions
+  to: data:devidp-config
+  resolution: resolved
+- relation: mentions
+  to: flow:devidp-user-selection
+  resolution: resolved
+- relation: mentions
+  to: policy:csrf-protection
+  resolution: resolved
+- relation: mentions
+  to: policy:template-escaping
+  resolution: resolved
+- relation: mentions
+  to: requirement:contrib-devidp
+  resolution: resolved

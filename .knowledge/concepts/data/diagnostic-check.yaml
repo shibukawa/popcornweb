@@ -1,0 +1,83 @@
+id: data:diagnostic-check
+type: data
+title: Diagnostic Check
+summary: One check has a stable identifier, a severity, declared inputs, and a documentation
+  page, so a finding can be searched, cited in an issue, and read about.
+facts:
+  legacy_body: "One check has a stable identifier, a severity, declared inputs, and\
+    \ a documentation page, so a finding can be searched, cited in an issue, and read\
+    \ about.\n\n```yaml\nidentity:\n  form: PW followed by four digits, such as PW0412\n\
+    \  stability: an identifier is never reused or renumbered; a retired check keeps\
+    \ its page and is marked retired\n  ranges:\n    PW01xx: rule:project-integrity-checks\n\
+    \    PW02xx: rule:route-and-template-checks\n    PW03xx: rule:storage-checks\n\
+    \    PW04xx: rule:configuration-advisories, including wiring, secrets, and the\
+    \ identity provider\n    PW05xx: rule:production-readiness-checks\n    PW06xx:\
+    \ rule:transport-handle-checks, the first range whose runner is an analyzer rather\
+    \ than api:cli-doctor\nfields:\n  id: the PW identifier\n  title: the one-line\
+    \ form that appears in the report, such as \"session secret is set from config\
+    \ file\"\n  severity: error, warning, or note, resolved per diagnosed token by\
+    \ the owning catalog\n  scope: the data:runtime-environment tokens the check applies\
+    \ to\n  inputs: which of merged configuration, import graph, project files, data:route-table,\
+    \ typed application Go syntax, process environment, or network the check needs\n\
+    \  phase: startup, doctor, vet, or a combination, per decision:shared-check-catalog\n\
+    \  remedy: the command, import line, or key that resolves it\n  docs: one page\
+    \ per identifier\ndocumentation:\n  form: one generated reference page, with a\
+    \ heading and an anchor per identifier\n  url: the page anchor derived from the\
+    \ identifier and title, so a finding links to its own entry\n  generation: the\
+    \ page is generated from the catalog and checked in; a test compares the two,\
+    \ so a check added without documentation fails the build\n  content: severity,\
+    \ the environments it applies to, what it reads, and the remedy, which is what\
+    \ a troubleshooting page has to say anyway\n  reason: an identifier in a terminal\
+    \ is only useful when it is searchable, and generating from the catalog is what\
+    \ keeps that true\nreporting:\n  finding: data:diagnostic-report carries the identifier,\
+    \ the title, the evidence, and the documentation link\n  message: \"PW0412: session\
+    \ secret is set from config file (prod)\" is the intended shape, identifier first\n\
+    \  issue_reports: an operator pasting one line carries the check identity, the\
+    \ environment, and the framework version with it\nrules:\n  - a check declares\
+    \ its inputs, and a runner skips it rather than guessing when an input is unavailable\n\
+    \  - a check states one condition; a check that would report two conditions is\
+    \ two checks with two identifiers\n  - severity is data on the check, not a decision\
+    \ made at the call site\n  - the identifier is assigned when the check is written,\
+    \ not when it fires\n```"
+  legacy_parse_issues:
+  - kind: legacy_parse_error
+    block: 0
+    message: "while parsing a block mapping\n  in \"<unicode string>\", line 27, column\
+      \ 3:\n      finding: data:diagnostic-report  ... \n      ^\nexpected <block\
+      \ end>, but found '<scalar>'\n  in \"<unicode string>\", line 28, column 68:\n\
+      \     ... is set from config file (prod)\" is the intended shape, identifie\
+      \ ... \n                                         ^"
+relations:
+- relation: mentions
+  to: api:cli-doctor
+  resolution: resolved
+- relation: mentions
+  to: data:diagnostic-report
+  resolution: resolved
+- relation: mentions
+  to: data:route-table
+  resolution: resolved
+- relation: mentions
+  to: data:runtime-environment
+  resolution: resolved
+- relation: mentions
+  to: decision:shared-check-catalog
+  resolution: resolved
+- relation: mentions
+  to: rule:configuration-advisories
+  resolution: resolved
+- relation: mentions
+  to: rule:production-readiness-checks
+  resolution: resolved
+- relation: mentions
+  to: rule:project-integrity-checks
+  resolution: resolved
+- relation: mentions
+  to: rule:route-and-template-checks
+  resolution: resolved
+- relation: mentions
+  to: rule:storage-checks
+  resolution: resolved
+- relation: mentions
+  to: rule:transport-handle-checks
+  resolution: resolved

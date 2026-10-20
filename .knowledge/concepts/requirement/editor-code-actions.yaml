@@ -1,0 +1,152 @@
+id: requirement:editor-code-actions
+type: requirement
+title: Template Code Actions
+summary: A diagnostic whose repair is mechanical offers that repair, and the offer
+  exists only where requirement:editor-diagnostics already reported the problem.
+facts:
+  legacy_body: "A diagnostic whose repair is mechanical offers that repair, and the\
+    \ offer exists only where requirement:editor-diagnostics already reported the\
+    \ problem.\n\n```yaml\nstatus: >\n  the out_of_purpose_source action is implemented\
+    \ at internal/pwlsp. The rest\n  are unimplemented, and the gate below is why\
+    \ rather than an omission: the\n  server produces two findings, and this is the\
+    \ only one with a mechanical\n  repair\ndelivered:\n  out_of_purpose_source: offers\
+    \ to list the file's own directory under the purpose that would compile it, as\
+    \ a one-line edit to popcornweb.toml\n  why_not_move_the_file: the requirement\
+    \ names moving it too, and where to move it is a judgement about the project's\
+    \ layout; an action that picked a destination would be choosing for the developer,\
+    \ while listing the directory they already chose is not a choice\n  one_line_not_the_document:\
+    \ the configuration is the developer's, full of the comments the scaffold wrote,\
+    \ so a re-serialized TOML would hand it back reformatted; a value spread over\
+    \ several lines is left alone for the same reason\n  page_tree_finding: no action,\
+    \ because that finding is about the file's name rather than its directory and\
+    \ listing the directory would repair nothing\n  syntax_errors: no action, because\
+    \ what to write is the developer's answer and a guess would be the invented code\
+    \ excluded below\nblocked_on:\n  the_rest: every other action repairs a finding\
+    \ that needs a resolved type or the check catalog, which requirement:editor-diagnostics\
+    \ does not serve from the server yet\nstage: 4 of vision:editor-support\nserver:\
+    \ requirement:pw-language-server\ngate: every action repairs a decision:shared-check-catalog\
+    \ finding, so the editor offers nothing api:cli-generate would not have complained\
+    \ about\nactions:\n  missing_import: add the import a referenced component or\
+    \ type needs, chosen from the module's own package list\n  undeclared_component:\
+    \ create the referenced component declaration, with the parameters the call site\
+    \ passes\n  missing_dynamo_tag: add the struct tag a key clause names but the\
+    \ bound type does not declare\n  unsatisfied_sql_contract: adjust the result type\
+    \ to what the statement returns, or name why it cannot be adjusted\n  out_of_purpose_source:\
+    \ move the file into a directory data:project-config declares, per decision:explicit-generation-sources\n\
+    \  wrong_output_type: replace an output type the root keyword does not allow with\
+    \ one it does\n  add_slot: declare a slot a caller fills\nexcluded:\n  layout:\
+    \ requirement:template-formatting owns layout; an action never reflows\n  rename:\
+    \ requirement:declaration-rename, because a name crosses files an action should\
+    \ not silently touch\n  generation: an action never runs api:cli-generate, per\
+    \ policy:editor-tool-execution\n  invented_code: an action fills a shape the checks\
+    \ already describe and never guesses a body\nscope:\n  writes: the open document,\
+    \ except for the file-creating and file-moving actions, which are previewed as\
+    \ a workspace edit\n  project_required: an action needing resolution is not offered\
+    \ without a loaded project, rather than offered and failing\nacceptance:\n  -\
+    \ every offered action names the diagnostic it repairs\n  - applying an action\
+    \ clears the diagnostic it named and introduces no new one\n  - no action is offered\
+    \ on a document with no diagnostic\n  - a file-creating action shows the file\
+    \ it would create before creating it\n  - an action is never offered in a *_pw_gen.go\n\
+    ```"
+  status: 'the out_of_purpose_source action is implemented at internal/pwlsp. The
+    rest are unimplemented, and the gate below is why rather than an omission: the
+    server produces two findings, and this is the only one with a mechanical repair
+
+    '
+  delivered:
+    out_of_purpose_source: offers to list the file's own directory under the purpose
+      that would compile it, as a one-line edit to popcornweb.toml
+    why_not_move_the_file: the requirement names moving it too, and where to move
+      it is a judgement about the project's layout; an action that picked a destination
+      would be choosing for the developer, while listing the directory they already
+      chose is not a choice
+    one_line_not_the_document: the configuration is the developer's, full of the comments
+      the scaffold wrote, so a re-serialized TOML would hand it back reformatted;
+      a value spread over several lines is left alone for the same reason
+    page_tree_finding: no action, because that finding is about the file's name rather
+      than its directory and listing the directory would repair nothing
+    syntax_errors: no action, because what to write is the developer's answer and
+      a guess would be the invented code excluded below
+  blocked_on:
+    the_rest: every other action repairs a finding that needs a resolved type or the
+      check catalog, which requirement:editor-diagnostics does not serve from the
+      server yet
+  stage: 4 of vision:editor-support
+  server: requirement:pw-language-server
+  gate: every action repairs a decision:shared-check-catalog finding, so the editor
+    offers nothing api:cli-generate would not have complained about
+  actions:
+    missing_import: add the import a referenced component or type needs, chosen from
+      the module's own package list
+    undeclared_component: create the referenced component declaration, with the parameters
+      the call site passes
+    missing_dynamo_tag: add the struct tag a key clause names but the bound type does
+      not declare
+    unsatisfied_sql_contract: adjust the result type to what the statement returns,
+      or name why it cannot be adjusted
+    out_of_purpose_source: move the file into a directory data:project-config declares,
+      per decision:explicit-generation-sources
+    wrong_output_type: replace an output type the root keyword does not allow with
+      one it does
+    add_slot: declare a slot a caller fills
+  excluded:
+    layout: requirement:template-formatting owns layout; an action never reflows
+    rename: requirement:declaration-rename, because a name crosses files an action
+      should not silently touch
+    generation: an action never runs api:cli-generate, per policy:editor-tool-execution
+    invented_code: an action fills a shape the checks already describe and never guesses
+      a body
+  scope:
+    writes: the open document, except for the file-creating and file-moving actions,
+      which are previewed as a workspace edit
+    project_required: an action needing resolution is not offered without a loaded
+      project, rather than offered and failing
+  acceptance:
+  - every offered action names the diagnostic it repairs
+  - applying an action clears the diagnostic it named and introduces no new one
+  - no action is offered on a document with no diagnostic
+  - a file-creating action shows the file it would create before creating it
+  - an action is never offered in a *_pw_gen.go
+acceptance:
+  item-9856a0c876a3c1ae:
+    text: every offered action names the diagnostic it repairs
+  item-fdbecf0b3a4c0cae:
+    text: applying an action clears the diagnostic it named and introduces no new
+      one
+  item-edc77221d2bc3ef2:
+    text: no action is offered on a document with no diagnostic
+  item-56fbef6489751338:
+    text: a file-creating action shows the file it would create before creating it
+  item-bd2527fc6d3a4277:
+    text: an action is never offered in a *_pw_gen.go
+relations:
+- relation: mentions
+  to: api:cli-generate
+  resolution: resolved
+- relation: mentions
+  to: data:project-config
+  resolution: resolved
+- relation: mentions
+  to: decision:explicit-generation-sources
+  resolution: resolved
+- relation: mentions
+  to: decision:shared-check-catalog
+  resolution: resolved
+- relation: mentions
+  to: policy:editor-tool-execution
+  resolution: resolved
+- relation: mentions
+  to: requirement:declaration-rename
+  resolution: resolved
+- relation: mentions
+  to: requirement:editor-diagnostics
+  resolution: resolved
+- relation: mentions
+  to: requirement:pw-language-server
+  resolution: resolved
+- relation: mentions
+  to: requirement:template-formatting
+  resolution: resolved
+- relation: mentions
+  to: vision:editor-support
+  resolution: resolved

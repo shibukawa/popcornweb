@@ -1,0 +1,72 @@
+id: decision:test-migration-snapshot
+type: decision
+title: Test Migration Snapshot
+summary: api:test-run installs schema by replaying a cached SQL snapshot instead of
+  running migrations against each isolated database.
+facts:
+  legacy_body: "api:test-run installs schema by replaying a cached SQL snapshot instead\
+    \ of running migrations against each isolated database.\n\n```yaml\nstatus: accepted\n\
+    problems_solved:\n  memory_database: a delegated pw child cannot reach an in-process\
+    \ sqlite://:memory: database, but it can emit SQL the parent replays into it\n\
+    \  per_test_cost: applying every migration version per test scales with migration\
+    \ count; replaying one snapshot does not\n  path_uniformity: host Go and TinyGo\
+    \ tests install identical schema from the same artifact\nmechanism:\n  produce:\
+    \ api:cli-migrate snapshot applies data:migration-source to a throwaway temporary\
+    \ database and writes data:migration-snapshot\n  transfer: the child writes the\
+    \ snapshot to stdout; no DSN crosses the process boundary\n  cache: one snapshot\
+    \ per test binary, keyed by a content hash of the migration sources\n  replay:\
+    \ each api:test-run executes the snapshot against its own isolated database\n\
+    selection:\n  source: the rule:rdb-dsn-resolution dialect of the configured DSN\n\
+    \  sqlite: snapshot, because an in-process sqlite://:memory: is unreachable by\
+    \ DSN and the dump is SQLite DDL\n  other_dialects: direct apply against the configured\
+    \ DSN, because a server database is reachable and no portable dump is defined\n\
+    \  escape_hatch: an explicit option forces direct apply for tests that must exercise\
+    \ the migration path itself\ndirect_apply:\n  idempotence: goose records applied\
+    \ versions, so a second api:test-run against a prepared server database applies\
+    \ nothing and reuses the schema\n  isolation: the server database is shared across\
+    \ tests, which is what requirement:parallel-database-tests already assumes\n \
+    \ precondition: the database is dedicated to the suite, because a version number\
+    \ recorded by another project makes a migration look applied\n  failure_before:\
+    \ probing installed state through sqlite_master reported the SQLite catalog missing\
+    \ rather than the dialect being wrong\nalternatives_rejected:\n  temp_file_per_test:\
+    \ simplest, but abandons in-memory databases and still pays full migration cost\
+    \ per test\n  shared_cache_memory_dsn: file::memory:?cache=shared is shared within\
+    \ one process only and does not reach a child\n  parent_side_temp_file_then_copy:\
+    \ a file copy cannot populate an already-open in-memory database\nconstraints:\n\
+    \  - the snapshot is a test fixture, never a production schema installation path\n\
+    \  - a snapshot is regenerated whenever the migration source hash changes\n  -\
+    \ snapshot output is deterministic so an unchanged source yields an identical\
+    \ artifact\n  - a fidelity gap in data:migration-snapshot is a defect, not an\
+    \ accepted approximation\nverified:\n  writable_schema_pragma: sqlite_sequence\
+    \ restoration works on the selected drivers; an AUTOINCREMENT counter survives\
+    \ replay\n  round_trip: a replayed database dumps identically to a directly migrated\
+    \ one apart from goose timestamps\n  determinism: repeated snapshots of unchanged\
+    \ sources are identical\n  memory_database: a TinyGo-path test installs the schema\
+    \ into sqlite://:memory: through the child process\nrisks:\n  driver_behavior:\
+    \ a future SQLite backend could reject PRAGMA writable_schema, which the round-trip\
+    \ test would catch\n```"
+  legacy_parse_issues:
+  - kind: legacy_parse_error
+    block: 0
+    message: "mapping values are not allowed here\n  in \"<unicode string>\", line\
+      \ 3, column 84:\n     ... h an in-process sqlite://:memory: database, but it\
+      \ can emit SQL  ... \n                                         ^"
+relations:
+- relation: mentions
+  to: api:cli-migrate
+  resolution: resolved
+- relation: mentions
+  to: api:test-run
+  resolution: resolved
+- relation: mentions
+  to: data:migration-snapshot
+  resolution: resolved
+- relation: mentions
+  to: data:migration-source
+  resolution: resolved
+- relation: mentions
+  to: requirement:parallel-database-tests
+  resolution: resolved
+- relation: mentions
+  to: rule:rdb-dsn-resolution
+  resolution: resolved

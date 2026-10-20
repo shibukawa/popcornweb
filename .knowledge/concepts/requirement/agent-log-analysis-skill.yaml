@@ -1,0 +1,130 @@
+id: requirement:agent-log-analysis-skill
+type: requirement
+title: Agent Log Analysis Skill
+summary: The bundled Popcorn Web agent skill teaches an AI coding agent to inspect
+  requirement:local-jsonl-log-capture files and produce safe DuckDB queries from a
+  developer's natural-language question.
+facts:
+  legacy_body: "The bundled Popcorn Web agent skill teaches an AI coding agent to\
+    \ inspect requirement:local-jsonl-log-capture files and produce safe DuckDB queries\
+    \ from a developer's natural-language question.\n\n```yaml\ncanonical_skill: decision:canonical-popcornweb-skill-source\n\
+    entry_point:\n  description_triggers:\n    - analyze, inspect, summarize, or debug\
+    \ pw dev logs\n    - answer a question from .log JSONL files\n    - create or\
+    \ run a DuckDB query against local logs\n  navigation: SKILL.md links one focused\
+    \ telemetry and log-analysis reference\nreference:\n  location: references/telemetry.md\
+    \ within the Popcorn Web skill\n  covers:\n    - requirement:local-jsonl-log-capture\
+    \ location, invocation-file lifetime, and exclusions\n    - data:local-jsonl-log-record\
+    \ stable fields, typed custom attributes, and correlation fields\n    - requirement:telemetry-architecture-guide\
+    \ as the human-facing explanation\nworkflow:\n  - locate popcornweb.toml and resolve\
+    \ dev.logs.directory from data:project-config\n  - enumerate matching closed and\
+    \ active .jsonl files without changing them\n  - inspect inferred names and types\
+    \ before assuming application-specific attributes\n  - translate the user's question\
+    \ into DuckDB SQL using read_ndjson_auto and union_by_name true\n  - show the\
+    \ SQL before or with the result so the analysis is reproducible\n  - execute only\
+    \ when DuckDB is available and the user asked for analysis rather than SQL text\
+    \ alone\n  - summarize the answer, time range, files read, filters, and any schema\
+    \ or sampling limitation\nquery_policy:\n  default: read-only SELECT, WITH, DESCRIBE,\
+    \ SUMMARIZE, or EXPLAIN over .log JSONL\n  multiple_files: use a glob or explicit\
+    \ file list with union_by_name true\n  correlation: use trace_id and span_id when\
+    \ the question crosses records or asks about one request\n  active_file: tolerate\
+    \ a concurrently appended file because data:local-jsonl-log-record exposes only\
+    \ complete newline-terminated records\n  no_data: report that no matching records\
+    \ exist; do not fabricate columns or results\n  mutation: never delete, truncate,\
+    \ rewrite, compact, or move logs as part of analysis\nsecurity:\n  - do not print\
+    \ secrets or personal values merely because a custom attribute contains them\n\
+    \  - prefer aggregates and selected columns over SELECT star in user-facing results\n\
+    \  - call out policy:query-log-safety when query bind values may be present\n\
+    ```\n\n```yaml\nacceptance:\n  - a fresh api:cli-init project that includes the\
+    \ skill can answer a natural-language question about .log files without first\
+    \ reading the website\n  - the agent discovers custom attribute columns rather\
+    \ than guessing them\n  - queries spanning invocation files set union_by_name\
+    \ true\n  - a request for errors in one trace filters by trace_id and orders by\
+    \ timestamp\n  - generated queries leave every source file byte-identical\n  -\
+    \ absence of DuckDB still yields a useful SQL query and installation-neutral next\
+    \ step\n```"
+  canonical_skill: decision:canonical-popcornweb-skill-source
+  entry_point:
+    description_triggers:
+    - analyze, inspect, summarize, or debug pw dev logs
+    - answer a question from .log JSONL files
+    - create or run a DuckDB query against local logs
+    navigation: SKILL.md links one focused telemetry and log-analysis reference
+  reference:
+    location: references/telemetry.md within the Popcorn Web skill
+    covers:
+    - requirement:local-jsonl-log-capture location, invocation-file lifetime, and
+      exclusions
+    - data:local-jsonl-log-record stable fields, typed custom attributes, and correlation
+      fields
+    - requirement:telemetry-architecture-guide as the human-facing explanation
+  workflow:
+  - locate popcornweb.toml and resolve dev.logs.directory from data:project-config
+  - enumerate matching closed and active .jsonl files without changing them
+  - inspect inferred names and types before assuming application-specific attributes
+  - translate the user's question into DuckDB SQL using read_ndjson_auto and union_by_name
+    true
+  - show the SQL before or with the result so the analysis is reproducible
+  - execute only when DuckDB is available and the user asked for analysis rather than
+    SQL text alone
+  - summarize the answer, time range, files read, filters, and any schema or sampling
+    limitation
+  query_policy:
+    default: read-only SELECT, WITH, DESCRIBE, SUMMARIZE, or EXPLAIN over .log JSONL
+    multiple_files: use a glob or explicit file list with union_by_name true
+    correlation: use trace_id and span_id when the question crosses records or asks
+      about one request
+    active_file: tolerate a concurrently appended file because data:local-jsonl-log-record
+      exposes only complete newline-terminated records
+    no_data: report that no matching records exist; do not fabricate columns or results
+    mutation: never delete, truncate, rewrite, compact, or move logs as part of analysis
+  security:
+  - do not print secrets or personal values merely because a custom attribute contains
+    them
+  - prefer aggregates and selected columns over SELECT star in user-facing results
+  - call out policy:query-log-safety when query bind values may be present
+  acceptance:
+  - a fresh api:cli-init project that includes the skill can answer a natural-language
+    question about .log files without first reading the website
+  - the agent discovers custom attribute columns rather than guessing them
+  - queries spanning invocation files set union_by_name true
+  - a request for errors in one trace filters by trace_id and orders by timestamp
+  - generated queries leave every source file byte-identical
+  - absence of DuckDB still yields a useful SQL query and installation-neutral next
+    step
+acceptance:
+  item-3ad3d64626602910:
+    text: a fresh api:cli-init project that includes the skill can answer a natural-language
+      question about .log files without first reading the website
+  item-0488437cf290bdc0:
+    text: the agent discovers custom attribute columns rather than guessing them
+  item-889e780a5f2147d2:
+    text: queries spanning invocation files set union_by_name true
+  item-9bc3cae215ee9985:
+    text: a request for errors in one trace filters by trace_id and orders by timestamp
+  item-33acaa7192479aac:
+    text: generated queries leave every source file byte-identical
+  item-ed5bff6995a4243e:
+    text: absence of DuckDB still yields a useful SQL query and installation-neutral
+      next step
+relations:
+- relation: mentions
+  to: api:cli-init
+  resolution: resolved
+- relation: mentions
+  to: data:local-jsonl-log-record
+  resolution: resolved
+- relation: mentions
+  to: data:project-config
+  resolution: resolved
+- relation: mentions
+  to: decision:canonical-popcornweb-skill-source
+  resolution: resolved
+- relation: mentions
+  to: policy:query-log-safety
+  resolution: resolved
+- relation: mentions
+  to: requirement:local-jsonl-log-capture
+  resolution: resolved
+- relation: mentions
+  to: requirement:telemetry-architecture-guide
+  resolution: resolved

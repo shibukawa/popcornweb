@@ -1,0 +1,226 @@
+id: requirement:explicit-page-loading
+type: requirement
+title: Explicit Page Loading
+summary: Retire the typed Load rung of concept:page-tree, so a discovered page loads
+  through a declared external its own template calls rather than through a generated
+  call the author cannot see.
+facts:
+  legacy_body: "Retire the typed Load rung of concept:page-tree, so a discovered page\
+    \ loads through a declared external its own template calls rather than through\
+    \ a generated call the author cannot see.\n\n```yaml\nstatus: done 2026-08-14;\
+    \ system:tinybind v0.5.11 removed the rung, v0.5.12 fixed the defect that blocked\
+    \ adoption, and the fixture, the tests, and the scaffold moved here\nwhat_is_retired:\
+    \ the typed rung alone — page.go declaring `func Load(id string, page int) (User,\
+    \ error)`, whose results become the page component's parameter list\nwhat_stays:\n\
+    \  template_only: a page with no page.go, whose data is its own external calls\n\
+    \  handler: page.go declaring `func Load(w, r)`, which owns its whole response\
+    \ and is the escape hatch every case below falls back to\nwhy_now:\n  val: system:tinybind\
+    \ v0.5.10 binds a synchronous external's result to a name, so a template can call\
+    \ its loader once and read the value in several places\n  before_val: an explicit\
+    \ call was possible but each mention re-called it, so the implicit rung was the\
+    \ only shape that loaded once\n  upstream_removed_it: v0.5.11, with a diagnostic\
+    \ naming the val shape\nthe_shape_it_replaces:\n  was: |\n    page.go:   func\
+    \ Load(id string) (User, error)\n    template:  component Page(user: User): html\n\
+    \  becomes: |\n    template:  external LoadUser(id: string): User\n          \
+    \     component Page(id: string): html {\n               {val user = LoadUser(id)}\n\
+    \  moved: the call site, from generated code into the template that consumes the\
+    \ value\nwhy_it_is_worth_removing:\n  one_less_rung: rungs are selected by a signature,\
+    \ so three shapes mean an author reads a signature to know which handler was generated;\
+    \ two mean the question is only whether page.go exists\n  the_contract_disappears:\
+    \ the typed rung checks the page component's parameter list against Load's result\
+    \ list by count, order, and type, and a mismatch is a generation error about two\
+    \ lists the author never wrote as a pair\n  invisible_call_site: nothing in the\
+    \ page's own source says the loader runs, so the data flow is readable only in\
+    \ generated output\n  parameters_become_the_input:\n    fact: under the typed\
+    \ rung a page component's parameters are the load's results, and under this one\
+    \ they are the URL segments\n    consequence: requirement:component-output-cache\
+    \ keys on declared parameters, so only the second shape can cache a page by its\
+    \ identifier\n    why_that_matters: keyed on loaded data a page cache is worthless,\
+    \ because computing the key requires the load it was meant to avoid; keyed on\
+    \ the id it covers the load and the render together\n    strongest_argument: the\
+    \ typed rung structurally cannot become a fetch-and-render cache, and removing\
+    \ it is what puts every discovered page within reach of one\nwhat_val_does_not_replace:\n\
+    \  the_error_path:\n    today: the generated handler calls Load, and a non-nil\
+    \ error becomes a problem response through api:error-renderer before anything\
+    \ is rendered or committed\n    at_v0_5_10: a synchronous external has no error\
+    \ result, so a failing load returns a zero value and the page renders empty; the\
+    \ planned val error handling is what closes this and depends_on tracks it\n  \
+    \  severity: this is the whole cost of the change, and it is not small — a record\
+    \ that does not exist is the common case, and answering it with 404 before commit\
+    \ is what the typed rung is actually for\n  ordering_matters_too: the decision\
+    \ to fail has to precede the first byte; an await boundary's recover renders error\
+    \ markup inside an already-committed 200, so it is not a substitute for a status\n\
+    depends_on:\n  what: a failing load must be reportable from the template, since\
+    \ that is the half val does not replace\n  answered_by: system:tinybind v0.5.11\
+    \ failing_external, which lets a synchronous external return a trailing error\
+    \ when it is the whole value of a binding; the template declaration is unchanged\
+    \ and the error is read from the Go source\n  read_unwrapped: nothing in the render\
+    \ path wraps it, so an error carrying HTTP intent reaches api:error-renderer through\
+    \ errors.As\n  the_ordering_half: system:tinybind hoists a chain member's top-level\
+    \ bindings to run during assembly, before the first byte; its own value-binding-hoisting\
+    \ decision carries the design\nthe_test_that_decides:\n  question: does a failed\
+    \ load reach a problem response before the first byte, or error markup inside\
+    \ a response already committed 200\n  answer: before commit, so the rung goes;\
+    \ measured against v0.5.12 rather than taken from the release notes\n  how_it_arrives_here:\
+    \ the generated handler renders through pwpage.Render and writes pw.WriteProblem\
+    \ on its error, which is the path that already existed; the binding's failure\
+    \ reaches it with nothing written\n  what_this_framework_had_to_change_for_it:\
+    \ nothing on the error path, which is why the wiring was the fixture, the tests,\
+    \ and the scaffold rather than the runtime\n  not_for_a_cached_leaf: a plan carrying\
+    \ a storing cache policy is not hoisted, so a cached page gives up the status\
+    \ choice on a miss; upstream states the trade and requirement:component-output-cache\
+    \ carries what it means here\nmigration:\n  done_here: the page-tree fixture,\
+    \ the shared generation fixture, and the pw new page scaffold\n  scaffold: the\
+    \ typed rung became the loader rung, which writes the external declaration, the\
+    \ val binding, and a loader returning a trailing error\n  scaffold_defect_found:\
+    \ the retired rung's test asserted only the emitted text, so the scaffold wrote\
+    \ a project that failed generation while the suite stayed green; the replacement\
+    \ runs the generator over what it scaffolds\n  no_silent_change: upstream refuses\
+    \ the old signature and names the new shape, so nothing falls through to the handler\
+    \ rung\nacceptance:\n  - a page loading through a declared external and a val\
+    \ binding renders what the typed rung rendered\n  - the page component of such\
+    \ a page declares the URL segments, so an annotation on it keys on the identifier\n\
+    \  - a page.go declaring the retired signature fails generation and names this\
+    \ requirement\n  - the handler rung is unaffected\n  - the scaffolds and the tutorial\
+    \ carry the explicit shape, since the implicit one stops existing\nopen_questions:\n\
+    \  - whether the tutorial and the discovered-routing guide need more than the\
+    \ mechanical rewrite, since the rung was a teaching device as well as a mechanism\n\
+    ```"
+  status: done 2026-08-14; system:tinybind v0.5.11 removed the rung, v0.5.12 fixed
+    the defect that blocked adoption, and the fixture, the tests, and the scaffold
+    moved here
+  what_is_retired: the typed rung alone — page.go declaring `func Load(id string,
+    page int) (User, error)`, whose results become the page component's parameter
+    list
+  what_stays:
+    template_only: a page with no page.go, whose data is its own external calls
+    handler: page.go declaring `func Load(w, r)`, which owns its whole response and
+      is the escape hatch every case below falls back to
+  why_now:
+    val: system:tinybind v0.5.10 binds a synchronous external's result to a name,
+      so a template can call its loader once and read the value in several places
+    before_val: an explicit call was possible but each mention re-called it, so the
+      implicit rung was the only shape that loaded once
+    upstream_removed_it: v0.5.11, with a diagnostic naming the val shape
+  the_shape_it_replaces:
+    was: 'page.go:   func Load(id string) (User, error)
+
+      template:  component Page(user: User): html
+
+      '
+    becomes: "template:  external LoadUser(id: string): User\n           component\
+      \ Page(id: string): html {\n           {val user = LoadUser(id)}\n"
+    moved: the call site, from generated code into the template that consumes the
+      value
+  why_it_is_worth_removing:
+    one_less_rung: rungs are selected by a signature, so three shapes mean an author
+      reads a signature to know which handler was generated; two mean the question
+      is only whether page.go exists
+    the_contract_disappears: the typed rung checks the page component's parameter
+      list against Load's result list by count, order, and type, and a mismatch is
+      a generation error about two lists the author never wrote as a pair
+    invisible_call_site: nothing in the page's own source says the loader runs, so
+      the data flow is readable only in generated output
+    parameters_become_the_input:
+      fact: under the typed rung a page component's parameters are the load's results,
+        and under this one they are the URL segments
+      consequence: requirement:component-output-cache keys on declared parameters,
+        so only the second shape can cache a page by its identifier
+      why_that_matters: keyed on loaded data a page cache is worthless, because computing
+        the key requires the load it was meant to avoid; keyed on the id it covers
+        the load and the render together
+      strongest_argument: the typed rung structurally cannot become a fetch-and-render
+        cache, and removing it is what puts every discovered page within reach of
+        one
+  what_val_does_not_replace:
+    the_error_path:
+      today: the generated handler calls Load, and a non-nil error becomes a problem
+        response through api:error-renderer before anything is rendered or committed
+      at_v0_5_10: a synchronous external has no error result, so a failing load returns
+        a zero value and the page renders empty; the planned val error handling is
+        what closes this and depends_on tracks it
+      severity: this is the whole cost of the change, and it is not small — a record
+        that does not exist is the common case, and answering it with 404 before commit
+        is what the typed rung is actually for
+    ordering_matters_too: the decision to fail has to precede the first byte; an await
+      boundary's recover renders error markup inside an already-committed 200, so
+      it is not a substitute for a status
+  depends_on:
+    what: a failing load must be reportable from the template, since that is the half
+      val does not replace
+    answered_by: system:tinybind v0.5.11 failing_external, which lets a synchronous
+      external return a trailing error when it is the whole value of a binding; the
+      template declaration is unchanged and the error is read from the Go source
+    read_unwrapped: nothing in the render path wraps it, so an error carrying HTTP
+      intent reaches api:error-renderer through errors.As
+    the_ordering_half: system:tinybind hoists a chain member's top-level bindings
+      to run during assembly, before the first byte; its own value-binding-hoisting
+      decision carries the design
+  the_test_that_decides:
+    question: does a failed load reach a problem response before the first byte, or
+      error markup inside a response already committed 200
+    answer: before commit, so the rung goes; measured against v0.5.12 rather than
+      taken from the release notes
+    how_it_arrives_here: the generated handler renders through pwpage.Render and writes
+      pw.WriteProblem on its error, which is the path that already existed; the binding's
+      failure reaches it with nothing written
+    what_this_framework_had_to_change_for_it: nothing on the error path, which is
+      why the wiring was the fixture, the tests, and the scaffold rather than the
+      runtime
+    not_for_a_cached_leaf: a plan carrying a storing cache policy is not hoisted,
+      so a cached page gives up the status choice on a miss; upstream states the trade
+      and requirement:component-output-cache carries what it means here
+  migration:
+    done_here: the page-tree fixture, the shared generation fixture, and the pw new
+      page scaffold
+    scaffold: the typed rung became the loader rung, which writes the external declaration,
+      the val binding, and a loader returning a trailing error
+    scaffold_defect_found: the retired rung's test asserted only the emitted text,
+      so the scaffold wrote a project that failed generation while the suite stayed
+      green; the replacement runs the generator over what it scaffolds
+    no_silent_change: upstream refuses the old signature and names the new shape,
+      so nothing falls through to the handler rung
+  acceptance:
+  - a page loading through a declared external and a val binding renders what the
+    typed rung rendered
+  - the page component of such a page declares the URL segments, so an annotation
+    on it keys on the identifier
+  - a page.go declaring the retired signature fails generation and names this requirement
+  - the handler rung is unaffected
+  - the scaffolds and the tutorial carry the explicit shape, since the implicit one
+    stops existing
+  open_questions:
+  - whether the tutorial and the discovered-routing guide need more than the mechanical
+    rewrite, since the rung was a teaching device as well as a mechanism
+acceptance:
+  item-ace9951304f7eff7:
+    text: a page loading through a declared external and a val binding renders what
+      the typed rung rendered
+  item-8e2533a09c51cfa3:
+    text: the page component of such a page declares the URL segments, so an annotation
+      on it keys on the identifier
+  item-cdc1daab4351de23:
+    text: a page.go declaring the retired signature fails generation and names this
+      requirement
+  item-5cb94a0f4a13a600:
+    text: the handler rung is unaffected
+  item-8e33cb0cfe0335ae:
+    text: the scaffolds and the tutorial carry the explicit shape, since the implicit
+      one stops existing
+open_questions:
+  item-5ffd5825bd7fb65c:
+    text: whether the tutorial and the discovered-routing guide need more than the
+      mechanical rewrite, since the rung was a teaching device as well as a mechanism
+relations:
+- relation: mentions
+  to: api:error-renderer
+  resolution: resolved
+- relation: mentions
+  to: concept:page-tree
+  resolution: resolved
+- relation: mentions
+  to: requirement:component-output-cache
+  resolution: resolved
+- relation: mentions
+  to: system:tinybind
+  resolution: resolved

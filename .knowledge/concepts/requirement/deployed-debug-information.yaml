@@ -1,0 +1,303 @@
+id: requirement:deployed-debug-information
+type: requirement
+title: Debug Information In A Deployed Artifact
+summary: "Whether a deployed artifact carries debug information must be a property\
+  \ of the build invocation rather than a project setting, because a deployment that\
+  \ rehearses production and a deployment that is being debugged want opposite answers\
+  \ from one repository at one commit.\n\n```yaml\nstatus: requirements recorded 2026-08-10,\
+  \ unimplemented\npriority: should\nsource: user request and design discussion 2026-08-10\n\
+  driving_case:\n  what: the linked source map the script build of requirement:derived-asset-pipeline\n\
+  \    emits reaches every deployed artifact today, and nothing decides otherwise\n\
+  \  why_it_matters: >\n    the map carries sourcesContent, verified 2026-08-10 by\
+  \ building an entry that\n    imports a module and finding the authored body of\
+  \ both files inside the map.\n    A production deployment serves the authored TypeScript,\
+  \ with its comments and\n    its names, to anyone who asks\n  reach: the map is\
+  \ a produced file, so it lands in concept:derived-public-tree,\n    takes an entry\
+  \ in data:public-asset-manifest, and is served like any other\n    declared URL\n\
+  environment_classes:\n  local: api:cli-dev. Debug information on, always\n  shared_test_or_cd:\
+  \ a deployed artifact being debugged by more than one person.\n    Debug information\
+  \ on, deliberately\n  staging_and_prod: >\n    debug information off, and the two\
+  \ are identical. A staging artifact that\n    differs from the prod artifact is\
+  \ not a rehearsal of prod, which is the\n    user's stated reason for the requirement\n\
+  \  consequence: >\n    three classes, two artifact shapes. Staging and prod share\
+  \ one because they\n    must; the shared test environment is deliberately its own\
+  \ and nobody claims\n    it rehearses anything\nbuild_modes_today:\n  verified:\
+  \ read against the tree on 2026-08-10\n  count: two, and neither is a setting\n\
+  \  pwdev: a Go build tag. api:cli-dev runs go run -tags=pwdev, as the storybook\n\
+  \    runner and the migrate DSN print do\n  release: api:cli-build runs a plain\
+  \ go build with -trimpath and -ldflags=-s -w\n    and passes no tag\n  no_debug_build:\
+  \ api:cli-build accepts no arguments at all and refuses any, so\n    the shared-test\
+  \ artifact cannot be asked for today\n  who_produces_the_tree: api:cli-dev, api:cli-build,\
+  \ and api:cli-generate, all\n    through one function reading assets of data:project-config.\
+  \ The asset build\n    takes no environment and no mode input of any kind\nshapes:\
+  \ concept:build-artifact-shapes holds what each artifact carries and which\n  gate\
+  \ decides it; this requirement decides only the debug-information gate\nwhere_the_switch_cannot_live:\n\
+  \  runtime_env_config: >\n    config.<env>.toml is read by the running application,\
+  \ and pw build reads no\n    APP_ENV. A runtime token cannot decide what a binary\
+  \ contains. Gating only\n    the serving leaves the artifact carrying the sources,\
+  \ so the cost is still\n    paid and anyone holding the binary holds the map\n \
+  \ build_tag_alone: >\n    pwdev is the development runtime, not a debug-information\
+  \ level. It carries\n    the error overlay, the launcher, the dev-only modules,\
+  \ and the DSN print,\n    and policy:devidp-safety locks other things to it. A shared\
+  \ test deployment\n    wants symbols, not the development identity provider\ndecided_shape:\n\
+  \  form: an explicit debug flag on the build invocation, off by default\n  on: api:cli-build\
+  \ and api:cli-generate both, not just the first\n  why_the_generate_command_too:\
+  \ >\n    api:cli-generate is api:cli-build without the compile, and it exists for\n\
+  \    builds this project does not drive: the TinyGo Dockerfile, a cross-compiled\n\
+  \    go build with the operator's own flags, an image builder owning the compile\n\
+  \    step. Those are the container deployment paths, so a flag only api:cli-build\n\
+  \    understands misses the case most likely to be a real deployment\n  why_default_off:\
+  \ >\n    the failure being fixed is silence. A default that can be flipped once\
+  \ and\n    forgotten reproduces it, and a CI pipeline that omits a flag should get\
+  \ the\n    safe artifact rather than the debuggable one\n  why_not_three_values:\
+  \ >\n    one flag with a default expresses the three environment classes already:\n\
+  \    api:cli-dev is the local class, the flag is the shared-test class, and its\n\
+  \    absence is staging and prod\nper_shape_defaults_in_project_config:\n  proposal:\
+  \ assets keys in data:project-config stating what each deployed shape\n    carries,\
+  \ one for the release shape and one for the debug shape\n  why_this_works_where_one_key_did_not:\
+  \ >\n    a single boolean could not express the axis, because it would have had\
+  \ to\n    mean one thing for api:cli-dev and another for api:cli-build. Keyed per\n\
+  \    shape, the invocation selects which key applies and the file states both\n\
+  \    without contradiction\n  what_it_buys:\n    reviewable: a deployment carrying\
+  \ its sources becomes a line in a file rather\n      than a property of whoever\
+  \ ran the pipeline\n    real_overrides: >\n      a project shipping symbols to a\
+  \ crash reporter wants the release shape to\n      keep Go debug information, and\
+  \ a project treating its shared test\n      environment as production-shaped wants\
+  \ the debug shape to keep none. Both\n      are stated rather than argued about\n\
+  \  keeps_the_default: the flag's default stands when neither key is present, so\
+  \ a\n    project that says nothing gets the safe artifact\n  residual_risk: >\n\
+  \    a project can still set the release shape to keep source maps, which is the\n\
+  \    thing this requirement removes. That is accepted: an explicit line someone\n\
+  \    reviewed is a different failure from one nobody could see\nwhat_the_flag_governs:\n\
+  \  source_maps: >\n    the driving case. Emitted and shipped under the flag, absent\
+  \ without it\n  go_debug_information: >\n    api:cli-build strips DWARF and the\
+  \ host symbol table unconditionally today\n    while retaining pclntab. That is\
+  \ the same axis, and a shared test artifact\n    wanting a source map wants a stack\
+  \ trace with file and line too\n  open_whether_to_move_ldflags: >\n    changing\
+  \ when -ldflags=-s -w is passed is beyond the source-map request that\n    started\
+  \ this, and it changes the artifact of every existing project. Recorded\n    as\
+  \ the sibling member rather than decided\n  not_governed:\n    minification: >\n\
+  \      a bundle stays minified either way. The map is what makes a minified bundle\n\
+  \      debuggable, so unminifying is a second decision with no case behind it\n\
+  \    development_runtime: >\n      nothing here turns on pwdev. The error overlay,\
+  \ the launcher, and the\n      development identity provider stay locked to api:cli-dev\n\
+  must:\n  - drop the trailing sourceMappingURL comment with the map. A bundle naming\
+  \ a\n    map the tree does not hold makes every devtools open a 404, which is worse\n\
+  \    than the map it replaced\n  - carry the flag in the conversion CacheKey params.\
+  \ The script hook keys on the\n    esbuild version alone today, so flipping it without\
+  \ that replays the bundle\n    built under the other setting\n  - drop the map's\
+  \ data:public-asset-manifest entry and its\n    policy:public-asset-precompression\
+  \ sidecar with the map, because the manifest\n    is the only thing that makes a\
+  \ URL exist and one naming an absent file is a\n    declared 404\n  - keep api:cli-dev\
+  \ opening devtools onto the authored TypeScript, which is the\n    whole reason\
+  \ the map is emitted at all\n  - make the artifact say which shape it is, so a deployed\
+  \ binary can be asked\n    rather than inferred from whoever ran the pipeline\n\
+  hashed_name_decision:\n  today: >\n    the bundle digest is taken over the body\
+  \ without its sourceMappingURL\n    comment, and the comment is written back afterwards,\
+  \ so the hashed js name is\n    identical whether or not a map was emitted\n  therefore:\
+  \ >\n    a debug artifact and a stripped artifact name one URL for two byte sequences,\n\
+  \    differing only by a trailing comment that changes no behavior\n  option_keep:\
+  \ >\n    the rewritten reference compiled into generated Go is identical across\n\
+  \    shapes, so policy:generated-artifacts --check stays unforked. Residual risk\n\
+  \    is one immutable URL holding two byte sequences, which only bites where a\n\
+  \    cache spans a debug and a stripped deployment\n  option_include_comment_in_digest:\
+  \ >\n    honest URLs, at the cost of generated output that differs per shape, which\n\
+  \    that policy compares against one profile only\n  recommendation: keep today's\
+  \ behavior and record the residual risk, because the\n    generated-artifact fork\
+  \ is the more expensive of the two\nhonesty:\n  what_this_buys: the authored TypeScript\
+  \ with its comments and names stops being\n    served by staging and prod, and those\
+  \ artifacts lose the bytes\n  what_it_does_not_buy: >\n    secrecy. A minified bundle\
+  \ is still readable and still describes what it\n    does, so nothing here protects\
+  \ client code from being read\nacceptance:\n  - a plain pw build artifact holds\
+  \ no map under the derived tree, and no bundle\n    in it carries a sourceMappingURL\
+  \ comment\n  - a staging artifact and a prod artifact built from one commit are\n\
+  \    byte-identical, which is the user's stated reason for the requirement\n  -\
+  \ the same commit built with the flag serves a map and resolves a browser stack\n\
+  \    trace to the authored TypeScript\n  - api:cli-generate honors the flag, so\
+  \ the container path can produce either\n    shape\n  - pw dev still resolves a\
+  \ stack trace to the authored TypeScript line\n  - flipping the flag rebuilds the\
+  \ bundle rather than replaying the cached one\n  - the manifest of a stripped artifact\
+  \ declares no URL its tree does not hold\nopen:\n  flag_name: >\n    --debug reads\
+  \ as the Go debug information it does not govern yet. Whatever it\n    is called\
+  \ has to still be right if the ldflags sibling moves under it later\n  ldflags_sibling:\
+  \ whether the same flag stops stripping DWARF and the symbol\n    table, which changes\
+  \ the artifact of every existing project\n  doctor_check: >\n    whether rule:production-readiness-checks\
+  \ should report a map found in a tree\n    built without the flag. It is the check\
+  \ that would have caught this before a\n    user did, and it costs one extension\
+  \ walk\nout_of_scope:\n  - the css minify, which emits no map\n  - any form of obfuscation\
+  \ or client-code protection\n  - a per-environment build config; the environment\
+  \ token stays runtime-only\n  - authored positions for .pw.html and .pw.sql errors,\
+  \ declined 2026-08-10. Go\n    records those through //line directives, which land\
+  \ in pclntab and are\n    already in every artifact, so they would never have been\
+  \ on this axis"
+facts:
+  legacy_body: "Whether a deployed artifact carries debug information must be a property\
+    \ of the build invocation rather than a project setting, because a deployment\
+    \ that rehearses production and a deployment that is being debugged want opposite\
+    \ answers from one repository at one commit.\n\n```yaml\nstatus: requirements\
+    \ recorded 2026-08-10, unimplemented\npriority: should\nsource: user request and\
+    \ design discussion 2026-08-10\ndriving_case:\n  what: the linked source map the\
+    \ script build of requirement:derived-asset-pipeline\n    emits reaches every\
+    \ deployed artifact today, and nothing decides otherwise\n  why_it_matters: >\n\
+    \    the map carries sourcesContent, verified 2026-08-10 by building an entry\
+    \ that\n    imports a module and finding the authored body of both files inside\
+    \ the map.\n    A production deployment serves the authored TypeScript, with its\
+    \ comments and\n    its names, to anyone who asks\n  reach: the map is a produced\
+    \ file, so it lands in concept:derived-public-tree,\n    takes an entry in data:public-asset-manifest,\
+    \ and is served like any other\n    declared URL\nenvironment_classes:\n  local:\
+    \ api:cli-dev. Debug information on, always\n  shared_test_or_cd: a deployed artifact\
+    \ being debugged by more than one person.\n    Debug information on, deliberately\n\
+    \  staging_and_prod: >\n    debug information off, and the two are identical.\
+    \ A staging artifact that\n    differs from the prod artifact is not a rehearsal\
+    \ of prod, which is the\n    user's stated reason for the requirement\n  consequence:\
+    \ >\n    three classes, two artifact shapes. Staging and prod share one because\
+    \ they\n    must; the shared test environment is deliberately its own and nobody\
+    \ claims\n    it rehearses anything\nbuild_modes_today:\n  verified: read against\
+    \ the tree on 2026-08-10\n  count: two, and neither is a setting\n  pwdev: a Go\
+    \ build tag. api:cli-dev runs go run -tags=pwdev, as the storybook\n    runner\
+    \ and the migrate DSN print do\n  release: api:cli-build runs a plain go build\
+    \ with -trimpath and -ldflags=-s -w\n    and passes no tag\n  no_debug_build:\
+    \ api:cli-build accepts no arguments at all and refuses any, so\n    the shared-test\
+    \ artifact cannot be asked for today\n  who_produces_the_tree: api:cli-dev, api:cli-build,\
+    \ and api:cli-generate, all\n    through one function reading assets of data:project-config.\
+    \ The asset build\n    takes no environment and no mode input of any kind\nshapes:\
+    \ concept:build-artifact-shapes holds what each artifact carries and which\n \
+    \ gate decides it; this requirement decides only the debug-information gate\n\
+    where_the_switch_cannot_live:\n  runtime_env_config: >\n    config.<env>.toml\
+    \ is read by the running application, and pw build reads no\n    APP_ENV. A runtime\
+    \ token cannot decide what a binary contains. Gating only\n    the serving leaves\
+    \ the artifact carrying the sources, so the cost is still\n    paid and anyone\
+    \ holding the binary holds the map\n  build_tag_alone: >\n    pwdev is the development\
+    \ runtime, not a debug-information level. It carries\n    the error overlay, the\
+    \ launcher, the dev-only modules, and the DSN print,\n    and policy:devidp-safety\
+    \ locks other things to it. A shared test deployment\n    wants symbols, not the\
+    \ development identity provider\ndecided_shape:\n  form: an explicit debug flag\
+    \ on the build invocation, off by default\n  on: api:cli-build and api:cli-generate\
+    \ both, not just the first\n  why_the_generate_command_too: >\n    api:cli-generate\
+    \ is api:cli-build without the compile, and it exists for\n    builds this project\
+    \ does not drive: the TinyGo Dockerfile, a cross-compiled\n    go build with the\
+    \ operator's own flags, an image builder owning the compile\n    step. Those are\
+    \ the container deployment paths, so a flag only api:cli-build\n    understands\
+    \ misses the case most likely to be a real deployment\n  why_default_off: >\n\
+    \    the failure being fixed is silence. A default that can be flipped once and\n\
+    \    forgotten reproduces it, and a CI pipeline that omits a flag should get the\n\
+    \    safe artifact rather than the debuggable one\n  why_not_three_values: >\n\
+    \    one flag with a default expresses the three environment classes already:\n\
+    \    api:cli-dev is the local class, the flag is the shared-test class, and its\n\
+    \    absence is staging and prod\nper_shape_defaults_in_project_config:\n  proposal:\
+    \ assets keys in data:project-config stating what each deployed shape\n    carries,\
+    \ one for the release shape and one for the debug shape\n  why_this_works_where_one_key_did_not:\
+    \ >\n    a single boolean could not express the axis, because it would have had\
+    \ to\n    mean one thing for api:cli-dev and another for api:cli-build. Keyed\
+    \ per\n    shape, the invocation selects which key applies and the file states\
+    \ both\n    without contradiction\n  what_it_buys:\n    reviewable: a deployment\
+    \ carrying its sources becomes a line in a file rather\n      than a property\
+    \ of whoever ran the pipeline\n    real_overrides: >\n      a project shipping\
+    \ symbols to a crash reporter wants the release shape to\n      keep Go debug\
+    \ information, and a project treating its shared test\n      environment as production-shaped\
+    \ wants the debug shape to keep none. Both\n      are stated rather than argued\
+    \ about\n  keeps_the_default: the flag's default stands when neither key is present,\
+    \ so a\n    project that says nothing gets the safe artifact\n  residual_risk:\
+    \ >\n    a project can still set the release shape to keep source maps, which\
+    \ is the\n    thing this requirement removes. That is accepted: an explicit line\
+    \ someone\n    reviewed is a different failure from one nobody could see\nwhat_the_flag_governs:\n\
+    \  source_maps: >\n    the driving case. Emitted and shipped under the flag, absent\
+    \ without it\n  go_debug_information: >\n    api:cli-build strips DWARF and the\
+    \ host symbol table unconditionally today\n    while retaining pclntab. That is\
+    \ the same axis, and a shared test artifact\n    wanting a source map wants a\
+    \ stack trace with file and line too\n  open_whether_to_move_ldflags: >\n    changing\
+    \ when -ldflags=-s -w is passed is beyond the source-map request that\n    started\
+    \ this, and it changes the artifact of every existing project. Recorded\n    as\
+    \ the sibling member rather than decided\n  not_governed:\n    minification: >\n\
+    \      a bundle stays minified either way. The map is what makes a minified bundle\n\
+    \      debuggable, so unminifying is a second decision with no case behind it\n\
+    \    development_runtime: >\n      nothing here turns on pwdev. The error overlay,\
+    \ the launcher, and the\n      development identity provider stay locked to api:cli-dev\n\
+    must:\n  - drop the trailing sourceMappingURL comment with the map. A bundle naming\
+    \ a\n    map the tree does not hold makes every devtools open a 404, which is\
+    \ worse\n    than the map it replaced\n  - carry the flag in the conversion CacheKey\
+    \ params. The script hook keys on the\n    esbuild version alone today, so flipping\
+    \ it without that replays the bundle\n    built under the other setting\n  - drop\
+    \ the map's data:public-asset-manifest entry and its\n    policy:public-asset-precompression\
+    \ sidecar with the map, because the manifest\n    is the only thing that makes\
+    \ a URL exist and one naming an absent file is a\n    declared 404\n  - keep api:cli-dev\
+    \ opening devtools onto the authored TypeScript, which is the\n    whole reason\
+    \ the map is emitted at all\n  - make the artifact say which shape it is, so a\
+    \ deployed binary can be asked\n    rather than inferred from whoever ran the\
+    \ pipeline\nhashed_name_decision:\n  today: >\n    the bundle digest is taken\
+    \ over the body without its sourceMappingURL\n    comment, and the comment is\
+    \ written back afterwards, so the hashed js name is\n    identical whether or\
+    \ not a map was emitted\n  therefore: >\n    a debug artifact and a stripped artifact\
+    \ name one URL for two byte sequences,\n    differing only by a trailing comment\
+    \ that changes no behavior\n  option_keep: >\n    the rewritten reference compiled\
+    \ into generated Go is identical across\n    shapes, so policy:generated-artifacts\
+    \ --check stays unforked. Residual risk\n    is one immutable URL holding two\
+    \ byte sequences, which only bites where a\n    cache spans a debug and a stripped\
+    \ deployment\n  option_include_comment_in_digest: >\n    honest URLs, at the cost\
+    \ of generated output that differs per shape, which\n    that policy compares\
+    \ against one profile only\n  recommendation: keep today's behavior and record\
+    \ the residual risk, because the\n    generated-artifact fork is the more expensive\
+    \ of the two\nhonesty:\n  what_this_buys: the authored TypeScript with its comments\
+    \ and names stops being\n    served by staging and prod, and those artifacts lose\
+    \ the bytes\n  what_it_does_not_buy: >\n    secrecy. A minified bundle is still\
+    \ readable and still describes what it\n    does, so nothing here protects client\
+    \ code from being read\nacceptance:\n  - a plain pw build artifact holds no map\
+    \ under the derived tree, and no bundle\n    in it carries a sourceMappingURL\
+    \ comment\n  - a staging artifact and a prod artifact built from one commit are\n\
+    \    byte-identical, which is the user's stated reason for the requirement\n \
+    \ - the same commit built with the flag serves a map and resolves a browser stack\n\
+    \    trace to the authored TypeScript\n  - api:cli-generate honors the flag, so\
+    \ the container path can produce either\n    shape\n  - pw dev still resolves\
+    \ a stack trace to the authored TypeScript line\n  - flipping the flag rebuilds\
+    \ the bundle rather than replaying the cached one\n  - the manifest of a stripped\
+    \ artifact declares no URL its tree does not hold\nopen:\n  flag_name: >\n   \
+    \ --debug reads as the Go debug information it does not govern yet. Whatever it\n\
+    \    is called has to still be right if the ldflags sibling moves under it later\n\
+    \  ldflags_sibling: whether the same flag stops stripping DWARF and the symbol\n\
+    \    table, which changes the artifact of every existing project\n  doctor_check:\
+    \ >\n    whether rule:production-readiness-checks should report a map found in\
+    \ a tree\n    built without the flag. It is the check that would have caught this\
+    \ before a\n    user did, and it costs one extension walk\nout_of_scope:\n  -\
+    \ the css minify, which emits no map\n  - any form of obfuscation or client-code\
+    \ protection\n  - a per-environment build config; the environment token stays\
+    \ runtime-only\n  - authored positions for .pw.html and .pw.sql errors, declined\
+    \ 2026-08-10. Go\n    records those through //line directives, which land in pclntab\
+    \ and are\n    already in every artifact, so they would never have been on this\
+    \ axis"
+relations:
+- relation: mentions
+  to: api:cli-build
+  resolution: resolved
+- relation: mentions
+  to: api:cli-dev
+  resolution: resolved
+- relation: mentions
+  to: api:cli-generate
+  resolution: resolved
+- relation: mentions
+  to: concept:build-artifact-shapes
+  resolution: resolved
+- relation: mentions
+  to: concept:derived-public-tree
+  resolution: resolved
+- relation: mentions
+  to: data:project-config
+  resolution: resolved
+- relation: mentions
+  to: data:public-asset-manifest
+  resolution: resolved
+- relation: mentions
+  to: policy:devidp-safety
+  resolution: resolved
+- relation: mentions
+  to: policy:generated-artifacts
+  resolution: resolved
+- relation: mentions
+  to: policy:public-asset-precompression
+  resolution: resolved
+- relation: mentions
+  to: requirement:derived-asset-pipeline
+  resolution: resolved
+- relation: mentions
+  to: rule:production-readiness-checks
+  resolution: resolved

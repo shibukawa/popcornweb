@@ -1,0 +1,175 @@
+id: rule:tinygo-runtime-compatibility
+type: rule
+title: TinyGo Runtime Compatibility
+summary: Release builds must prove that application runtime code and generated mapping
+  compile with the selected TinyGo toolchain.
+facts:
+  legacy_body: "Release builds must prove that application runtime code and generated\
+    \ mapping compile with the selected TinyGo toolchain.\n\n```yaml\nrequirements:\n\
+    \  - installed TinyGo satisfies decision:tinygo-042-baseline\n  - tinygo executable\
+    \ is available\n  - host Go version is supported by the installed TinyGo version\n\
+    \  - generated artifacts are current\n  - application runtime does not import\
+    \ generator packages\n  - no runtime reflection-based request mapping\n  - configured\
+    \ target supports the application's net/http listener model\n  - the target runs\
+    \ the goroutines and range-over-func sequence that requirement:async-html-rendering\
+    \ depends on, or data:html-render-config disables streaming for that build\n \
+    \ - the project registers a Netdever, via the tinygohelper.go blank import of\
+    \ system:tinygodriver netdev\n  - a project whose requirement:database-engine-selection\
+    \ engine speaks a network protocol builds with -scheduler=threads\nscheduler:\n\
+    \  required_for: requirement:contrib-postgresql and requirement:contrib-mysql\n\
+    \  reason: under the cooperative tasks scheduler a blocking socket call holds\
+    \ the whole runtime, so the driver's cancellation watcher never runs\n  symptom_when_missing:\
+    \ a query outlives its context deadline and returns a nil error, with nothing\
+    \ logged\n  measured: a 5s server-side sleep under a 500ms deadline returned after\
+    \ the full 5s\n  default: threads on desktop targets, so the constraint is an\
+    \ assertion rather than a change for most projects\n  applies_to: every tinygo\
+    \ invocation, which today means the Dockerfile.tinygo compile step of decision:explicit-tinygo-compile-step\
+    \ and the TinyGo test targets; api:cli-build and api:cli-dev compile with host\
+    \ go whatever the toolchain answer was, so the flag has nowhere to go in either\n\
+    \  enforcement:\n    mechanism: a build-constrained guard file in each engine\
+    \ package that needs the flag, carrying one undefined identifier whose name is\
+    \ the instruction\n    constraint: \"//go:build tinygo && !scheduler.threads\"\
+    \n    lives_in: database/postgres/scheduler_tinygo.go and database/mysql/scheduler_tinygo.go,\
+    \ beside the package comment that already states the requirement\n    fires_exactly_when:\
+    \ the application links that engine, because the guard is keyed on the import\
+    \ graph rather than on a configuration value or a build command\n    diagnostic:\
+    \ \"undefined: build_this_program_with_tinygo_scheduler_threads, with the file\
+    \ and line of the guard\"\n    verified: TinyGo 0.41.1 darwin/arm64 on 2026-08-07,\
+    \ against a main package blank-importing database/postgres; -scheduler=tasks fails\
+    \ with that message, -scheduler=threads compiles the whole program clean, and\
+    \ host go build and go vet never select the file\n    tag_source: TinyGo defines\
+    \ a scheduler.threads build tag from the -scheduler value, which is what makes\
+    \ this expressible at all\n    rejected:\n      doctor_check: reading Dockerfile.tinygo\
+    \ for the flag; api:cli-dev runs no diagnostic, so it would fire only when someone\
+    \ chose to run api:cli-doctor, and it would miss every build invoked another way\n\
+    \      documentation: the package comments already say it, and rule:tinygo-runtime-compatibility\
+    \ recorded the measured symptom precisely because saying it was not enough\n \
+    \   residual: a project that builds with TinyGo and reaches a network engine through\
+    \ some other driver gets no guard, since the guard ships with the packages that\
+    \ carry the constraint\nwasm_panic_recovery:\n  finding: TinyGo's wasm targets\
+    \ do not run a deferred recover at all, measured upstream against a plain function\
+    \ with no goroutine involved\n  consequence: a panic in an async external or a\
+    \ requirement:live-html-rendering live source ends the program instead of becoming\
+    \ a boundary error the recover clause renders\n  scope: the platform's, not the\
+    \ framework's; system:tinybind names the condition rather than working around\
+    \ it\n  handling: a wasm build must treat a panicking external as fatal, so the\
+    \ code behind one belongs under the same review as any other unrecoverable path\n\
+    unsupported_runtime_packages:\n  net/http_client_timeouts:\n    behavior: the\
+    \ TinyGo client dials and then reads with no deadline, marked TINYGO TODO handle\
+    \ timeouts in its own source at 0.41.1; 0.42.0 grew timeout fields on Transport\
+    \ that nothing reads yet, so the behavior stands\n    consequence: the context\
+    \ deadlines requirement:contrib-oidc and requirement:contrib-jwt set around discovery,\
+    \ token exchange, and JWKS fetches bound nothing, so a slow or hanging IdP holds\
+    \ the request until the peer closes\n    surface: a login or a bearer verification,\
+    \ both of which run on a request handler\n    handling: contrib/internal/authn\
+    \ EnforceDeadlines wraps the transport under the tinygo tag and is identity on\
+    \ host Go; both clients apply it themselves rather than leaving it to the application,\
+    \ because they accept a RequestTimeout and therefore promise one\n    residual:\
+    \ the round trip beneath cannot be cancelled, since that runtime offers nowhere\
+    \ to cancel it, so a hung peer costs a goroutine and a connection until the socket\
+    \ fails rather than a stalled handler; the abandoned response is drained and closed\n\
+    \    not_reproducible_under: decision:force-tinygo-logic, which selects the TinyGo\
+    \ code paths while still linking the host net/http, so this is one of the few\
+    \ behaviours that has to be tested on the real toolchain\n    verified: tinygo\
+    \ test of contrib/internal/authn on 0.41.1 darwin/arm64, found by security review\
+    \ on 2026-08-05, and again on 0.42.0 with Go 1.27.0 on 2026-09-02\n    kind: availability\
+    \ rather than admission; nothing is accepted that would otherwise be refused\n\
+    \  net/http_client_ignores_a_nil_transport:\n    behavior: TinyGo rewrote net/http's\
+    \ send to call a socket round trip declared in its own client.go, which reads\
+    \ neither Client.Transport when it is nil nor http.DefaultTransport; only a Client\
+    \ carrying a non-nil Transport reaches Transport.RoundTrip, and on the wasm target\
+    \ that is the Fetch API implementation in roundtrip_js.go\n    consequence: on\
+    \ a host with no netdev — requirement:cloudflare-workers-build-target is the one,\
+    \ since a Worker owns no socket — http.Get and a bare http.Client fail with \"\
+    Netdev not set\" while the same request through a Transport succeeds, so outbound\
+    \ HTTP appears broken to application code and works for the framework\n    surface:\
+    \ any application code on the Worker target that builds its own client; every\
+    \ framework caller already passes through contrib/internal/authn EnforceDeadlines,\
+    \ which sets a Transport and therefore selects fetch by accident of enforcing\
+    \ a deadline\n    handling: nothing to work around in the framework, because assigning\
+    \ http.DefaultTransport does not help — the nil case never reads it; application\
+    \ code on that target sets Transport explicitly\n    verified: wrangler dev on\
+    \ TinyGo 0.42.0 with Go 1.27.0 on 2026-09-10; Client{} and Client{Timeout} both\
+    \ reported \"Netdev not set\" while Client{Transport: &http.Transport{}} and DefaultTransport.RoundTrip\
+    \ both answered 404 from api.x.com\n    kind: availability rather than admission;\
+    \ nothing is accepted that would otherwise be refused\n  os/signal:\n    behavior:\
+    \ registering a handler replaces the default disposition but never delivers to\
+    \ the channel\n    consequence: the process stops responding to Ctrl+C and SIGTERM\n\
+    \    handling: api:application-lifecycle installs no handler under the tinygo\
+    \ build tag\n    verified: TinyGo 0.41.1 darwin/arm64, and 0.42.0 on 2026-09-02\
+    \ with a self-sent SIGTERM undelivered after three seconds\nnetdev_registration:\n\
+    \  file: tinygohelper.go in the project root, package publicassets\n  constraint:\
+    \ //go:build tinygo && !pwcloudflare, because requirement:cloudflare-workers-build-target\
+    \ compiles with TinyGo for a host that owns no socket, and the driver's OS calls\
+    \ do not exist on the wasm target; a project scaffolded with the older tinygo-only\
+    \ constraint has its staged copy rewritten by that build\n  import: _ \"github.com/shibukawa/tinygodriver/netdev\"\
+    \n  linkage: concept:project-layout bootstrap generator blank-imports the root\
+    \ package\n  symptom_when_missing: the binary builds and then exits at startup\
+    \ with \"Netdev not set\"\nbaseline_evidence:\n  httpbind_go_verified_tinygo:\
+    \ 0.42.0, the floor tinybind-go v0.5.28 declares\n  compatible_go_range_for_that_baseline:\
+    \ 1.27, its go directive since v0.5.28\n  source: https://github.com/shibukawa/httpbind-go#tinygo\n\
+    verification: api:cli-build and package target tests\n```"
+  legacy_parse_issues:
+  - kind: legacy_parse_error
+    block: 0
+    message: "mapping values are not allowed here\n  in \"<unicode string>\", line\
+      \ 51, column 157:\n     ...  not set\" while Client{Transport: &http.Transport{}}\
+      \ and Default ... \n                                         ^"
+relations:
+- relation: mentions
+  to: api:application-lifecycle
+  resolution: resolved
+- relation: mentions
+  to: api:cli-build
+  resolution: resolved
+- relation: mentions
+  to: api:cli-dev
+  resolution: resolved
+- relation: mentions
+  to: api:cli-doctor
+  resolution: resolved
+- relation: mentions
+  to: concept:project-layout
+  resolution: resolved
+- relation: mentions
+  to: data:html-render-config
+  resolution: resolved
+- relation: mentions
+  to: decision:explicit-tinygo-compile-step
+  resolution: resolved
+- relation: mentions
+  to: decision:force-tinygo-logic
+  resolution: resolved
+- relation: mentions
+  to: decision:tinygo-042-baseline
+  resolution: resolved
+- relation: mentions
+  to: requirement:async-html-rendering
+  resolution: resolved
+- relation: mentions
+  to: requirement:cloudflare-workers-build-target
+  resolution: resolved
+- relation: mentions
+  to: requirement:contrib-jwt
+  resolution: resolved
+- relation: mentions
+  to: requirement:contrib-mysql
+  resolution: resolved
+- relation: mentions
+  to: requirement:contrib-oidc
+  resolution: resolved
+- relation: mentions
+  to: requirement:contrib-postgresql
+  resolution: resolved
+- relation: mentions
+  to: requirement:database-engine-selection
+  resolution: resolved
+- relation: mentions
+  to: requirement:live-html-rendering
+  resolution: resolved
+- relation: mentions
+  to: system:tinybind
+  resolution: resolved
+- relation: mentions
+  to: system:tinygodriver
+  resolution: resolved

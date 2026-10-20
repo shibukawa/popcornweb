@@ -1,0 +1,154 @@
+id: requirement:dynamodb-auth-backend
+type: requirement
+title: DynamoDB Authentication Backend
+summary: plugin/auth runs with no relational database, so a project that already has
+  requirement:dynamodb-store and requirement:dynamodb-session-store can authenticate
+  without adding one.
+facts:
+  legacy_body: "plugin/auth runs with no relational database, so a project that already\
+    \ has requirement:dynamodb-store and requirement:dynamodb-session-store can authenticate\
+    \ without adding one.\n\n```yaml\nmotivation:\n  - requirement:dynamodb-session-store\
+    \ made the session backend RDB-free, and plugin/auth still refuses to start without\
+    \ middleware.rdb, so that store is unreachable through the framework's own authentication\n\
+    \  - requirement:dynamodb-store allows a project with no rdb section, and such\
+    \ a project cannot log anyone in today\n  - the four stores below are the only\
+    \ reason plugin/auth touches a database at all; nothing else in the package is\
+    \ relational\ngate_that_was_lifted:\n  where: plugin/auth setup, before any store\
+    \ was opened\n  behavior: a project with no pw.DB failed with \"auth requires\
+    \ middleware.rdb.enabled = true\"\n  second_gate: the same setup resolved pw.SelectSessionDB\
+    \ and passed the handle as a session resource, which requirement:dynamodb-session-store\
+    \ ignores, so the handle existed only to satisfy the check\n  reached_the_cli:\n\
+    \    - api:cli-init refused an authentication mode backed only by DynamoDB, because\
+    \ the runtime would have refused to start\n    - decision:interactive-project-bootstrap\
+    \ asked the database-engine question even when DynamoDB was the store answer,\
+    \ for the same reason\n  removal: the gate is now a per-backend requirement, asserted\
+    \ by the selected backend rather than by the package, so scaffolding and startup\
+    \ changed together\nfour_stores:\n  authstate:\n    contract: requirement:contrib-auth-state\n\
+    \    was: an authstate SQL store constructed directly in setup\n    dynamo: requirement:contrib-auth-state-dynamo\n\
+    \  allowlist:\n    contract: api:auth-allowlist-store, added here because this\
+    \ was the only one of the four with no seam to install an implementation behind\n\
+    \    was: raw SQL against popcornweb_auth_allowlist\n    used_by: policy:oidc-admission\
+    \ registered mode\n    dynamo: requirement:dynamodb-auth-stores\n  credential:\n\
+    \    contract: api:auth-credential-store CredentialStore\n    dynamo: requirement:dynamodb-auth-stores\n\
+    \  bootstrap:\n    contract: api:auth-credential-store BootstrapStore\n    dynamo:\
+    \ requirement:dynamodb-auth-stores\nselection: decision:auth-backend-selection\n\
+    atomicity: decision:dynamodb-auth-compensating-registration\ntables:\n  declared_names:\
+    \ unchanged, per rule:framework-owned-tables\n  deployed_names: resolved by rule:dynamodb-table-naming,\
+    \ so requirement:dynamodb-test-isolation reaches them unchanged\n  creation: registered\
+    \ through decision:dynamodb-table-registry when the backend package is imported,\
+    \ so requirement:dynamodb-migration creates them with every other table\n  no_migration_file:\
+    \ per decision:dynamodb-desired-state-migration; the goose file plugin/auth publishes\
+    \ stays the SQL half\n  startup: verify only, never create, which rule:framework-owned-tables\
+    \ already states for a non-relational store\nscaffolding:\n  api:cli-init: offers\
+    \ an authentication mode on a DynamoDB-only project, and writes no auth migration\
+    \ file for it, because there is none to write\n  wizard: decision:interactive-project-bootstrap\
+    \ stops asking for a database engine when DynamoDB is the store answer and a login\
+    \ is wanted\n  api:cli-add: the same\n  verification: startup names the missing\
+    \ table and the pw migrate run that creates it, not a migration file\nacceptance:\n\
+    \  - a project with middleware.rdb absent, middleware.dynamo enabled, session.backend\
+    \ dynamo, and auth.backend dynamo completes an OIDC login and a passkey login\n\
+    \  - the same project completes a passkey enrollment for an already active account\n\
+    \  - oidc.admission registered admits a pre-registered identity and denies an\
+    \ unregistered one, and a backend failure is an error rather than a denial, per\
+    \ policy:oidc-admission\n  - every table this backend needs is created by the\
+    \ same pw migrate run that creates application tables\n  - startup refuses to\
+    \ serve when one of them is absent, naming the table and the command\n  - pw init\
+    \ offers an authentication mode on a project that selected DynamoDB and no relational\
+    \ database, and the project it writes serves\n  - a project keeping middleware.rdb\
+    \ and auth.backend rdb is unchanged in every observable way\n  - an application\
+    \ that installs its own CredentialStore or BootstrapStore keeps that store whichever\
+    \ backend is selected\n  - no request any of these stores issues produces a query-diagnostics\
+    \ record, per policy:query-log-safety\nimplemented:\n  built: 2026-08-05\n  verified:\
+    \ a scaffolded passkey_only project with middleware.rdb absent, middleware.dynamo\
+    \ enabled, session.backend and auth.backend dynamo starts, creates all five framework\
+    \ tables, and completes a passkey ceremony against DynamoDB Local\n  fixed_along_the_way:\n\
+    \    - middleware.dynamo carried no bound defaults, so every project enabling\
+    \ it failed startup on a zero timeout; the generator test covered only two of\
+    \ the three committed bindings, which is why it drifted unnoticed\n    - the session\
+    \ setup resolved the database before asking the backend, so requirement:dynamodb-session-store\
+    \ could not start either\n    - sessionstore/dynamo read its client from the setup\
+    \ context, which never carries one; api:dynamo-package now exposes EnsureClient\n\
+    \    - pw init offered no dynamo session backend, so a DynamoDB-only project would\
+    \ have scaffolded a relational session\nnon_goals:\n  - a portable interface over\
+    \ the relational and DynamoDB auth stores beyond the seams that already exist\n\
+    \  - moving data:user-account, data:external-identity, or the AccountResolver\
+    \ into the framework; account storage stays application-owned\n  - sharing one\
+    \ table across the four stores, which would be the single-table design system:tinybind\
+    \ declines\n  - migrating existing relational auth data into DynamoDB\n```"
+  legacy_parse_issues:
+  - kind: legacy_parse_error
+    block: 0
+    message: Object of type date is not JSON serializable
+relations:
+- relation: mentions
+  to: api:auth-allowlist-store
+  resolution: resolved
+- relation: mentions
+  to: api:auth-credential-store
+  resolution: resolved
+- relation: mentions
+  to: api:cli-add
+  resolution: resolved
+- relation: mentions
+  to: api:cli-init
+  resolution: resolved
+- relation: mentions
+  to: api:dynamo-package
+  resolution: resolved
+- relation: mentions
+  to: data:external-identity
+  resolution: resolved
+- relation: mentions
+  to: data:user-account
+  resolution: resolved
+- relation: mentions
+  to: decision:auth-backend-selection
+  resolution: resolved
+- relation: mentions
+  to: decision:dynamodb-auth-compensating-registration
+  resolution: resolved
+- relation: mentions
+  to: decision:dynamodb-desired-state-migration
+  resolution: resolved
+- relation: mentions
+  to: decision:dynamodb-table-registry
+  resolution: resolved
+- relation: mentions
+  to: decision:interactive-project-bootstrap
+  resolution: resolved
+- relation: mentions
+  to: policy:oidc-admission
+  resolution: resolved
+- relation: mentions
+  to: policy:query-log-safety
+  resolution: resolved
+- relation: mentions
+  to: requirement:contrib-auth-state
+  resolution: resolved
+- relation: mentions
+  to: requirement:contrib-auth-state-dynamo
+  resolution: resolved
+- relation: mentions
+  to: requirement:dynamodb-auth-stores
+  resolution: resolved
+- relation: mentions
+  to: requirement:dynamodb-migration
+  resolution: resolved
+- relation: mentions
+  to: requirement:dynamodb-session-store
+  resolution: resolved
+- relation: mentions
+  to: requirement:dynamodb-store
+  resolution: resolved
+- relation: mentions
+  to: requirement:dynamodb-test-isolation
+  resolution: resolved
+- relation: mentions
+  to: rule:dynamodb-table-naming
+  resolution: resolved
+- relation: mentions
+  to: rule:framework-owned-tables
+  resolution: resolved
+- relation: mentions
+  to: system:tinybind
+  resolution: resolved

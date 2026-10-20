@@ -1,0 +1,126 @@
+id: decision:metrics-are-not-sampled
+type: decision
+title: A Metric Counts Every Request, A Trace Does Not
+summary: No instrument of data:framework-metric-set is derived from a span, and requirement:trace-head-sampling
+  changes no count of requirement:framework-metrics, because the two signals exist
+  to answer different questions and deriving one from the other would give the cheaper
+  answer to both.
+facts:
+  legacy_body: "No instrument of data:framework-metric-set is derived from a span,\
+    \ and requirement:trace-head-sampling changes no count of requirement:framework-metrics,\
+    \ because the two signals exist to answer different questions and deriving one\
+    \ from the other would give the cheaper answer to both.\n\n```yaml\nstatus: accepted\
+    \ 2026-08-17\nwhy_it_is_one_decision: the two requirements arrived in one request,\
+    \ and the reason to want either is the reason the other has to stay separate —\
+    \ head sampling is affordable only because counting does not depend on it, and\
+    \ counting is worth building only because sampling makes a span an unreliable\
+    \ denominator\nrejected:\n  derive_metrics_from_spans:\n    shape: aggregate the\
+    \ request span at End into a histogram, which is nearly free because the duration\
+    \ and the status are already there\n    why_it_is_tempting: it is exactly one\
+    \ line in a place that already runs, and requirement:dev-request-timing-surface\
+    \ does something that looks like it\n    fatal: the aggregation would then count\
+    \ sampled requests only, so every rate is the real rate times a ratio, every average\
+    \ is an average of a biased sample, and a hit rate has a denominator that depends\
+    \ on a sampler setting\n    worse_than_wrong: it fails silently and looks plausible,\
+    \ because a ratio applied uniformly leaves the shape of a chart unchanged while\
+    \ making every absolute number false\n    still_worse_at_zero: always_off would\
+    \ report no traffic rather than reporting that it cannot see any\n  sample_metrics_too:\n\
+    \    shape: skip a recording when the trace was not sampled, keeping one code\
+    \ path\n    fatal: a count of a fraction is not a count, and the fraction is a\
+    \ configuration value nothing in the data states\n  exemplars_as_the_bridge:\n\
+    \    shape: attach a sampled trace id to a bucket, which is the specified way\
+    \ to get from a metric back to a request\n    deferred: it makes the metric path\
+    \ depend on the sampling decision it was just separated from, and the only reader\
+    \ in the loop today is requirement:dev-telemetry-viewer, which correlates a log\
+    \ to a span and has no exemplar surface\n    not_refused_forever: it is a non-goal\
+    \ of requirement:framework-metrics rather than a rejected idea, and nothing here\
+    \ prevents it later\nconsequences:\n  - a metric is recorded before, or independently\
+    \ of, any check of whether the span is recording\n  - observability.metrics is\
+    \ configurable with observability.trace off, and that configuration is the expected\
+    \ end state of a deployment running a low ratio\n  - an instrument reads the value\
+    \ the seam computes, not the span object; a seam that only computes its value\
+    \ into a span attribute has to compute it whether or not the span is recording,\
+    \ which is a cost this pays deliberately\n  - the framework's two answers to \"\
+    why was this slow\" stay divided the way they already are: requirement:framework-metrics\
+    \ says how often and how much, and a trace says what happened in one case\n  -\
+    \ requirement:modern-observability keeps one sentence covering both signals, and\
+    \ the cardinality rule is shared because the metric attribute set is the stricter\
+    \ subset\n  - decision:executor-seam-instrumentation gains a second consumer at\
+    \ the same seam, and neither consumer may change the observed call\nwhat_would_reopen_it:\n\
+    \  fact: a specified aggregation that is exact under sampling, which consistent\
+    \ probability sampling is a step toward\n  bound: it would still require every\
+    \ recording path to know the sampling probability, so it changes the arithmetic\
+    \ and not the separation\n```"
+  status: accepted 2026-08-17
+  why_it_is_one_decision: the two requirements arrived in one request, and the reason
+    to want either is the reason the other has to stay separate — head sampling is
+    affordable only because counting does not depend on it, and counting is worth
+    building only because sampling makes a span an unreliable denominator
+  rejected:
+    derive_metrics_from_spans:
+      shape: aggregate the request span at End into a histogram, which is nearly free
+        because the duration and the status are already there
+      why_it_is_tempting: it is exactly one line in a place that already runs, and
+        requirement:dev-request-timing-surface does something that looks like it
+      fatal: the aggregation would then count sampled requests only, so every rate
+        is the real rate times a ratio, every average is an average of a biased sample,
+        and a hit rate has a denominator that depends on a sampler setting
+      worse_than_wrong: it fails silently and looks plausible, because a ratio applied
+        uniformly leaves the shape of a chart unchanged while making every absolute
+        number false
+      still_worse_at_zero: always_off would report no traffic rather than reporting
+        that it cannot see any
+    sample_metrics_too:
+      shape: skip a recording when the trace was not sampled, keeping one code path
+      fatal: a count of a fraction is not a count, and the fraction is a configuration
+        value nothing in the data states
+    exemplars_as_the_bridge:
+      shape: attach a sampled trace id to a bucket, which is the specified way to
+        get from a metric back to a request
+      deferred: it makes the metric path depend on the sampling decision it was just
+        separated from, and the only reader in the loop today is requirement:dev-telemetry-viewer,
+        which correlates a log to a span and has no exemplar surface
+      not_refused_forever: it is a non-goal of requirement:framework-metrics rather
+        than a rejected idea, and nothing here prevents it later
+  consequences:
+  - a metric is recorded before, or independently of, any check of whether the span
+    is recording
+  - observability.metrics is configurable with observability.trace off, and that configuration
+    is the expected end state of a deployment running a low ratio
+  - an instrument reads the value the seam computes, not the span object; a seam that
+    only computes its value into a span attribute has to compute it whether or not
+    the span is recording, which is a cost this pays deliberately
+  - the framework's two answers to "why was this slow" stay divided the way they already are: requirement:framework-metrics
+      says how often and how much, and a trace says what happened in one case
+  - requirement:modern-observability keeps one sentence covering both signals, and
+    the cardinality rule is shared because the metric attribute set is the stricter
+    subset
+  - decision:executor-seam-instrumentation gains a second consumer at the same seam,
+    and neither consumer may change the observed call
+  what_would_reopen_it:
+    fact: a specified aggregation that is exact under sampling, which consistent probability
+      sampling is a step toward
+    bound: it would still require every recording path to know the sampling probability,
+      so it changes the arithmetic and not the separation
+relations:
+- relation: mentions
+  to: data:framework-metric-set
+  resolution: resolved
+- relation: mentions
+  to: decision:executor-seam-instrumentation
+  resolution: resolved
+- relation: mentions
+  to: requirement:dev-request-timing-surface
+  resolution: resolved
+- relation: mentions
+  to: requirement:dev-telemetry-viewer
+  resolution: resolved
+- relation: mentions
+  to: requirement:framework-metrics
+  resolution: resolved
+- relation: mentions
+  to: requirement:modern-observability
+  resolution: resolved
+- relation: mentions
+  to: requirement:trace-head-sampling
+  resolution: resolved

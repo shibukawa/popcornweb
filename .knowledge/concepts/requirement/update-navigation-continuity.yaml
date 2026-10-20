@@ -1,0 +1,158 @@
+id: requirement:update-navigation-continuity
+type: requirement
+title: Update Navigation Continuity
+summary: 'A navigation delta leaves the user where a document load would have left
+  them: focus somewhere defined, scroll where the history entry says, a composition
+  never cut off, and a request in flight visible — because a swap that keeps the live
+  DOM also keeps everything a reparse would have reset, including what should have
+  moved.'
+facts:
+  legacy_body: "A navigation delta leaves the user where a document load would have\
+    \ left them: focus somewhere defined, scroll where the history entry says, a composition\
+    \ never cut off, and a request in flight visible — because a swap that keeps the\
+    \ live DOM also keeps everything a reparse would have reset, including what should\
+    \ have moved.\n\n```yaml\nsource: decision:update-runtime-convergence\nscope:\
+    \ what happens around an applied delta; requirement:query-navigation-interception\
+    \ is what starts one and requirement:navigation-delta-rendering is what the server\
+    \ sends\nwhy_it_is_its_own_requirement: the delta was already correct while the\
+    \ page was still worse to use than the document path, and nothing about the wire\
+    \ explains that\nthe_test_for_each_rule:\n  default: what the browser does on\
+    \ an ordinary document load is the answer, which is also the behavior a client\
+    \ with scripting off still gets for free\n  deliberate_difference: a replaced\
+    \ navigation refines the page on screen, so leaving the viewport alone is chosen\
+    \ rather than inherited\nas_built:\n  focus:\n    inside_a_replaced_region: the\
+    \ focused control is refocused by name after the replacement lands, with its selection\
+    \ offsets and direction restored\n    where_it_lives: the shared client-state\
+    \ core of requirement:unified-update-runtime, so a delta, a redraw, an action\
+    \ response, and a live refill all carry it rather than one of them carrying it\
+    \ twice\n    why_it_returns_a_callback: focusing a node still inside a fragment\
+    \ does nothing at all, silently, so the collection happens before insertion and\
+    \ the focusing after it\n    across_a_route: a pushed navigation whose focus did\
+    \ not survive sends it to the page's main landmark, made programmatically focusable\
+    \ without entering the tab order\n    concretely: a search box that updates as\
+    \ it is typed keeps its caret, which is the smallest example of this feature working\
+    \ and the one most likely to be built first\n  announcement: a pushed navigation\
+    \ writes the new document title into a polite live region created at bootstrap,\
+    \ since a region created and filled in the same task is not reliably read\n  scroll:\n\
+    \    recording: the entry being left is updated with its own position before the\
+    \ next is pushed, and it is read before the swap because afterwards the page is\
+    \ a different height and the position may already have clamped\n    what_it_replaced:\
+    \ the outgoing position written onto the entry being pushed, which described the\
+    \ page being arrived at and left the entry a session opened on holding nothing\n\
+    \    browser_restoration: taken over, because it runs at popstate against the\
+    \ document still on screen, before the delta that makes the page that tall has\
+    \ arrived\n    arriving: a pushed navigation starts at the top or at the fragment\
+    \ it named; a replaced one does not move; a pop restores what its entry recorded,\
+    \ after the content is back\n  ime: applying is deferred while a composition is\
+    \ active and resumes when it ends, on the navigation, redraw, and action paths\
+    \ alike; every caller re-checks its ticket after waiting, so a response superseded\
+    \ during a composition is discarded exactly as one superseded at any other moment\
+    \ is\n  pending: the document root carries a busy marker for the life of a navigation\
+    \ or a redraw, so a progress affordance is CSS an author writes once rather than\
+    \ a subscriber every application writes again\n  marker_is_additive: nothing depends\
+    \ on it appearing, which is what keeps a page that never runs this script from\
+    \ needing a rule about it\nconformance:\n  covered: the two history writes and\
+    \ their order, the taken-over restoration, a pop writing no entry and restoring\
+    \ its recorded position, arriving at the top, focus moving to the landmark, focus\
+    \ that survived being left alone, the announcement, the busy marker while a request\
+    \ is open and after it settles, and a delta held back through a composition\n\
+    \  why_here: none of it is visible to a Go assertion, and all of it is what an\
+    \ author would otherwise discover from a bug report\nacceptance:\n  - typing in\
+    \ a search box that updates on input keeps the caret and the selection\n  - back\
+    \ returns to the scroll position the user actually left\n  - a link to another\
+    \ route arrives at the top of it\n  - a composition in progress is never interrupted\
+    \ by a response\n  - a screen reader is told the page changed\n  - a request in\
+    \ flight is styleable with no application JavaScript\n```"
+  source: decision:update-runtime-convergence
+  scope: what happens around an applied delta; requirement:query-navigation-interception
+    is what starts one and requirement:navigation-delta-rendering is what the server
+    sends
+  why_it_is_its_own_requirement: the delta was already correct while the page was
+    still worse to use than the document path, and nothing about the wire explains
+    that
+  the_test_for_each_rule:
+    default: what the browser does on an ordinary document load is the answer, which
+      is also the behavior a client with scripting off still gets for free
+    deliberate_difference: a replaced navigation refines the page on screen, so leaving
+      the viewport alone is chosen rather than inherited
+  as_built:
+    focus:
+      inside_a_replaced_region: the focused control is refocused by name after the
+        replacement lands, with its selection offsets and direction restored
+      where_it_lives: the shared client-state core of requirement:unified-update-runtime,
+        so a delta, a redraw, an action response, and a live refill all carry it rather
+        than one of them carrying it twice
+      why_it_returns_a_callback: focusing a node still inside a fragment does nothing
+        at all, silently, so the collection happens before insertion and the focusing
+        after it
+      across_a_route: a pushed navigation whose focus did not survive sends it to
+        the page's main landmark, made programmatically focusable without entering
+        the tab order
+      concretely: a search box that updates as it is typed keeps its caret, which
+        is the smallest example of this feature working and the one most likely to
+        be built first
+    announcement: a pushed navigation writes the new document title into a polite
+      live region created at bootstrap, since a region created and filled in the same
+      task is not reliably read
+    scroll:
+      recording: the entry being left is updated with its own position before the
+        next is pushed, and it is read before the swap because afterwards the page
+        is a different height and the position may already have clamped
+      what_it_replaced: the outgoing position written onto the entry being pushed,
+        which described the page being arrived at and left the entry a session opened
+        on holding nothing
+      browser_restoration: taken over, because it runs at popstate against the document
+        still on screen, before the delta that makes the page that tall has arrived
+      arriving: a pushed navigation starts at the top or at the fragment it named;
+        a replaced one does not move; a pop restores what its entry recorded, after
+        the content is back
+    ime: applying is deferred while a composition is active and resumes when it ends,
+      on the navigation, redraw, and action paths alike; every caller re-checks its
+      ticket after waiting, so a response superseded during a composition is discarded
+      exactly as one superseded at any other moment is
+    pending: the document root carries a busy marker for the life of a navigation
+      or a redraw, so a progress affordance is CSS an author writes once rather than
+      a subscriber every application writes again
+    marker_is_additive: nothing depends on it appearing, which is what keeps a page
+      that never runs this script from needing a rule about it
+  conformance:
+    covered: the two history writes and their order, the taken-over restoration, a
+      pop writing no entry and restoring its recorded position, arriving at the top,
+      focus moving to the landmark, focus that survived being left alone, the announcement,
+      the busy marker while a request is open and after it settles, and a delta held
+      back through a composition
+    why_here: none of it is visible to a Go assertion, and all of it is what an author
+      would otherwise discover from a bug report
+  acceptance:
+  - typing in a search box that updates on input keeps the caret and the selection
+  - back returns to the scroll position the user actually left
+  - a link to another route arrives at the top of it
+  - a composition in progress is never interrupted by a response
+  - a screen reader is told the page changed
+  - a request in flight is styleable with no application JavaScript
+acceptance:
+  item-047b25b7c52e052b:
+    text: typing in a search box that updates on input keeps the caret and the selection
+  item-75b9b7a9702ba7cc:
+    text: back returns to the scroll position the user actually left
+  item-0ade1d847e22859f:
+    text: a link to another route arrives at the top of it
+  item-8efdaae73913d19e:
+    text: a composition in progress is never interrupted by a response
+  item-d4b914855478bf82:
+    text: a screen reader is told the page changed
+  item-b37b9755e95f7d9f:
+    text: a request in flight is styleable with no application JavaScript
+relations:
+- relation: mentions
+  to: decision:update-runtime-convergence
+  resolution: resolved
+- relation: mentions
+  to: requirement:navigation-delta-rendering
+  resolution: resolved
+- relation: mentions
+  to: requirement:query-navigation-interception
+  resolution: resolved
+- relation: mentions
+  to: requirement:unified-update-runtime
+  resolution: resolved

@@ -1,0 +1,83 @@
+id: decision:web-runtime-delivery-order
+type: decision
+title: Web Runtime Delivery Order
+summary: Deliver reusable lower layers before dependent modern UI features.
+facts:
+  legacy_body: "Deliver reusable lower layers before dependent modern UI features.\n\
+    \n```yaml\norder:\n  - requirement:shared-web-runtime and requirement:classic-rendering\n\
+    \  - requirement:discovered-page-routing, which reuses the classic response path\
+    \ and needs none of the rungs below it\n  - api:typed-external-function and concept:modern-server-ui\n\
+    \  - memory-backed policy:layered-cache with TTL, private scope, and tags\n  -\
+    \ flow:initial-streaming-render, unblocked by system:tinybind html_async_baseline\
+    \ and scoped by requirement:async-html-rendering\n  - flow:partial-refresh, unblocked\
+    \ by system:tinybind html_update_baseline and scoped by decision:update-runtime-convergence;\
+    \ it arrives before the memory-backed cache above it, because upstream compares\
+    \ rendered output instead of reusing it\n  - api:server-action with automatic\
+    \ invalidation\n  - concept:client-component with selective module loading\n \
+    \ - distributed caches and stale-while-revalidate\nfirst_modern_release_non_goals:\n\
+    \  - React Server Components compatibility\n  - browser virtual DOM\n  - full-page\
+    \ hydration\n  - WebSocket navigation\n  - browser execution of server-component\
+    \ code\n  - distributed component scheduling\n  - inference of every database\
+    \ dependency\n```"
+  order:
+  - requirement:shared-web-runtime and requirement:classic-rendering
+  - requirement:discovered-page-routing, which reuses the classic response path and
+    needs none of the rungs below it
+  - api:typed-external-function and concept:modern-server-ui
+  - memory-backed policy:layered-cache with TTL, private scope, and tags
+  - flow:initial-streaming-render, unblocked by system:tinybind html_async_baseline
+    and scoped by requirement:async-html-rendering
+  - flow:partial-refresh, unblocked by system:tinybind html_update_baseline and scoped
+    by decision:update-runtime-convergence; it arrives before the memory-backed cache
+    above it, because upstream compares rendered output instead of reusing it
+  - api:server-action with automatic invalidation
+  - concept:client-component with selective module loading
+  - distributed caches and stale-while-revalidate
+  first_modern_release_non_goals:
+  - React Server Components compatibility
+  - browser virtual DOM
+  - full-page hydration
+  - WebSocket navigation
+  - browser execution of server-component code
+  - distributed component scheduling
+  - inference of every database dependency
+relations:
+- relation: mentions
+  to: api:server-action
+  resolution: resolved
+- relation: mentions
+  to: api:typed-external-function
+  resolution: resolved
+- relation: mentions
+  to: concept:client-component
+  resolution: resolved
+- relation: mentions
+  to: concept:modern-server-ui
+  resolution: resolved
+- relation: mentions
+  to: decision:update-runtime-convergence
+  resolution: resolved
+- relation: mentions
+  to: flow:initial-streaming-render
+  resolution: resolved
+- relation: mentions
+  to: flow:partial-refresh
+  resolution: resolved
+- relation: mentions
+  to: policy:layered-cache
+  resolution: resolved
+- relation: mentions
+  to: requirement:async-html-rendering
+  resolution: resolved
+- relation: mentions
+  to: requirement:classic-rendering
+  resolution: resolved
+- relation: mentions
+  to: requirement:discovered-page-routing
+  resolution: resolved
+- relation: mentions
+  to: requirement:shared-web-runtime
+  resolution: resolved
+- relation: mentions
+  to: system:tinybind
+  resolution: resolved

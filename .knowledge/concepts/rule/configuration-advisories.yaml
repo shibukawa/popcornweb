@@ -1,0 +1,420 @@
+id: rule:configuration-advisories
+type: rule
+title: Configuration Advisories
+summary: 'The checks data:diagnostic-report renders as findings: a wiring gap the
+  process would reject, and a merged value that is allowed but inadvisable for the
+  diagnosed data:runtime-environment.'
+facts:
+  legacy_body: "The checks data:diagnostic-report renders as findings: a wiring gap\
+    \ the process would reject, and a merged value that is allowed but inadvisable\
+    \ for the diagnosed data:runtime-environment.\n\n```yaml\nseverity:\n  error:\
+    \ the process would refuse to start, or a policy forbids the value in the diagnosed\
+    \ environment\n  warning: the process starts, and the value is inadvisable for\
+    \ the diagnosed environment\n  note: the value is intentional and worth stating,\
+    \ such as an unused linked plugin\n  not_a_finding: an arrangement working as\
+    \ designed, whose only remedy would be \"no action\"; it is left out rather than\
+    \ reported, because a report full of them is one a reader skims\nenvironment_model:\n\
+    \  dev_only: the advisory fires for every token other than dev, because data:runtime-environment\
+    \ treats an unknown token as a deployment\n  prod_only: reserved for a policy\
+    \ that names prod, as policy:devidp-safety does\n  dev: the advisory fires only\
+    \ for dev, to state an arrangement that exists only there\n  every: the advisory\
+    \ is environment-independent\n  rule: no advisory hard-codes a list of deployment\
+    \ names; it tests whether the diagnosed token is dev\n  source: the token comes\
+    \ from the api:cli-doctor --env option, so one run can evaluate the same file\
+    \ set as dev and as prod\nwiring:\n  missing-session-backend-plugin:\n    trigger:\
+    \ data:session-runtime-config backend names a backend no linked plugin registered\n\
+    \    severity: error\n    remedy: the blank import of that plugin, per decision:import-registered-session-plugins\n\
+    \  missing-sql-driver:\n    trigger: a data:database-connection-set DSN scheme\
+    \ that no linked database/sql driver answers\n    severity: error\n    remedy:\
+    \ the system:tinygodriver package for that scheme, named per requirement:contrib-sqlite\
+    \ and its siblings\n  unclaimed-config-key:\n    trigger: a configured section\
+    \ whose owning plugin the application does not link\n    unit: the top-level section,\
+    \ because that is what a plugin registers a binding for\n    configured: at least\
+    \ one key of the section came from a place other than its default, since a linked\
+    \ binding contributes defaults to every project\n    unattributable: a section\
+    \ no known binding declares is a limit rather than a finding, because a plugin\
+    \ outside the framework may own it\n    severity: error\n    remedy: the plugin\
+    \ import for the section\n    reason: data:runtime-config-registry rejects configuration\
+    \ for an unimported plugin, and the value of the advisory is naming which import\
+    \ is missing\n  missing-netdev-registration:\n    trigger: data:project-config\
+    \ project.toolchain is tinygo and the tinygohelper.go blank import of rule:tinygo-runtime-compatibility\
+    \ is absent\n    severity: error\n    remedy: the netdev blank import, because\
+    \ the binary otherwise builds and exits with \"Netdev not set\"\n  devidp-linked-into-application:\n\
+    \    trigger: application source imports requirement:contrib-devidp\n    severity:\
+    \ error\n    reference: policy:devidp-safety, which api:cli-build already enforces\n\
+    \  unused-linked-plugin:\n    trigger: a linked plugin no configuration selects\n\
+    \    severity: note\n    reason: it costs binary size and configuration surface\
+    \ without serving a request\ndependency:\n  disabled-dependency:\n    trigger:\
+    \ an enabled feature whose required middleware or binding is disabled, per data:middleware-runtime-config\n\
+    \    severity: error\n  auth-without-session:\n    trigger: data:authentication-runtime-config\
+    \ enabled while data:session-runtime-config is not\n    severity: error\n  session-rdb-without-middleware:\n\
+    \    trigger: session rdb source middleware while middleware.rdb.enabled is false\n\
+    \    severity: error\n  framework-write-on-readonly-group:\n    trigger: a resolved\
+    \ write, session, or migration pointer selecting a readonly group, or an ambiguous\
+    \ one, per policy:connection-group-selection\n    severity: error\n  deferred-selection:\n\
+    \    trigger: a value data:session-runtime-config or data:authentication-runtime-config\
+    \ lists as deferred, such as the redis backend or passkey_only mode\n    severity:\
+    \ error\n    remedy: the implemented value, named\nenvironment:\n  query-diagnostics-outside-dev:\n\
+    \    trigger: data:query-diagnostics-config enabled resolves on\n    scope: dev_only\n\
+    \    severity: warning\n    message: names the environment, bind values, and slow\
+    \ threshold, matching the policy:query-log-safety startup warning\n  bind-values-outside-dev:\n\
+    \    trigger: bind_values resolves on\n    scope: dev_only\n    severity: warning\n\
+    \    reason: bind values are the only path by which application row data enters\
+    \ a framework SQL record\n  insecure-session-cookie:\n    trigger: session cookie.secure\
+    \ false, or same_site none without secure\n    scope: dev_only for the first,\
+    \ every for the second\n    severity: error\n    phase: doctor and startup, so\
+    \ a deployment refuses to serve one session over plain http rather than being\
+    \ advised about it\n    dev_silence: api:cli-init writes the false into the development\
+    \ file on purpose, and an advisory whose remedy is the arrangement working teaches\
+    \ a reader to skim\n  csrf-disabled:\n    trigger: security csrf.enabled false,\
+    \ which is its default\n    scope: dev_only\n    severity: warning\n    remedy:\
+    \ the include and exclude patterns that turn it on, per policy:csrf-protection\n\
+    \  response-headers-weakened:\n    trigger: security headers.enabled false, or\
+    \ hsts.enabled false\n    scope: dev_only\n    severity: warning\n    reference:\
+    \ policy:security-response-headers\n  memory-database-outside-dev:\n    trigger:\
+    \ a sqlite in-memory DSN in any group\n    scope: dev_only\n    severity: warning\n\
+    \    reason: the schema and every row are lost at restart\n  local-public-read-outside-dev:\n\
+    \    trigger: server public.read_local true\n    scope: dev_only\n    severity:\
+    \ warning\n    reference: decision:development-public-assets, which forces the\
+    \ flag only in the development build mode\n  verbose-log-level-outside-dev:\n\
+    \    trigger: observability minimum_level trace or debug\n    scope: dev_only\n\
+    \    severity: warning\n  plaintext-logs-outside-dev:\n    trigger: observability\
+    \ stdout_format plaintext\n    scope: dev_only\n    severity: note\n  boot-log-tree-outside-dev:\n\
+    \    trigger: observability boot_log resolves tree\n    scope: dev_only\n    severity:\
+    \ note\n    reason: policy:startup-summary auto already resolves record off a\
+    \ terminal, so an explicit tree is the only case\n  telemetry-export-disabled-outside-dev:\n\
+    \    trigger: observability otel.enabled false\n    scope: dev_only\n    severity:\
+    \ note\n    reference: requirement:modern-observability\nsecret_material:\n  basis:\n\
+    \    classification: the configbind metadata already marks a field secret, because\
+    \ policy:log-emission and policy:startup-summary redact by that mark; these advisories\
+    \ read the same mark instead of a list of names\n    fields_today: DSN credentials,\
+    \ auth oidc.client_secret, observability otel.headers, and the data:session-runtime-config\
+    \ session keyring\n    cookies:\n      was: the framework held no cookie signing\
+    \ or encryption key, because a login session was a server-side data:session-record\
+    \ and the CSRF secret is per-session crypto/rand\n      now: decision:slot-declared-placement\
+    \ makes the keyring first-class, since session.ReadOnly signs and session.Private\
+    \ seals, so the framework holds a long-lived key that a file can pin\n      covered:\
+    \ automatically, because the field carries the secret mark and this advisory reads\
+    \ the mark rather than a list of names\n    intent: keying the check to the classification\
+    \ means a future signing key needs no new advisory\n    cookies: no cookie key\
+    \ is configured while every CSRF secret lives in a server-side data:session-record;\
+    \ decision:anonymous-csrf-secret-storage needs one, and it is the policy:cookie-value-protection\
+    \ keyring rather than a key of its own, so it is covered the moment that keyring's\
+    \ metadata marks it secret\n    intent: keying the check to the classification\
+    \ means a cookie keyring needs no new advisory\n    credential_test: classification\
+    \ is by field name, so it marks every DSN; a value holding no user info and no\
+    \ credential parameter, such as a sqlite path, discloses nothing and is skipped,\
+    \ because a finding a reader learns to ignore costs the ones that matter\n  where_a_secret_is_kept:\n\
+    \    members: literal-secret-in-config-file, secret-file-not-ignored, secret-file-permissions\n\
+    \    scope: dev_only\n    reason: a development machine keeps the password of\
+    \ the database running beside it in config.dev.toml on purpose, and that file\
+    \ is written to be shared with the people who run it; what a secret is, rather\
+    \ than where it sits, stays a finding in every token\n  literal-secret-in-config-file:\n\
+    \    trigger: a secret-classified field whose place is the TOML file as a literal,\
+    \ rather than an environment variable, a CLI argument, or a ${NAME} expansion\n\
+    \    scope: dev_only\n    severity: error\n    evidence: the key, the file, and\
+    \ whether that file is tracked in version control when the project is a git work\
+    \ tree, since tracking is what turns a fixed value into a disclosure\n    remedy:\
+    \ the ${NAME} expansion of data:database-connection-set for an array element,\
+    \ or the generated environment variable name for a scalar key\n  scaffolded-or-placeholder-secret:\n\
+    \    trigger: a secret-classified literal still equal to what requirement:built-in-config-generation\
+    \ or api:cli-init wrote, or to a known placeholder word\n    scope: every\n  \
+    \  severity: error outside dev, warning in dev\n    reason: a scaffold value is\
+    \ published in the framework source, so it is a known credential rather than a\
+    \ weak one\n    bound: shape only; doctor judges no value's strength, and an undeterminable\
+    \ secret yields no finding at all\n  secret-shared-between-environments:\n   \
+    \ trigger: one literal secret value appearing in the files of more than one diagnosed\
+    \ token\n    scope: every, evaluated only when api:cli-doctor diagnoses more than\
+    \ one token\n    severity: error when any of those tokens is not dev\n    reason:\
+    \ promoting a value across environments erases the boundary the separate files\
+    \ exist to draw\n    visibility: only a reader of every environment file sees\
+    \ this, which is why it is a doctor check and not a startup one\n  secret-file-not-ignored:\n\
+    \    trigger: a file this analysis found carrying a secret-classified literal\
+    \ that the project's git work tree tracks or does not ignore\n    scope: dev_only\n\
+    \    severity: error\n    bound: the file set comes from what was actually read,\
+    \ which is the selected TOML and the policy:dotenv-resolution files of the diagnosed\
+    \ token; no advisory assumes a file neither policy defines\n  env-template-holds-secret:\n\
+    \    id: PW0438\n    trigger: .env.example assigns a non-empty value to a variable\
+    \ whose name carries a secret token, and the value carries a credential by the\
+    \ same test the TOML checks use\n    scope: every\n    severity: error\n    reason:\
+    \ the template is the one dotenv file .gitignore lets through, so a value there\
+    \ is a committed credential whatever the environment, per requirement:dotenv-files\n\
+    \  secret-file-permissions:\n    trigger: a file carrying a secret-classified\
+    \ literal that is readable beyond its owner\n    scope: dev_only\n    severity:\
+    \ warning\n    reason: it is the cheapest half of the same disclosure question,\
+    \ and it is a check only a reader of the filesystem can make\n  required-secret-not-set:\n\
+    \    trigger: a secret-classified field with no default, no file value, and no\
+    \ value in this host's environment, for a non-dev token\n    scope: dev_only\n\
+    \    severity: error on a deployment host, note otherwise\n    host_dependence:\
+    \ the severity turns on whether this host is the one holding the deployment's\
+    \ environment, per decision:host-side-diagnostic-analysis\n    use: this is what\
+    \ makes pw doctor --env prod a pre-deploy CI gate rather than an advisory run\n\
+    \  deferred:\n    key_rotation:\n      intent: a check that the configuration\
+    \ can hold a verifying key alongside a signing key, so a rotation does not require\
+    \ downtime\n      blocked_on: no framework binding expresses a key set today,\
+    \ and the schema decision comes before the check\n      note: doctor cannot check\
+    \ a shape the configuration cannot express, which is why this is listed rather\
+    \ than written\nproxy:\n  basis:\n    normal: decision:local-tls-proxy-boundary\
+    \ terminates TLS upstream, so a deployment reaching this framework over plain\
+    \ http is the designed arrangement and never a finding on its own\n    what_doctor_sees:\
+    \ the configuration; whether a proxy actually sits in front is a runtime observation,\
+    \ which is why one member of this group is a startup check reading the first request\
+    \ instead\n    subject: requirement:proxied-request-identity, whose every failure\
+    \ mode is a value nobody set\n    determinacy: decision:ingress-tls-termination\
+    \ makes the boundary a declared fact, so these checks test a configured value\
+    \ rather than guessing which shape they are looking at; before that decision lands,\
+    \ every severity here is one step weaker than written, because a directly served\
+    \ deployment could not be told apart from a proxied one\n    no_suppression: this\
+    \ group carries no per-advisory off switch, per the no_advisory_off_switch clause\
+    \ of decision:ingress-tls-termination; a declared boundary is what silences these,\
+    \ because it stays true when the deployment changes and a mute does not\n  trusted-proxies-unset:\n\
+    \    trigger: server.trusted_proxies empty while security headers.enabled and\
+    \ hsts.enabled\n    scope: dev_only\n    severity: warning\n    reason: decision:forwarded-header-trust\
+    \ treats an ungated header as absent, so HSTS is silently never emitted behind\
+    \ a TLS-terminating proxy, and the missing header is the one nobody notices\n\
+    \    remedy: the proxy network in server.trusted_proxies\n    bound: doctor cannot\
+    \ tell a proxied deployment from a directly served one, so this fires on configuration\
+    \ alone and is a warning rather than an error\n  forwarded-header-from-untrusted-peer:\n\
+    \    trigger: a request carrying X-Forwarded-Proto or X-Forwarded-For from a peer\
+    \ outside server.trusted_proxies\n    phase: startup, because no configuration\
+    \ shows it and the first request does\n    scope: dev_only\n    severity: warning\n\
+    \    reason: the deployment is behind a proxy its configuration does not declare,\
+    \ so every value of requirement:proxied-request-identity is degraded at once\n\
+    \    once: reported on the first such request and not again, since a per-request\
+    \ advisory is a log flood rather than a finding\n    remedy: the observed peer\
+    \ address, named, so the remedy is a value to paste rather than a network to work\
+    \ out\n  csrf-trusted-origins-unset:\n    trigger: security csrf.enabled with\
+    \ an empty csrf.trusted_origins and no declared server.tls\n    scope: dev_only\n\
+    \    severity: error\n    reason: policy:csrf-protection matches against a declared\
+    \ origin, and a deployment terminating no TLS of its own reconstructs http while\
+    \ the browser reports https, so every unsafe request is refused\n    remedy: the\
+    \ deployment's own https origin\n    not_owed_by_auth: api:authentication-endpoints\
+    \ derives its origins from the passkey allowlist and the OIDC redirect URL, so\
+    \ one deployment configures this and needs nothing there; the advisory says so,\
+    \ because the asymmetry reads as an oversight otherwise\n    why_error_rather_than_warning:\
+    \ the trigger names the declared boundary of decision:ingress-tls-termination,\
+    \ so this is not a guess about deployment shape; it is a configuration whose every\
+    \ unsafe request is already refused\n    before_that_decision: warning, because\
+    \ without a declared boundary a directly served deployment cannot be told from\
+    \ a proxied one\n  rate-limit-no-process-ceiling:\n    trigger: data:rate-limit-runtime-config\
+    \ enabled with process zero\n    scope: dev_only\n    severity: warning\n    reason:\
+    \ the per-address bucket cannot see a distributed flood, since such a flood keeps\
+    \ every source under it by construction, so a zero ceiling leaves that case to\
+    \ the edge alone\n    remedy: a ceiling sized against what this deployment can\
+    \ serve, which is why it defaults to zero rather than to a guess\n    not_an_error:\
+    \ a deployment whose edge already sheds volumetric load has made a defensible\
+    \ choice, and doctor cannot see that rule\n  rate-limit-store-in-process:\n  \
+    \  trigger: requirement:rate-limit-enforcement enabled with the in-process counter\
+    \ store\n    scope: dev_only\n    severity: warning\n    reason: N replicas each\
+    \ enforce the configured limit, so the effective limit is N times what the deployment\
+    \ declared; the configuration is correct on one replica and wrong on the shape\
+    \ decision:local-tls-proxy-boundary assumes\n    remedy: a shared counter backend,\
+    \ requirement:contrib-redis-valkey being the first\n  live-bound-unenforceable-behind-proxy:\n\
+    \    trigger: html.live_max_responses positive while server.trusted_proxies is\
+    \ empty\n    scope: dev_only\n    severity: warning\n    reason: the client_key\
+    \ of policy:live-subscription-bounds falls back to the remote address, which behind\
+    \ a proxy is one bucket per proxy node, so the bound refuses ordinary visitors\
+    \ instead of bounding one\n    remedy: the proxy network in server.trusted_proxies,\
+    \ which is the same remedy as trusted-proxies-unset and is reported once\nidentity_provider:\n\
+    \  basis:\n    dev: requirement:contrib-devidp is a legitimate dev issuer that\
+    \ api:cli-dev injects, so an empty auth oidc section in config.dev.toml is correct\
+    \ rather than missing\n    deployed: policy:oidc-security requires an HTTPS issuer\
+    \ and exact issuer equality, so a deployed token needs a real provider declared\
+    \ somewhere\n    static_bound: doctor checks the shape of the issuer and the agreement\
+    \ of the local paths; it fetches no discovery document, because that is the network\
+    \ call the deferred probe of decision:host-side-diagnostic-analysis owns\n   \
+    \ section_in_force: every trigger below that names an oidc field reads the provider\
+    \ section auth.mode selects, per requirement:doctor-auth-mode-awareness; oauth_only\
+    \ reads auth.oauth and its AUTH_OAUTH_* names, and passkey_only and jwt_only skip\
+    \ the provider advisories\n  devidp-enabled-outside-dev:\n    trigger: data:project-config\
+    \ dev.idp.enabled with a non-dev token\n    scope: dev_only\n    severity: error\
+    \ in prod per policy:devidp-safety, warning otherwise\n  development-issuer-outside-dev:\n\
+    \    trigger: auth oidc.issuer whose host is loopback, or which matches the data:devidp-config\
+    \ issuer of this project\n    scope: dev_only\n    severity: error\n    reason:\
+    \ policy:devidp-safety states the development provider authenticates nobody\n\
+    \  insecure-issuer-outside-dev:\n    trigger: auth oidc.issuer with an http scheme,\
+    \ or oidc.allow_loopback_http true\n    scope: dev_only\n    severity: error\n\
+    \    reference: policy:oidc-security, which permits http only for explicit loopback\
+    \ development\n  loopback-development-pairing-outside-dev:\n    trigger: oidc.allow_loopback_http\
+    \ true together with session cookie.secure false\n    scope: dev_only\n    severity:\
+    \ error\n    reference: the development-only pairing data:authentication-runtime-config\
+    \ documents\n  redirect-target-disagreement:\n    trigger: auth oidc.redirect_url\
+    \ whose path is not callback_path, or whose host is loopback for a non-dev token\n\
+    \    scope: every for the path, dev_only for the host\n    severity: error\n \
+    \   reason: the provider would redirect to a URL the application does not serve,\
+    \ and a loopback redirect that works locally hides it\n  provider-not-declared:\n\
+    \    trigger: auth enabled for a non-dev token while issuer, client_id, or client_secret\
+    \ is determinable from no layer this host can read\n    scope: dev_only\n    severity:\
+    \ note\n    message: names the data:authentication-runtime-config environment\
+    \ variables the deployment must set, so a reader confirms them instead of assuming\
+    \ them\n    reason: an absent value here is either platform injection or a real\
+    \ gap, and doctor cannot tell which; naming what must be set is the useful half\n\
+    rules:\n  - an advisory that restates a startup validation failure carries that\
+    \ failure's message, so doctor and api:application-lifecycle never disagree\n\
+    \  - an advisory evaluates a merged value and its place, never a value it assumed\n\
+    \  - a value marked as a limit by decision:host-side-diagnostic-analysis suppresses\
+    \ its advisories and is listed as a suppression, because a false positive costs\
+    \ more than a missing line\n  - a wiring advisory fires only on a registration\
+    \ the import graph resolves; an unresolvable one is a limit, not a gap\n  - every\
+    \ advisory carries a remedy that names an import path, a key, or an api:cli-add\
+    \ capability\n  - a secret-classified value is compared but never rendered, so\
+    \ a cross-environment match names the keys and the files and no value\n  - a secret\
+    \ advisory reports the place of a value, not the value, which is why it works\
+    \ the same for a credential doctor must not print\n  - severity is a function\
+    \ of the diagnosed token and the advisory scope, and nothing else\n  - an advisory\
+    \ is skipped, not passed, when the feature it examines is off\nextension:\n  framework:\
+    \ this catalog\n  plugin: a plugin registering a binding registers the advisories\
+    \ for its own keys, because only it knows which of its values are development-only\n\
+    \  application: no application-defined advisories in the first release\n```"
+  legacy_parse_issues:
+  - kind: legacy_parse_error
+    block: 0
+    message: 'Duplicate YAML key: cookies'
+relations:
+- relation: mentions
+  to: api:application-lifecycle
+  resolution: resolved
+- relation: mentions
+  to: api:authentication-endpoints
+  resolution: resolved
+- relation: mentions
+  to: api:cli-add
+  resolution: resolved
+- relation: mentions
+  to: api:cli-build
+  resolution: resolved
+- relation: mentions
+  to: api:cli-dev
+  resolution: resolved
+- relation: mentions
+  to: api:cli-doctor
+  resolution: resolved
+- relation: mentions
+  to: api:cli-init
+  resolution: resolved
+- relation: mentions
+  to: data:authentication-runtime-config
+  resolution: resolved
+- relation: mentions
+  to: data:database-connection-set
+  resolution: resolved
+- relation: mentions
+  to: data:devidp-config
+  resolution: resolved
+- relation: mentions
+  to: data:diagnostic-report
+  resolution: resolved
+- relation: mentions
+  to: data:middleware-runtime-config
+  resolution: resolved
+- relation: mentions
+  to: data:project-config
+  resolution: resolved
+- relation: mentions
+  to: data:query-diagnostics-config
+  resolution: resolved
+- relation: mentions
+  to: data:rate-limit-runtime-config
+  resolution: resolved
+- relation: mentions
+  to: data:runtime-config-registry
+  resolution: resolved
+- relation: mentions
+  to: data:runtime-environment
+  resolution: resolved
+- relation: mentions
+  to: data:session-record
+  resolution: resolved
+- relation: mentions
+  to: data:session-runtime-config
+  resolution: resolved
+- relation: mentions
+  to: decision:anonymous-csrf-secret-storage
+  resolution: resolved
+- relation: mentions
+  to: decision:development-public-assets
+  resolution: resolved
+- relation: mentions
+  to: decision:forwarded-header-trust
+  resolution: resolved
+- relation: mentions
+  to: decision:host-side-diagnostic-analysis
+  resolution: resolved
+- relation: mentions
+  to: decision:import-registered-session-plugins
+  resolution: resolved
+- relation: mentions
+  to: decision:ingress-tls-termination
+  resolution: resolved
+- relation: mentions
+  to: decision:local-tls-proxy-boundary
+  resolution: resolved
+- relation: mentions
+  to: decision:slot-declared-placement
+  resolution: resolved
+- relation: mentions
+  to: policy:connection-group-selection
+  resolution: resolved
+- relation: mentions
+  to: policy:cookie-value-protection
+  resolution: resolved
+- relation: mentions
+  to: policy:csrf-protection
+  resolution: resolved
+- relation: mentions
+  to: policy:devidp-safety
+  resolution: resolved
+- relation: mentions
+  to: policy:dotenv-resolution
+  resolution: resolved
+- relation: mentions
+  to: policy:live-subscription-bounds
+  resolution: resolved
+- relation: mentions
+  to: policy:log-emission
+  resolution: resolved
+- relation: mentions
+  to: policy:oidc-security
+  resolution: resolved
+- relation: mentions
+  to: policy:query-log-safety
+  resolution: resolved
+- relation: mentions
+  to: policy:security-response-headers
+  resolution: resolved
+- relation: mentions
+  to: policy:startup-summary
+  resolution: resolved
+- relation: mentions
+  to: requirement:built-in-config-generation
+  resolution: resolved
+- relation: mentions
+  to: requirement:contrib-devidp
+  resolution: resolved
+- relation: mentions
+  to: requirement:contrib-redis-valkey
+  resolution: resolved
+- relation: mentions
+  to: requirement:contrib-sqlite
+  resolution: resolved
+- relation: mentions
+  to: requirement:doctor-auth-mode-awareness
+  resolution: resolved
+- relation: mentions
+  to: requirement:dotenv-files
+  resolution: resolved
+- relation: mentions
+  to: requirement:modern-observability
+  resolution: resolved
+- relation: mentions
+  to: requirement:proxied-request-identity
+  resolution: resolved
+- relation: mentions
+  to: requirement:rate-limit-enforcement
+  resolution: resolved
+- relation: mentions
+  to: rule:tinygo-runtime-compatibility
+  resolution: resolved
+- relation: mentions
+  to: system:tinygodriver
+  resolution: resolved

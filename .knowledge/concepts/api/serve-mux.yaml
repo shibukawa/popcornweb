@@ -1,0 +1,153 @@
+id: api:serve-mux
+type: api
+title: ServeMux API
+summary: pw exposes Go 1.22 ServeMux behavior through one host and TinyGo-compatible
+  routing surface.
+facts:
+  legacy_body: "pw exposes Go 1.22 ServeMux behavior through one host and TinyGo-compatible\
+    \ routing surface.\n\n```yaml\nsurface:\n  - NewServeMux() *ServeMux\n  - ServeMux.Handle(pattern\
+    \ string, handler http.Handler)\n  - ServeMux.HandleFunc(pattern string, handler\
+    \ func(http.ResponseWriter, *http.Request))\ncompatibility:\n  patterns: Go 1.22\
+    \ method and path patterns\n  path_parameters:\n    behavior: Request.PathValue\n\
+    \    accessor: the module's own, httpbind.PathValue and fasthttpbind.PathValue,\
+    \ which carry the same name and take the transport first, so a rewrite moves the\
+    \ qualifier and nothing else\n    not_ours: this framework declares no PathValue\
+    \ and should not; an earlier draft of this concept specified pw.PathValue(r, name)\
+    \ before the module had one, and a second spelling of the same read would be a\
+    \ name the transform has to know about for no gain\n    still_open: routetree\
+    \ emits the decoder that performs the read, and it emits net/http only, so the\
+    \ second build has no decoder for a parameterised route until that emitter takes\
+    \ a transport\n  host_go: delegates or aliases to net/http ServeMux behavior\n\
+    \  tinygo: uses system:tinygodriver compatible implementation\n  other_backend:\n\
+    \    form: a third implementation behind this same name, assembling the router\
+    \ the generation target names and translating at registration\n    default_target:\
+    \ the tinygodriver fasthttprouter fork rather than the upstream router, because\
+    \ the fork vendors its own request value and a handler built against it is not\
+    \ the type the upstream router accepts\n    configurable: the target names the\
+    \ import, qualifier, type, registration function, and catch-all spelling, so an\
+    \ application on upstream fasthttp points it there instead\n    absorbs:\n   \
+    \   pattern_syntax: the catch-all spelling, rewritten from the Go 1.22 form to\
+    \ the router's\n      method_split: one pattern string becomes the router's separate\
+    \ method and path arguments\n      subtree: a pattern ending in a slash becomes\
+    \ the exact path plus a catch-all registration\n      no_catch_all_spelling: a\
+    \ target declaring none rejects such a route by name rather than inventing one\n\
+    \      path_values: the router stores them where pw.PathValue reads them, so a\
+    \ handler using the accessor needs no rewrite\n      exact_terminator:\n     \
+    \   resolved: absorbed, by dropping it; an earlier version of this concept listed\
+    \ it as untranslatable and that was wrong\n        why: the marker exists in Go\
+    \ to opt out of subtree matching, and a trie is exact already, so it has no counterpart\
+    \ because it needs none\n        why_it_mattered: generated page trees register\
+    \ 'GET /{$}' for the root, so this is the first route of every project rather\
+    \ than an exotic case\n      wildcard_values:\n        checked: a catch-all yields\
+    \ the remaining segments without a leading slash on both, and the empty string\
+    \ for the directory itself\n        method: measured against net/http rather than\
+    \ assumed, because the router's own documentation describes the upstream httprouter\
+    \ behaviour and not the fork's\n      behavior_flags:\n        set: RedirectTrailingSlash,\
+    \ RedirectFixedPath, HandleMethodNotAllowed, and HandleOPTIONS are set to reproduce\
+    \ Go 1.22 behavior rather than left at the router's defaults\n        redirect_fixed_path:\
+    \ off, because the flag both cleans a path, which Go also does, and then retries\
+    \ case-insensitively, which Go never does; leaving it on would let /Admin reach\
+    \ a handler registered for /admin, and a route table an authorization check is\
+    \ written on top of has to be as case-sensitive as it reads\n        handle_options:\
+    \ off, because Go does not answer OPTIONS by itself\n    cannot_absorb:\n    \
+    \  precedence: Go 1.22 resolves overlapping patterns by specificity where a trie\
+    \ rejects them, and reproducing that would mean matching before dispatch, which\
+    \ gives up the reason to use the trie\n      host_patterns: Go 1.22 matches on\
+    \ host, and the router does not; refused at registration, naming the pattern,\
+    \ the way net/http refuses one it cannot parse\n    consequence: a route table\
+    \ using only method, path, and named parameters translates; one relying on the\
+    \ three above needs a per-backend source, per decision:transport-source-transform\n\
+    example: 'mux.HandleFunc(\"GET /users/{id}\", showUser)'\nscope:\n  owns:\n  \
+    \  - route matching\n    - method matching\n    - path parameter extraction\n\
+    \  excludes:\n    - middleware\n    - route metadata\n    - authorization semantics\n\
+    rule: ordinary net/http handlers remain valid\n```"
+  surface:
+  - NewServeMux() *ServeMux
+  - ServeMux.Handle(pattern string, handler http.Handler)
+  - ServeMux.HandleFunc(pattern string, handler func(http.ResponseWriter, *http.Request))
+  compatibility:
+    patterns: Go 1.22 method and path patterns
+    path_parameters:
+      behavior: Request.PathValue
+      accessor: the module's own, httpbind.PathValue and fasthttpbind.PathValue, which
+        carry the same name and take the transport first, so a rewrite moves the qualifier
+        and nothing else
+      not_ours: this framework declares no PathValue and should not; an earlier draft
+        of this concept specified pw.PathValue(r, name) before the module had one,
+        and a second spelling of the same read would be a name the transform has to
+        know about for no gain
+      still_open: routetree emits the decoder that performs the read, and it emits
+        net/http only, so the second build has no decoder for a parameterised route
+        until that emitter takes a transport
+    host_go: delegates or aliases to net/http ServeMux behavior
+    tinygo: uses system:tinygodriver compatible implementation
+    other_backend:
+      form: a third implementation behind this same name, assembling the router the
+        generation target names and translating at registration
+      default_target: the tinygodriver fasthttprouter fork rather than the upstream
+        router, because the fork vendors its own request value and a handler built
+        against it is not the type the upstream router accepts
+      configurable: the target names the import, qualifier, type, registration function,
+        and catch-all spelling, so an application on upstream fasthttp points it there
+        instead
+      absorbs:
+        pattern_syntax: the catch-all spelling, rewritten from the Go 1.22 form to
+          the router's
+        method_split: one pattern string becomes the router's separate method and
+          path arguments
+        subtree: a pattern ending in a slash becomes the exact path plus a catch-all
+          registration
+        no_catch_all_spelling: a target declaring none rejects such a route by name
+          rather than inventing one
+        path_values: the router stores them where pw.PathValue reads them, so a handler
+          using the accessor needs no rewrite
+        exact_terminator:
+          resolved: absorbed, by dropping it; an earlier version of this concept listed
+            it as untranslatable and that was wrong
+          why: the marker exists in Go to opt out of subtree matching, and a trie
+            is exact already, so it has no counterpart because it needs none
+          why_it_mattered: generated page trees register 'GET /{$}' for the root,
+            so this is the first route of every project rather than an exotic case
+        wildcard_values:
+          checked: a catch-all yields the remaining segments without a leading slash
+            on both, and the empty string for the directory itself
+          method: measured against net/http rather than assumed, because the router's
+            own documentation describes the upstream httprouter behaviour and not
+            the fork's
+        behavior_flags:
+          set: RedirectTrailingSlash, RedirectFixedPath, HandleMethodNotAllowed, and
+            HandleOPTIONS are set to reproduce Go 1.22 behavior rather than left at
+            the router's defaults
+          redirect_fixed_path: off, because the flag both cleans a path, which Go
+            also does, and then retries case-insensitively, which Go never does; leaving
+            it on would let /Admin reach a handler registered for /admin, and a route
+            table an authorization check is written on top of has to be as case-sensitive
+            as it reads
+          handle_options: off, because Go does not answer OPTIONS by itself
+      cannot_absorb:
+        precedence: Go 1.22 resolves overlapping patterns by specificity where a trie
+          rejects them, and reproducing that would mean matching before dispatch,
+          which gives up the reason to use the trie
+        host_patterns: Go 1.22 matches on host, and the router does not; refused at
+          registration, naming the pattern, the way net/http refuses one it cannot
+          parse
+      consequence: a route table using only method, path, and named parameters translates;
+        one relying on the three above needs a per-backend source, per decision:transport-source-transform
+  example: mux.HandleFunc("GET /users/{id}", showUser)
+  scope:
+    owns:
+    - route matching
+    - method matching
+    - path parameter extraction
+    excludes:
+    - middleware
+    - route metadata
+    - authorization semantics
+  rule: ordinary net/http handlers remain valid
+relations:
+- relation: mentions
+  to: decision:transport-source-transform
+  resolution: resolved
+- relation: mentions
+  to: system:tinygodriver
+  resolution: resolved

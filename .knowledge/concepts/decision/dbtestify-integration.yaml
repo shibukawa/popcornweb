@@ -1,0 +1,186 @@
+id: decision:dbtestify-integration
+type: decision
+title: dbtestify Integration Boundary
+summary: Popcorn Web delegates seed and assertion logic to the system:dbtestify core
+  package and requires upstream API additions instead of reimplementing or vendoring
+  that logic.
+facts:
+  legacy_body: "Popcorn Web delegates seed and assertion logic to the system:dbtestify\
+    \ core package and requires upstream API additions instead of reimplementing or\
+    \ vendoring that logic.\n\n```yaml\nstatus: accepted\nscope: requirement:test-data-seeding\n\
+    rationale:\n  - dataset parsing, operation ordering, row matching, and diff reporting\
+    \ are already solved upstream\n  - a second implementation would fork dataset\
+    \ semantics between api:cli-seed and api:test-seed\n  - both owners are the same\
+    \ maintainer, so upstream changes are cheaper than a local fork\nupstream_changes:\n\
+    \  status: released as system:dbtestify v0.3.0\n  connector_from_pool:\n    add:\
+    \ NewDBConnectorFromDB(db *sql.DB, dialect Dialect) (DBConnector, error)\n   \
+    \ contract: dbtestify never closes or reconfigures a pool it did not open\n  \
+    \  reason:\n      - decision:config-driven-database makes the framework the sole\
+    \ owner of *sql.DB\n      - api:test-run in-memory SQLite is unreachable from\
+    \ a second independently opened pool\n      - a second pool would double pool\
+    \ limits and bypass validated rdb configuration\n  driver_import_split:\n    move:\
+    \ NewDBConnector and the blank driver imports to github.com/shibukawa/dbtestify/connect\n\
+    \    keep_in_core: ParseYAML, Seed, Assert, DBConnector, NewDBConnectorFromDB,\
+    \ Dialect, ParseDialect, SplitSource, DataSet, SeedOpt, AssertOpt, result types\n\
+    \    core_dependencies: fatih/color and goccy/go-yaml only\n    caller_impact:\
+    \ stale dbtestify.NewDBConnector call sites fail to compile; migration is an import\
+    \ path change\n    rejected_variant:\n      idea: keep NewDBConnector in core\
+    \ and register drivers from a blank-imported subpackage\n      reason: it compiles\
+    \ and then fails at run time with unknown driver, which hides the break until\
+    \ a test runs\n    reason:\n      - core previously forced mattn/go-sqlite3 and\
+    \ therefore CGo on every consumer\n      - decision:sqlite-backend-selection requires\
+    \ the sqlite driver to come from system:tinygodriver\n      - decision:server-sql-support-tier\
+    \ must not be widened by transitive pgx and mysql imports\n  exported_dialect:\n\
+    \    add: Dialect string enum for postgres, mysql, sqlite plus ParseDialect\n\
+    \    reason: api:test-seed resolves the dialect from the configured rdb DSN scheme,\
+    \ not from a connection string\n  executor_connector:\n    add: Executor plus\
+    \ NewDBConnectorFromTx and NewDBConnectorFromExecutor\n    behavior: Seed opens\
+    \ and commits nothing inside a caller transaction, and Assert observes its uncommitted\
+    \ writes\n    reason: api:test-run WithTransaction rolls every request back, so\
+    \ pool-based seeding and assertion could not see or share that transaction\n \
+    \   breaking: DBConnector operations take an Executor instead of a *sql.Tx, and\
+    \ DB returns nil for a transaction-backed connector\n  writer_diff_formatter:\n\
+    \    add: DiffFormat, FormatTableDiff, and DumpDiffCallback(io.Writer, DiffFormat)\n\
+    \    preserved: DumpDiffCLICallback keeps its colored os.Stdout behavior\n   \
+    \ reason: assertion failures must reach TestingT output instead of os.Stdout\n\
+    consequences:\n  - popcornweb gains build dependencies on the dbtestify core package\
+    \ and goccy/go-yaml only\n  - popcornweb gains no CGo requirement and no pgx or\
+    \ mysql driver dependency\n  - pool ownership stays with api:rdb-middleware and\
+    \ api:test-run\n  - dataset semantics stay defined by system:dbtestify and documented\
+    \ by data:seed-dataset\nrejected:\n  separate_popcornweb_module:\n    idea: isolate\
+    \ seeding in its own Go module to contain dbtestify dependencies\n    reason:\
+    \ api:cli-seed and api:test-run options must live in the framework module to stay\
+    \ first class\n  accept_dependencies_as_is:\n    idea: depend on unmodified dbtestify\
+    \ core\n    reason: breaks CGo-free builds and contradicts decision:sqlite-backend-selection\n\
+    local_boundary:\n  package: github.com/shibukawa/popcornweb/internal/dbseed\n\
+    \  role: the only place popcornweb imports dbtestify, shared by api:cli-seed and\
+    \ api:test-seed\n  surface: DefaultDir, Extension, Resolve, Dialect, Executor,\
+    \ ResolveDialect, Apply, Assert, FromSQL, FromRuntime\n  executor_selection: >\n\
+    \    FromSQL keeps a *sql.DB pool shaped so Seed opens its own per-dataset\n \
+    \   transaction; FromRuntime adapts the framework executor seam, and for a\n \
+    \   native pool outside a transaction Apply opens the per-dataset native\n   \
+    \ transaction itself, because dbtestify can only open its own on a *sql.DB\nadded_dependencies:\n\
+    \  direct: github.com/shibukawa/dbtestify v0.5.0, moved from v0.3.0 by requirement:pgx-native-execution\n\
+    \  indirect: fatih/color, goccy/go-yaml, mattn/go-colorable\n  absent: pgx, go-sql-driver/mysql,\
+    \ and any new CGo requirement\n```"
+  status: accepted
+  scope: requirement:test-data-seeding
+  rationale:
+  - dataset parsing, operation ordering, row matching, and diff reporting are already
+    solved upstream
+  - a second implementation would fork dataset semantics between api:cli-seed and
+    api:test-seed
+  - both owners are the same maintainer, so upstream changes are cheaper than a local
+    fork
+  upstream_changes:
+    status: released as system:dbtestify v0.3.0
+    connector_from_pool:
+      add: NewDBConnectorFromDB(db *sql.DB, dialect Dialect) (DBConnector, error)
+      contract: dbtestify never closes or reconfigures a pool it did not open
+      reason:
+      - decision:config-driven-database makes the framework the sole owner of *sql.DB
+      - api:test-run in-memory SQLite is unreachable from a second independently opened
+        pool
+      - a second pool would double pool limits and bypass validated rdb configuration
+    driver_import_split:
+      move: NewDBConnector and the blank driver imports to github.com/shibukawa/dbtestify/connect
+      keep_in_core: ParseYAML, Seed, Assert, DBConnector, NewDBConnectorFromDB, Dialect,
+        ParseDialect, SplitSource, DataSet, SeedOpt, AssertOpt, result types
+      core_dependencies: fatih/color and goccy/go-yaml only
+      caller_impact: stale dbtestify.NewDBConnector call sites fail to compile; migration
+        is an import path change
+      rejected_variant:
+        idea: keep NewDBConnector in core and register drivers from a blank-imported
+          subpackage
+        reason: it compiles and then fails at run time with unknown driver, which
+          hides the break until a test runs
+      reason:
+      - core previously forced mattn/go-sqlite3 and therefore CGo on every consumer
+      - decision:sqlite-backend-selection requires the sqlite driver to come from
+        system:tinygodriver
+      - decision:server-sql-support-tier must not be widened by transitive pgx and
+        mysql imports
+    exported_dialect:
+      add: Dialect string enum for postgres, mysql, sqlite plus ParseDialect
+      reason: api:test-seed resolves the dialect from the configured rdb DSN scheme,
+        not from a connection string
+    executor_connector:
+      add: Executor plus NewDBConnectorFromTx and NewDBConnectorFromExecutor
+      behavior: Seed opens and commits nothing inside a caller transaction, and Assert
+        observes its uncommitted writes
+      reason: api:test-run WithTransaction rolls every request back, so pool-based
+        seeding and assertion could not see or share that transaction
+      breaking: DBConnector operations take an Executor instead of a *sql.Tx, and
+        DB returns nil for a transaction-backed connector
+    writer_diff_formatter:
+      add: DiffFormat, FormatTableDiff, and DumpDiffCallback(io.Writer, DiffFormat)
+      preserved: DumpDiffCLICallback keeps its colored os.Stdout behavior
+      reason: assertion failures must reach TestingT output instead of os.Stdout
+  consequences:
+  - popcornweb gains build dependencies on the dbtestify core package and goccy/go-yaml
+    only
+  - popcornweb gains no CGo requirement and no pgx or mysql driver dependency
+  - pool ownership stays with api:rdb-middleware and api:test-run
+  - dataset semantics stay defined by system:dbtestify and documented by data:seed-dataset
+  rejected:
+    separate_popcornweb_module:
+      idea: isolate seeding in its own Go module to contain dbtestify dependencies
+      reason: api:cli-seed and api:test-run options must live in the framework module
+        to stay first class
+    accept_dependencies_as_is:
+      idea: depend on unmodified dbtestify core
+      reason: breaks CGo-free builds and contradicts decision:sqlite-backend-selection
+  local_boundary:
+    package: github.com/shibukawa/popcornweb/internal/dbseed
+    role: the only place popcornweb imports dbtestify, shared by api:cli-seed and
+      api:test-seed
+    surface: DefaultDir, Extension, Resolve, Dialect, Executor, ResolveDialect, Apply,
+      Assert, FromSQL, FromRuntime
+    executor_selection: 'FromSQL keeps a *sql.DB pool shaped so Seed opens its own
+      per-dataset transaction; FromRuntime adapts the framework executor seam, and
+      for a native pool outside a transaction Apply opens the per-dataset native transaction
+      itself, because dbtestify can only open its own on a *sql.DB
+
+      '
+  added_dependencies:
+    direct: github.com/shibukawa/dbtestify v0.5.0, moved from v0.3.0 by requirement:pgx-native-execution
+    indirect: fatih/color, goccy/go-yaml, mattn/go-colorable
+    absent: pgx, go-sql-driver/mysql, and any new CGo requirement
+lifecycle: accepted
+relations:
+- relation: mentions
+  to: api:cli-seed
+  resolution: resolved
+- relation: mentions
+  to: api:rdb-middleware
+  resolution: resolved
+- relation: mentions
+  to: api:test-run
+  resolution: resolved
+- relation: mentions
+  to: api:test-seed
+  resolution: resolved
+- relation: mentions
+  to: data:seed-dataset
+  resolution: resolved
+- relation: mentions
+  to: decision:config-driven-database
+  resolution: resolved
+- relation: mentions
+  to: decision:server-sql-support-tier
+  resolution: resolved
+- relation: mentions
+  to: decision:sqlite-backend-selection
+  resolution: resolved
+- relation: mentions
+  to: requirement:pgx-native-execution
+  resolution: resolved
+- relation: mentions
+  to: requirement:test-data-seeding
+  resolution: resolved
+- relation: mentions
+  to: system:dbtestify
+  resolution: resolved
+- relation: mentions
+  to: system:tinygodriver
+  resolution: resolved

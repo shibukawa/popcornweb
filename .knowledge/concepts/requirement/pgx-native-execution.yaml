@@ -1,0 +1,205 @@
+id: requirement:pgx-native-execution
+type: requirement
+title: pgx Native Execution Path
+summary: A PostgreSQL connection serves its request-time query path through the pgx-native
+  surface instead of database/sql, initialized by api:rdb-middleware through a rule:rdb-dsn-resolution
+  registry extended so an engine may register a native opener alongside its *sql.DB
+  opener.
+facts:
+  legacy_body: "A PostgreSQL connection serves its request-time query path through\
+    \ the pgx-native surface instead of database/sql, initialized by api:rdb-middleware\
+    \ through a rule:rdb-dsn-resolution registry extended so an engine may register\
+    \ a native opener alongside its *sql.DB opener.\n\n```yaml\nmotivation:\n  benchmark:\
+    \ >\n    a Popcorn Web benchmark on the postgres engine showed database/sql lock\n\
+    \    acquisition dominating the query path: the sql.DB pool mutex plus a\n   \
+    \ per-conn mutex on every call, and driver.Value boxing per parameter.\n    system:tinygodriver\
+    \ measured the same seam at 6 vs 15 allocs and 352 vs\n    754 B/op per query,\
+    \ native vs pgxstdlib\n  upstream_seams_now_exist:\n    driver: system:tinygodriver\
+    \ v1.1.10 database/pgx re-exports the pgx-native\n      API on both compilers,\
+    \ with the CancelRequest watcher and fd-carrying\n      dialer installed by its\
+    \ ParseConfig; pgxstdlib is now a layer over it\n    binding: system:tinybind\
+    \ v0.4.2 sqlbind adds the Rows cursor interface,\n      RowsQuerier, UnimplementedQuerier,\
+    \ and the sqlbind.Query dispatch point\n      (its sql-driver-agnostic-rows requirement,\
+    \ requested by this project\n      2026-08-07), so generated row-returning statements\
+    \ no longer require a\n      handle that constructs *sql.Rows\nregistry_extension:\n\
+    \  contract: >\n    database.Engine gains an optional native-open capability next\
+    \ to Open;\n    an engine that registers none behaves exactly as today, so sqlite\
+    \ and\n    mysql change nothing\n  handle: >\n    the native opener returns a\
+    \ framework-defined interface, not a pgx type,\n    per the requirement:contrib-postgresql\
+    \ non_goal; the interface must cover\n    what api:rdb-middleware startup does\
+    \ with a *sql.DB today: pool bounds,\n    ping within connect_timeout, close,\
+    \ and executor construction\n  resolution_unchanged: scheme selection, dialect\
+    \ derivation, KeepScheme\n    handoff, linking by blank import, and rule:dsn-redaction\
+    \ all stay as\n    rule:rdb-dsn-resolution records\n  registration: the postgres\
+    \ engine package registers both openers from the\n    same init, per decision:import-registered-session-plugins\n\
+    initialization:\n  selection: >\n    when the resolved engine offers a native\
+    \ opener, api:rdb-middleware opens\n    the connection through the bypass; the\
+    \ *sql.DB opener serves engines that\n    register nothing else. Selection is\
+    \ automatic with no config opt-out:\n    *sql.DB offers pgx nothing at request\
+    \ time, so a fallback option is not\n    provided (decided 2026-08-07), and the\
+    \ only *sql.DB uses that remain for\n    pgx are the sql_db_consumers_audit tooling\
+    \ cases\n  connection_set: >\n    data:database-connection-set holds native and\
+    \ *sql.DB connections in one\n    set, so a postgres-native default group coexists\
+    \ with a sqlite group;\n    group selection, round robin, and the request memo\
+    \ are path-agnostic\n  startup_summary: names the execution path per connection\
+    \ next to its label\n    and redacted DSN, so the active path is observable rather\
+    \ than inferred\n  readiness: the readiness probe pings a native connection through\
+    \ the native\n    handle, with the same per-connection unreadiness semantics\n\
+    pooling:\n  strategy: >\n    one surface on both compilers: tinygodriver v1.1.11\
+    \ ships\n    database/pgx/pgxpool in the same alias pattern as database/pgx (std\
+    \ binds\n    upstream pgx/v5 pgxpool, native binds the vendored fork), so this\n\
+    \    framework imports one path and never imports jackc pgxpool directly. The\n\
+    \    same release renamed pgxstdlib to database/pgx/stdlib, mirroring upstream\n\
+    \  bounds_mapping: >\n    MaxOpenConns maps to pgxpool MaxConns, ConnMaxLifetime\
+    \ to\n    MaxConnLifetime, ConnMaxIdleTime to MaxConnIdleTime; MaxIdleConns has\
+    \ no\n    pgxpool equivalent — the pool prunes idle connections by time, not count\
+    \ —\n    and is a documented divergence, not a silent drop\nexecutor_surface:\n\
+    \  interfaces: the native connection's executor implements sqlbind Execer and\n\
+    \    RowsQuerier and embeds UnimplementedQuerier, so it satisfies the\n    sqlbind.SQLExecutor\
+    \ contract generated code and the resolvers consume\n  dispatch: generated one/optional/many\
+    \ bodies reach it through sqlbind.Query,\n    which prefers RowsQuerier; flow:sql-generation\
+    \ output regenerated against\n    tinybind v0.4.2 is required once, because pre-seam\
+    \ bodies call\n    QueryContext directly and hit the UnimplementedQuerier error\n\
+    \  instrumentation: api:instrumented-sql-executor wraps the same interfaces, so\n\
+    \    flow:query-diagnostics, the query log, and rule:explain-dialect-support\n\
+    \    JSON plan capture work unchanged on the native path per\n    decision:executor-seam-instrumentation\n\
+    \  transactions: >\n    api:transaction-runner and data:transaction-scope must\
+    \ run on the native\n    transaction, including the savepoint nesting rule:savepoint-dialect-support\n\
+    \    and requirement:parallel-database-tests depend on; the scope's *sql.Tx\n\
+    \    ownership becomes an abstraction both paths satisfy\nsql_db_consumers_audit:\n\
+    \  stays_database_sql:\n    - api:migration-runner and seeding via system:goose\
+    \ and system:dbtestify\n      open their own handle through pgx/stdlib from MigrationDSN,\
+    \ so tooling\n      is untouched by the bypass\n    - system:pw-cli, which links\
+    \ every engine for any project\n    - the api:test-run bridge opens a second pgx/stdlib\
+    \ handle beside a native\n      connection for schema preparation and the pre-transaction\
+    \ seed; its\n      transaction mode runs on the native path since system:dbtestify\
+    \ v0.5.0\n      made its Executor driver-agnostic, with the shared test transaction\n\
+    \      reached through the scope's ActiveExecutor\n  moved_to_the_executor_seam:\n\
+    \    - sessionstore.NewStore and the Dialect.Columns contract take\n      sqlbind.SQLExecutor\
+    \ now, and data:request-context-capsule carries a\n      SessionResources.Executor\
+    \ beside the compatibility DB field\n    - requirement:dev-data-pane connections\
+    \ run on sqlbind.Query with any-typed\n      scans, because sql.RawBytes exists\
+    \ only inside database/sql\n  reports_absence:\n    - pw.DB(ctx) and pwruntime.Connection.DB\
+    \ have no *sql.DB on a native\n      connection; the accessor reports absence\
+    \ rather than fabricating a\n      handle, and pwruntime.ConnectionExecutor is\
+    \ the surface that exists on\n      every connection\nversion_pins:\n  tinygodriver:\
+    \ \">= v1.1.11, which exports database/pgx/pgxpool on both compilers and renames\
+    \ pgxstdlib to database/pgx/stdlib\"\n  tinybind: \">= v0.4.2, moving the system:tinybind\
+    \ pin; regeneration of committed *_pw_gen.go accompanies the move per requirement:generated-code-version-tolerance\"\
+    \nverified:\n  - contract and runtime integration tests against postgres 17: exec\
+    \ with\n    affected counts, the sqlbind cursor, committed and rolled-back native\n\
+    \    transactions, savepoint nesting through the transaction runner, read-only\n\
+    \    refusal, DB absence, and the instrumented executor, all under -race\n  -\
+    \ dbseed against postgres 17 on the native executor: a pool-level Apply\n    committing\
+    \ per-dataset native transactions, an in-transaction Apply and\n    Assert observing\
+    \ uncommitted state and vanishing with the rollback, and a\n    mismatch reported\
+    \ as a diff\n  - \"benchmark on the same parallel SELECT, database/sql vs native:\
+    \ 15 vs 8\n    allocs, 812 vs 451 B/op, 34.9 vs 23.0 us/op on a loopback postgres\
+    \ 17\"\n  - tinygo 0.41.1 -scheduler=threads compiles a program importing the\
+    \ engine\n    with its native opener, and host go compiles the same source\nacceptance:\n\
+    \  - a postgres connection on host Go serves generated statements with no\n  \
+    \  sql.DB pool or per-conn mutex on the query path, and a parallel benchmark\n\
+    \    against the pgxstdlib baseline shows the alloc and contention win\n  - transaction\
+    \ runner tests, savepoint nesting, and read-only replica\n    selection pass unchanged\
+    \ on the native path\n  - query diagnostics captures a JSON plan through the instrumented\
+    \ executor\n    on the native path\n  - a TinyGo postgres build with -scheduler=threads\
+    \ compiles and serves\n    through the same database/pgx/pgxpool surface as host\
+    \ Go\n  - a mixed set of one native postgres group and one sqlite group starts,\n\
+    \    serves, and shuts down cleanly\n  - sqlite and mysql projects see no behavior\
+    \ change and no new required\n    regeneration beyond the tinybind v0.4.2 move\
+    \ itself\n  - credentials never reach logs or errors through the new path, per\n\
+    \    rule:dsn-redaction\nnon_goals:\n  - a framework-owned connection pool implementation;\
+    \ the pool is tinygodriver\n    database/pgx/pgxpool on both compilers\n  - a\
+    \ runtime *sql.DB fallback or opt-out for the pgx engine\n  - exposing pgx types\
+    \ in the framework public API; the escape hatch stays\n    the requirement:contrib-postgresql\
+    \ Raw path\n  - moving migration or seeding off database/sql\n  - widening the\
+    \ framework surface with Batch, CopyFrom, or LISTEN/NOTIFY;\n    still true, but\
+    \ this list assumed the escape hatch below stayed reachable\n    and the bypass\
+    \ is what removed it, which requirement:native-pgx-escape-hatch\n    repairs without\
+    \ widening anything\n```"
+  legacy_parse_issues:
+  - kind: legacy_parse_error
+    block: 0
+    message: "while scanning a simple key\n  in \"<unicode string>\", line 104, column\
+      \ 5:\n        affected counts, the sqlbind cur ... \n        ^\ncould not find\
+      \ expected ':'\n  in \"<unicode string>\", line 105, column 5:\n        transactions,\
+      \ savepoint nesting  ... \n        ^"
+relations:
+- relation: mentions
+  to: api:instrumented-sql-executor
+  resolution: resolved
+- relation: mentions
+  to: api:migration-runner
+  resolution: resolved
+- relation: mentions
+  to: api:rdb-middleware
+  resolution: resolved
+- relation: mentions
+  to: api:test-run
+  resolution: resolved
+- relation: mentions
+  to: api:transaction-runner
+  resolution: resolved
+- relation: mentions
+  to: data:database-connection-set
+  resolution: resolved
+- relation: mentions
+  to: data:request-context-capsule
+  resolution: resolved
+- relation: mentions
+  to: data:transaction-scope
+  resolution: resolved
+- relation: mentions
+  to: decision:executor-seam-instrumentation
+  resolution: resolved
+- relation: mentions
+  to: decision:import-registered-session-plugins
+  resolution: resolved
+- relation: mentions
+  to: flow:query-diagnostics
+  resolution: resolved
+- relation: mentions
+  to: flow:sql-generation
+  resolution: resolved
+- relation: mentions
+  to: requirement:contrib-postgresql
+  resolution: resolved
+- relation: mentions
+  to: requirement:dev-data-pane
+  resolution: resolved
+- relation: mentions
+  to: requirement:generated-code-version-tolerance
+  resolution: resolved
+- relation: mentions
+  to: requirement:native-pgx-escape-hatch
+  resolution: resolved
+- relation: mentions
+  to: requirement:parallel-database-tests
+  resolution: resolved
+- relation: mentions
+  to: rule:dsn-redaction
+  resolution: resolved
+- relation: mentions
+  to: rule:explain-dialect-support
+  resolution: resolved
+- relation: mentions
+  to: rule:rdb-dsn-resolution
+  resolution: resolved
+- relation: mentions
+  to: rule:savepoint-dialect-support
+  resolution: resolved
+- relation: mentions
+  to: system:dbtestify
+  resolution: resolved
+- relation: mentions
+  to: system:goose
+  resolution: resolved
+- relation: mentions
+  to: system:pw-cli
+  resolution: resolved
+- relation: mentions
+  to: system:tinybind
+  resolution: resolved
+- relation: mentions
+  to: system:tinygodriver
+  resolution: resolved

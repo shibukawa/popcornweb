@@ -1,0 +1,144 @@
+id: data:preference-hint-config
+type: data
+title: Preference Hint Runtime Config
+summary: The `html` binding gates preference reading, declares which client hints
+  are requested, and decides whether a cold navigation pays a retry for them.
+facts:
+  legacy_body: "The `html` binding gates preference reading, declares which client\
+    \ hints are requested, and decides whether a cold navigation pays a retry for\
+    \ them.\n\n```yaml\nprefix: html\nregistration: extends the binding of data:html-render-config\
+    \ rather than adding a second one, because these tune the same render\nkeys:\n\
+    \  html.preference_hints: bool gating requirement:user-preference-rendering as\
+    \ a whole\n  html.preference_cookie: name of the override cookie read by api:user-preference-accessors\n\
+    \  html.preference_accept_ch: string list of hint headers declared through Accept-CH\n\
+    \  html.preference_critical_ch: string list of hint headers additionally declared\
+    \ through Critical-CH\ndefaults:\n  html.preference_hints: \"false\"\n  html.preference_cookie:\
+    \ pw_pref\n  html.preference_accept_ch: empty\n  html.preference_critical_ch:\
+    \ empty\nwhy_off_by_default:\n  fact: an application with correct CSS already\
+    \ renders correctly, per decision:preference-signal-precedence\n  consequence:\
+    \ enabling this buys a server-chosen attribute and costs a Vary, so it is a choice\
+    \ an operator makes rather than one a scaffold makes\n  scaffold: api:cli-init\
+    \ writes no value, so a new project has nothing to turn off\nemission:\n  where:\
+    \ api:html-response, on the document path only, beside the Vary of policy:preference-vary-correctness\n\
+    \  accept_ch: emitted when preference_accept_ch is non-empty, teaching the client\
+    \ which hints to send on later requests to this origin\n  critical_ch: emitted\
+    \ only for headers also present in preference_accept_ch, so the pairing the client\
+    \ requires cannot be misconfigured\n  fragment: api:html-fragment-response emits\
+    \ neither, since decision:buffered-fragment-delivery answers a request whose document\
+    \ already declared them\n  not_a_head_tag: these are response headers; the head\
+    \ channel of decision:runtime-tag-injection carries nothing for this requirement\n\
+    critical_ch_costs_a_round_trip:\n  mechanism: a client that receives Critical-CH\
+    \ and did not send the listed hints discards the response and retries once with\
+    \ them attached, before rendering\n  bound: at most one retry per request, so\
+    \ it cannot loop\n  who_pays: the cold navigation to an origin, which decision:preference-signal-precedence\
+    \ records as the visit worth the most\n  separate_key_because: an operator who\
+    \ wants Accept-CH for later pages should not be forced to buy the retry for the\
+    \ first one\n  reach: Chromium only, and not on the standards track, so the retry\
+    \ must never be what makes an application correct\nrules:\n  - preference_hints\
+    \ false skips cookie and header parsing entirely, so every accessor reports absent\
+    \ and no Accept-CH is emitted\n  - a header in preference_critical_ch and absent\
+    \ from preference_accept_ch is a startup error, not a silently dropped value\n\
+    \  - Sec-CH-Viewport-Width may be declared, and never reaches Vary, per policy:preference-vary-correctness\n\
+    \  - an unrecognized header name is a startup error, so a typo does not become\
+    \ a hint that never arrives\n  - an empty preference_cookie disables override\
+    \ reading and leaves hint resolution intact\n  - reject a cookie name that is\
+    \ not a valid token at startup\n  - values are read per response from the request\
+    \ context, like every other key of data:html-render-config\nsources: config.toml,\
+    \ environment variable, and CLI flag, under decision:independent-runtime-config-bindings\n\
+    unparsed_default: registration seeds the target with the documented values, for\
+    \ the reason data:html-render-config gives\nconsumers:\n  - api:html-response\n\
+    \  - api:user-preference-accessors\n  - policy:preference-vary-correctness\n```"
+  prefix: html
+  registration: extends the binding of data:html-render-config rather than adding
+    a second one, because these tune the same render
+  keys:
+    html.preference_hints: bool gating requirement:user-preference-rendering as a
+      whole
+    html.preference_cookie: name of the override cookie read by api:user-preference-accessors
+    html.preference_accept_ch: string list of hint headers declared through Accept-CH
+    html.preference_critical_ch: string list of hint headers additionally declared
+      through Critical-CH
+  defaults:
+    html.preference_hints: 'false'
+    html.preference_cookie: pw_pref
+    html.preference_accept_ch: empty
+    html.preference_critical_ch: empty
+  why_off_by_default:
+    fact: an application with correct CSS already renders correctly, per decision:preference-signal-precedence
+    consequence: enabling this buys a server-chosen attribute and costs a Vary, so
+      it is a choice an operator makes rather than one a scaffold makes
+    scaffold: api:cli-init writes no value, so a new project has nothing to turn off
+  emission:
+    where: api:html-response, on the document path only, beside the Vary of policy:preference-vary-correctness
+    accept_ch: emitted when preference_accept_ch is non-empty, teaching the client
+      which hints to send on later requests to this origin
+    critical_ch: emitted only for headers also present in preference_accept_ch, so
+      the pairing the client requires cannot be misconfigured
+    fragment: api:html-fragment-response emits neither, since decision:buffered-fragment-delivery
+      answers a request whose document already declared them
+    not_a_head_tag: these are response headers; the head channel of decision:runtime-tag-injection
+      carries nothing for this requirement
+  critical_ch_costs_a_round_trip:
+    mechanism: a client that receives Critical-CH and did not send the listed hints
+      discards the response and retries once with them attached, before rendering
+    bound: at most one retry per request, so it cannot loop
+    who_pays: the cold navigation to an origin, which decision:preference-signal-precedence
+      records as the visit worth the most
+    separate_key_because: an operator who wants Accept-CH for later pages should not
+      be forced to buy the retry for the first one
+    reach: Chromium only, and not on the standards track, so the retry must never
+      be what makes an application correct
+  rules:
+  - preference_hints false skips cookie and header parsing entirely, so every accessor
+    reports absent and no Accept-CH is emitted
+  - a header in preference_critical_ch and absent from preference_accept_ch is a startup
+    error, not a silently dropped value
+  - Sec-CH-Viewport-Width may be declared, and never reaches Vary, per policy:preference-vary-correctness
+  - an unrecognized header name is a startup error, so a typo does not become a hint
+    that never arrives
+  - an empty preference_cookie disables override reading and leaves hint resolution
+    intact
+  - reject a cookie name that is not a valid token at startup
+  - values are read per response from the request context, like every other key of
+    data:html-render-config
+  sources: config.toml, environment variable, and CLI flag, under decision:independent-runtime-config-bindings
+  unparsed_default: registration seeds the target with the documented values, for
+    the reason data:html-render-config gives
+  consumers:
+  - api:html-response
+  - api:user-preference-accessors
+  - policy:preference-vary-correctness
+relations:
+- relation: mentions
+  to: api:cli-init
+  resolution: resolved
+- relation: mentions
+  to: api:html-fragment-response
+  resolution: resolved
+- relation: mentions
+  to: api:html-response
+  resolution: resolved
+- relation: mentions
+  to: api:user-preference-accessors
+  resolution: resolved
+- relation: mentions
+  to: data:html-render-config
+  resolution: resolved
+- relation: mentions
+  to: decision:buffered-fragment-delivery
+  resolution: resolved
+- relation: mentions
+  to: decision:independent-runtime-config-bindings
+  resolution: resolved
+- relation: mentions
+  to: decision:preference-signal-precedence
+  resolution: resolved
+- relation: mentions
+  to: decision:runtime-tag-injection
+  resolution: resolved
+- relation: mentions
+  to: policy:preference-vary-correctness
+  resolution: resolved
+- relation: mentions
+  to: requirement:user-preference-rendering
+  resolution: resolved

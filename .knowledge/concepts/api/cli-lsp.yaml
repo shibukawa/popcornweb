@@ -1,0 +1,110 @@
+id: api:cli-lsp
+type: api
+title: pw lsp
+summary: pw lsp speaks the Language Server Protocol over stdio for one workspace,
+  exposing the same analysis api:cli-generate and api:cli-doctor already run.
+facts:
+  legacy_body: "pw lsp speaks the Language Server Protocol over stdio for one workspace,\
+    \ exposing the same analysis api:cli-generate and api:cli-doctor already run.\n\
+    \n```yaml\nstatus: stdio transport, the data:project-config model, syntax diagnostics,\
+    \ documentSymbol, and workspace/symbol implemented at internal/pwlsp; the capabilities\
+    \ needing a resolved type are unimplemented\nusage: \"pw lsp [--stdio] [--log=path]\
+    \ [--root=path]\"\nrequirement: requirement:pw-language-server\nmechanism: decision:language-server-in-pw-cli\n\
+    transport:\n  default: stdio, the only mode the first release ships\n  reason:\
+    \ a socket mode adds an authentication question that no editor client here needs\n\
+    inputs:\n  root: the workspace root; the project is the nearest data:project-config\
+    \ below or at it\n  log: a file for protocol and diagnostic tracing, off by default\n\
+    analysis_reuse:\n  parsers: the system:tinybind template parsers, unchanged, so\
+    \ a diagnostic position matches a generation error position\n  project: the data:project-config\
+    \ loader, so an unknown key is the same error in both commands\n  checks: the\
+    \ decision:shared-check-catalog runner, restricted to checks whose inputs an editor\
+    \ can build\n  dialect: data:project-config project.database selects the SQL dialect,\
+    \ exactly as flow:sql-generation does\nboundaries:\n  writes: none; the command\
+    \ is read-only, per policy:editor-tool-execution\n  network: none; the api:cli-doctor\
+    \ online check set is disabled\n  generation: never; an editor that wants generated\
+    \ output runs api:cli-generate through requirement:editor-tasks\n  environment:\
+    \ analysis runs for one data:runtime-environment token, defaulting to dev, and\
+    \ never injects one into a process\nfailure:\n  no_project: serve syntax-only\
+    \ analysis and report the absent project once\n  unreadable_project: report the\
+    \ load error as a workspace diagnostic and keep serving syntax analysis\n  panic:\
+    \ exit nonzero with the protocol closed cleanly, so the client's restart policy\
+    \ applies\ndistribution: shipped in the same binary as every other command, per\
+    \ requirement:cli-distribution and flow:cli-release\n```"
+  status: stdio transport, the data:project-config model, syntax diagnostics, documentSymbol,
+    and workspace/symbol implemented at internal/pwlsp; the capabilities needing a
+    resolved type are unimplemented
+  usage: pw lsp [--stdio] [--log=path] [--root=path]
+  requirement: requirement:pw-language-server
+  mechanism: decision:language-server-in-pw-cli
+  transport:
+    default: stdio, the only mode the first release ships
+    reason: a socket mode adds an authentication question that no editor client here
+      needs
+  inputs:
+    root: the workspace root; the project is the nearest data:project-config below
+      or at it
+    log: a file for protocol and diagnostic tracing, off by default
+  analysis_reuse:
+    parsers: the system:tinybind template parsers, unchanged, so a diagnostic position
+      matches a generation error position
+    project: the data:project-config loader, so an unknown key is the same error in
+      both commands
+    checks: the decision:shared-check-catalog runner, restricted to checks whose inputs
+      an editor can build
+    dialect: data:project-config project.database selects the SQL dialect, exactly
+      as flow:sql-generation does
+  boundaries:
+    writes: none; the command is read-only, per policy:editor-tool-execution
+    network: none; the api:cli-doctor online check set is disabled
+    generation: never; an editor that wants generated output runs api:cli-generate
+      through requirement:editor-tasks
+    environment: analysis runs for one data:runtime-environment token, defaulting
+      to dev, and never injects one into a process
+  failure:
+    no_project: serve syntax-only analysis and report the absent project once
+    unreadable_project: report the load error as a workspace diagnostic and keep serving
+      syntax analysis
+    panic: exit nonzero with the protocol closed cleanly, so the client's restart
+      policy applies
+  distribution: shipped in the same binary as every other command, per requirement:cli-distribution
+    and flow:cli-release
+relations:
+- relation: mentions
+  to: api:cli-doctor
+  resolution: resolved
+- relation: mentions
+  to: api:cli-generate
+  resolution: resolved
+- relation: mentions
+  to: data:project-config
+  resolution: resolved
+- relation: mentions
+  to: data:runtime-environment
+  resolution: resolved
+- relation: mentions
+  to: decision:language-server-in-pw-cli
+  resolution: resolved
+- relation: mentions
+  to: decision:shared-check-catalog
+  resolution: resolved
+- relation: mentions
+  to: flow:cli-release
+  resolution: resolved
+- relation: mentions
+  to: flow:sql-generation
+  resolution: resolved
+- relation: mentions
+  to: policy:editor-tool-execution
+  resolution: resolved
+- relation: mentions
+  to: requirement:cli-distribution
+  resolution: resolved
+- relation: mentions
+  to: requirement:editor-tasks
+  resolution: resolved
+- relation: mentions
+  to: requirement:pw-language-server
+  resolution: resolved
+- relation: mentions
+  to: system:tinybind
+  resolution: resolved

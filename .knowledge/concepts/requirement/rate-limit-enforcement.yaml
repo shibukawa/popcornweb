@@ -1,0 +1,407 @@
+id: requirement:rate-limit-enforcement
+type: requirement
+title: Rate Limit Enforcement
+summary: 'The decision half of a request limit: who is counted, over what scope, in
+  which store, by which algorithm, and what happens when the store is unreachable.'
+facts:
+  legacy_body: "The decision half of a request limit: who is counted, over what scope,\
+    \ in which store, by which algorithm, and what happens when the store is unreachable.\n\
+    \n```yaml\nstatus: implemented 2026-08-14 for the arrival limiter on both transports;\
+    \ the failure-outcome counter policy:reauthentication asks for is the one piece\
+    \ not built\ncompletes: requirement:rate-limit-problem-responses, whose closing\
+    \ rule defers client identity, counting scope, storage, and limiting algorithm;\
+    \ this concept answers those four and adds nothing to the wire\nalready_built:\n\
+    \  verified: 2026-08-14, by reading the tree\n  wire: the 429 problem, RateLimit\
+    \ carrying limit, remaining, reset, and retryAfter, Retry-After and X-RateLimit-*\
+    \ serialization, Cache-Control no-store, the header carry-through in the error\
+    \ renderer, and the scaffolded 429 template\n  limiter: api:rate-limit-limiter,\
+    \ the shared decision half in pwratelimit driven by a frame pair in each transport,\
+    \ with the memory counter built in and the redis counter behind a blank import\n\
+    \  tested: pwratelimit/pwratelimit_test.go, pw/ratelimit_test.go, pwfast/ratelimit_test.go,\
+    \ and ratelimitstore/redis/backend_test.go behind scripts/test-ratelimit-redis.sh\n\
+    \  not_built: the failure-outcome counter of placement.failure_counting; plugin/auth\
+    \ counts nothing into the limiter's store today, so the reauthentication acceptance\
+    \ below is the open one\nwaiting_consumers:\n  reauthentication: policy:reauthentication\
+    \ requires repeated failures rate-limited per session and per account; the store\
+    \ it would count in now exists, and the counting call from api:authentication-endpoints\
+    \ is the missing half\n  presence:\n    asks_for: requirement:presence-signal\
+    \ requires its endpoint bounded and rate-limited\n    gets: the identity bucket,\
+    \ since no per-route rule exists to give it its own\n    consequence: a presence\
+    \ tick spends the caller's budget like any other request, so the configured limit\
+    \ is sized with the tick interval in mind rather than against page views alone;\
+    \ an endpoint-specific bound is an API gateway rule if a deployment wants one\n\
+    \  live: the process-wide admission control open question of policy:live-subscription-bounds\n\
+    \  finding: three concepts depended on a limiter this framework did not have,\
+    \ which is why this became a requirement; the arrival consumers are served now\
+    \ and reauthentication still waits on failure counting\ndivision_of_labor:\n \
+    \ premise: decision:local-tls-proxy-boundary and decision:ingress-tls-termination\
+    \ put a proxy in front of the normal deployment, and that proxy already limits\
+    \ by address\n  edge_owns:\n    - first-line volumetric defence, where the useful\
+    \ place to drop a flood is before it costs a connection\n    - per-route and per-operation\
+    \ quotas, which an API gateway expresses and this framework deliberately does\
+    \ not\n  framework_owns:\n    - per-authenticated-subject limits, which the edge\
+    \ cannot compute because it does not resolve the session\n    - a bounded per-address\
+    \ floor, as depth behind the edge rather than in place of it, per the two_layer_flood_defence\
+    \ of data:rate-limit-runtime-config\n    - a process ceiling, which is the only\
+    \ layer here that sees a distributed flood, since such a flood keeps every source\
+    \ under any per-address value by construction\n    - failure-outcome limits, where\
+    \ what is counted is a result and not an arrival\n  consequence: per-operation\
+    \ quotas are not this framework's job at all, and volumetric defence is the edge's\
+    \ first line with two bounded backstops here, which is what keeps this a simple\
+    \ implementation\n  what_this_bought: one bucket keyed on identity, one unkeyed\
+    \ ceiling, and a counter the authentication endpoints will call for failure counting;\
+    \ the first two are api:rate-limit-limiter and the third is the not_built remainder\n\
+    identity:\n  key: the authenticated subject where there is one, and the resolved\
+    \ client address otherwise\n  address_source: requirement:proxied-request-identity,\
+    \ which is a hard dependency; an unresolved address behind a proxy collapses every\
+    \ anonymous caller into one bucket, which turns a limit into an outage\n  shared_with:\
+    \ the client_key of policy:live-subscription-bounds, which computes the same thing\
+    \ today and must not compute it twice\n  never_a_key: a session identifier, since\
+    \ rotating one would reset a limit, and an unauthenticated caller controls when\
+    \ that happens\nscope:\n  granularity: one bucket per identity across every route,\
+    \ and that is the whole granularity; there are no per-route rules and no pattern\
+    \ grammar to configure\n  process_wide: a total arrival ceiling, unkeyed, which\
+    \ is both the shedding valve answering the open question policy:live-subscription-bounds\
+    \ left about where admission control belongs, and the only layer that sees a distributed\
+    \ flood\n  address_has_no_off_position: the anonymous bucket is always bounded,\
+    \ unlike the subject bucket, because it is the only one an unauthenticated flood\
+    \ meets and an unlimited value there is an absent control rather than a permissive\
+    \ one\n  composition: a request meets the process ceiling first and the identity\
+    \ bucket second, which is the placement order below rather than a separate rule,\
+    \ and the first refusal answers; the response never says which refused, for the\
+    \ reason policy:csrf-protection gives about naming the failed half\n  fixed_exclusions:\n\
+    \    members: policy:operational-endpoints and the mount of requirement:public-asset-delivery\n\
+    \    why_not_optional: a readiness probe arrives from the proxy on the same address\
+    \ as every anonymous caller and would exhaust that bucket by itself, and one page\
+    \ view fetches many assets, so counting either turns the limit into an outage\
+    \ on the first deploy\n    not_configurable: these are endpoints the framework\
+    \ owns and routes, so the carve-out is a fact about them rather than a policy\
+    \ a deployment tunes\n  no_per_route_rules:\n    delegated: an API gateway, which\
+    \ is where a per-operation quota belongs and where a deployment needing one already\
+    \ has the surface\n    why: a pattern grammar, a precedence order, and a per-rule\
+    \ store key are most of the cost of a limiter, and they buy a capability the boundary\
+    \ in front already sells\n    still_covered: policy:reauthentication does not\
+    \ need a route rule, because what it bounds is a failure count the endpoint reports\
+    \ through failure_counting rather than an arrival a pattern would match\nstorage:\n\
+    \  need: atomic increment with expiry, which is the whole interface\n  seam: a\
+    \ backend selection like the session backend, not a new subsystem\n  configuration:\
+    \ data:rate-limit-runtime-config\n  in_process:\n    default: yes, because a limiter\
+    \ that requires a dependency to start is one nobody enables\n    stated_limit:\
+    \ N replicas enforce N times the configured limit, which must be documented at\
+    \ the configuration key rather than discovered in production\n  redis:\n    assumed:\
+    \ the deployed backend, adding a counter to the expiring-record and one-time-token\
+    \ use cases of requirement:contrib-redis-valkey\n    operation: increment and\
+    \ set an expiry on first write, which is one round trip and the reason this backend\
+    \ is the one that ships\n  not_now: the SQL, DynamoDB, and Firestore session backends\
+    \ can all express the operation, and none is committed; a second backend is worth\
+    \ adding when a deployment has no Redis rather than in advance\n  never: a cookie\
+    \ or any client-held counter, which is a counter the counted party edits\nalgorithm:\n\
+    \  constrained_by_the_wire: RateLimit carries a Remaining count and a Reset instant,\
+    \ which is a window counter; a token bucket has no reset instant and a fractional\
+    \ remaining, so the shipped response contract already excluded that family\n \
+    \ choice: fixed window\n  known_cost: a caller can send twice the limit across\
+    \ a window boundary\n  why_acceptable: the framework's scope is a per-identity\
+    \ allowance, where the boundary burst is a doubled allowance rather than a flood;\
+    \ volumetric protection is the edge's, per division_of_labor\n  upgrade_path:\
+    \ a sliding window counter fits the same wire shape at one extra read, and is\
+    \ what to reach for if the boundary burst ever matters\nfailure_mode:\n  unreachable_store:\
+    \ fail open, admit the request, and count it\n  why: the deployment still has\
+    \ the edge's own limits, so failing open degrades to edge-only protection rather\
+    \ than to none; failing closed converts a store blip into an outage of every limited\
+    \ route at once, including login\n  observability: a counter for admissions made\
+    \ without a working store, because a limiter that is silently not limiting is\
+    \ the worst of the three states\n  advisory: rule:configuration-advisories reports\
+    \ an enabled limiter with an in-process store, since that configuration is correct\
+    \ on one replica and wrong on the deployment shape this framework targets\nplacement:\n\
+    \  identity_bucket: a framework extension below the authentication slot, because\
+    \ one bucket keyed on subject-or-address cannot know which it is until the subject\
+    \ is resolved; this is the same placement policy:csrf-protection takes and for\
+    \ the same reason\n  process_ceiling: the outer stack, since an unkeyed arrival\
+    \ count needs nothing resolved and a valve is worth less the further in it sits\n\
+    \  failure_counting:\n    distinct: what policy:reauthentication needs is a count\
+    \ of failed outcomes, not of arrivals, and no middleware can see an outcome the\
+    \ handler has not produced yet\n    shape: the limiter exposes the counter, and\
+    \ api:authentication-endpoints decides what to count into it\n    consequence:\
+    \ the surface is a counter with an increment and a check, not only a middleware\n\
+    \    thresholds: declared by data:authentication-runtime-config rather than data:rate-limit-runtime-config,\
+    \ because a count of failed attempts over a long period is a different shape from\
+    \ an arrival rate and only the authentication plugin knows what a failure is\n\
+    acceptance:\n  - a bucket keyed on subject counts one browser once across replicas\
+    \ when a shared store is configured\n  - an anonymous caller behind a proxy is\
+    \ counted per client, not per proxy node, which is the requirement:proxied-request-identity\
+    \ dependency made testable\n  - a readiness probe and a page's asset requests\
+    \ consume no budget, which is the fixed_exclusions carve-out made testable and\
+    \ is what fails first if it is dropped\n  - an unreachable store admits requests\
+    \ and increments the degraded counter\n  - a refusal carries the metadata requirement:rate-limit-problem-responses\
+    \ already validates, and names nothing about why\n  - a failed authentication\
+    \ increments an account-scoped counter that an arriving request does not\n  -\
+    \ the process ceiling refuses with the same 429 as the identity bucket, so a client\
+    \ sees one behaviour from two mechanisms\n  - a configuration with zero per_address\
+    \ is refused at startup, and one whose per_address exceeds a positive process\
+    \ is refused with both values named\n  - a flood spread across many addresses,\
+    \ each staying under per_address, is refused by the process ceiling and by nothing\
+    \ else, which is the case that justifies that key\nopen_questions:\n  - none blocking;\
+    \ per-route granularity was considered and delegated to an API gateway, and the\
+    \ process-wide valve refuses rather than degrades, since degradation is a property\
+    \ of a live response rather than of an arrival\n```"
+  status: implemented 2026-08-14 for the arrival limiter on both transports; the failure-outcome
+    counter policy:reauthentication asks for is the one piece not built
+  completes: requirement:rate-limit-problem-responses, whose closing rule defers client
+    identity, counting scope, storage, and limiting algorithm; this concept answers
+    those four and adds nothing to the wire
+  already_built:
+    verified: 2026-08-14, by reading the tree
+    wire: the 429 problem, RateLimit carrying limit, remaining, reset, and retryAfter,
+      Retry-After and X-RateLimit-* serialization, Cache-Control no-store, the header
+      carry-through in the error renderer, and the scaffolded 429 template
+    limiter: api:rate-limit-limiter, the shared decision half in pwratelimit driven
+      by a frame pair in each transport, with the memory counter built in and the
+      redis counter behind a blank import
+    tested: pwratelimit/pwratelimit_test.go, pw/ratelimit_test.go, pwfast/ratelimit_test.go,
+      and ratelimitstore/redis/backend_test.go behind scripts/test-ratelimit-redis.sh
+    not_built: the failure-outcome counter of placement.failure_counting; plugin/auth
+      counts nothing into the limiter's store today, so the reauthentication acceptance
+      below is the open one
+  waiting_consumers:
+    reauthentication: policy:reauthentication requires repeated failures rate-limited
+      per session and per account; the store it would count in now exists, and the
+      counting call from api:authentication-endpoints is the missing half
+    presence:
+      asks_for: requirement:presence-signal requires its endpoint bounded and rate-limited
+      gets: the identity bucket, since no per-route rule exists to give it its own
+      consequence: a presence tick spends the caller's budget like any other request,
+        so the configured limit is sized with the tick interval in mind rather than
+        against page views alone; an endpoint-specific bound is an API gateway rule
+        if a deployment wants one
+    live: the process-wide admission control open question of policy:live-subscription-bounds
+    finding: three concepts depended on a limiter this framework did not have, which
+      is why this became a requirement; the arrival consumers are served now and reauthentication
+      still waits on failure counting
+  division_of_labor:
+    premise: decision:local-tls-proxy-boundary and decision:ingress-tls-termination
+      put a proxy in front of the normal deployment, and that proxy already limits
+      by address
+    edge_owns:
+    - first-line volumetric defence, where the useful place to drop a flood is before
+      it costs a connection
+    - per-route and per-operation quotas, which an API gateway expresses and this
+      framework deliberately does not
+    framework_owns:
+    - per-authenticated-subject limits, which the edge cannot compute because it does
+      not resolve the session
+    - a bounded per-address floor, as depth behind the edge rather than in place of
+      it, per the two_layer_flood_defence of data:rate-limit-runtime-config
+    - a process ceiling, which is the only layer here that sees a distributed flood,
+      since such a flood keeps every source under any per-address value by construction
+    - failure-outcome limits, where what is counted is a result and not an arrival
+    consequence: per-operation quotas are not this framework's job at all, and volumetric
+      defence is the edge's first line with two bounded backstops here, which is what
+      keeps this a simple implementation
+    what_this_bought: one bucket keyed on identity, one unkeyed ceiling, and a counter
+      the authentication endpoints will call for failure counting; the first two are
+      api:rate-limit-limiter and the third is the not_built remainder
+  identity:
+    key: the authenticated subject where there is one, and the resolved client address
+      otherwise
+    address_source: requirement:proxied-request-identity, which is a hard dependency;
+      an unresolved address behind a proxy collapses every anonymous caller into one
+      bucket, which turns a limit into an outage
+    shared_with: the client_key of policy:live-subscription-bounds, which computes
+      the same thing today and must not compute it twice
+    never_a_key: a session identifier, since rotating one would reset a limit, and
+      an unauthenticated caller controls when that happens
+  scope:
+    granularity: one bucket per identity across every route, and that is the whole
+      granularity; there are no per-route rules and no pattern grammar to configure
+    process_wide: a total arrival ceiling, unkeyed, which is both the shedding valve
+      answering the open question policy:live-subscription-bounds left about where
+      admission control belongs, and the only layer that sees a distributed flood
+    address_has_no_off_position: the anonymous bucket is always bounded, unlike the
+      subject bucket, because it is the only one an unauthenticated flood meets and
+      an unlimited value there is an absent control rather than a permissive one
+    composition: a request meets the process ceiling first and the identity bucket
+      second, which is the placement order below rather than a separate rule, and
+      the first refusal answers; the response never says which refused, for the reason
+      policy:csrf-protection gives about naming the failed half
+    fixed_exclusions:
+      members: policy:operational-endpoints and the mount of requirement:public-asset-delivery
+      why_not_optional: a readiness probe arrives from the proxy on the same address
+        as every anonymous caller and would exhaust that bucket by itself, and one
+        page view fetches many assets, so counting either turns the limit into an
+        outage on the first deploy
+      not_configurable: these are endpoints the framework owns and routes, so the
+        carve-out is a fact about them rather than a policy a deployment tunes
+    no_per_route_rules:
+      delegated: an API gateway, which is where a per-operation quota belongs and
+        where a deployment needing one already has the surface
+      why: a pattern grammar, a precedence order, and a per-rule store key are most
+        of the cost of a limiter, and they buy a capability the boundary in front
+        already sells
+      still_covered: policy:reauthentication does not need a route rule, because what
+        it bounds is a failure count the endpoint reports through failure_counting
+        rather than an arrival a pattern would match
+  storage:
+    need: atomic increment with expiry, which is the whole interface
+    seam: a backend selection like the session backend, not a new subsystem
+    configuration: data:rate-limit-runtime-config
+    in_process:
+      default: yes, because a limiter that requires a dependency to start is one nobody
+        enables
+      stated_limit: N replicas enforce N times the configured limit, which must be
+        documented at the configuration key rather than discovered in production
+    redis:
+      assumed: the deployed backend, adding a counter to the expiring-record and one-time-token
+        use cases of requirement:contrib-redis-valkey
+      operation: increment and set an expiry on first write, which is one round trip
+        and the reason this backend is the one that ships
+    not_now: the SQL, DynamoDB, and Firestore session backends can all express the
+      operation, and none is committed; a second backend is worth adding when a deployment
+      has no Redis rather than in advance
+    never: a cookie or any client-held counter, which is a counter the counted party
+      edits
+  algorithm:
+    constrained_by_the_wire: RateLimit carries a Remaining count and a Reset instant,
+      which is a window counter; a token bucket has no reset instant and a fractional
+      remaining, so the shipped response contract already excluded that family
+    choice: fixed window
+    known_cost: a caller can send twice the limit across a window boundary
+    why_acceptable: the framework's scope is a per-identity allowance, where the boundary
+      burst is a doubled allowance rather than a flood; volumetric protection is the
+      edge's, per division_of_labor
+    upgrade_path: a sliding window counter fits the same wire shape at one extra read,
+      and is what to reach for if the boundary burst ever matters
+  failure_mode:
+    unreachable_store: fail open, admit the request, and count it
+    why: the deployment still has the edge's own limits, so failing open degrades
+      to edge-only protection rather than to none; failing closed converts a store
+      blip into an outage of every limited route at once, including login
+    observability: a counter for admissions made without a working store, because
+      a limiter that is silently not limiting is the worst of the three states
+    advisory: rule:configuration-advisories reports an enabled limiter with an in-process
+      store, since that configuration is correct on one replica and wrong on the deployment
+      shape this framework targets
+  placement:
+    identity_bucket: a framework extension below the authentication slot, because
+      one bucket keyed on subject-or-address cannot know which it is until the subject
+      is resolved; this is the same placement policy:csrf-protection takes and for
+      the same reason
+    process_ceiling: the outer stack, since an unkeyed arrival count needs nothing
+      resolved and a valve is worth less the further in it sits
+    failure_counting:
+      distinct: what policy:reauthentication needs is a count of failed outcomes,
+        not of arrivals, and no middleware can see an outcome the handler has not
+        produced yet
+      shape: the limiter exposes the counter, and api:authentication-endpoints decides
+        what to count into it
+      consequence: the surface is a counter with an increment and a check, not only
+        a middleware
+      thresholds: declared by data:authentication-runtime-config rather than data:rate-limit-runtime-config,
+        because a count of failed attempts over a long period is a different shape
+        from an arrival rate and only the authentication plugin knows what a failure
+        is
+  acceptance:
+  - a bucket keyed on subject counts one browser once across replicas when a shared
+    store is configured
+  - an anonymous caller behind a proxy is counted per client, not per proxy node,
+    which is the requirement:proxied-request-identity dependency made testable
+  - a readiness probe and a page's asset requests consume no budget, which is the
+    fixed_exclusions carve-out made testable and is what fails first if it is dropped
+  - an unreachable store admits requests and increments the degraded counter
+  - a refusal carries the metadata requirement:rate-limit-problem-responses already
+    validates, and names nothing about why
+  - a failed authentication increments an account-scoped counter that an arriving
+    request does not
+  - the process ceiling refuses with the same 429 as the identity bucket, so a client
+    sees one behaviour from two mechanisms
+  - a configuration with zero per_address is refused at startup, and one whose per_address
+    exceeds a positive process is refused with both values named
+  - a flood spread across many addresses, each staying under per_address, is refused
+    by the process ceiling and by nothing else, which is the case that justifies that
+    key
+  open_questions:
+  - none blocking; per-route granularity was considered and delegated to an API gateway,
+    and the process-wide valve refuses rather than degrades, since degradation is
+    a property of a live response rather than of an arrival
+acceptance:
+  item-f8d03fc2c120f9f1:
+    text: a bucket keyed on subject counts one browser once across replicas when a
+      shared store is configured
+  item-1385484d74943d08:
+    text: an anonymous caller behind a proxy is counted per client, not per proxy
+      node, which is the requirement:proxied-request-identity dependency made testable
+  item-ae992353657a11c7:
+    text: a readiness probe and a page's asset requests consume no budget, which is
+      the fixed_exclusions carve-out made testable and is what fails first if it is
+      dropped
+  item-f85b2b881cf1c47f:
+    text: an unreachable store admits requests and increments the degraded counter
+  item-4e370b5a5df120fb:
+    text: a refusal carries the metadata requirement:rate-limit-problem-responses
+      already validates, and names nothing about why
+  item-3ce6d3bfd81f1c6b:
+    text: a failed authentication increments an account-scoped counter that an arriving
+      request does not
+  item-9e82a2041dbbbb16:
+    text: the process ceiling refuses with the same 429 as the identity bucket, so
+      a client sees one behaviour from two mechanisms
+  item-e552792e7f49ff63:
+    text: a configuration with zero per_address is refused at startup, and one whose
+      per_address exceeds a positive process is refused with both values named
+  item-2a2b7f3388dcc554:
+    text: a flood spread across many addresses, each staying under per_address, is
+      refused by the process ceiling and by nothing else, which is the case that justifies
+      that key
+open_questions:
+  item-0721ba142dc96d1c:
+    text: none blocking; per-route granularity was considered and delegated to an
+      API gateway, and the process-wide valve refuses rather than degrades, since
+      degradation is a property of a live response rather than of an arrival
+relations:
+- relation: mentions
+  to: api:authentication-endpoints
+  resolution: resolved
+- relation: mentions
+  to: api:rate-limit-limiter
+  resolution: resolved
+- relation: mentions
+  to: data:authentication-runtime-config
+  resolution: resolved
+- relation: mentions
+  to: data:rate-limit-runtime-config
+  resolution: resolved
+- relation: mentions
+  to: decision:ingress-tls-termination
+  resolution: resolved
+- relation: mentions
+  to: decision:local-tls-proxy-boundary
+  resolution: resolved
+- relation: mentions
+  to: policy:csrf-protection
+  resolution: resolved
+- relation: mentions
+  to: policy:live-subscription-bounds
+  resolution: resolved
+- relation: mentions
+  to: policy:operational-endpoints
+  resolution: resolved
+- relation: mentions
+  to: policy:reauthentication
+  resolution: resolved
+- relation: mentions
+  to: requirement:contrib-redis-valkey
+  resolution: resolved
+- relation: mentions
+  to: requirement:presence-signal
+  resolution: resolved
+- relation: mentions
+  to: requirement:proxied-request-identity
+  resolution: resolved
+- relation: mentions
+  to: requirement:public-asset-delivery
+  resolution: resolved
+- relation: mentions
+  to: requirement:rate-limit-problem-responses
+  resolution: resolved
+- relation: mentions
+  to: rule:configuration-advisories
+  resolution: resolved

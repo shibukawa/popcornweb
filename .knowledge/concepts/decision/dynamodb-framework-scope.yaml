@@ -1,0 +1,109 @@
+id: decision:dynamodb-framework-scope
+type: decision
+title: What The DynamoDB Binding Layer Left To The Framework
+summary: system:tinybind v0.2.9 answered a downstream request by keeping three items,
+  sending two to the driver, and assigning four to Popcorn Web because the seams they
+  need already exist.
+facts:
+  legacy_body: "system:tinybind v0.2.9 answered a downstream request by keeping three\
+    \ items, sending two to the driver, and assigning four to Popcorn Web because\
+    \ the seams they need already exist.\n\n```yaml\nstatus: accepted upstream 2026-07-31,\
+    \ recorded here as the work allocation\nupstream_kept:\n  typed_queries: shipped;\
+    \ requirement:dynamodb-typed-queries consumes it\n  optimistic_locking: proposed,\
+    \ a version tag making a write conditional on the version it read\n  ttl_attribute:\
+    \ proposed and blocked, because the driver cannot apply a TTL\nsent_to_the_driver:\n\
+    \  ranked: by how much one change unlocks downstream\n  first: UpdateTimeToLive,\
+    \ which unlocks the session and auth-state backends and the TTL half of requirement:dynamodb-migration\n\
+    \  second: UpdateTable, without which a table carrying a secondary index can be\
+    \ created and never evolved\n  third: transactions, larger than the other two\
+    \ together\n  tracked_in: system:tinygodriver-dynamodb\nassigned_here:\n  all_four_specified:\
+    \ 2026-08-01\n  request_reproduction:\n    why_framework: the binding layer builds\
+    \ an item and hands it to the driver, so it never sees the request\n    specified_by:\
+    \ data:dynamodb-request-record and rule:dynamodb-reproduction-format\n  offline_doctor_checks:\n\
+    \    available: the generator reports every bound type and every tag error without\
+    \ a network, and returns artifacts without writing a file\n    framework_half:\
+    \ endpoint reachability and the deployed-versus-generated diff, because rule:dynamodb-table-naming\
+    \ makes the deployed name the framework's\n    specified_by: rule:storage-checks,\
+    \ as further PW03xx entries\n  seed_and_assert:\n    path: decode fixture data\
+    \ with the JSON binder, then encode through the generated item codec; assert by\
+    \ reading and comparing decoded values\n    specified_by: requirement:dynamodb-test-data\n\
+    \  paging_cursor:\n    available: a driver Key round trips through encoding/json\
+    \ without loss, measured over a 38-digit number, high-byte binary, and a NUL-bearing\
+    \ multi-byte string\n    specified_by: requirement:dynamodb-page-cursor\n    signature_question:\
+    \ upstream cautions that a signature must cover whatever scopes the query; that\
+    \ requirement answers it by keeping the scope in the key condition, where a forged\
+    \ cursor cannot reach past it, and by naming the filter case that would change\
+    \ the answer\nbeyond_the_four:\n  auth_state: requirement:contrib-auth-state-dynamo,\
+    \ which was never assigned because it is a Popcorn Web contract with no upstream\
+    \ half at all\n  auth_backend: requirement:dynamodb-auth-backend, the same shape;\
+    \ plugin/auth is entirely a Popcorn Web contract\nresolved_ask:\n  what: a context-resolved\
+    \ form of the generated query function, asked for after v0.2.9\n  answered_by:\
+    \ system:tinybind, which carries the client in the context and made the table\
+    \ clause a required part of a declaration\n  shape_asked_for: a generation option\
+    \ naming a framework resolver, mirroring the SQL executor resolver\n  shape_delivered:\
+    \ resolution inside the runtime entries, with no generation option at all\n  why_the_delivered_one_is_better:\
+    \ there is no generated call site to redirect, so the framework installs a client\
+    \ instead of configuring an emitter, and a project using dynamobind without a\
+    \ framework gets the same call shape\n  consequence_here: decision:dynamodb-no-runtime-abstraction\
+    \ needs no revision, and the wrapper layer considered as an alternative is unnecessary\n\
+    sequencing_here:\n  now: requirement:dynamodb-typed-queries, plus the four assigned\
+    \ items in whatever order they are wanted\n  unblocked: the session and auth-state\
+    \ backends, which read as blocked on UpdateTimeToLive above; decision:dynamodb-operational-configuration\
+    \ withdrew that ask, so neither needs a driver change\n  blocked: evolving a table,\
+    \ on UpdateTable\n  not_blocked_either: requirement:dynamodb-auth-backend, which\
+    \ decision:dynamodb-auth-compensating-registration keeps off the ranked-third\
+    \ transaction item\nrelated:\n  - requirement:dynamodb-store\n  - requirement:dynamodb-typed-queries\n\
+    \  - system:tinybind\n  - system:tinygodriver-dynamodb\n```"
+  legacy_parse_issues:
+  - kind: legacy_parse_error
+    block: 0
+    message: Object of type date is not JSON serializable
+relations:
+- relation: mentions
+  to: data:dynamodb-request-record
+  resolution: resolved
+- relation: mentions
+  to: decision:dynamodb-auth-compensating-registration
+  resolution: resolved
+- relation: mentions
+  to: decision:dynamodb-no-runtime-abstraction
+  resolution: resolved
+- relation: mentions
+  to: decision:dynamodb-operational-configuration
+  resolution: resolved
+- relation: mentions
+  to: requirement:contrib-auth-state-dynamo
+  resolution: resolved
+- relation: mentions
+  to: requirement:dynamodb-auth-backend
+  resolution: resolved
+- relation: mentions
+  to: requirement:dynamodb-migration
+  resolution: resolved
+- relation: mentions
+  to: requirement:dynamodb-page-cursor
+  resolution: resolved
+- relation: mentions
+  to: requirement:dynamodb-store
+  resolution: resolved
+- relation: mentions
+  to: requirement:dynamodb-test-data
+  resolution: resolved
+- relation: mentions
+  to: requirement:dynamodb-typed-queries
+  resolution: resolved
+- relation: mentions
+  to: rule:dynamodb-reproduction-format
+  resolution: resolved
+- relation: mentions
+  to: rule:dynamodb-table-naming
+  resolution: resolved
+- relation: mentions
+  to: rule:storage-checks
+  resolution: resolved
+- relation: mentions
+  to: system:tinybind
+  resolution: resolved
+- relation: mentions
+  to: system:tinygodriver-dynamodb
+  resolution: resolved

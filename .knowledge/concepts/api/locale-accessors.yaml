@@ -1,0 +1,162 @@
+id: api:locale-accessors
+type: api
+title: Locale Accessors
+summary: One opaque locale value is resolved once per request or parsed once from
+  stored data, and every generated message takes it as an ordinary argument.
+facts:
+  legacy_body: "One opaque locale value is resolved once per request or parsed once\
+    \ from stored data, and every generated message takes it as an ordinary argument.\n\
+    \n```yaml\nsurface:\n  - pw.Locale\n  - pw.LocaleContext(context.Context) pw.Locale\n\
+    \  - pw.ParseLocale(tag string) (pw.Locale, bool)\n  - pw.LocaleChoices(context.Context)\
+    \ []pw.LocaleChoice\n  - pw.SetLocale(http.ResponseWriter, pw.Locale)\n  - pw.LocalePath(pw.Locale,\
+    \ path string) string\nplacement: pw, beside api:request-context-accessors, with\
+    \ the naming of policy:request-scoped-accessor-shape\nlocale_type:\n  opaque:\
+    \ it carries a dense index the segment tables of decision:message-code-shape are\
+    \ addressed by\n  public_in_pw: vision:popcorn-web keeps handwritten code importing\
+    \ pw only, so the type cannot live in the generated package\n  constants: the\
+    \ generated message package exposes one per declared locale\n  boundary_note:\
+    \ this is the concept:public-package-boundaries seam of this feature, since the\
+    \ value is meaningless without the generated tables\n  crosses_into_templates_typed:\
+    \ the message binding of data:locale-bindings declares pw.Locale as its provider\
+    \ result, so a generated message symbol takes this type rather than a tag string,\
+    \ and system:tinybind passes it through without learning it\ntemplate_bindings_are_fed_from_here:\n\
+    \  fact: each entry of data:locale-bindings is a provider taking the render context,\
+    \ and each provider is one of these accessors\n  message_binding: LocaleContext\n\
+    \  langtag: the tag of LocaleContext\n  lang: the tag under path mode and the\
+    \ empty string otherwise, which is the only provider whose value depends on the\
+    \ route's mode\n  consequence: a template never calls an accessor, and the mode-dependence\
+    \ lives in one provider rather than in every template\nresolution:\n  once_per_request:\
+    \ at routing, per the mode of decision:locale-url-modes\n  before_the_first_byte:\
+    \ required by policy:locale-vary-correctness, so a lazy resolve at the first message\
+    \ reference is not admissible\n  parse: ParseLocale performs RFC 4647 lookup against\
+    \ the declared set, reporting absence rather than substituting the default\ngenerated_messages_take_it_explicitly:\n\
+    \  signature: a generated message is func(loc pw.Locale, args...) string\n  effect:\
+    \ the same function serves a handler, a batch job, a mail renderer, and a push\
+    \ notification with no request in scope\n  template_sugar: the reference of decision:upstream-message-surface\
+    \ item B supplies the locale from context, so a template author never writes it\n\
+    \  consequence: no separate library mode exists, because the generated surface\
+    \ already is one\nswitching:\n  SetLocale: validates against the declared set\
+    \ and writes the plain mode cookie of policy:cookie-value-protection through api:cookie-jar\n\
+    \  markup: not here; requirement:locale-switching-surface leaves the control to\
+    \ the application\nLocalePath:\n  for: Go-side URL construction, being redirects,\
+    \ Location headers, mail bodies, and deep links\n  not_for: templates, where decision:explicit-locale-in-links\
+    \ writes the binding inline instead\n  empty_prefix: applies the same collapse\
+    \ rule, so a caller need not branch on the mode\nabsent_is_not_a_default:\n  ParseLocale:\
+    \ reports absence for an unmatched tag, per policy:absent-rather-than-stubbed\n\
+    \  LocaleContext: always answers, because the mode resolved a locale for every\
+    \ request; a route outside every declared mode entry answers the default\ntesting:\n\
+    \  determinism: no clock, network, or shared state\n  path_mode: a request path\
+    \ carrying a prefix\n  cookie_mode: a cookie, which outranks a contradicting header\
+    \ and is the case worth asserting\n  batch: ParseLocale alone, with no request\n\
+    ```"
+  surface:
+  - pw.Locale
+  - pw.LocaleContext(context.Context) pw.Locale
+  - pw.ParseLocale(tag string) (pw.Locale, bool)
+  - pw.LocaleChoices(context.Context) []pw.LocaleChoice
+  - pw.SetLocale(http.ResponseWriter, pw.Locale)
+  - pw.LocalePath(pw.Locale, path string) string
+  placement: pw, beside api:request-context-accessors, with the naming of policy:request-scoped-accessor-shape
+  locale_type:
+    opaque: it carries a dense index the segment tables of decision:message-code-shape
+      are addressed by
+    public_in_pw: vision:popcorn-web keeps handwritten code importing pw only, so
+      the type cannot live in the generated package
+    constants: the generated message package exposes one per declared locale
+    boundary_note: this is the concept:public-package-boundaries seam of this feature,
+      since the value is meaningless without the generated tables
+    crosses_into_templates_typed: the message binding of data:locale-bindings declares
+      pw.Locale as its provider result, so a generated message symbol takes this type
+      rather than a tag string, and system:tinybind passes it through without learning
+      it
+  template_bindings_are_fed_from_here:
+    fact: each entry of data:locale-bindings is a provider taking the render context,
+      and each provider is one of these accessors
+    message_binding: LocaleContext
+    langtag: the tag of LocaleContext
+    lang: the tag under path mode and the empty string otherwise, which is the only
+      provider whose value depends on the route's mode
+    consequence: a template never calls an accessor, and the mode-dependence lives
+      in one provider rather than in every template
+  resolution:
+    once_per_request: at routing, per the mode of decision:locale-url-modes
+    before_the_first_byte: required by policy:locale-vary-correctness, so a lazy resolve
+      at the first message reference is not admissible
+    parse: ParseLocale performs RFC 4647 lookup against the declared set, reporting
+      absence rather than substituting the default
+  generated_messages_take_it_explicitly:
+    signature: a generated message is func(loc pw.Locale, args...) string
+    effect: the same function serves a handler, a batch job, a mail renderer, and
+      a push notification with no request in scope
+    template_sugar: the reference of decision:upstream-message-surface item B supplies
+      the locale from context, so a template author never writes it
+    consequence: no separate library mode exists, because the generated surface already
+      is one
+  switching:
+    SetLocale: validates against the declared set and writes the plain mode cookie
+      of policy:cookie-value-protection through api:cookie-jar
+    markup: not here; requirement:locale-switching-surface leaves the control to the
+      application
+  LocalePath:
+    for: Go-side URL construction, being redirects, Location headers, mail bodies,
+      and deep links
+    not_for: templates, where decision:explicit-locale-in-links writes the binding
+      inline instead
+    empty_prefix: applies the same collapse rule, so a caller need not branch on the
+      mode
+  absent_is_not_a_default:
+    ParseLocale: reports absence for an unmatched tag, per policy:absent-rather-than-stubbed
+    LocaleContext: always answers, because the mode resolved a locale for every request;
+      a route outside every declared mode entry answers the default
+  testing:
+    determinism: no clock, network, or shared state
+    path_mode: a request path carrying a prefix
+    cookie_mode: a cookie, which outranks a contradicting header and is the case worth
+      asserting
+    batch: ParseLocale alone, with no request
+relations:
+- relation: mentions
+  to: api:cookie-jar
+  resolution: resolved
+- relation: mentions
+  to: api:request-context-accessors
+  resolution: resolved
+- relation: mentions
+  to: concept:public-package-boundaries
+  resolution: resolved
+- relation: mentions
+  to: data:locale-bindings
+  resolution: resolved
+- relation: mentions
+  to: decision:explicit-locale-in-links
+  resolution: resolved
+- relation: mentions
+  to: decision:locale-url-modes
+  resolution: resolved
+- relation: mentions
+  to: decision:message-code-shape
+  resolution: resolved
+- relation: mentions
+  to: decision:upstream-message-surface
+  resolution: resolved
+- relation: mentions
+  to: policy:absent-rather-than-stubbed
+  resolution: resolved
+- relation: mentions
+  to: policy:cookie-value-protection
+  resolution: resolved
+- relation: mentions
+  to: policy:locale-vary-correctness
+  resolution: resolved
+- relation: mentions
+  to: policy:request-scoped-accessor-shape
+  resolution: resolved
+- relation: mentions
+  to: requirement:locale-switching-surface
+  resolution: resolved
+- relation: mentions
+  to: system:tinybind
+  resolution: resolved
+- relation: mentions
+  to: vision:popcorn-web
+  resolution: resolved

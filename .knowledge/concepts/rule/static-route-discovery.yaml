@@ -1,0 +1,79 @@
+id: rule:static-route-discovery
+type: rule
+title: Static Route Discovery
+summary: Routes used for generated OpenAPI must be statically discoverable in the
+  same Go package as their handlers.
+facts:
+  legacy_body: "Routes used for generated OpenAPI must be statically discoverable\
+    \ in the same Go package as their handlers.\n\n```yaml\nrequired:\n  - Handle\
+    \ or HandleFunc registration recognized by requirement:httpbinder-extensible-route-analysis\n\
+    \  - literal route pattern\n  - Go 1.22 method-and-path form preferred\n  - named,\
+    \ inline, or ServeHTTP handler body visible to system:tinybind\n  - explicit pw.Parse,\
+    \ WriteHTML, WriteAPI, NewStream, and problem calls in the handler body\nunsupported:\n\
+    \  - dynamically concatenated patterns\n  - registration APIs without a built-in\
+    \ or configured analysis adapter\n  - cross-package handler bodies whose types\
+    \ cannot be inspected\nconsequence: unsupported routes may run but are absent\
+    \ or incomplete in generated OpenAPI and must fail api:cli-check\nout_of_scope:\n\
+    \  page_routes: a concept:page-tree route is generated rather than discovered,\
+    \ so it is neither analyzed here nor reported here, and it stays out of the OpenAPI\
+    \ document by design per decision:dual-router-coexistence\n  action_endpoints:\
+    \ api:page-action-endpoint registrations are generated for the same reason\n \
+    \ not_automatic: a generated registry is an ordinary registration site to anything\
+    \ that reads it, so the exclusion is maintained by flow:page-route-generation\
+    \ rather than implied by the page tree being generated\n  generated_sources: discovery\
+    \ skips a file whose header prefix it was told to recognize, so api:cli-generate\
+    \ registers the Popcorn Web prefix and its own output stops being an input, per\
+    \ decision:page-render-binding\n```"
+  required:
+  - Handle or HandleFunc registration recognized by requirement:httpbinder-extensible-route-analysis
+  - literal route pattern
+  - Go 1.22 method-and-path form preferred
+  - named, inline, or ServeHTTP handler body visible to system:tinybind
+  - explicit pw.Parse, WriteHTML, WriteAPI, NewStream, and problem calls in the handler
+    body
+  unsupported:
+  - dynamically concatenated patterns
+  - registration APIs without a built-in or configured analysis adapter
+  - cross-package handler bodies whose types cannot be inspected
+  consequence: unsupported routes may run but are absent or incomplete in generated
+    OpenAPI and must fail api:cli-check
+  out_of_scope:
+    page_routes: a concept:page-tree route is generated rather than discovered, so
+      it is neither analyzed here nor reported here, and it stays out of the OpenAPI
+      document by design per decision:dual-router-coexistence
+    action_endpoints: api:page-action-endpoint registrations are generated for the
+      same reason
+    not_automatic: a generated registry is an ordinary registration site to anything
+      that reads it, so the exclusion is maintained by flow:page-route-generation
+      rather than implied by the page tree being generated
+    generated_sources: discovery skips a file whose header prefix it was told to recognize,
+      so api:cli-generate registers the Popcorn Web prefix and its own output stops
+      being an input, per decision:page-render-binding
+relations:
+- relation: mentions
+  to: api:cli-check
+  resolution: resolved
+- relation: mentions
+  to: api:cli-generate
+  resolution: resolved
+- relation: mentions
+  to: api:page-action-endpoint
+  resolution: resolved
+- relation: mentions
+  to: concept:page-tree
+  resolution: resolved
+- relation: mentions
+  to: decision:dual-router-coexistence
+  resolution: resolved
+- relation: mentions
+  to: decision:page-render-binding
+  resolution: resolved
+- relation: mentions
+  to: flow:page-route-generation
+  resolution: resolved
+- relation: mentions
+  to: requirement:httpbinder-extensible-route-analysis
+  resolution: resolved
+- relation: mentions
+  to: system:tinybind
+  resolution: resolved

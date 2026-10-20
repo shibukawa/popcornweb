@@ -1,0 +1,25 @@
+id: actor:application-developer
+type: actor
+title: Application Developer
+summary: The application developer creates and operates a typed HTTP service with
+  the Popcorn Web CLI and standard Go source.
+facts:
+  legacy_body: "The application developer creates and operates a typed HTTP service\
+    \ with the Popcorn Web CLI and standard Go source.\n\n```yaml\nresponsibilities:\n\
+    \  - define request and response structs\n  - register literal net/http routes\n\
+    \  - implement business validation and handlers\n  - run api:cli-generate before\
+    \ committing generated artifacts\n  - verify generated drift with api:cli-check\
+    \ and run go test ./...\n```"
+  responsibilities:
+  - define request and response structs
+  - register literal net/http routes
+  - implement business validation and handlers
+  - run api:cli-generate before committing generated artifacts
+  - verify generated drift with api:cli-check and run go test ./...
+relations:
+- relation: mentions
+  to: api:cli-check
+  resolution: resolved
+- relation: mentions
+  to: api:cli-generate
+  resolution: resolved

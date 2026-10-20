@@ -1,0 +1,17 @@
+id: source:go-modules
+title: Declared Go module dependencies
+adapter: go-module
+location:
+  root: .
+  selection: filesystem
+  include:
+    - go.mod
+    - examples/**/go.mod
+    - tools/vscode/wasm/go.mod
+    - internal/pwcli/testdata/serverlessapp/go.mod
+watch:
+  - go.sum
+  - examples/**/go.sum
+  - tools/vscode/wasm/go.sum
+  - internal/pwcli/testdata/serverlessapp/go.sum
+depends_on: []

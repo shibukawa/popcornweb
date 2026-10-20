@@ -1,0 +1,199 @@
+id: api:page-action-endpoint
+type: api
+title: Page Action Endpoint
+summary: A page template names an exported Go handler in its own route package and
+  generation supplies the address, so a mutation reachable from a page is a resolved
+  symbol rather than a hand-written URL string.
+facts:
+  legacy_body: "A page template names an exported Go handler in its own route package\
+    \ and generation supplies the address, so a mutation reachable from a page is\
+    \ a resolved symbol rather than a hand-written URL string.\n\n```yaml\nscope:\
+    \ the mutation half of concept:page-tree; the typed contract of api:server-action\
+    \ is a separate rung that does not exist yet\ntemplate: 'a server-action attribute\
+    \ naming the handler lowers to data-pw-action carrying the endpoint, and every\
+    \ other attribute on the element is left untouched'\nhandler:\n  shape: an ordinary\
+    \ func(http.ResponseWriter, http.Request) that owns its whole response\n  generated_around_it:\
+    \ nothing but the registration\n  testable: with net/http/httptest, without registering\
+    \ anything\naddress:\n  form: /_action/<hash>/<HandlerName>\n  hash: the leading\
+    \ 12 hex digits of a digest over the declaring directory and the handler name\n\
+    \  declaring_directory: not the serving route path, because a layout compiles\
+    \ once and renders under many paths, and hashing the path would give one handler\
+    \ an address per page\n  stability: no build salt, so an unchanged project regenerates\
+    \ the same address and a page left open across a deploy posts somewhere the server\
+    \ still knows\n  readable_half: the handler name rides along, so a network trace\
+    \ names the Go function that ran\nprefix:\n  value: /_action\n  not_under_pw:\
+    \ requirement:framework-script-assets answers 404 for an unknown path below its\
+    \ reserved prefix ahead of application routing, so an action mounted there would\
+    \ never reach the mux\n  safe_by_construction: rule:page-directory-naming ignores\
+    \ a directory starting with underscore, so no page route can produce this prefix\n\
+    \  configured_prefix: generation rejects a prefix an existing route already occupies\
+    \ rather than leaving it to a ServeMux panic\nreachable_surface:\n  rule: every\
+    \ exported handler-shaped function in a route package gets an endpoint, whether\
+    \ or not a template mentions it\n  bounded_by: a route package is imported only\
+    \ by the generated registry, so its exported symbols are that route's surface\
+    \ rather than a general API\n  opt_out: lowercase the function, since generated\
+    \ code in another package cannot reach an unexported symbol\n  excluded: Load,\
+    \ which is the page entry point of concept:page-tree\n  inspectable: the data:page-route-table\
+    \ Actions list enumerates every endpoint\nauthorization:\n  - an address hides\
+    \ structure and grants nothing, so each handler authenticates and authorizes its\
+    \ own caller\n  - policy:authenticated-path-protection patterns apply to the prefix\
+    \ like any other path\n  - policy:csrf-protection must cover the prefix once that\
+    \ middleware exists; today nothing does, so an action authorizes its own caller\
+    \ and nothing else stands in front of it\nrequest_binding:\n  available: api:request-binding\
+    \ works inside an action, so a handler reads its input with pw.Parse like any\
+    \ other\n  mechanism: binder generation reads the Bind call sites of the package\
+    \ it analyzes and never consults a registration, so what was missing was only\
+    \ a generation run over the route packages; flow:page-route-generation adds one\n\
+    \  corrected_cause: the earlier reading, that binder discovery was driven from\
+    \ application-written registrations, was wrong; recording it matters because it\
+    \ is what made this look like an upstream redesign rather than one more package\
+    \ list\nopenapi:\n  absent: no document entry, by design, since an action is one\
+    \ page's implementation detail\n  not_a_side_effect: once generation reaches the\
+    \ route packages, the generated registry is itself a registration site, so the\
+    \ exclusion is something flow:page-route-generation has to keep rather than something\
+    \ the package boundary provides\n  scriptless_forms: taken as requirement:scriptless-action-forms;\
+    \ a form server-action lowers to an attribute and nothing else, so with no method\
+    \ written it is a GET form, and adopting actions today costs the no-runtime property\
+    \ requirement:classic-web-acceptance asks for\n  client_runtime: taken as requirement:action-invocation-runtime;\
+    \ the attribute needs an invoking half the merged asset does not contain, verified\
+    \ 2026-08-11 by the absence of the attribute from every served byte\n  which_entry_point_a_gesture_uses:\
+    \ decision:action-entry-point-selection, which is also where the path parameters\
+    \ this address does not carry are settled\n  authoring: rule:server-action-authoring\n\
+    outside_a_page_tree:\n  possible: system:tinybind v0.2.5 accepts an action resolver,\
+    \ so a framework can answer a name from its own route table\n  use: a handlers-tree\
+    \ template could carry server-action once pw supplies a resolver over its rule:static-route-discovery\
+    \ results\n  not_in_this_delivery: the page tree is where the addresses already\
+    \ exist, so the resolver is a follow-up rather than a prerequisite\nrationale:\
+    \ a URL is a string never checked against the handler it names, while a symbol\
+    \ must resolve, so renaming the Go function fails generation at the template that\
+    \ referenced it\n```"
+  scope: the mutation half of concept:page-tree; the typed contract of api:server-action
+    is a separate rung that does not exist yet
+  template: a server-action attribute naming the handler lowers to data-pw-action
+    carrying the endpoint, and every other attribute on the element is left untouched
+  handler:
+    shape: an ordinary func(http.ResponseWriter, http.Request) that owns its whole
+      response
+    generated_around_it: nothing but the registration
+    testable: with net/http/httptest, without registering anything
+  address:
+    form: /_action/<hash>/<HandlerName>
+    hash: the leading 12 hex digits of a digest over the declaring directory and the
+      handler name
+    declaring_directory: not the serving route path, because a layout compiles once
+      and renders under many paths, and hashing the path would give one handler an
+      address per page
+    stability: no build salt, so an unchanged project regenerates the same address
+      and a page left open across a deploy posts somewhere the server still knows
+    readable_half: the handler name rides along, so a network trace names the Go function
+      that ran
+  prefix:
+    value: /_action
+    not_under_pw: requirement:framework-script-assets answers 404 for an unknown path
+      below its reserved prefix ahead of application routing, so an action mounted
+      there would never reach the mux
+    safe_by_construction: rule:page-directory-naming ignores a directory starting
+      with underscore, so no page route can produce this prefix
+    configured_prefix: generation rejects a prefix an existing route already occupies
+      rather than leaving it to a ServeMux panic
+  reachable_surface:
+    rule: every exported handler-shaped function in a route package gets an endpoint,
+      whether or not a template mentions it
+    bounded_by: a route package is imported only by the generated registry, so its
+      exported symbols are that route's surface rather than a general API
+    opt_out: lowercase the function, since generated code in another package cannot
+      reach an unexported symbol
+    excluded: Load, which is the page entry point of concept:page-tree
+    inspectable: the data:page-route-table Actions list enumerates every endpoint
+  authorization:
+  - an address hides structure and grants nothing, so each handler authenticates and
+    authorizes its own caller
+  - policy:authenticated-path-protection patterns apply to the prefix like any other
+    path
+  - policy:csrf-protection must cover the prefix once that middleware exists; today
+    nothing does, so an action authorizes its own caller and nothing else stands in
+    front of it
+  request_binding:
+    available: api:request-binding works inside an action, so a handler reads its
+      input with pw.Parse like any other
+    mechanism: binder generation reads the Bind call sites of the package it analyzes
+      and never consults a registration, so what was missing was only a generation
+      run over the route packages; flow:page-route-generation adds one
+    corrected_cause: the earlier reading, that binder discovery was driven from application-written
+      registrations, was wrong; recording it matters because it is what made this
+      look like an upstream redesign rather than one more package list
+  openapi:
+    absent: no document entry, by design, since an action is one page's implementation
+      detail
+    not_a_side_effect: once generation reaches the route packages, the generated registry
+      is itself a registration site, so the exclusion is something flow:page-route-generation
+      has to keep rather than something the package boundary provides
+    scriptless_forms: taken as requirement:scriptless-action-forms; a form server-action
+      lowers to an attribute and nothing else, so with no method written it is a GET
+      form, and adopting actions today costs the no-runtime property requirement:classic-web-acceptance
+      asks for
+    client_runtime: taken as requirement:action-invocation-runtime; the attribute
+      needs an invoking half the merged asset does not contain, verified 2026-08-11
+      by the absence of the attribute from every served byte
+    which_entry_point_a_gesture_uses: decision:action-entry-point-selection, which
+      is also where the path parameters this address does not carry are settled
+    authoring: rule:server-action-authoring
+  outside_a_page_tree:
+    possible: system:tinybind v0.2.5 accepts an action resolver, so a framework can
+      answer a name from its own route table
+    use: a handlers-tree template could carry server-action once pw supplies a resolver
+      over its rule:static-route-discovery results
+    not_in_this_delivery: the page tree is where the addresses already exist, so the
+      resolver is a follow-up rather than a prerequisite
+  rationale: a URL is a string never checked against the handler it names, while a
+    symbol must resolve, so renaming the Go function fails generation at the template
+    that referenced it
+relations:
+- relation: mentions
+  to: api:request-binding
+  resolution: resolved
+- relation: mentions
+  to: api:server-action
+  resolution: resolved
+- relation: mentions
+  to: concept:page-tree
+  resolution: resolved
+- relation: mentions
+  to: data:page-route-table
+  resolution: resolved
+- relation: mentions
+  to: decision:action-entry-point-selection
+  resolution: resolved
+- relation: mentions
+  to: flow:page-route-generation
+  resolution: resolved
+- relation: mentions
+  to: policy:authenticated-path-protection
+  resolution: resolved
+- relation: mentions
+  to: policy:csrf-protection
+  resolution: resolved
+- relation: mentions
+  to: requirement:action-invocation-runtime
+  resolution: resolved
+- relation: mentions
+  to: requirement:classic-web-acceptance
+  resolution: resolved
+- relation: mentions
+  to: requirement:framework-script-assets
+  resolution: resolved
+- relation: mentions
+  to: requirement:scriptless-action-forms
+  resolution: resolved
+- relation: mentions
+  to: rule:page-directory-naming
+  resolution: resolved
+- relation: mentions
+  to: rule:server-action-authoring
+  resolution: resolved
+- relation: mentions
+  to: rule:static-route-discovery
+  resolution: resolved
+- relation: mentions
+  to: system:tinybind
+  resolution: resolved

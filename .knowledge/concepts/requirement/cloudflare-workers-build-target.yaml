@@ -1,0 +1,162 @@
+id: requirement:cloudflare-workers-build-target
+type: requirement
+title: Cloudflare Workers Build Target
+summary: 'api:cli-build --target cloudflare-workers emits a complete Wrangler-deployable
+  Worker from an unchanged application: the Wasm module, the framework-owned JavaScript
+  loader, the generated entry point, and the Wrangler configuration, for either compiler
+  data:project-config names.'
+facts:
+  legacy_body: "api:cli-build --target cloudflare-workers emits a complete Wrangler-deployable\
+    \ Worker from an unchanged application: the Wasm module, the framework-owned JavaScript\
+    \ loader, the generated entry point, and the Wrangler configuration, for either\
+    \ compiler data:project-config names.\n\n```yaml\naudience: actor:application-developer\n\
+    motivation:\n  - requirement:cloudflare-workers-hosting passed its unblock_probe\
+    \ on both compilers on 2026-09-02, so the target moves from blocked to delivered\
+    \ under decision:serverless-target-scope\n  - the probe needed one loader patch\
+    \ and one entry point shape that no application author should rediscover; both\
+    \ are build output here, per decision:owned-wasm-loader\n  - the host re-runs\
+    \ the program per request, so a per-process startup summary becomes one log line\
+    \ per request unless the build says otherwise\nconfiguration:\n  where: data:project-config,\
+    \ the deploy.cloudflare table\n  compiler: tinygo or go; defaults to project.toolchain,\
+    \ so a project that says nothing builds with the compiler it was scaffolded for\n\
+    \  compiler_constraint: tinygo is refused when project.toolchain is go, because\
+    \ that project routes through the standard ServeMux, whose method patterns TinyGo's\
+    \ net/http does not match; the Worker built and answered 404 on every route when\
+    \ this was allowed. go on a tinygo project is fine, since api:serve-mux works\
+    \ under both\n  name: the Worker name written into wrangler.jsonc; defaults to\
+    \ project.name\n  compatibility_date: the Wrangler compatibility date; defaults\
+    \ to the date pinned by the pw release, so a build is reproducible until the project\
+    \ chooses to move it\n  backend: nethttp only; --backend fasthttp is refused because\
+    \ the fasthttp fork is not verified under js/wasm and system:syumai-workers serves\
+    \ an http.Handler\ninvocation:\n  command: pw build --target cloudflare-workers\n\
+    \  toolchain_selection: the deploy.cloudflare.compiler value, not a flag, per\
+    \ decision:explicit-tinygo-compile-step's reasoning that the compiler choice is\
+    \ a project fact; this target is the one exception to api:cli-build never invoking\
+    \ tinygo, because there is no Dockerfile for the operator to own the line in\n\
+    \  tinygo: tinygo build -target wasm -no-debug -tags pwcloudflare, with -no-debug\
+    \ dropped under --debug\n  go: GOOS=js GOARCH=wasm go build -trimpath -ldflags=\"\
+    -s -w\" -tags pwcloudflare, with the linker flags dropped under --debug\noutput:\n\
+    \  stage: .pw/build/cloudflare-workers/nethttp/, per decision:serverless-target-scope\
+    \ build_axes\n  app: the application copied as a nested module, as requirement:serverless-source-entrypoints\
+    \ stages it; a root file that registers system:tinygodriver's host network driver\
+    \ under the tinygo tag has its staged constraint extended with !pwcloudflare,\
+    \ because the driver's socket calls do not compile for wasm, and the build names\
+    \ the file it left out\n  entry: the transformed main beside a generated popcornweb_serverless.go,\
+    \ both package main, so the compiler links one program per Wasm module\n  build/app.wasm:\
+    \ the compiled module\n  build/wasm_exec.js: the framework-owned loader for the\
+    \ selected compiler, per decision:owned-wasm-loader\n  build/worker.mjs: the framework-owned\
+    \ fetch entry that instantiates the module per request and hands the request to\
+    \ the Go handler\n  wrangler.jsonc: name, main, compatibility_date, and vars derived\
+    \ from config.prod.toml\n  deployment.json: target, backend, artifact, entrypoint,\
+    \ and compiler\nentry_point:\n  transform: pw.Run becomes capture through pw.Middlewares,\
+    \ exactly as requirement:serverless-source-entrypoints does for the other source\
+    \ targets\n  serve: main sets APP_ENV to prod when unset, bridges the Worker environment,\
+    \ initializes the application once, and calls workers.Serve on the captured handler\n\
+    \  environment_bridge: every string value of the Worker env object is placed in\
+    \ the configbind environment before api:runtime-configuration loads, so wrangler\
+    \ vars and secrets reach the application by the same names a container environment\
+    \ would use\n  body_order: a handler reads its request body before its first write,\
+    \ because the adapter hands the response to the host on the first write and the\
+    \ host then refuses the body; the same rule the probe recorded\nruntime_configuration:\n\
+    \  no_filesystem: the Worker cannot read config.prod.toml, so policy:config-file-resolution\
+    \ finds nothing and defaults, environment, and flags apply\n  vars: api:cli-build\
+    \ flattens every scalar and primitive-array key of config.prod.toml into wrangler.jsonc\
+    \ vars under the configbind environment names, so the file the project maintains\
+    \ is still what configures the deployment\n  table_arrays: middleware.rdb.connections\
+    \ travels as JSON in the one variable pwconfig.ConnectionsEnv names, with ${NAME}\
+    \ references resolved from the Worker env at load, because it is the array the\
+    \ runtime cannot do without on this host; every other array of tables has no environment\
+    \ form and is reported by key rather than dropped silently\n  secrets: a ${NAME}\
+    \ reference is written through unchanged and resolved from the Worker env at load,\
+    \ so a wrangler secret is what satisfies it\n  external_assets: requirement:external-public-assets\
+    \ cannot be served, because nothing reads a directory in this host; the build\
+    \ reports the tree it did not ship and the embedded tree keeps serving\nstartup_summary:\n\
+    \  fact: system:syumai-workers instantiates the module and runs main for every\
+    \ fetch, so the framework initializes per request\n  handling: the pwcloudflare\
+    \ build tag turns policy:startup-summary's auto selection to off, so an unconfigured\
+    \ project logs nothing at boot; observability.boot_log set explicitly is still\
+    \ honored\n  cost: initialization measured at 1 to 9 ms per request on the probe,\
+    \ which is the host's price rather than a framework defect\nverification:\n  local:\
+    \ wrangler dev on the stage, then the conformance list of requirement:cloudflare-workers-hosting,\
+    \ which is the check the generated artifact has to pass before decision:serverless-target-scope\
+    \ reports the target shipped\n  size: the emitted module size is printed raw and\
+    \ gzip, because the plan limit is the operator's to compare against, per requirement:cloudflare-workers-hosting\
+    \ limits\nnon_goals:\n  - Cloudflare bindings; decision:cloudflare-bindings-placement\
+    \ takes them in the order D1, R2, KV, and requirement:cloudflare-process-state-refusal\
+    \ is what this target does about the state they replace until then\n  - a fasthttp\
+    \ backend under this target\n  - a listener, a scheduler, or a queue handler;\
+    \ the entry exports fetch only\n  - wrangler deploy, account login, or any remote\
+    \ action, per decision:serverless-target-scope meaning_of_support\nacceptance:\n\
+    \  - an unchanged scaffolded application builds the stage with either compiler\
+    \ and without editing its main\n  - the stage runs under wrangler dev and passes\
+    \ the requirement:cloudflare-workers-hosting conformance list\n  - a wrangler\
+    \ var and a wrangler secret reach a configbind key by its environment name\n \
+    \ - config.prod.toml scalars appear in wrangler.jsonc vars, and a table array\
+    \ is reported by key\n  - a build without observability.boot_log set emits no\
+    \ startup summary per request\n  - the loader carries every import the pinned\
+    \ compiler's Wasm module needs, so a compiler bump that adds one fails the build's\
+    \ own loader test rather than a deployed Worker\n  - a host-Go project asking\
+    \ for the TinyGo compiler is refused at configuration load, naming the ServeMux\
+    \ reason\nverified:\n  date: 2026-09-02\n  host_go_project: a pw init scaffold\
+    \ without --tinygo, compiled with go, 10 of 10 checks under wrangler dev, 19.0\
+    \ MB raw and 4.8 MB gzip\n  tinygo_project: a pw init --tinygo scaffold compiled\
+    \ with tinygo, 4.0 MB raw and 1.5 MB gzip\n  checks: GET / as HTML, X-Request-Id,\
+    \ security headers, /healthz and /readyz reached through wrangler vars, embedded\
+    \ asset with ETag and 304, 404, no startup summary in the log, no development\
+    \ warning\n```"
+  legacy_parse_issues:
+  - kind: legacy_parse_error
+    block: 0
+    message: Object of type date is not JSON serializable
+relations:
+- relation: mentions
+  to: actor:application-developer
+  resolution: resolved
+- relation: mentions
+  to: api:cli-build
+  resolution: resolved
+- relation: mentions
+  to: api:runtime-configuration
+  resolution: resolved
+- relation: mentions
+  to: api:serve-mux
+  resolution: resolved
+- relation: mentions
+  to: data:project-config
+  resolution: resolved
+- relation: mentions
+  to: decision:cloudflare-bindings-placement
+  resolution: resolved
+- relation: mentions
+  to: decision:explicit-tinygo-compile-step
+  resolution: resolved
+- relation: mentions
+  to: decision:owned-wasm-loader
+  resolution: resolved
+- relation: mentions
+  to: decision:serverless-target-scope
+  resolution: resolved
+- relation: mentions
+  to: policy:config-file-resolution
+  resolution: resolved
+- relation: mentions
+  to: policy:startup-summary
+  resolution: resolved
+- relation: mentions
+  to: requirement:cloudflare-process-state-refusal
+  resolution: resolved
+- relation: mentions
+  to: requirement:cloudflare-workers-hosting
+  resolution: resolved
+- relation: mentions
+  to: requirement:external-public-assets
+  resolution: resolved
+- relation: mentions
+  to: requirement:serverless-source-entrypoints
+  resolution: resolved
+- relation: mentions
+  to: system:syumai-workers
+  resolution: resolved
+- relation: mentions
+  to: system:tinygodriver
+  resolution: resolved

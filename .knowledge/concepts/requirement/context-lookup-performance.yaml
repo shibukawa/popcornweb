@@ -1,0 +1,93 @@
+id: requirement:context-lookup-performance
+type: requirement
+title: Bounded Context Value Lookup
+summary: Framework request state resolves in one context.Value lookup, unavoidably
+  nested values reach ancestors by parent pointer, and TinyBind generated code reads
+  framework state through resolvers instead of its own context nodes.
+facts:
+  legacy_body: "Framework request state resolves in one context.Value lookup, unavoidably\
+    \ nested values reach ancestors by parent pointer, and TinyBind generated code\
+    \ reads framework state through resolvers instead of its own context nodes.\n\n\
+    ```yaml\nstatus: implemented\nproposed: 2026-08-06\nimplemented: 2026-08-06\n\
+    source: user request 2026-08-06\nwhy: context.Value walks the chain outward, so\
+    \ cost is O(depth) per lookup and one type assertion plus binary size per extra\
+    \ node; upstream measured about 1.2 ns per level and collapsed any depth to the\
+    \ depth-1 number with one bundle node, 2026-08-05\nasks:\n  flat_values:\n   \
+    \ what: one capsule per request holding every stable framework resource\n    status:\
+    \ already the contract of policy:context-value-storage and data:request-context-capsule;\
+    \ this requirement added nothing there\n  nested_values:\n    which: values whose\
+    \ parent-child shadowing is semantic — the active span each contrib/otel Tracer.Start\
+    \ creates, and the derived capsule copies pwruntime installs\n    ask: each stored\
+    \ value carries a pointer to its parent value, so one context.Value fetch reaches\
+    \ the innermost and every ancestor is a pointer chase outside the context chain\n\
+    \    span: contrib/otel/trace Span gained a parent field fixed at Start, Parent\
+    \ and Root accessors, and SpanFromContext returning the innermost local span;\
+    \ a remote extracted parent has no local Span, so its child's parent is nil\n\
+    \    capsule: every derived pwruntime Resources copy records the Resources it\
+    \ came from, exposed as Parent, nil at the request root\n    transaction: needed\
+    \ no pointer of its own — one TransactionScope serves a whole transaction and\
+    \ savepoint nesting is a depth counter on that one value, so ancestry never touches\
+    \ the context\n  generated_code:\n    ask: TinyBind runtime entries stop calling\
+    \ context.Value on their own private nodes inside every operation\n    sql: decision:tinybind-sql-runtime\
+    \ already consumed the configured SQLExecutorResolver; pwruntime withScope additionally\
+    \ stopped installing the sqlbind executor node beside the capsule, leaving that\
+    \ key an input seam for an externally opened transaction only\n    nosql:\n  \
+    \    built: api:dynamo-package and api:firestore-package each own one process\
+    \ handle built at setup with NewHandle, exposed as Handle(ctx); generated queries\
+    \ reach it through the DynamoHandleResolver and FirestoreHandleResolver generation\
+    \ options, and handler code uses the parameter form (\"On\"-suffixed entries)\n\
+    \      middleware_removed: neither package installs a per-request context node\
+    \ any more; setup returns no middleware\n      fallback: Handle honours a handle\
+    \ installed with WithClient or WithHandle when the process holds no client, which\
+    \ is what a unit test building a bare context uses\n      framework_stores: the\
+    \ sessionstore and authstate dynamo and firestore stores resolve through the same\
+    \ Handle functions instead of TableFromContext\n      scaffold: the pw init dynamo\
+    \ record scaffold demonstrates the Handle plus On-form pattern\n  handle_placement_correction:\n\
+    \    proposed_was: the capsule carries the dynamobind Handle\n    is: process\
+    \ state owned by each database package, because pwruntime importing dynamobind\
+    \ would link the DynamoDB driver into every binary — the same import-boundary\
+    \ reason TinyBind could not own the bundle struct upstream\n    consequence: the\
+    \ common path reads no context at all; the client is a process deployment fact,\
+    \ so per-request carriage was never needed\n  pin: system:tinybind moved to v0.4.1,\
+    \ which ships the resolver options, the On entries, NewHandle, and HandleFromContext\n\
+    acceptance:\n  - a request-path framework resource read costs at most one context.Value\
+    \ walk plus one type assertion; the NoSQL handle path costs none\n  - root and\
+    \ ancestor span access from a nested span performs no context traversal\n  - a\
+    \ savepoint-nested transaction reaches its ancestor state without context traversal\n\
+    \  - no TinyBind-owned context node is installed by the framework into a request\
+    \ context\n  - the api:request-context-accessors surface is unchanged; only resolution\
+    \ paths moved\nnon_goals:\n  - removing context.Context parameters; cancellation\
+    \ and deadline stay context mechanisms and every driver entry keeps its leading\
+    \ context\n  - a request-latency claim; per upstream measurement the win is node\
+    \ count, assertion count, and binary size\n  - exposing the capsule or parent\
+    \ pointers as application API; Span.Parent and Resources.Parent are framework-side\
+    \ accessors\nbreaking:\n  - application code calling context-form dynamobind or\
+    \ firestorebind entries must move to the On form with the package Handle, because\
+    \ no middleware installs a client node any more\n  - EnsureClient remains for\
+    \ code handing a context to something still calling context-form entries\n```"
+  legacy_parse_issues:
+  - kind: legacy_parse_error
+    block: 0
+    message: Object of type date is not JSON serializable
+relations:
+- relation: mentions
+  to: api:dynamo-package
+  resolution: resolved
+- relation: mentions
+  to: api:firestore-package
+  resolution: resolved
+- relation: mentions
+  to: api:request-context-accessors
+  resolution: resolved
+- relation: mentions
+  to: data:request-context-capsule
+  resolution: resolved
+- relation: mentions
+  to: decision:tinybind-sql-runtime
+  resolution: resolved
+- relation: mentions
+  to: policy:context-value-storage
+  resolution: resolved
+- relation: mentions
+  to: system:tinybind
+  resolution: resolved

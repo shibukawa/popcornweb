@@ -1,0 +1,67 @@
+id: flow:test-transaction-isolation
+type: flow
+title: Test Transaction Isolation
+summary: Per-test transaction lifecycle that makes requirement:parallel-database-tests
+  work on one shared database.
+facts:
+  legacy_body: "Per-test transaction lifecycle that makes requirement:parallel-database-tests\
+    \ work on one shared database.\n\n```yaml\nsetup:\n  - shared database is prepared\
+    \ once, schema applied outside any test transaction\n  - api:test-run copies configuration\
+    \ and opens or reuses the pool\n  - transaction RunOption enabled: BEGIN one *sql.Tx\
+    \ and install data:transaction-scope at depth 0\n  - the scope is injected into\
+    \ every request context created by that test server\nrequest:\n  - handler SQL\
+    \ resolves the scope transaction as its executor\n  - each api:transaction-runner\
+    \ call pushes a savepoint per decision:explicit-transaction-boundary\n  - a released\
+    \ savepoint keeps the work visible to the test but never commits it\nteardown:\n\
+    \  - Server.Close stops the server, rolls back the depth 0 transaction, then closes\
+    \ the pool\n  - a registered cleanup runs it after the test finishes, pass or\
+    \ fail\n  - rollback failure is reported as a test failure\nparallel:\n  - each\
+    \ test owns one scope, one connection, and one rollback\n  - tests may call t.Parallel\
+    \ because no test commits\n  - statements inside one scope serialize on its connection\n\
+    constraints:\n  - pool max_open_conns must allow one connection per concurrently\
+    \ running test\n  - DDL inside a test transaction is unsupported per rule:savepoint-dialect-support\n\
+    \  - code opening its own pool or connection bypasses the scope and leaks committed\
+    \ data\n```"
+  setup:
+  - shared database is prepared once, schema applied outside any test transaction
+  - api:test-run copies configuration and opens or reuses the pool
+  - transaction RunOption enabled: BEGIN one *sql.Tx and install data:transaction-scope
+      at depth 0
+  - the scope is injected into every request context created by that test server
+  request:
+  - handler SQL resolves the scope transaction as its executor
+  - each api:transaction-runner call pushes a savepoint per decision:explicit-transaction-boundary
+  - a released savepoint keeps the work visible to the test but never commits it
+  teardown:
+  - Server.Close stops the server, rolls back the depth 0 transaction, then closes
+    the pool
+  - a registered cleanup runs it after the test finishes, pass or fail
+  - rollback failure is reported as a test failure
+  parallel:
+  - each test owns one scope, one connection, and one rollback
+  - tests may call t.Parallel because no test commits
+  - statements inside one scope serialize on its connection
+  constraints:
+  - pool max_open_conns must allow one connection per concurrently running test
+  - DDL inside a test transaction is unsupported per rule:savepoint-dialect-support
+  - code opening its own pool or connection bypasses the scope and leaks committed
+    data
+relations:
+- relation: mentions
+  to: api:test-run
+  resolution: resolved
+- relation: mentions
+  to: api:transaction-runner
+  resolution: resolved
+- relation: mentions
+  to: data:transaction-scope
+  resolution: resolved
+- relation: mentions
+  to: decision:explicit-transaction-boundary
+  resolution: resolved
+- relation: mentions
+  to: requirement:parallel-database-tests
+  resolution: resolved
+- relation: mentions
+  to: rule:savepoint-dialect-support
+  resolution: resolved

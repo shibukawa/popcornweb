@@ -1,0 +1,170 @@
+id: requirement:api-cbor-representation
+type: requirement
+title: CBOR API Representation
+summary: API endpoints speak application/cbor beside JSON. The mechanism shipped upstream
+  in system:tinybind v0.5.19 as a generation-time opt-in; the pw work is declaring
+  the switch and its profile in popcornweb.toml, passing both through api:cli-generate,
+  and bumping the two dependencies. JSON stays the default; a project leaving the
+  switch off regenerates today's bytes exactly and links no CBOR code.
+facts:
+  legacy_body: "API endpoints speak application/cbor beside JSON. The mechanism shipped\
+    \ upstream in system:tinybind v0.5.19 as a generation-time opt-in; the pw work\
+    \ is declaring the switch and its profile in popcornweb.toml, passing both through\
+    \ api:cli-generate, and bumping the two dependencies. JSON stays the default;\
+    \ a project leaving the switch off regenerates today's bytes exactly and links\
+    \ no CBOR code.\n\n```yaml\nupstream_delivered:\n  version: tinybind v0.5.19,\
+    \ completed by v0.5.20, over tinygodriver v1.2.7 (generated code names the driver\
+    \ directly)\n  option: generator Options.EnableCBORHTTP plus Options.CBORHTTPProfile{RejectFloats,\
+    \ RequireSortedKeys}; CLI -cbor-http, -cbor-http-reject-floats, -cbor-http-sorted-keys\n\
+    \  granularity: project-wide on purpose — which media types a service accepts\
+    \ is a property of the service, not of one route; no per-route or per-type spelling\n\
+    \  request_side:\n    - Content-Type application/cbor or any +cbor suffix (RFC\
+    \ 6839) binds payload fields from one CBOR map with text keys\n    - unknown keys\
+    \ are skipped; path, query, header, cookie inputs bind unchanged beside the body\n\
+    \    - body cap httpbind.SetMaxCBORBodyBytes, default 1 MiB matching JSON, shared\
+    \ by both transport runtimes\n    - a payload:\"*\" rest map has no CBOR mapping\
+    \ and is a generation error, not a silent drop\n  response_side:\n    - answers\
+    \ CBOR only when Accept explicitly names application/cbor; wildcards keep the\
+    \ JSON default, so a browser's */* never flips the format\n    - generated writer\
+    \ branches to WriteCBORBytes with Content-Type application/cbor, after VaryAccept\
+    \ marks the response as Accept-keyed for shared caches\n  profile:\n    - the\
+    \ generator's own CBORHTTPProfile type, not the driver's Profile; hashed into\
+    \ the generation fingerprint so both ends of the protocol agree on every regeneration\n\
+    \    - zero value is the default profile: floats are ordinary values, members\
+    \ emit in struct field order\n    - RejectFloats refuses float64 fields at generation\
+    \ and floats in request bodies at decode, for scaled-integer schemas\n    - RequireSortedKeys\
+    \ emits RFC 8949 4.2.1 bytewise key order; a runtime map field cannot promise\
+    \ it and becomes a generation error\n  fasthttp_parity: fasthttpbind carries the\
+    \ same helpers, so the derived transport of requirement:typed-api-method-convergence\
+    \ works unchanged\nresolved_from_earlier_draft:\n  opt_in: settled — generation-time\
+    \ project switch, not registration or per-type declaration\n  response_trigger:\
+    \ settled — explicit Accept only, no symmetric default from the request body's\
+    \ type\n  problem_documents: settled — problems stay application/problem+json\
+    \ in every case\n  body_intermediate: settled — generated binders decode the CBOR\
+    \ map inline; no jsonbind.Object analogue exists\n  profiles: the old wire/world\
+    \ presets are gone (application-side now); the HTTP subset is the two-flag CBORHTTPProfile\
+    \ instead\npw_integration:\n  config:\n    - popcornweb.toml block '[generate.api.cbor]'\
+    \ with enabled, reject_floats, sorted_keys; absent block means disabled, enabled\
+    \ alone uses the default profile\n    - a project setting rather than a pw generate\
+    \ flag for the same reason as line_directives: api:cli-check compares against\
+    \ fresh generation, and output must not depend on who ran it\n    - api:cli-init\
+    \ scaffolds the block with enabled false and a comment stating what off costs\
+    \ (nothing)\n  generation:\n    - projectConfig carries the block; the generate\
+    \ command maps it onto EnableCBORHTTP and CBORHTTPProfile\n    - go.mod moved\
+    \ to tinybind v0.5.19 and tinygodriver v1.2.7\n  runtime:\n    - pw.WriteAPI and\
+    \ pw.Parse needed no signature change; negotiation lives in the generated writers\
+    \ and binders they dispatch to\n    - compression per policy:response-content-encoding\
+    \ wraps the writer unchanged\n    - body cap exposed as server.cbor_max_body (int64\
+    \ bytes, 0 keeps the runtime's 1 MiB default); both lifecycles apply it once at\
+    \ startup because the value is process-wide in the binding runtime, and a negative\
+    \ value is a startup error\n  docs: guide the switch, the two profile flags and\
+    \ when not to use them, per the docs house style\nupstream_followups_resolved:\n\
+    \  in: tinybind v0.5.20, which pw now requires\n  vary_header: generated writers\
+    \ call VaryAccept before negotiating, so a shared cache keys the entry on Accept\n\
+    \  openapi: the generated document advertises application/cbor request and response\
+    \ content when the option is on, except for a request body carrying a rest map,\
+    \ which the CBOR emitter refuses and the document therefore must not advertise\n\
+    verification:\n  - a POST with Content-Type application/cbor binds the same values\
+    \ as its JSON equivalent\n  - a GET with Accept application/cbor returns a CBOR\
+    \ body equal in content to the JSON answer; Accept */* still gets JSON\n  - with\
+    \ the toml block absent or enabled false, pw generate reproduces today's output\
+    \ byte for byte and the binary links no CBOR symbol\n  - toggling any profile\
+    \ key changes the generation fingerprint, so api:cli-check reports stale generated\
+    \ code\n```"
+  upstream_delivered:
+    version: tinybind v0.5.19, completed by v0.5.20, over tinygodriver v1.2.7 (generated
+      code names the driver directly)
+    option: generator Options.EnableCBORHTTP plus Options.CBORHTTPProfile{RejectFloats,
+      RequireSortedKeys}; CLI -cbor-http, -cbor-http-reject-floats, -cbor-http-sorted-keys
+    granularity: project-wide on purpose — which media types a service accepts is
+      a property of the service, not of one route; no per-route or per-type spelling
+    request_side:
+    - Content-Type application/cbor or any +cbor suffix (RFC 6839) binds payload fields
+      from one CBOR map with text keys
+    - unknown keys are skipped; path, query, header, cookie inputs bind unchanged
+      beside the body
+    - body cap httpbind.SetMaxCBORBodyBytes, default 1 MiB matching JSON, shared by
+      both transport runtimes
+    - a payload:"*" rest map has no CBOR mapping and is a generation error, not a
+      silent drop
+    response_side:
+    - answers CBOR only when Accept explicitly names application/cbor; wildcards keep
+      the JSON default, so a browser's */* never flips the format
+    - generated writer branches to WriteCBORBytes with Content-Type application/cbor,
+      after VaryAccept marks the response as Accept-keyed for shared caches
+    profile:
+    - the generator's own CBORHTTPProfile type, not the driver's Profile; hashed into
+      the generation fingerprint so both ends of the protocol agree on every regeneration
+    - zero value is the default profile: floats are ordinary values, members emit
+        in struct field order
+    - RejectFloats refuses float64 fields at generation and floats in request bodies
+      at decode, for scaled-integer schemas
+    - RequireSortedKeys emits RFC 8949 4.2.1 bytewise key order; a runtime map field
+      cannot promise it and becomes a generation error
+    fasthttp_parity: fasthttpbind carries the same helpers, so the derived transport
+      of requirement:typed-api-method-convergence works unchanged
+  resolved_from_earlier_draft:
+    opt_in: settled — generation-time project switch, not registration or per-type
+      declaration
+    response_trigger: settled — explicit Accept only, no symmetric default from the
+      request body's type
+    problem_documents: settled — problems stay application/problem+json in every case
+    body_intermediate: settled — generated binders decode the CBOR map inline; no
+      jsonbind.Object analogue exists
+    profiles: the old wire/world presets are gone (application-side now); the HTTP
+      subset is the two-flag CBORHTTPProfile instead
+  pw_integration:
+    config:
+    - popcornweb.toml block '[generate.api.cbor]' with enabled, reject_floats, sorted_keys;
+      absent block means disabled, enabled alone uses the default profile
+    - a project setting rather than a pw generate flag for the same reason as line_directives: api:cli-check
+        compares against fresh generation, and output must not depend on who ran it
+    - api:cli-init scaffolds the block with enabled false and a comment stating what
+      off costs (nothing)
+    generation:
+    - projectConfig carries the block; the generate command maps it onto EnableCBORHTTP
+      and CBORHTTPProfile
+    - go.mod moved to tinybind v0.5.19 and tinygodriver v1.2.7
+    runtime:
+    - pw.WriteAPI and pw.Parse needed no signature change; negotiation lives in the
+      generated writers and binders they dispatch to
+    - compression per policy:response-content-encoding wraps the writer unchanged
+    - body cap exposed as server.cbor_max_body (int64 bytes, 0 keeps the runtime's
+      1 MiB default); both lifecycles apply it once at startup because the value is
+      process-wide in the binding runtime, and a negative value is a startup error
+    docs: guide the switch, the two profile flags and when not to use them, per the
+      docs house style
+  upstream_followups_resolved:
+    in: tinybind v0.5.20, which pw now requires
+    vary_header: generated writers call VaryAccept before negotiating, so a shared
+      cache keys the entry on Accept
+    openapi: the generated document advertises application/cbor request and response
+      content when the option is on, except for a request body carrying a rest map,
+      which the CBOR emitter refuses and the document therefore must not advertise
+  verification:
+  - a POST with Content-Type application/cbor binds the same values as its JSON equivalent
+  - a GET with Accept application/cbor returns a CBOR body equal in content to the
+    JSON answer; Accept */* still gets JSON
+  - with the toml block absent or enabled false, pw generate reproduces today's output
+    byte for byte and the binary links no CBOR symbol
+  - toggling any profile key changes the generation fingerprint, so api:cli-check
+    reports stale generated code
+relations:
+- relation: mentions
+  to: api:cli-check
+  resolution: resolved
+- relation: mentions
+  to: api:cli-generate
+  resolution: resolved
+- relation: mentions
+  to: api:cli-init
+  resolution: resolved
+- relation: mentions
+  to: policy:response-content-encoding
+  resolution: resolved
+- relation: mentions
+  to: requirement:typed-api-method-convergence
+  resolution: resolved
+- relation: mentions
+  to: system:tinybind
+  resolution: resolved

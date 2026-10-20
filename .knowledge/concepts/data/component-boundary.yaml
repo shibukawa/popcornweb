@@ -1,0 +1,26 @@
+id: data:component-boundary
+type: data
+title: Component Boundary Metadata
+summary: Each refreshable server-component boundary carries server-verifiable identity,
+  version, dependency, and hierarchy metadata.
+facts:
+  legacy_body: "Each refreshable server-component boundary carries server-verifiable\
+    \ identity, version, dependency, and hierarchy metadata.\n\n```yaml\nfields:\n\
+    \  - component type ID\n  - instance key\n  - normalized input hash\n  - output\
+    \ version or hash\n  - dependency keys or tags\n  - parent and child boundary\
+    \ relationship\ntrust:\n  client_authority: none\n  server_binding:\n    - current\
+    \ route\n    - session and authorization scope\n    - build version\n```"
+  fields:
+  - component type ID
+  - instance key
+  - normalized input hash
+  - output version or hash
+  - dependency keys or tags
+  - parent and child boundary relationship
+  trust:
+    client_authority: none
+    server_binding:
+    - current route
+    - session and authorization scope
+    - build version
+relations: []

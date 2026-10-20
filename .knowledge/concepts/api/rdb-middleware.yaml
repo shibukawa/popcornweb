@@ -1,0 +1,123 @@
+id: api:rdb-middleware
+type: api
+title: RDB Middleware
+summary: RDB middleware initializes and owns the data:database-connection-set and
+  installs request SQL resources into data:request-context-capsule.
+facts:
+  legacy_body: "RDB middleware initializes and owns the data:database-connection-set\
+    \ and installs request SQL resources into data:request-context-capsule.\n\n```yaml\n\
+    startup:\n  - read rdb fields from data:middleware-runtime-config\n  - name the\
+    \ default group for an element that names none, which is the single-database project\n\
+    \  - resolve each connection DSN scheme to a requirement:contrib-database opener\
+    \ and dialect through rule:rdb-dsn-resolution\n  - open one *sql.DB per connection\
+    \ through that opener and apply its own pool settings\n  - publish the resolved\
+    \ dialect per connection, which rule:savepoint-dialect-support, rule:explain-dialect-support,\
+    \ and the system:goose provider read\n  - ping each connection within its connect_timeout\
+    \ before accepting requests\n  - resolve default_group and write_group per policy:connection-group-selection\n\
+    \  - report every connection in the policy:startup-summary output with its label\
+    \ and its rule:dsn-redaction DSN\n  - construct standard http.Handler middleware\n\
+    \  - require no application pw.SetDatabase call under decision:config-driven-database\n\
+    request:\n  - install the connection set before downstream dispatch\n  - make\
+    \ api:request-context-accessors and api:database-selection available\n  - do not\
+    \ begin, commit, or rollback a request transaction, per decision:explicit-transaction-boundary\n\
+    \  - active SQL executor comes from the api:database-selection resolution order\n\
+    \  - executor resolution decorates that executor per api:instrumented-sql-executor\
+    \ when query diagnostics are enabled\nreadiness:\n  - the readiness endpoint pings\
+    \ every configured connection\n  - a replica that cannot answer makes the instance\
+    \ unready, because the default group is what the application reads from\nconstraints:\n\
+    \  - transaction boundaries come only from api:transaction-runner\n  - streaming,\
+    \ connection hijacking, and early flush need no special transaction configuration\n\
+    \  - the set is fixed at startup, per decision:grouped-database-connections\n\
+    shutdown:\n  - stop accepting requests and drain active handlers\n  - close every\
+    \ owned *sql.DB through api:application-lifecycle\n```"
+  startup:
+  - read rdb fields from data:middleware-runtime-config
+  - name the default group for an element that names none, which is the single-database
+    project
+  - resolve each connection DSN scheme to a requirement:contrib-database opener and
+    dialect through rule:rdb-dsn-resolution
+  - open one *sql.DB per connection through that opener and apply its own pool settings
+  - publish the resolved dialect per connection, which rule:savepoint-dialect-support,
+    rule:explain-dialect-support, and the system:goose provider read
+  - ping each connection within its connect_timeout before accepting requests
+  - resolve default_group and write_group per policy:connection-group-selection
+  - report every connection in the policy:startup-summary output with its label and
+    its rule:dsn-redaction DSN
+  - construct standard http.Handler middleware
+  - require no application pw.SetDatabase call under decision:config-driven-database
+  request:
+  - install the connection set before downstream dispatch
+  - make api:request-context-accessors and api:database-selection available
+  - do not begin, commit, or rollback a request transaction, per decision:explicit-transaction-boundary
+  - active SQL executor comes from the api:database-selection resolution order
+  - executor resolution decorates that executor per api:instrumented-sql-executor
+    when query diagnostics are enabled
+  readiness:
+  - the readiness endpoint pings every configured connection
+  - a replica that cannot answer makes the instance unready, because the default group
+    is what the application reads from
+  constraints:
+  - transaction boundaries come only from api:transaction-runner
+  - streaming, connection hijacking, and early flush need no special transaction configuration
+  - the set is fixed at startup, per decision:grouped-database-connections
+  shutdown:
+  - stop accepting requests and drain active handlers
+  - close every owned *sql.DB through api:application-lifecycle
+relations:
+- relation: mentions
+  to: api:application-lifecycle
+  resolution: resolved
+- relation: mentions
+  to: api:database-selection
+  resolution: resolved
+- relation: mentions
+  to: api:instrumented-sql-executor
+  resolution: resolved
+- relation: mentions
+  to: api:request-context-accessors
+  resolution: resolved
+- relation: mentions
+  to: api:transaction-runner
+  resolution: resolved
+- relation: mentions
+  to: data:database-connection-set
+  resolution: resolved
+- relation: mentions
+  to: data:middleware-runtime-config
+  resolution: resolved
+- relation: mentions
+  to: data:request-context-capsule
+  resolution: resolved
+- relation: mentions
+  to: decision:config-driven-database
+  resolution: resolved
+- relation: mentions
+  to: decision:explicit-transaction-boundary
+  resolution: resolved
+- relation: mentions
+  to: decision:grouped-database-connections
+  resolution: resolved
+- relation: mentions
+  to: policy:connection-group-selection
+  resolution: resolved
+- relation: mentions
+  to: policy:startup-summary
+  resolution: resolved
+- relation: mentions
+  to: requirement:contrib-database
+  resolution: resolved
+- relation: mentions
+  to: rule:dsn-redaction
+  resolution: resolved
+- relation: mentions
+  to: rule:explain-dialect-support
+  resolution: resolved
+- relation: mentions
+  to: rule:rdb-dsn-resolution
+  resolution: resolved
+- relation: mentions
+  to: rule:savepoint-dialect-support
+  resolution: resolved
+- relation: mentions
+  to: system:goose
+  resolution: resolved

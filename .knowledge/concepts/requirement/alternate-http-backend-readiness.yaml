@@ -1,0 +1,904 @@
+id: requirement:alternate-http-backend-readiness
+type: requirement
+title: Readiness For A Non-net/http Backend
+summary: 'Adding a second HTTP backend must stay a framework-sized change: paid once
+  inside pw and the generated-code templates, never once per application handler.'
+facts:
+  legacy_body: "Adding a second HTTP backend must stay a framework-sized change: paid\
+    \ once inside pw and the generated-code templates, never once per application\
+    \ handler.\n\n```yaml\nstatus: proposed\nnot_a_commitment:\n  planned: no fasthttp\
+    \ backend is scheduled for a release\n  committed: keeping the option cheap, because\
+    \ losing it is paid silently over every handler written meanwhile, while keeping\
+    \ it is one rule\n  published_position: the why-popcorn-web page says fasthttp\
+    \ is a different boundary and this framework will not sit under a net/http-shaped\
+    \ compatibility layer; readiness does not contradict it, because this is about\
+    \ what application code names, not about shipping an adapter\nwhat_a_swap_actually_costs:\n\
+    \  handler_shape: fasthttp dispatches func(*fasthttp.RequestCtx), one value carrying\
+    \ both directions, so a two-parameter net/http handler has no shape-preserving\
+    \ translation\n  context: '*fasthttp.RequestCtx implements context.Context itself,\
+    \ so nothing wraps it and r.Context() has no counterpart there'\n  lifetime: that\
+    \ value and everything reachable from it are pooled and invalid once the handler\
+    \ returns, which net/http never required and application code therefore does not\
+    \ respect today\n  adapter: an adaptor converts a net/http handler by materializing\
+    \ the net/http values the backend exists to avoid allocating, so it answers compatibility\
+    \ and not the reason anyone switches\nall_or_nothing_now:\n  fact: decision:transport-compatibility-fallback\
+    \ records the reversal; there is no adapter, and a function the rewriter refuses\
+    \ fails the build\n  effect: this requirement stopped being about keeping an option\
+    \ cheap and became the precondition for the option existing at all\n  visible_before_committing:\
+    \ the upstream report-only run lists every refusal without generating, so the\
+    \ whole cost is knowable in advance rather than discovered during a migration\n\
+    why_the_rule_pays_regardless:\n  - decision:wasi-http-deferred already names this\
+    \ property as its future boundary, and a component-model host is the likelier\
+    \ payoff than fasthttp\n  - a handler naming the transport only through pw is\
+    \ the handler api:cli-generate can analyze, per requirement:httpbinder-extensible-route-analysis\n\
+    \  - containment is testable now; a backend port is not\nmechanism: decision:transport-handle-containment\n\
+    acceptance:\n  - every transport-typed call shape reachable from application code\
+    \ is enumerable from the pw surface\n  - scaffolds from api:cli-init, the examples,\
+    \ and the tutorial name w and r only at that surface\n  - a hypothetical backend\
+    \ changes pw, pwruntime, middlewares, and the generated-code templates, and no\
+    \ application file, except the application's own middleware, which decision:backend-specific-middleware\
+    \ never promised\n  - the upstream report-only run over every scaffold, example,\
+    \ and tutorial package reports nothing\nlargest_item: the full framework middleware\
+    \ set, ported per backend rather than adapted, per decision:backend-specific-middleware\n\
+    prerequisites:\n  surveyed: 2026-08-09, against tinybind-go v0.4.10\n  already_neutral:\n\
+    \    htmlbind: every render entry point takes io.Writer, so the heaviest upstream\
+    \ dependency needed no port; what is net/http-shaped is the negotiation, status,\
+    \ header, compression, and flush layer around it, which is pw's own code\n   \
+    \ jsonbind: an append-to-bytes API with no HTTP in it\n    sqlbind, configbind,\
+    \ minitoml, cliparser, dynamobind, firestorebind: no HTTP\n    internal path grammar:\
+    \ string matching, shared by the path-scoped policies\n  upstream_status: requirement:tinybind-alternate-backend-support,\
+    \ which records what shipped and what is left\n  router:\n    default: the tinygodriver\
+    \ fasthttprouter fork, not the upstream one, and the reason is a type identity\
+    \ rather than a preference\n    why: the upstream router takes valyala fasthttp's\
+    \ request value, while the TinyGo fork vendors its own, so a handler built against\
+    \ the fork is not the type that router accepts; upstream vendored the router beside\
+    \ the fork instead of giving up the TinyGo build\n    configurable: a router target\
+    \ names the import, qualifier, type, registration function, and catch-all spelling,\
+    \ so an application on upstream fasthttp points it at the upstream router and\
+    \ nothing else moves\n    grammar: named parameters carry over verbatim in both\
+    \ directions, and only the catch-all spelling is rewritten\n    no_catch_all:\
+    \ a target declaring no catch-all spelling rejects such a route by name rather\
+    \ than inventing one\n    matching_semantics: still the risk a transform cannot\
+    \ rewrite, so rule:route-and-template-checks comparing data:route-table across\
+    \ both builds is unchanged by any of this\n  settled_2026_08_10:\n    build_tag_axes:\n\
+    \      answer: independent axes, so the backend is not pinned to the TinyGo target\n\
+    \      but: TinyGo plus fasthttp is tier two, compiled and kept compiling but\
+    \ excluded from performance comparison, because that combination is both larger\
+    \ and no faster today\n      primary_target: host Go, which the measured 1.44x\
+    \ difference in CPU per request gives its own reason for, independent of anything\
+    \ TinyGo needs\n      consequence: the paired files gain a third variant only\
+    \ where the backend genuinely reaches them, and the tier-two rule keeps the fourth\
+    \ quadrant a compile check rather than a supported configuration\n    pw_in_the_second_binary:\n\
+    \      answer: absent, a clean split\n      consequence: everything transport-free\
+    \ that pw owns has to reach a shared package before the second build can start\
+    \ at all, which is configuration binding, session, the database layer, and observability\n\
+    \      why_not_the_cheap_one: a mixed binary needs no moving and carries the whole\
+    \ net/http stack it never serves with, which gives up the binary size the split\
+    \ is for and leaves two homes for every later decision\n      staging: the mixed\
+    \ shape works today and is a legitimate intermediate, so the move is per layer\
+    \ rather than all at once; what the answer settles is the destination, which is\
+    \ what decides where a thing is put when it is touched\n    test_seam:\n     \
+    \ answer: built first, before more porting\n      shape: pwtest holds the neutral\
+    \ request and response, and each transport supplies one Exchange with the same\
+    \ name and signature, so a test moves between them by changing its import\n  \
+    \    counted: 86 test files drive handlers through httptest here, 66 of them by\
+    \ building a request and reading a recorder, which is the population that would\
+    \ otherwise have been written twice\n      real_server: both halves run a real\
+    \ server over an in-memory pipe rather than a recorder, because half of what is\
+    \ worth testing is decided by the transport and a hand-built request value tests\
+    \ the entry against the test's idea of it\n    dev_tooling_scope:\n      answer:\
+    \ out of scope, as proposed\n      covers: the development console, the identity\
+    \ provider, the telemetry viewer, and the storybook\n      why: each is a host-side\
+    \ tool standing up its own server rather than part of the application serving\
+    \ path\n  identity_endpoints_2026_08_11:\n    was: the largest single item left,\
+    \ and the one this document called too security-sensitive to rush\n    answer:\
+    \ not a port; plugin/auth grew auth.Exchange, a transport seam, and every endpoint\
+    \ body was rewritten against it, so both transports drive one implementation of\
+    \ the login\n    what_the_seam_carries: the request line, one query parameter,\
+    \ one form field, one header and all of one header, a bounded body, the three\
+    \ connection facts the origin rules read, and the four response operations\n \
+    \   why_not_two_ports: decision:backend-specific-middleware says port the framework\
+    \ middleware set per backend, and this is the boundary where that stops paying;\
+    \ a middleware frame is a few rules, and a login is the accumulated judgement\
+    \ of three protocols\n    supporting_moves:\n      session: Manager.AttachTo,\
+    \ RotateOn and DestroyOn, plus Jar.LoadFrom\n      pwruntime: StoreAuthentication,\
+    \ the write half of the reader that was already portable\n      guard: auth.Rules,\
+    \ the resolved protection policy as a value, which pwfast.GuardPolicy already\
+    \ had the shape for\n    fasthttp_half: popcornweb/plugin/auth/authfast, about\
+    \ two hundred lines, of which the exchange is most\n    all_three_modes_serve:\
+    \ oidc, passkey and jwt_only, each covered by an end-to-end binary against a real\
+    \ provider and a real database\n    agreement_test: both listeners are asked the\
+    \ same question over one runtime and the answers are compared, which found a real\
+    \ divergence in Redirect\n    still_mixed: authfast links plugin/auth and therefore\
+    \ pw, because the session manager and the extension registry have not moved; the\
+    \ configuration layer, which this entry named as the blocker, is done — see configuration_layer_moved_2026_08_11\n\
+    \  configuration_layer_moved_2026_08_11:\n    first_of_four: pw_in_the_second_binary\
+    \ lists configuration binding, session, the database layer and observability as\
+    \ what has to reach a shared package; this is the first\n    package: pwconfig,\
+    \ holding the registry, the load, the framework's own bindings and their generated\
+    \ definitions, the environment the load resolves against, and the connection group\
+    \ resolution\n    the_earlier_reading_was_wrong: pwruntime's configlookup argued\
+    \ that moving the registry would drag registration, defaults, the environment\
+    \ overlay, scaffold emission and the boot report with it, so the read was published\
+    \ instead; only two of those are runtime-shaped, and both are hooks now\n    what_stayed_a_hook:\
+    \ the argument filter that takes framework subcommands off the command line, and\
+    \ the callback the startup summary reads\n    chain_settings_followed: the reduction\
+    \ into pwruntime.ChainSettings moved too, so a parse publishes what a chain builder\
+    \ needs; without that a pw-free build parsed a file and then had pwfast.Middlewares\
+    \ refuse for want of settings\n    application_surface_unchanged: every type is\
+    \ a true alias and every entry point a thin wrapper, so no application, scaffold\
+    \ or document changed\n    proved_by: internal/fastonly, a real package that parses\
+    \ a configuration file and serves one fasthttp request through a chain composed\
+    \ from what it read, whose dependency graph is asserted to contain no pw\n   \
+    \ what_is_left: nothing of the four; see all_four_layers_moved_2026_08_11\n  all_four_layers_moved_2026_08_11:\n\
+    \    layers:\n      pwconfig: the registry, the load, the framework's own bindings,\
+    \ the environment, and the connection group resolution\n      pwdatabase: opening\
+    \ the configured pools, the group selectors, and the pool lifetime\n      pwsession:\
+    \ the slot registry, the backend registry and its factories, the keyring, the\
+    \ cookie policy, the lifetime arithmetic, and the expiry sweep\n      pwobservability:\
+    \ the log backend, the OTLP exporters, the query diagnostics, and the span policy\n\
+    \    what_each_runtime_kept: one frame per layer, and nothing else — manager.Middleware\
+    \ against pwfast.Session, the startup summary that reads what was resolved, and\
+    \ the shutdown order, which is a property of the chain that was built rather than\
+    \ of any layer\n    stacking: pwdatabase over pwconfig, pwsession over both, pwobservability\
+    \ over pwconfig, and no edge back; asserted rather than intended, because a cycle\
+    \ here is a startup order nobody could state\n    application_surface_unchanged:\
+    \ every moved type is a true alias and every moved entry point a thin wrapper\n\
+    \    proved_by: go list -deps over all four, plus internal/fastonly, which parses\
+    \ a configuration file and serves one fasthttp request in a build whose graph\
+    \ contains no pw\n  plugin_freed_2026_08_11:\n    was: plugin/auth linked pw for\
+    \ two things, and authfast through it — the extension registration in auth.go\
+    \ and the net/http Exchange in httpexchange.go, which reached pw.WriteProblem\
+    \ and pw.Redirect\n    the_split_that_was_not_needed: the plan was plugin/auth/authcore\
+    \ plus 144 aliases in plugin/auth, keeping the documented blank import; what made\
+    \ it unnecessary is that the two things are small and neither needs the runtime,\
+    \ only net/http\n    answer: pwextension, a leaf holding the net/http extension\
+    \ registry and the two responses a plugin writes, published by whichever runtime\
+    \ is linked\n    net_http_is_not_a_runtime: the leaf names net/http, which is\
+    \ a protocol library; what is worth not linking is the framework built on it\n\
+    \    no_counterpart_on_the_second_transport: pwfast.Middlewares takes its frames\
+    \ as arguments and reads no registry, so this registry is the net/http chain's\
+    \ and a plugin hands the other transport a frame directly\n    honest_defaults:\
+    \ with no runtime published, Problem writes the document without the error page\
+    \ and Redirect falls back to net/http's helper; the status, headers and body are\
+    \ all still there and only the presentation a browser would have preferred is\
+    \ not\n    fell_out_of_it: the problem document was built by hand in both runtimes\
+    \ and is now pwruntime.AppendProblemJSON, so one response body is described once\n\
+    \    cost: no aliases, no package split, and the documented import line is unchanged\n\
+    \    proved_by: authfastjwte2e, which starts through pwconfig, plugin/auth and\
+    \ pwfast with no pw in its graph and asserts that, and go list -deps over plugin/auth\
+    \ and authfast\n  generator_wired_2026_08_11:\n    was: the critical path; every\
+    \ runtime piece existed and nothing produced the second build, so project.fasthttp\
+    \ only added a build constraint and an application could not be built for fasthttp\
+    \ at all\n    now: pw generate emits it — the derived handlers, the second transport's\
+    \ page tree, and the constraint on the first transport's half\n    derived_handlers:\
+    \ the upstream derivation, asked for by setting Options.Transform, arriving as\
+    \ artifacts with the rest\n    derived_binders: the same run's binders and writers\
+    \ over the fasthttp request value, which pwfast.Parse dispatches through; without\
+    \ them the second build compiles and answers 500 on the first request, because\
+    \ that registry is filled by generated init functions\n    the_rule_that_had_to_be_settled_first:\
+    \ generated code is output rather than input; the derivation read the whole loaded\
+    \ package, so a project that had generated once refused on its own previous binder\
+    \ — see requirement:tinybind-alternate-backend-support, fixed upstream in v0.5.5\n\
+    \    declined_from_the_same_run: the generator's own route registration, which\
+    \ installs on the router its transform target names; a page tree here installs\
+    \ on pwfastpage.Router and brings its own\n    page_tree: emitted twice and compared,\
+    \ so what gets a second copy is decided by the bytes rather than by a list of\
+    \ file names kept in agreement with an emitter this framework does not own\n \
+    \   what_differs: the route decoder and the registry, which read the request and\
+    \ install on a router; the compiled components come out identical and are written\
+    \ once for both builds\n    ordering: the second tree is a later step than the\
+    \ per-directory stages, because a server action is discovered by its signature\
+    \ and the fasthttp-shaped one is the derived handler this run had not written\
+    \ yet\n    refusals: a build error naming the occurrence, its chain and the upstream\
+    \ remedy, plus one sentence upstream cannot say — a refusal naming a pw call is\
+    \ requirement:pw-call-registration rather than an application defect\n    compiled_rather_than_inspected:\
+    \ internal/fastfixture is one authored package whose generated halves are committed\
+    \ and whose both tag configurations are built; every other test here asserts something\
+    \ about the source that was produced, and this is what would catch two halves\
+    \ that each look right and do not fit\n    route_registration: the routes an application\
+    \ registers itself are emitted onto pwfast.RouteInstaller, from the same table\
+    \ the authored wiring declares; the authored wiring is net/http-shaped and the\
+    \ tag excludes it, so without this the second build compiled and served nothing\n\
+    \    catch_all_spelling: the emitter is told Go's own suffix, which reads like\
+    \ a no-op and is not — it leaves a pattern exactly as the net/http source spelled\
+    \ it, so the one translation to this transport's router happens inside pwfast\
+    \ where the subtree and the {$} marker are translated too\n  entry_point_2026_08_11:\n\
+    \    was: every layer had a shared home and nothing sequenced them, so a deployment\
+    \ hand-wrote the parse, the pool, the observability, the session manager, the\
+    \ limiter's counter and the chain in an order only this repository knew\n    now:\
+    \ pwfast.Start does that and returns the shutdown that releases it, and pwfast.Run\
+    \ owns the port around it\n    where_it_lives: pwfast rather than beside it, because\
+    \ pwfast.Run is what pw.Run rewrites to and an import rewrite maps one package\
+    \ onto one package\n    what_that_cost: pwfast reaches pwconfig, which the layering\
+    \ test used to forbid; the property that clause protected is intact and still\
+    \ proven, since Middlewares composes from published settings alone and a test\
+    \ seam, an end-to-end fixture and internal/fastonly all build a chain with nothing\
+    \ parsed\n    plugins: WithRuntimeOptions, which is the shape an authentication\
+    \ plugin's Apply already has; there is still no frame registry on this transport,\
+    \ and pwextension.SetupProcess runs the startup half of every registered extension\
+    \ so a storage plugin's blank import means the same thing in both builds\n   \
+    \ build_target: api:cli-build and api:cli-generate take --target fasthttp, which\
+    \ adds the tag to the compile and to the development-import check; a target the\
+    \ project never declared is refused rather than compiled into undefined symbols\n\
+    \  rate_limiting_2026_08_11:\n    was: pw installs two frames and pwfast installed\
+    \ neither, so a fasthttp deployment ran with ratelimit.enabled = true and no limiter\
+    \ — a control that looks installed\n    moved: pwratelimit holds the counter,\
+    \ the store registry, and the Limiter that decides the bucket, the count, the\
+    \ exemption and the admission; both transports drive that one Limiter and supply\
+    \ only the canonical path, the caller's address and how a 429 is written\n   \
+    \ configuration: pwruntime, beside CSRFConfig and SecurityHeadersConfig, which\
+    \ is where a setting both transports build a frame from already lives\n    counter_is_startup:\
+    \ supplied rather than opened in the frame, like the session manager, because\
+    \ the Redis backend dials a server and refuses to start against one it cannot\
+    \ reach; enabled with no counter is refused\n  storage_plugins_2026_08_11:\n \
+    \   was: database/dynamo and database/firestore linked pw for their registration\
+    \ and nothing else\n    fact_that_made_it_cheap: both install no middleware at\
+    \ all, because the request path reads a process handle rather than a context node\n\
+    \    now: registered through pwextension, started by pwextension.SetupProcess,\
+    \ and an extension that does return a frame is refused there by name rather than\
+    \ dropped\n  scaffold_2026_08_11:\n    what_it_writes: main_fasthttp.go beside\
+    \ main.go, and a build constraint on every authored file typed by one transport\
+    \ — the mux wiring, the handlers, the page tree loader\n    what_it_moved: the\
+    \ request and response types out of the files that read them, because a build\
+    \ tag excludes a whole file and the derived handler reads those types too; the\
+    \ split is written for every project rather than only for one declaring the second\
+    \ build, since one layout is easier to teach than two and it is the layout this\
+    \ framework's own rule asks for\n    auth: the second entry point names authfast.Contribute,\
+    \ because the other build gains those frames from an import and a chain assembled\
+    \ from arguments does not\n    plugin_registration: pwextension.Extension gained\
+    \ SecondTransport, which names the package serving a capability on the other transport;\
+    \ an extension that declares one is left alone by SetupProcess, since running\
+    \ its startup there as well would build the same runtime twice — without it every\
+    \ fasthttp build linking plugin/auth refused to start\n    how_it_is_checked:\
+    \ structurally rather than by compiling, because a scaffolded project is its own\
+    \ module; a test reads the scaffold and holds it to the rule — an excluded file\
+    \ declares no type, const or var the other half needs — and internal/fastfixture\
+    \ is the same layout compiled under both tags\n  compiled_and_served_2026_08_11:\n\
+    \    what: examples/helloworld, a real application, built for both transports\
+    \ and run\n    result: the fasthttp binary serves the page, renders the document\
+    \ shell, counts the visit in SQLite, and its dependency graph contains no pw;\
+    \ the two builds answer byte-identical markup and, after the fixes below, an identical\
+    \ header set\n    what_it_found_that_nothing_else_did:\n      generated_registrations_named_pw:\
+    \ the document shell and the reloadable registration are emitted into an application\
+    \ package, and both named pw — so every fasthttp build linked the net/http runtime\
+    \ and registered its document in the half that was not serving; they name pwruntime\
+    \ now, which is where the registry always was\n      scaffolded_error_page_named_pw:\
+    \ the same defect in an authored file, fixed the same way; pwruntime gained HTMLFragment\
+    \ so the file reads as it did\n      application_config_registration: pw.RegisterConfig\
+    \ is the documented application entry and links pw into a file both builds compile;\
+    \ pwconfig.Register is the portable spelling, and the example uses it\n      cache_policy_absent:\
+    \ pwfast rendered HTML with no Cache-Control and no Vary at all, so a page belonging\
+    \ to one reader was cacheable by a shared proxy on one transport and not the other;\
+    \ the verdict comes from the templates, so both halves now read it from the same\
+    \ source\n      server_banner: fasthttp announced itself in a header the other\
+    \ transport does not send\n    why_only_a_real_application_found_them: each is\
+    \ a file an application owns or a header a browser reads, and every test here\
+    \ drove a handler or an artifact rather than a built binary\n    migration_it_documents:\
+    \ declare project.fasthttp, run pw generate, tag the authored files typed by one\
+    \ transport, and add the second entry point — which is what api:cli-init now scaffolds\
+    \ for a new project\n  complex_features_2026_08_11:\n    driven: async_render,\
+    \ live_render, partial_update and htmx_fragment, each built both ways and the\
+    \ interesting request actually made\n    async: works, and the derivation reads\
+    \ well — pw.Go survives with its context, and a handler whose parameter name collided\
+    \ gets a fresh one with the original rebound; a page with two pending values renders\
+    \ identically to the first transport's\n    async_needed: pwfast had no Go, Resolved\
+    \ or Failed at all, so every derived handler that started work called a function\
+    \ that did not exist\n    live: works — the same NDJSON record protocol, head\
+    \ record and deliveries addressed by boundary id, streamed\n    what_live_needed_first:\n\
+    \      published_settings: nothing published the update settings in a build without\
+    \ pw, so the whole surface was inert — no live, no redraw, no partial update;\
+    \ the reduction is pwconfig's now, published by Parse beside the chain settings\n\
+    \      the_wrong_switch: ServeLive gated on update.enabled, which is a different\
+    \ setting answering a different request; live is gated by html.live and streaming,\
+    \ so a project asking only for live got none\n      the_wrong_header: it read\
+    \ the update module's mode token, and the browser runtime this framework ships\
+    \ sends Pw-Response-Mode; the constants are shared now, since they are the wire\
+    \ between one client and either half\n      unflushed_records: the loop wrote\
+    \ into the bufio.Writer a body stream writer is handed and never flushed, so a\
+    \ subscription held a connection open and delivered nothing\n      the_access_log_drained_it:\
+    \ Response.Body on a body stream materializes the stream to answer, so logging\
+    \ the size consumed a subscription that by design does not end — the request never\
+    \ completed and no byte reached the client\n    a_test_agreed_with_the_bug: the\
+    \ live protocol test published update.enabled and sent the module's header, so\
+    \ implementation and test matched each other and both disagreed with the client;\
+    \ it asserts the shipped contract now\n    error_pages: pwfast answered every\
+    \ failure with a problem document, so a browser never saw the application's error\
+    \ page; it negotiates on Accept through the shared rule and renders the registered\
+    \ page through the document shell, exactly as the other half does\n  browser_runtime_2026_08_11:\n\
+    \    was: the second build served no /_pw script at all, so a page rendered with\
+    \ a script tag pointing at a 404 — both server halves of the update surface worked\
+    \ and nothing client-side could reach them\n    moved: pwbrowser, holding the\
+    \ embedded asset, the module set, the revision the URL carries, which paths the\
+    \ set claims, and the cache policy; the unminified sources moved beside it, since\
+    \ they are the source of the thing it serves\n    why_a_leaf_rather_than_a_copy:\
+    \ a document naming the runtime is rendered by whichever half is running and an\
+    \ application's template names that URL once, so two runtimes each embedding their\
+    \ own copy would be two revisions of one asset and a page rendered by one build\
+    \ would load a script the other does not serve\n    what_each_transport_keeps:\
+    \ reading a path off a request and writing the response, plus closing the reserved\
+    \ namespace so an unclaimed path there never reaches application routing\n   \
+    \ build_modes_still_differ: the development set adds a module and an import and\
+    \ therefore lands on a different revision, which is published rather than branched\
+    \ on — a deployed build publishes nothing and both transports land on one revision\n\
+    \    proved_by: both binaries of examples/live_render name /_pw/15d90b93c185664b/popcornweb-runtime.js\
+    \ and serve the same 20310 bytes at it, and a stale revision answers 404 on each\n\
+    \  command_line_2026_08_11:\n    was: the second build took no command line at\
+    \ all — every flag was an unknown flag, --generate-config did nothing, the health\
+    \ probe was unreachable, and an application's own subcommand could not be named\n\
+    \    why: the argument filter that lifts the framework's words off the line was\
+    \ a pw hook, and a build without pw installed none\n    moved: pwconfig, which\
+    \ already owns the line through Hooks.Args — the framework actions, the health\
+    \ probe, and the subcommand registry\n    the_filter_is_no_longer_optional: a\
+    \ nil Args hook used to mean no filtering; it now means the framework's own words\
+    \ are still taken off the line, so a build that installs no hook still answers\
+    \ them and a runtime sets one only to add\n    application_subcommands: registered\
+    \ through pwconfig, and the generator recognizes that spelling as well as the\
+    \ pw one — a subcommand's declaring file is compiled by both builds, so naming\
+    \ a runtime there would put it in only one\n    proved_by: both binaries of examples/helloworld\
+    \ answer \"seed --count 42 --table orders\" identically, take its declared defaults\
+    \ identically, list it identically for an unknown command, and give the same answer\
+    \ for --generate-config, an unknown flag, a config flag, and the health probe\n\
+    \  still_missing:\n    websocket: requirement:contrib-websocket, blocked on a\
+    \ dependency decision rather than on work here\n    dev_tooling: out of scope,\
+    \ per dev_tooling_scope above\n  open_here:\n    superseded_note: the four entries\
+    \ below were the open list; all four are answered in settled_2026_08_10 above\
+    \ and are kept here for the reasoning rather than as questions\n    test_seam:\n\
+    \      fact: 77 files in this repository drive handlers through httptest, and\
+    \ the other backend tests through an in-memory listener instead\n      risk: without\
+    \ a backend-neutral seam in the test utilities first, every one of those tests\
+    \ is written twice\n      owner: api:test-run and decision:testutil-testing-interface\n\
+    \      rank: highest leverage of anything on this list, and the easiest to skip\n\
+    \    build_tag_axes:\n      today: two axes already, the TinyGo target and decision:force-tinygo-logic,\
+    \ visible as the paired files in pw\n      question: whether the backend is a\
+    \ third independent axis or is pinned to the TinyGo target, which decides whether\
+    \ every paired file needs a third variant\n      sharper_now: the upstream fork\
+    \ exists because the fasthttp backend is aimed at TinyGo, which suggests the two\
+    \ are not independent, and settling it decides the size of the matrix\n    dev_tooling_scope:\n\
+    \      fact: the development console, the identity provider, the telemetry viewer,\
+    \ and the storybook each construct their own net/http server and are host-side\
+    \ tools rather than the application serving path\n      proposal: declare them\
+    \ out of scope, so the port does not grow to include them\n    handler_file_layout:\
+    \ a transport handler must sit in a file of its own, per decision:transport-source-transform,\
+    \ which the scaffolds and examples must be made to satisfy\n  do_first_here:\n\
+    \    what: register the pw surface per requirement:pw-call-registration, then\
+    \ run the upstream report-only generation over the examples, scaffolds, and tutorial\n\
+    \    why: it produces the actual work list rather than an estimate, and a clean\
+    \ run is the definition of an application that can adopt the backend\n    cost:\
+    \ low, and the registration is useful whether or not a backend is ever shipped\n\
+    non_goals:\n  - shipping a fasthttp backend\n  - hiding http.ResponseWriter and\
+    \ '*http.Request' from handler signatures, which decision:root-pw-api deliberately\
+    \ keeps visible and testable\n  - a compatibility layer of any kind, which upstream\
+    \ specified and did not implement\n```"
+  status: proposed
+  not_a_commitment:
+    planned: no fasthttp backend is scheduled for a release
+    committed: keeping the option cheap, because losing it is paid silently over every
+      handler written meanwhile, while keeping it is one rule
+    published_position: the why-popcorn-web page says fasthttp is a different boundary
+      and this framework will not sit under a net/http-shaped compatibility layer;
+      readiness does not contradict it, because this is about what application code
+      names, not about shipping an adapter
+  what_a_swap_actually_costs:
+    handler_shape: fasthttp dispatches func(*fasthttp.RequestCtx), one value carrying
+      both directions, so a two-parameter net/http handler has no shape-preserving
+      translation
+    context: '*fasthttp.RequestCtx implements context.Context itself, so nothing wraps
+      it and r.Context() has no counterpart there'
+    lifetime: that value and everything reachable from it are pooled and invalid once
+      the handler returns, which net/http never required and application code therefore
+      does not respect today
+    adapter: an adaptor converts a net/http handler by materializing the net/http
+      values the backend exists to avoid allocating, so it answers compatibility and
+      not the reason anyone switches
+  all_or_nothing_now:
+    fact: decision:transport-compatibility-fallback records the reversal; there is
+      no adapter, and a function the rewriter refuses fails the build
+    effect: this requirement stopped being about keeping an option cheap and became
+      the precondition for the option existing at all
+    visible_before_committing: the upstream report-only run lists every refusal without
+      generating, so the whole cost is knowable in advance rather than discovered
+      during a migration
+  why_the_rule_pays_regardless:
+  - decision:wasi-http-deferred already names this property as its future boundary,
+    and a component-model host is the likelier payoff than fasthttp
+  - a handler naming the transport only through pw is the handler api:cli-generate
+    can analyze, per requirement:httpbinder-extensible-route-analysis
+  - containment is testable now; a backend port is not
+  mechanism: decision:transport-handle-containment
+  acceptance:
+  - every transport-typed call shape reachable from application code is enumerable
+    from the pw surface
+  - scaffolds from api:cli-init, the examples, and the tutorial name w and r only
+    at that surface
+  - a hypothetical backend changes pw, pwruntime, middlewares, and the generated-code
+    templates, and no application file, except the application's own middleware, which
+    decision:backend-specific-middleware never promised
+  - the upstream report-only run over every scaffold, example, and tutorial package
+    reports nothing
+  largest_item: the full framework middleware set, ported per backend rather than
+    adapted, per decision:backend-specific-middleware
+  prerequisites:
+    surveyed: 2026-08-09, against tinybind-go v0.4.10
+    already_neutral:
+      htmlbind: every render entry point takes io.Writer, so the heaviest upstream
+        dependency needed no port; what is net/http-shaped is the negotiation, status,
+        header, compression, and flush layer around it, which is pw's own code
+      jsonbind: an append-to-bytes API with no HTTP in it
+      sqlbind, configbind, minitoml, cliparser, dynamobind, firestorebind: no HTTP
+      internal path grammar: string matching, shared by the path-scoped policies
+    upstream_status: requirement:tinybind-alternate-backend-support, which records
+      what shipped and what is left
+    router:
+      default: the tinygodriver fasthttprouter fork, not the upstream one, and the
+        reason is a type identity rather than a preference
+      why: the upstream router takes valyala fasthttp's request value, while the TinyGo
+        fork vendors its own, so a handler built against the fork is not the type
+        that router accepts; upstream vendored the router beside the fork instead
+        of giving up the TinyGo build
+      configurable: a router target names the import, qualifier, type, registration
+        function, and catch-all spelling, so an application on upstream fasthttp points
+        it at the upstream router and nothing else moves
+      grammar: named parameters carry over verbatim in both directions, and only the
+        catch-all spelling is rewritten
+      no_catch_all: a target declaring no catch-all spelling rejects such a route
+        by name rather than inventing one
+      matching_semantics: still the risk a transform cannot rewrite, so rule:route-and-template-checks
+        comparing data:route-table across both builds is unchanged by any of this
+    settled_2026_08_10:
+      build_tag_axes:
+        answer: independent axes, so the backend is not pinned to the TinyGo target
+        but: TinyGo plus fasthttp is tier two, compiled and kept compiling but excluded
+          from performance comparison, because that combination is both larger and
+          no faster today
+        primary_target: host Go, which the measured 1.44x difference in CPU per request
+          gives its own reason for, independent of anything TinyGo needs
+        consequence: the paired files gain a third variant only where the backend
+          genuinely reaches them, and the tier-two rule keeps the fourth quadrant
+          a compile check rather than a supported configuration
+      pw_in_the_second_binary:
+        answer: absent, a clean split
+        consequence: everything transport-free that pw owns has to reach a shared
+          package before the second build can start at all, which is configuration
+          binding, session, the database layer, and observability
+        why_not_the_cheap_one: a mixed binary needs no moving and carries the whole
+          net/http stack it never serves with, which gives up the binary size the
+          split is for and leaves two homes for every later decision
+        staging: the mixed shape works today and is a legitimate intermediate, so
+          the move is per layer rather than all at once; what the answer settles is
+          the destination, which is what decides where a thing is put when it is touched
+      test_seam:
+        answer: built first, before more porting
+        shape: pwtest holds the neutral request and response, and each transport supplies
+          one Exchange with the same name and signature, so a test moves between them
+          by changing its import
+        counted: 86 test files drive handlers through httptest here, 66 of them by
+          building a request and reading a recorder, which is the population that
+          would otherwise have been written twice
+        real_server: both halves run a real server over an in-memory pipe rather than
+          a recorder, because half of what is worth testing is decided by the transport
+          and a hand-built request value tests the entry against the test's idea of
+          it
+      dev_tooling_scope:
+        answer: out of scope, as proposed
+        covers: the development console, the identity provider, the telemetry viewer,
+          and the storybook
+        why: each is a host-side tool standing up its own server rather than part
+          of the application serving path
+    identity_endpoints_2026_08_11:
+      was: the largest single item left, and the one this document called too security-sensitive
+        to rush
+      answer: not a port; plugin/auth grew auth.Exchange, a transport seam, and every
+        endpoint body was rewritten against it, so both transports drive one implementation
+        of the login
+      what_the_seam_carries: the request line, one query parameter, one form field,
+        one header and all of one header, a bounded body, the three connection facts
+        the origin rules read, and the four response operations
+      why_not_two_ports: decision:backend-specific-middleware says port the framework
+        middleware set per backend, and this is the boundary where that stops paying;
+        a middleware frame is a few rules, and a login is the accumulated judgement
+        of three protocols
+      supporting_moves:
+        session: Manager.AttachTo, RotateOn and DestroyOn, plus Jar.LoadFrom
+        pwruntime: StoreAuthentication, the write half of the reader that was already
+          portable
+        guard: auth.Rules, the resolved protection policy as a value, which pwfast.GuardPolicy
+          already had the shape for
+      fasthttp_half: popcornweb/plugin/auth/authfast, about two hundred lines, of
+        which the exchange is most
+      all_three_modes_serve: oidc, passkey and jwt_only, each covered by an end-to-end
+        binary against a real provider and a real database
+      agreement_test: both listeners are asked the same question over one runtime
+        and the answers are compared, which found a real divergence in Redirect
+      still_mixed: authfast links plugin/auth and therefore pw, because the session
+        manager and the extension registry have not moved; the configuration layer,
+        which this entry named as the blocker, is done — see configuration_layer_moved_2026_08_11
+    configuration_layer_moved_2026_08_11:
+      first_of_four: pw_in_the_second_binary lists configuration binding, session,
+        the database layer and observability as what has to reach a shared package;
+        this is the first
+      package: pwconfig, holding the registry, the load, the framework's own bindings
+        and their generated definitions, the environment the load resolves against,
+        and the connection group resolution
+      the_earlier_reading_was_wrong: pwruntime's configlookup argued that moving the
+        registry would drag registration, defaults, the environment overlay, scaffold
+        emission and the boot report with it, so the read was published instead; only
+        two of those are runtime-shaped, and both are hooks now
+      what_stayed_a_hook: the argument filter that takes framework subcommands off
+        the command line, and the callback the startup summary reads
+      chain_settings_followed: the reduction into pwruntime.ChainSettings moved too,
+        so a parse publishes what a chain builder needs; without that a pw-free build
+        parsed a file and then had pwfast.Middlewares refuse for want of settings
+      application_surface_unchanged: every type is a true alias and every entry point
+        a thin wrapper, so no application, scaffold or document changed
+      proved_by: internal/fastonly, a real package that parses a configuration file
+        and serves one fasthttp request through a chain composed from what it read,
+        whose dependency graph is asserted to contain no pw
+      what_is_left: nothing of the four; see all_four_layers_moved_2026_08_11
+    all_four_layers_moved_2026_08_11:
+      layers:
+        pwconfig: the registry, the load, the framework's own bindings, the environment,
+          and the connection group resolution
+        pwdatabase: opening the configured pools, the group selectors, and the pool
+          lifetime
+        pwsession: the slot registry, the backend registry and its factories, the
+          keyring, the cookie policy, the lifetime arithmetic, and the expiry sweep
+        pwobservability: the log backend, the OTLP exporters, the query diagnostics,
+          and the span policy
+      what_each_runtime_kept: one frame per layer, and nothing else — manager.Middleware
+        against pwfast.Session, the startup summary that reads what was resolved,
+        and the shutdown order, which is a property of the chain that was built rather
+        than of any layer
+      stacking: pwdatabase over pwconfig, pwsession over both, pwobservability over
+        pwconfig, and no edge back; asserted rather than intended, because a cycle
+        here is a startup order nobody could state
+      application_surface_unchanged: every moved type is a true alias and every moved
+        entry point a thin wrapper
+      proved_by: go list -deps over all four, plus internal/fastonly, which parses
+        a configuration file and serves one fasthttp request in a build whose graph
+        contains no pw
+    plugin_freed_2026_08_11:
+      was: plugin/auth linked pw for two things, and authfast through it — the extension
+        registration in auth.go and the net/http Exchange in httpexchange.go, which
+        reached pw.WriteProblem and pw.Redirect
+      the_split_that_was_not_needed: the plan was plugin/auth/authcore plus 144 aliases
+        in plugin/auth, keeping the documented blank import; what made it unnecessary
+        is that the two things are small and neither needs the runtime, only net/http
+      answer: pwextension, a leaf holding the net/http extension registry and the
+        two responses a plugin writes, published by whichever runtime is linked
+      net_http_is_not_a_runtime: the leaf names net/http, which is a protocol library;
+        what is worth not linking is the framework built on it
+      no_counterpart_on_the_second_transport: pwfast.Middlewares takes its frames
+        as arguments and reads no registry, so this registry is the net/http chain's
+        and a plugin hands the other transport a frame directly
+      honest_defaults: with no runtime published, Problem writes the document without
+        the error page and Redirect falls back to net/http's helper; the status, headers
+        and body are all still there and only the presentation a browser would have
+        preferred is not
+      fell_out_of_it: the problem document was built by hand in both runtimes and
+        is now pwruntime.AppendProblemJSON, so one response body is described once
+      cost: no aliases, no package split, and the documented import line is unchanged
+      proved_by: authfastjwte2e, which starts through pwconfig, plugin/auth and pwfast
+        with no pw in its graph and asserts that, and go list -deps over plugin/auth
+        and authfast
+    generator_wired_2026_08_11:
+      was: the critical path; every runtime piece existed and nothing produced the
+        second build, so project.fasthttp only added a build constraint and an application
+        could not be built for fasthttp at all
+      now: pw generate emits it — the derived handlers, the second transport's page
+        tree, and the constraint on the first transport's half
+      derived_handlers: the upstream derivation, asked for by setting Options.Transform,
+        arriving as artifacts with the rest
+      derived_binders: the same run's binders and writers over the fasthttp request
+        value, which pwfast.Parse dispatches through; without them the second build
+        compiles and answers 500 on the first request, because that registry is filled
+        by generated init functions
+      the_rule_that_had_to_be_settled_first: generated code is output rather than
+        input; the derivation read the whole loaded package, so a project that had
+        generated once refused on its own previous binder — see requirement:tinybind-alternate-backend-support,
+        fixed upstream in v0.5.5
+      declined_from_the_same_run: the generator's own route registration, which installs
+        on the router its transform target names; a page tree here installs on pwfastpage.Router
+        and brings its own
+      page_tree: emitted twice and compared, so what gets a second copy is decided
+        by the bytes rather than by a list of file names kept in agreement with an
+        emitter this framework does not own
+      what_differs: the route decoder and the registry, which read the request and
+        install on a router; the compiled components come out identical and are written
+        once for both builds
+      ordering: the second tree is a later step than the per-directory stages, because
+        a server action is discovered by its signature and the fasthttp-shaped one
+        is the derived handler this run had not written yet
+      refusals: a build error naming the occurrence, its chain and the upstream remedy,
+        plus one sentence upstream cannot say — a refusal naming a pw call is requirement:pw-call-registration
+        rather than an application defect
+      compiled_rather_than_inspected: internal/fastfixture is one authored package
+        whose generated halves are committed and whose both tag configurations are
+        built; every other test here asserts something about the source that was produced,
+        and this is what would catch two halves that each look right and do not fit
+      route_registration: the routes an application registers itself are emitted onto
+        pwfast.RouteInstaller, from the same table the authored wiring declares; the
+        authored wiring is net/http-shaped and the tag excludes it, so without this
+        the second build compiled and served nothing
+      catch_all_spelling: the emitter is told Go's own suffix, which reads like a
+        no-op and is not — it leaves a pattern exactly as the net/http source spelled
+        it, so the one translation to this transport's router happens inside pwfast
+        where the subtree and the {$} marker are translated too
+    entry_point_2026_08_11:
+      was: every layer had a shared home and nothing sequenced them, so a deployment
+        hand-wrote the parse, the pool, the observability, the session manager, the
+        limiter's counter and the chain in an order only this repository knew
+      now: pwfast.Start does that and returns the shutdown that releases it, and pwfast.Run
+        owns the port around it
+      where_it_lives: pwfast rather than beside it, because pwfast.Run is what pw.Run
+        rewrites to and an import rewrite maps one package onto one package
+      what_that_cost: pwfast reaches pwconfig, which the layering test used to forbid;
+        the property that clause protected is intact and still proven, since Middlewares
+        composes from published settings alone and a test seam, an end-to-end fixture
+        and internal/fastonly all build a chain with nothing parsed
+      plugins: WithRuntimeOptions, which is the shape an authentication plugin's Apply
+        already has; there is still no frame registry on this transport, and pwextension.SetupProcess
+        runs the startup half of every registered extension so a storage plugin's
+        blank import means the same thing in both builds
+      build_target: api:cli-build and api:cli-generate take --target fasthttp, which
+        adds the tag to the compile and to the development-import check; a target
+        the project never declared is refused rather than compiled into undefined
+        symbols
+    rate_limiting_2026_08_11:
+      was: pw installs two frames and pwfast installed neither, so a fasthttp deployment
+        ran with ratelimit.enabled = true and no limiter — a control that looks installed
+      moved: pwratelimit holds the counter, the store registry, and the Limiter that
+        decides the bucket, the count, the exemption and the admission; both transports
+        drive that one Limiter and supply only the canonical path, the caller's address
+        and how a 429 is written
+      configuration: pwruntime, beside CSRFConfig and SecurityHeadersConfig, which
+        is where a setting both transports build a frame from already lives
+      counter_is_startup: supplied rather than opened in the frame, like the session
+        manager, because the Redis backend dials a server and refuses to start against
+        one it cannot reach; enabled with no counter is refused
+    storage_plugins_2026_08_11:
+      was: database/dynamo and database/firestore linked pw for their registration
+        and nothing else
+      fact_that_made_it_cheap: both install no middleware at all, because the request
+        path reads a process handle rather than a context node
+      now: registered through pwextension, started by pwextension.SetupProcess, and
+        an extension that does return a frame is refused there by name rather than
+        dropped
+    scaffold_2026_08_11:
+      what_it_writes: main_fasthttp.go beside main.go, and a build constraint on every
+        authored file typed by one transport — the mux wiring, the handlers, the page
+        tree loader
+      what_it_moved: the request and response types out of the files that read them,
+        because a build tag excludes a whole file and the derived handler reads those
+        types too; the split is written for every project rather than only for one
+        declaring the second build, since one layout is easier to teach than two and
+        it is the layout this framework's own rule asks for
+      auth: the second entry point names authfast.Contribute, because the other build
+        gains those frames from an import and a chain assembled from arguments does
+        not
+      plugin_registration: pwextension.Extension gained SecondTransport, which names
+        the package serving a capability on the other transport; an extension that
+        declares one is left alone by SetupProcess, since running its startup there
+        as well would build the same runtime twice — without it every fasthttp build
+        linking plugin/auth refused to start
+      how_it_is_checked: structurally rather than by compiling, because a scaffolded
+        project is its own module; a test reads the scaffold and holds it to the rule
+        — an excluded file declares no type, const or var the other half needs — and
+        internal/fastfixture is the same layout compiled under both tags
+    compiled_and_served_2026_08_11:
+      what: examples/helloworld, a real application, built for both transports and
+        run
+      result: the fasthttp binary serves the page, renders the document shell, counts
+        the visit in SQLite, and its dependency graph contains no pw; the two builds
+        answer byte-identical markup and, after the fixes below, an identical header
+        set
+      what_it_found_that_nothing_else_did:
+        generated_registrations_named_pw: the document shell and the reloadable registration
+          are emitted into an application package, and both named pw — so every fasthttp
+          build linked the net/http runtime and registered its document in the half
+          that was not serving; they name pwruntime now, which is where the registry
+          always was
+        scaffolded_error_page_named_pw: the same defect in an authored file, fixed
+          the same way; pwruntime gained HTMLFragment so the file reads as it did
+        application_config_registration: pw.RegisterConfig is the documented application
+          entry and links pw into a file both builds compile; pwconfig.Register is
+          the portable spelling, and the example uses it
+        cache_policy_absent: pwfast rendered HTML with no Cache-Control and no Vary
+          at all, so a page belonging to one reader was cacheable by a shared proxy
+          on one transport and not the other; the verdict comes from the templates,
+          so both halves now read it from the same source
+        server_banner: fasthttp announced itself in a header the other transport does
+          not send
+      why_only_a_real_application_found_them: each is a file an application owns or
+        a header a browser reads, and every test here drove a handler or an artifact
+        rather than a built binary
+      migration_it_documents: declare project.fasthttp, run pw generate, tag the authored
+        files typed by one transport, and add the second entry point — which is what
+        api:cli-init now scaffolds for a new project
+    complex_features_2026_08_11:
+      driven: async_render, live_render, partial_update and htmx_fragment, each built
+        both ways and the interesting request actually made
+      async: works, and the derivation reads well — pw.Go survives with its context,
+        and a handler whose parameter name collided gets a fresh one with the original
+        rebound; a page with two pending values renders identically to the first transport's
+      async_needed: pwfast had no Go, Resolved or Failed at all, so every derived
+        handler that started work called a function that did not exist
+      live: works — the same NDJSON record protocol, head record and deliveries addressed
+        by boundary id, streamed
+      what_live_needed_first:
+        published_settings: nothing published the update settings in a build without
+          pw, so the whole surface was inert — no live, no redraw, no partial update;
+          the reduction is pwconfig's now, published by Parse beside the chain settings
+        the_wrong_switch: ServeLive gated on update.enabled, which is a different
+          setting answering a different request; live is gated by html.live and streaming,
+          so a project asking only for live got none
+        the_wrong_header: it read the update module's mode token, and the browser
+          runtime this framework ships sends Pw-Response-Mode; the constants are shared
+          now, since they are the wire between one client and either half
+        unflushed_records: the loop wrote into the bufio.Writer a body stream writer
+          is handed and never flushed, so a subscription held a connection open and
+          delivered nothing
+        the_access_log_drained_it: Response.Body on a body stream materializes the
+          stream to answer, so logging the size consumed a subscription that by design
+          does not end — the request never completed and no byte reached the client
+      a_test_agreed_with_the_bug: the live protocol test published update.enabled
+        and sent the module's header, so implementation and test matched each other
+        and both disagreed with the client; it asserts the shipped contract now
+      error_pages: pwfast answered every failure with a problem document, so a browser
+        never saw the application's error page; it negotiates on Accept through the
+        shared rule and renders the registered page through the document shell, exactly
+        as the other half does
+    browser_runtime_2026_08_11:
+      was: the second build served no /_pw script at all, so a page rendered with
+        a script tag pointing at a 404 — both server halves of the update surface
+        worked and nothing client-side could reach them
+      moved: pwbrowser, holding the embedded asset, the module set, the revision the
+        URL carries, which paths the set claims, and the cache policy; the unminified
+        sources moved beside it, since they are the source of the thing it serves
+      why_a_leaf_rather_than_a_copy: a document naming the runtime is rendered by
+        whichever half is running and an application's template names that URL once,
+        so two runtimes each embedding their own copy would be two revisions of one
+        asset and a page rendered by one build would load a script the other does
+        not serve
+      what_each_transport_keeps: reading a path off a request and writing the response,
+        plus closing the reserved namespace so an unclaimed path there never reaches
+        application routing
+      build_modes_still_differ: the development set adds a module and an import and
+        therefore lands on a different revision, which is published rather than branched
+        on — a deployed build publishes nothing and both transports land on one revision
+      proved_by: both binaries of examples/live_render name /_pw/15d90b93c185664b/popcornweb-runtime.js
+        and serve the same 20310 bytes at it, and a stale revision answers 404 on
+        each
+    command_line_2026_08_11:
+      was: the second build took no command line at all — every flag was an unknown
+        flag, --generate-config did nothing, the health probe was unreachable, and
+        an application's own subcommand could not be named
+      why: the argument filter that lifts the framework's words off the line was a
+        pw hook, and a build without pw installed none
+      moved: pwconfig, which already owns the line through Hooks.Args — the framework
+        actions, the health probe, and the subcommand registry
+      the_filter_is_no_longer_optional: a nil Args hook used to mean no filtering;
+        it now means the framework's own words are still taken off the line, so a
+        build that installs no hook still answers them and a runtime sets one only
+        to add
+      application_subcommands: registered through pwconfig, and the generator recognizes
+        that spelling as well as the pw one — a subcommand's declaring file is compiled
+        by both builds, so naming a runtime there would put it in only one
+      proved_by: both binaries of examples/helloworld answer "seed --count 42 --table
+        orders" identically, take its declared defaults identically, list it identically
+        for an unknown command, and give the same answer for --generate-config, an
+        unknown flag, a config flag, and the health probe
+    still_missing:
+      websocket: requirement:contrib-websocket, blocked on a dependency decision rather
+        than on work here
+      dev_tooling: out of scope, per dev_tooling_scope above
+    open_here:
+      superseded_note: the four entries below were the open list; all four are answered
+        in settled_2026_08_10 above and are kept here for the reasoning rather than
+        as questions
+      test_seam:
+        fact: 77 files in this repository drive handlers through httptest, and the
+          other backend tests through an in-memory listener instead
+        risk: without a backend-neutral seam in the test utilities first, every one
+          of those tests is written twice
+        owner: api:test-run and decision:testutil-testing-interface
+        rank: highest leverage of anything on this list, and the easiest to skip
+      build_tag_axes:
+        today: two axes already, the TinyGo target and decision:force-tinygo-logic,
+          visible as the paired files in pw
+        question: whether the backend is a third independent axis or is pinned to
+          the TinyGo target, which decides whether every paired file needs a third
+          variant
+        sharper_now: the upstream fork exists because the fasthttp backend is aimed
+          at TinyGo, which suggests the two are not independent, and settling it decides
+          the size of the matrix
+      dev_tooling_scope:
+        fact: the development console, the identity provider, the telemetry viewer,
+          and the storybook each construct their own net/http server and are host-side
+          tools rather than the application serving path
+        proposal: declare them out of scope, so the port does not grow to include
+          them
+      handler_file_layout: a transport handler must sit in a file of its own, per
+        decision:transport-source-transform, which the scaffolds and examples must
+        be made to satisfy
+    do_first_here:
+      what: register the pw surface per requirement:pw-call-registration, then run
+        the upstream report-only generation over the examples, scaffolds, and tutorial
+      why: it produces the actual work list rather than an estimate, and a clean run
+        is the definition of an application that can adopt the backend
+      cost: low, and the registration is useful whether or not a backend is ever shipped
+  non_goals:
+  - shipping a fasthttp backend
+  - hiding http.ResponseWriter and '*http.Request' from handler signatures, which
+    decision:root-pw-api deliberately keeps visible and testable
+  - a compatibility layer of any kind, which upstream specified and did not implement
+lifecycle: proposed
+acceptance:
+  item-df21003eaeabaeac:
+    text: every transport-typed call shape reachable from application code is enumerable
+      from the pw surface
+  item-31a60c4ea35c0bef:
+    text: scaffolds from api:cli-init, the examples, and the tutorial name w and r
+      only at that surface
+  item-85611d36b1d2906d:
+    text: a hypothetical backend changes pw, pwruntime, middlewares, and the generated-code
+      templates, and no application file, except the application's own middleware,
+      which decision:backend-specific-middleware never promised
+  item-ee7d64db9534c3aa:
+    text: the upstream report-only run over every scaffold, example, and tutorial
+      package reports nothing
+relations:
+- relation: mentions
+  to: api:cli-build
+  resolution: resolved
+- relation: mentions
+  to: api:cli-generate
+  resolution: resolved
+- relation: mentions
+  to: api:cli-init
+  resolution: resolved
+- relation: mentions
+  to: api:test-run
+  resolution: resolved
+- relation: mentions
+  to: data:route-table
+  resolution: resolved
+- relation: mentions
+  to: decision:backend-specific-middleware
+  resolution: resolved
+- relation: mentions
+  to: decision:force-tinygo-logic
+  resolution: resolved
+- relation: mentions
+  to: decision:root-pw-api
+  resolution: resolved
+- relation: mentions
+  to: decision:testutil-testing-interface
+  resolution: resolved
+- relation: mentions
+  to: decision:transport-compatibility-fallback
+  resolution: resolved
+- relation: mentions
+  to: decision:transport-handle-containment
+  resolution: resolved
+- relation: mentions
+  to: decision:transport-source-transform
+  resolution: resolved
+- relation: mentions
+  to: decision:wasi-http-deferred
+  resolution: resolved
+- relation: mentions
+  to: requirement:contrib-websocket
+  resolution: resolved
+- relation: mentions
+  to: requirement:httpbinder-extensible-route-analysis
+  resolution: resolved
+- relation: mentions
+  to: requirement:pw-call-registration
+  resolution: resolved
+- relation: mentions
+  to: requirement:tinybind-alternate-backend-support
+  resolution: resolved
+- relation: mentions
+  to: rule:route-and-template-checks
+  resolution: resolved

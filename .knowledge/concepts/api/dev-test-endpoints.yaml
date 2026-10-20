@@ -1,0 +1,91 @@
+id: api:dev-test-endpoints
+type: api
+title: Development Test Data Endpoints
+summary: The pwdev application serves dataset seeding and assertion over its own listener
+  so an external test process (decision:browser-suite-seeding) reaches the running
+  pool without a subprocess or a second connection.
+facts:
+  legacy_body: "The pwdev application serves dataset seeding and assertion over its\
+    \ own listener so an external test process (decision:browser-suite-seeding) reaches\
+    \ the running pool without a subprocess or a second connection.\n\n```yaml\npackage:\
+    \ github.com/shibukawa/popcornweb/pw (devtest_mode_dev.go, pwdev build tag)\n\
+    surface:\n  - POST /_pw/test/seed/{dataset}   -> 204, or 404 unknown dataset,\
+    \ 400 invalid name, 500 apply failure\n  - GET  /_pw/test/assert/{dataset} ->\
+    \ 204 match, 409 with text/plain per-table diff, 404/400/500 as above\nlocks:\n\
+    \  - pwdev build mode; the release stub returns the chain untouched and links\
+    \ no seeding code\n  - data:runtime-environment must resolve to development, matching\
+    \ policy:devidp-safety allowlisting\n  - loopback RemoteAddr with no forwarding\
+    \ header, no opt-out\nplacement:\n  - wraps the finished middleware chain in buildMiddlewares,\
+    \ above the closed /_pw reserved namespace\n  - absent from the api:test-run bridge\
+    \ chain, which builds its own handler\n  - unclaimed /_pw/test paths still fall\
+    \ to the namespace 404, so absence is indistinguishable from a release build\n\
+    resolution:\n  datasets: data:seed-dataset names under testdata/seed, subdirectories\
+    \ allowed, extension optional\n  containment: a name resolving outside the seed\
+    \ directory is refused 400; the mux path-cleaning is the first layer\n  pool:\
+    \ middleware.rdb migration group from data:middleware-runtime-config, same routing\
+    \ as api:cli-seed\n  dialect: from the migration group DSN scheme via internal/dbseed\
+    \ (decision:dbtestify-integration)\nsemantics:\n  seed: dataset _operation blocks\
+    \ apply; default clear-insert per named table\n  assert: pool state only; there\
+    \ is no test transaction here, unlike api:test-seed\nnon_goals:\n  - dataset listing\
+    \ or upload; files stay version-control owned\n  - authentication; the three locks\
+    \ are the whole admission rule\n```"
+  package: github.com/shibukawa/popcornweb/pw (devtest_mode_dev.go, pwdev build tag)
+  surface:
+  - POST /_pw/test/seed/{dataset}   -> 204, or 404 unknown dataset, 400 invalid name,
+    500 apply failure
+  - GET  /_pw/test/assert/{dataset} -> 204 match, 409 with text/plain per-table diff,
+    404/400/500 as above
+  locks:
+  - pwdev build mode; the release stub returns the chain untouched and links no seeding
+    code
+  - data:runtime-environment must resolve to development, matching policy:devidp-safety
+    allowlisting
+  - loopback RemoteAddr with no forwarding header, no opt-out
+  placement:
+  - wraps the finished middleware chain in buildMiddlewares, above the closed /_pw
+    reserved namespace
+  - absent from the api:test-run bridge chain, which builds its own handler
+  - unclaimed /_pw/test paths still fall to the namespace 404, so absence is indistinguishable
+    from a release build
+  resolution:
+    datasets: data:seed-dataset names under testdata/seed, subdirectories allowed,
+      extension optional
+    containment: a name resolving outside the seed directory is refused 400; the mux
+      path-cleaning is the first layer
+    pool: middleware.rdb migration group from data:middleware-runtime-config, same
+      routing as api:cli-seed
+    dialect: from the migration group DSN scheme via internal/dbseed (decision:dbtestify-integration)
+  semantics:
+    seed: dataset _operation blocks apply; default clear-insert per named table
+    assert: pool state only; there is no test transaction here, unlike api:test-seed
+  non_goals:
+  - dataset listing or upload; files stay version-control owned
+  - authentication; the three locks are the whole admission rule
+relations:
+- relation: mentions
+  to: api:cli-seed
+  resolution: resolved
+- relation: mentions
+  to: api:test-run
+  resolution: resolved
+- relation: mentions
+  to: api:test-seed
+  resolution: resolved
+- relation: mentions
+  to: data:middleware-runtime-config
+  resolution: resolved
+- relation: mentions
+  to: data:runtime-environment
+  resolution: resolved
+- relation: mentions
+  to: data:seed-dataset
+  resolution: resolved
+- relation: mentions
+  to: decision:browser-suite-seeding
+  resolution: resolved
+- relation: mentions
+  to: decision:dbtestify-integration
+  resolution: resolved
+- relation: mentions
+  to: policy:devidp-safety
+  resolution: resolved

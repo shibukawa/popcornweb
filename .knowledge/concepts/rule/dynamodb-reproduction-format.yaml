@@ -1,0 +1,86 @@
+id: rule:dynamodb-reproduction-format
+type: rule
+title: DynamoDB Reproduction Format
+summary: The rerun snippet is the captured request body handed to the AWS CLI unchanged,
+  because the body already is the request.
+facts:
+  legacy_body: "The rerun snippet is the captured request body handed to the AWS CLI\
+    \ unchanged, because the body already is the request.\n\n```yaml\nform: \"aws\
+    \ dynamodb <operation> --cli-input-json '<the captured body>'\"\nsource: decision:dynamodb-observability-seam\
+    \ captures the body on its way to the wire\nwhy_it_is_exact:\n  here: the protocol\
+    \ is one JSON document per operation, so the reproduction is the observed request\
+    \ rather than a reconstruction of it\n  contrast: rule:query-reproduction-format\
+    \ has to rebuild a statement and rebind its parameters, and states why it must\
+    \ never inline a literal\n  consequence: there is no equivalent hazard; a snippet\
+    \ that differs from what ran cannot be produced by copying what ran\nprohibition:\n\
+    \  no_reassembly: never rebuild the body from parsed fields, because a round trip\
+    \ through the framework's own model is exactly where a difference would enter\n\
+    \  no_endpoint: the snippet names no endpoint, region, profile, or credential;\
+    \ the operator supplies those, and policy:query-log-safety already forbids emitting\
+    \ them\n  no_framework_tables: a rule:framework-owned-tables request produces\
+    \ no record and therefore no snippet\ngating:\n  requires: bind values on, since\
+    \ the body carries key values and item attributes and is the same class of data\n\
+    \  without_it: the record keeps operation, table, timing, capacity, and counts,\
+    \ which is enough to see that a request was slow without seeing what it said\n\
+    \  omit_when_truncated: a body that hit its bound produces no snippet, because\
+    \ a truncated JSON document is not runnable\nrules:\n  - the snippet is quoted\
+    \ for a shell and escapes control characters, matching what rule:query-reproduction-format\
+    \ requires of its own output\n  - a write operation snippet is marked as one,\
+    \ so an operator does not paste a PutItem into a production account without noticing\n\
+    \  - the snippet is diagnostic output and the framework never runs it\nrelated:\n\
+    \  - data:dynamodb-request-record\n  - requirement:query-diagnostics\n  - policy:query-log-safety\n\
+    ```"
+  form: aws dynamodb <operation> --cli-input-json '<the captured body>'
+  source: decision:dynamodb-observability-seam captures the body on its way to the
+    wire
+  why_it_is_exact:
+    here: the protocol is one JSON document per operation, so the reproduction is
+      the observed request rather than a reconstruction of it
+    contrast: rule:query-reproduction-format has to rebuild a statement and rebind
+      its parameters, and states why it must never inline a literal
+    consequence: there is no equivalent hazard; a snippet that differs from what ran
+      cannot be produced by copying what ran
+  prohibition:
+    no_reassembly: never rebuild the body from parsed fields, because a round trip
+      through the framework's own model is exactly where a difference would enter
+    no_endpoint: the snippet names no endpoint, region, profile, or credential; the
+      operator supplies those, and policy:query-log-safety already forbids emitting
+      them
+    no_framework_tables: a rule:framework-owned-tables request produces no record
+      and therefore no snippet
+  gating:
+    requires: bind values on, since the body carries key values and item attributes
+      and is the same class of data
+    without_it: the record keeps operation, table, timing, capacity, and counts, which
+      is enough to see that a request was slow without seeing what it said
+    omit_when_truncated: a body that hit its bound produces no snippet, because a
+      truncated JSON document is not runnable
+  rules:
+  - the snippet is quoted for a shell and escapes control characters, matching what
+    rule:query-reproduction-format requires of its own output
+  - a write operation snippet is marked as one, so an operator does not paste a PutItem
+    into a production account without noticing
+  - the snippet is diagnostic output and the framework never runs it
+  related:
+  - data:dynamodb-request-record
+  - requirement:query-diagnostics
+  - policy:query-log-safety
+relations:
+- relation: mentions
+  to: data:dynamodb-request-record
+  resolution: resolved
+- relation: mentions
+  to: decision:dynamodb-observability-seam
+  resolution: resolved
+- relation: mentions
+  to: policy:query-log-safety
+  resolution: resolved
+- relation: mentions
+  to: requirement:query-diagnostics
+  resolution: resolved
+- relation: mentions
+  to: rule:framework-owned-tables
+  resolution: resolved
+- relation: mentions
+  to: rule:query-reproduction-format
+  resolution: resolved

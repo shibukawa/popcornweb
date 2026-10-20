@@ -1,0 +1,125 @@
+id: policy:cli-progress-reporting
+type: policy
+title: CLI Progress Reporting
+summary: A system:pw-cli command reports the work an operator is waiting on while
+  it runs, and finishes by naming what the operator now owns rather than what the
+  toolchain produced for itself.
+facts:
+  legacy_body: "A system:pw-cli command reports the work an operator is waiting on\
+    \ while it runs, and finishes by naming what the operator now owns rather than\
+    \ what the toolchain produced for itself.\n\n```yaml\naudience: actor:application-developer\n\
+    problem:\n  silence: api:cli-dev spends its startup on services, generation, migration,\
+    \ and a build with no output, so a slow run and a hung run look identical\n  wrong_nouns:\
+    \ api:cli-init ends by listing the policy:generated-artifacts paths, which are\
+    \ gitignored build inputs named after sources the operator has not read yet, so\
+    \ the one list it prints is the one list that answers no question\nprogress_region:\n\
+    \  applies_to: any phase that can outlast a second, which today means service\
+    \ startup, api:cli-generate, api:cli-migrate, the CSS build, and the Go build\n\
+    \  form: a bounded region of about three lines, holding the phase in progress\
+    \ and the last lines under it\n  lifetime: the region is replaced in place as\
+    \ phases advance and collapses to the outcome when the command reaches its steady\
+    \ state\n  reason: a scrollback full of every generated path costs the operator\
+    \ the diagnostics that follow it, and a phase name with a spinner answers \"is\
+    \ it stuck\" without any of that\n  never_collapsed: diagnostics, warnings, and\
+    \ errors leave the region and stay in the scrollback, because the region exists\
+    \ to hide routine progress and nothing else\n  non_terminal: plain one-line-per-phase\
+    \ output with no cursor movement, so a log file and CI transcript stay readable\n\
+    \  library: the decision:interactive-project-bootstrap terminal stack, host-only\
+    \ per decision:host-tools-target-runtime\ncompletion_report:\n  names: the handwritten\
+    \ sources the command created or edited, grouped by concept:project-layout directory\n\
+    \  counts: policy:generated-artifacts files are reported as a count with the command\
+    \ that recreates them, never as a path list\n  reason: a generated path is not\
+    \ a file the operator opens, edits, or commits, and the ignore rule the same scaffold\
+    \ writes already says so\n  errors: unchanged, since a failing generation reports\
+    \ the source it could not compile whatever the progress region is doing\ncommands:\n\
+    \  init: progress region over its phases, then the created-source report, then\
+    \ the decision:interactive-project-bootstrap declined-capability notice and the\
+    \ next commands\n  dev: progress region over the startup phases, collapsing into\
+    \ policy:startup-summary and the watch loop; a rebuild reuses the same region\n\
+    \  generate: the path list is the whole output of the command, so it stays a list\
+    \ when invoked directly and becomes a count when another command runs it\n  build:\
+    \ progress region over generation and compilation\nnon_goals:\n  - a progress\
+    \ bar with a percentage, which no phase here can honestly compute\n  - a full-screen\
+    \ process manager, refused for the same reason api:cli-dev keeps service logs\
+    \ in one stream\n  - hiding any diagnostic behind an interactive control\n```"
+  audience: actor:application-developer
+  problem:
+    silence: api:cli-dev spends its startup on services, generation, migration, and
+      a build with no output, so a slow run and a hung run look identical
+    wrong_nouns: api:cli-init ends by listing the policy:generated-artifacts paths,
+      which are gitignored build inputs named after sources the operator has not read
+      yet, so the one list it prints is the one list that answers no question
+  progress_region:
+    applies_to: any phase that can outlast a second, which today means service startup,
+      api:cli-generate, api:cli-migrate, the CSS build, and the Go build
+    form: a bounded region of about three lines, holding the phase in progress and
+      the last lines under it
+    lifetime: the region is replaced in place as phases advance and collapses to the
+      outcome when the command reaches its steady state
+    reason: a scrollback full of every generated path costs the operator the diagnostics
+      that follow it, and a phase name with a spinner answers "is it stuck" without
+      any of that
+    never_collapsed: diagnostics, warnings, and errors leave the region and stay in
+      the scrollback, because the region exists to hide routine progress and nothing
+      else
+    non_terminal: plain one-line-per-phase output with no cursor movement, so a log
+      file and CI transcript stay readable
+    library: the decision:interactive-project-bootstrap terminal stack, host-only
+      per decision:host-tools-target-runtime
+  completion_report:
+    names: the handwritten sources the command created or edited, grouped by concept:project-layout
+      directory
+    counts: policy:generated-artifacts files are reported as a count with the command
+      that recreates them, never as a path list
+    reason: a generated path is not a file the operator opens, edits, or commits,
+      and the ignore rule the same scaffold writes already says so
+    errors: unchanged, since a failing generation reports the source it could not
+      compile whatever the progress region is doing
+  commands:
+    init: progress region over its phases, then the created-source report, then the
+      decision:interactive-project-bootstrap declined-capability notice and the next
+      commands
+    dev: progress region over the startup phases, collapsing into policy:startup-summary
+      and the watch loop; a rebuild reuses the same region
+    generate: the path list is the whole output of the command, so it stays a list
+      when invoked directly and becomes a count when another command runs it
+    build: progress region over generation and compilation
+  non_goals:
+  - a progress bar with a percentage, which no phase here can honestly compute
+  - a full-screen process manager, refused for the same reason api:cli-dev keeps service
+    logs in one stream
+  - hiding any diagnostic behind an interactive control
+relations:
+- relation: mentions
+  to: actor:application-developer
+  resolution: resolved
+- relation: mentions
+  to: api:cli-dev
+  resolution: resolved
+- relation: mentions
+  to: api:cli-generate
+  resolution: resolved
+- relation: mentions
+  to: api:cli-init
+  resolution: resolved
+- relation: mentions
+  to: api:cli-migrate
+  resolution: resolved
+- relation: mentions
+  to: concept:project-layout
+  resolution: resolved
+- relation: mentions
+  to: decision:host-tools-target-runtime
+  resolution: resolved
+- relation: mentions
+  to: decision:interactive-project-bootstrap
+  resolution: resolved
+- relation: mentions
+  to: policy:generated-artifacts
+  resolution: resolved
+- relation: mentions
+  to: policy:startup-summary
+  resolution: resolved
+- relation: mentions
+  to: system:pw-cli
+  resolution: resolved

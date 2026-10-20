@@ -1,0 +1,109 @@
+id: decision:auth-backend-selection
+type: decision
+title: One auth.backend Key Selects All Four Authentication Stores
+summary: A project names the storage behind the framework-owned authentication tables
+  once, in `auth.backend`, and the four stores move together.
+facts:
+  legacy_body: "A project names the storage behind the framework-owned authentication\
+    \ tables once, in `auth.backend`, and the four stores move together.\n\n```yaml\n\
+    status: accepted\ndecided: user 2026-08-01\nquestion: how requirement:dynamodb-auth-backend\
+    \ is selected, given that plugin/auth opens four stores and today reads a database\
+    \ handle for all of them\nanswer:\n  key: auth.backend, a new field of data:authentication-runtime-config\n\
+    \  values: rdb, the default and the current behavior, dynamo, and firestore per\
+    \ requirement:firestore-auth-backend\n  scope: authstate, allowlist, credential,\
+    \ and bootstrap at once, plus data:revoked-token-record, which requirement:jwt-only-api-authentication\
+    \ added after this was decided\n  scope_growth: the revocation list arrived as\
+    \ a fifth store and is implemented against rdb only; it is named here rather than\
+    \ left out, because a store nobody listed is one the dynamo backend will silently\
+    \ not cover\n  linking: decision:import-registered-session-plugins; importing\
+    \ the backend package registers its factory under the name, so a project links\
+    \ the backend it runs and no other\n  missing_import: a startup error naming the\
+    \ import line to add, per rule:storage-package-layout\none_key_for_four:\n  reason:\
+    \ the four stores are one deployment's authentication state, and a project splitting\
+    \ them across two engines gains nothing and loses the shared unit of work of decision:dynamodb-auth-compensating-registration\n\
+    \  sharper_on_firestore: there the shared unit of work is a real transaction across\
+    \ two of the stores, per decision:firestore-conditional-writes, so a split configuration\
+    \ would lose atomicity rather than only an ordering\n  consequence: a mixed configuration\
+    \ is not expressible, which is the intent\n  escape: an application that genuinely\
+    \ wants one store elsewhere installs it through api:auth-credential-store or api:auth-allowlist-store,\
+    \ which outrank the selected backend\nprecedence:\n  installed_store_wins: SetCredentialStore,\
+    \ SetBootstrapStore, and the allowlist setter are read before the backend, unchanged\
+    \ from today\n  effect: auth.backend chooses the framework default, and never\
+    \ overrides an application implementation\n  reason: api:auth-credential-store\
+    \ already states that installing a store means the framework creates and verifies\
+    \ no table for that capability, and that stays true\nrejected_import_alone:\n\
+    \  form: importing authstore/dynamo selects it, with no configuration key, as\
+    \ a session backend is not selected by import either\n  why_not: session.backend\
+    \ already names its backend and the import only registers it, so import-alone\
+    \ would be the one selection in the framework with no name in configuration\n\
+    \  sharper: two linked backends with no key would have no defined winner\nrejected_auto_detect:\n\
+    \  form: use DynamoDB when middleware.rdb is absent and middleware.dynamo is enabled\n\
+    \  why_not:\n    - a project with both stores, which requirement:dynamodb-store\
+    \ calls the expected shape, has no answer\n    - adding an rdb section for one\
+    \ unrelated table would silently move authentication storage\n    - a startup\
+    \ summary could report the choice, and policy:startup-summary reporting a choice\
+    \ nothing configured is how a deployment learns to distrust it\nvalidation:\n\
+    \  - an unknown auth.backend value fails startup naming the registered names\n\
+    \  - auth.backend dynamo without middleware.dynamo enabled fails startup, the\
+    \ way session.backend rdb without middleware.rdb does today\n  - auth.backend\
+    \ rdb without middleware.rdb keeps the current error, which is now the backend's\
+    \ rather than the package's\nimplemented:\n  built: 2026-08-05\n  revocation_list:\
+    \ the fifth store arrived with requirement:jwt-only-api-authentication and is\
+    \ relational only; jwt_only reads it and the allowlist directly rather than through\
+    \ the backend, so a non-rdb auth.backend is refused for that mode when either\
+    \ is in play, rather than accepted as a key that silently does nothing\n  registry:\
+    \ auth.RegisterBackend, with the relational backend registered by plugin/auth\
+    \ itself and the DynamoDB one by authstore/dynamo from init\n  ceremony_store:\
+    \ a backend supplies authstate.RawStore per namespace rather than a typed store,\
+    \ because two of the three ceremony types are unexported\n  sweep: a ceremony\
+    \ store that needs one implements Prune; a store whose expiry is decided on read\
+    \ implements nothing and the sweep skips it\n  validation: an unlinked name is\
+    \ refused at configuration validation, naming what is linked\nrelated:\n  - requirement:dynamodb-auth-backend\n\
+    \  - data:authentication-runtime-config\n  - api:session-backend-plugin\n```"
+  legacy_parse_issues:
+  - kind: legacy_parse_error
+    block: 0
+    message: Object of type date is not JSON serializable
+relations:
+- relation: mentions
+  to: api:auth-allowlist-store
+  resolution: resolved
+- relation: mentions
+  to: api:auth-credential-store
+  resolution: resolved
+- relation: mentions
+  to: api:session-backend-plugin
+  resolution: resolved
+- relation: mentions
+  to: data:authentication-runtime-config
+  resolution: resolved
+- relation: mentions
+  to: data:revoked-token-record
+  resolution: resolved
+- relation: mentions
+  to: decision:dynamodb-auth-compensating-registration
+  resolution: resolved
+- relation: mentions
+  to: decision:firestore-conditional-writes
+  resolution: resolved
+- relation: mentions
+  to: decision:import-registered-session-plugins
+  resolution: resolved
+- relation: mentions
+  to: policy:startup-summary
+  resolution: resolved
+- relation: mentions
+  to: requirement:dynamodb-auth-backend
+  resolution: resolved
+- relation: mentions
+  to: requirement:dynamodb-store
+  resolution: resolved
+- relation: mentions
+  to: requirement:firestore-auth-backend
+  resolution: resolved
+- relation: mentions
+  to: requirement:jwt-only-api-authentication
+  resolution: resolved
+- relation: mentions
+  to: rule:storage-package-layout
+  resolution: resolved

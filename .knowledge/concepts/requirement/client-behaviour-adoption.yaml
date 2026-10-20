@@ -1,0 +1,632 @@
+id: requirement:client-behaviour-adoption
+type: requirement
+title: Client Behaviour Adoption
+summary: 'system:tinybind v0.5.8 shipped the four asks of docs/tinybind-go-actions-and-handlers-request.md,
+  so what remains is this framework''s half: a JavaScript parser behind the reporting
+  seam, four attribute names, a runtime that binds what the lowering now emits, and
+  three things that break a page rather than degrade it if they are missed.'
+facts:
+  legacy_body: "system:tinybind v0.5.8 shipped the four asks of docs/tinybind-go-actions-and-handlers-request.md,\
+    \ so what remains is this framework's half: a JavaScript parser behind the reporting\
+    \ seam, four attribute names, a runtime that binds what the lowering now emits,\
+    \ and three things that break a page rather than degrade it if they are missed.\n\
+    \n```yaml\nsource: the v0.5.8 client behaviour document, verified against the\
+    \ module source 2026-08-12\nverified_against_the_code:\n  reporting_seam: templates/htmlbind/script_report.go\
+    \ ComponentScripts returns Component, Script, Pos, Handlers and Parameters, and\
+    \ runs the same analysis Generate does\n  answer_seam: GenerateOptions ClientHandlers,\
+    \ ClientHandlerAttr, ComponentParameters and ComponentParameterAttr, plus Result.ComponentScripts\
+    \ for a compile that already ran\n  tree_seam: routetree GenerateOptions.ScriptResolver\
+    \ returning ScriptAnswers, and ClientHandlerAttr and ComponentParameterAttr on\
+    \ the emitter\n  dispatch: httpbind.ActionSelector reads the query before the\
+    \ body, and httpbind.DispatchAction applies the 303 when the handler wrote nothing\n\
+    \  defaults: data-tb-action, data-tb-on, data-tb-props, _action, _csrf\n  parity:\
+    \ fasthttpbind carries its own action dispatch, so requirement:alternate-http-backend-readiness\
+    \ is not regressed by adopting this\nwhat_upstream_answered_differently_and_better:\n\
+    \  no_action_attribute: the form carries method=post and no action at all, so\
+    \ a native submit goes to the document URL, which already holds this page's path\
+    \ parameters and keeps its query; decision:action-entry-point-selection asked\
+    \ for the page pattern to be written in and this is the same destination with\
+    \ nothing to write\n  selector_in_a_hidden_field: _action carrying hash and name,\
+    \ read by ActionSelector with the query winning over the body so a submit button's\
+    \ formaction can override the form\n  the_page_registers_post: only when a template\
+    \ declares a form action, which is why a bare button's direct endpoint stays the\
+    \ only address that answers for it\nthree_things_that_break_a_page:\n  csrf_option_is_mandatory:\n\
+    \    rule: a render reaching an unsafe form with no token fails with ErrNoCSRFToken\
+    \ rather than emitting an empty field\n    already_satisfied: requirement:module-native-csrf\
+    \ added the option in the one document render entry every page branch funnels\
+    \ through, and states the sessionless case as a deliberate failure\n    what_changed:\
+    \ one form now makes this true for every render of that page, so a page that never\
+    \ had an unsafe form can acquire one by adopting a server action\n  post_collision:\n\
+    \    rule: a page whose template declares a form action registers POST on its\
+    \ own path beside its GET, and a hand-registered POST at the same address panics\
+    \ decision:stdlib-servemux at startup\n    who_can_hit_it: a page-tree project\
+    \ that already hand-registers a POST at a page path, which is legal today because\
+    \ the tree registered only GET there; adopting a form action on that page is what\
+    \ turns a working pair into a panic\n    reproduced: 2026-08-12, by registering\
+    \ POST on the fixture's page path before pages.Register\n    the_check_it_seemed_to_need_is_worth_less_than_it_looked:\n\
+    \      what_the_panic_already_says: both patterns, both registration sites, each\
+    \ with a file and a line, one of which is the generated registry and the other\
+    \ the application's own\n      so: it is a startup failure that names its own\
+    \ cause, which is the outcome a doctor check would have been buying\n      and_a_check_cannot_see_it_anyway:\
+    \ analysis skips a file carrying the generated header, deliberately, or a page\
+    \ registry read back as a source would turn every page into a documented API route;\
+    \ the page POST is registered only there\n      therefore: the RouteTable input\
+    \ PW0201 declares would not carry this pattern even once it exists, so closing\
+    \ it means analysis reading generated registrations for one purpose while excluding\
+    \ them for another\n    what_is_worth_doing_instead: documenting the upgrade hazard\
+    \ where a project adopts a form action, since the panic is legible and the surprise\
+    \ is only that generation added a registration\n  csrf_field_name_is_not_forwarded:\n\
+    \    fact: CSRFFieldName and CSRFMode are templates/htmlbind options and routetree\
+    \ forwards neither, so a page tree always emits _csrf and always emits it\n  \
+    \  bites_us_when: a project configures another field name, which policy:csrf-protection\
+    \ permits while recommending the module default\n    answer: refuse a configured\
+    \ field name that is not the module default in a page-tree project, naming this\
+    \ as the reason, rather than emitting a token the middleware will not find\n \
+    \   alternative: ask upstream for the emitter setting, which the document says\
+    \ is available for the asking\nthis_frameworks_half:\n  the_parser:\n    what:\
+    \ reads the reported block and answers which names setup returned and which parameters\
+    \ it destructured, per decision:script-block-parsing-ownership\n    wired_at:\
+    \ the routetree ScriptResolver, which is the seam that was asked for and shipped\n\
+    \    cost: one extra parse per template carrying a block, because the blocks are\
+    \ reported before the compile that consumes the answers\n    refusal_is_explicit:\
+    \ an unresolved name is reported with a reason rather than omitted, because an\
+    \ omission cannot be told from a map that was never populated and a mis-read block\
+    \ would then report every name as unknown\n    unchecked_is_legal: a component\
+    \ with no entry at all is accepted, which is what lets a first pass run before\
+    \ the parser exists\n  four_attribute_names:\n    why: DataAttributePrefix renames\
+    \ the boundary and declaration markers and does not reach these four, so a project\
+    \ setting it gets data-pw-component beside data-tb-on\n    already_set: ActionAttr,\
+    \ which internal/pwgen has carried since the action endpoint landed\n    to_set:\
+    \ ClientHandlerAttr and ComponentParameterAttr, to this framework's prefix\n \
+    \   left_at_the_default: the hidden field names, which are form fields rather\
+    \ than data attributes and which the middleware reads by name\n  the_runtime:\n\
+    \    interception_must_move: the submit path keys on a GET form today, and the\
+    \ emitted form now declares method=post, so it stops matching; the key becomes\
+    \ the presence of the action attribute\n    what_that_fixes: the GET-form failure\
+    \ requirement:action-invocation-runtime records is closed by the method alone,\
+    \ before any interception is written\n    where_to_post:\n      form: its own\
+    \ action, which resolves to the document URL and already carries the selector,\
+    \ so no header names the handler\n      bare_element: the attribute's direct endpoint,\
+    \ because the page POST is registered only for a handler a form names and would\
+    \ otherwise answer 405\n    two_extra_fields: a FormData body carries _action\
+    \ and _csrf beside the author's fields, which the binder ignores because nothing\
+    \ rejects an undeclared field\n    redirect_following: the page POST answers 303\
+    \ by default and fetch follows it, so a caller wanting regions uses the direct\
+    \ endpoint or has the handler write its own response\n  binding_the_handlers:\
+    \ requirement:component-script-event-binding, whose emitted shape is now fixed\
+    \ by the module rather than proposed\nas_built_2026_08_12:\n  version: v0.5.8\
+    \ adopted, with the configbind bindings regenerated because the dependency map\
+    \ gained a type in the same release\n  two_pw_calls_were_missing_and_had_to_exist:\n\
+    \    found: the generated dispatcher calls pw.ActionSelector and pw.DispatchAction,\
+    \ and neither existed, so a page tree declaring a form action did not compile\n\
+    \    not_anticipated_here: this requirement listed four attribute names and two\
+    \ checks and did not name the runtime surface generation calls into, which is\
+    \ the thing that fails first\n    built: pw/action.go and pwfast/action.go, wrapping\
+    \ the module's own halves\n    the_wrapper_earns_its_place: DispatchAction routes\
+    \ its redirect through Redirect rather than the module's, because the runtime\
+    \ posts an intercepted form to this same route, and a fetch follows a 303 and\
+    \ would apply a whole page where a region set belongs; Redirect already branches\
+    \ on the update mode, so a scriptless submit and an intercepted one each get the\
+    \ answer their own client can use\n    guards_caught_both_halves: the pw-call-registration\
+    \ tests refused the new functions until a pattern was registered, and then refused\
+    \ the pattern until pwfast declared a counterpart, which is exactly what requirement:pw-call-registration\
+    \ was written to do\n  the_attribute_prefix_was_the_real_question:\n    found:\
+    \ UpdateAttributePrefix is tb, deliberately, while PageActionAttr was already\
+    \ data-pw-action, so the document already held two spellings before this feature\
+    \ added two more\n    the_stated_reason_was_stale: it said routetree did not thread\
+    \ the prefix, and pwAttributePrefix already records that v0.5.6 closed that and\
+    \ both paths pass the value\n    chosen: all three behaviour attributes derive\
+    \ from the one prefix, which moves PageActionAttr to data-tb-action\n    why:\
+    \ the runtime builds every attribute name it reads from one configured value,\
+    \ and branding these three would have needed a second constant in the JavaScript\
+    \ to find half of them\n    what_it_leaves_open: whether that prefix becomes this\
+    \ framework's brand, which is a decision the tree already records as available\
+    \ and which now moves all four attributes together\n  the_page_post_is_not_in_the_route_table:\n\
+    \    found: the generated registry registers POST on the page pattern, and Routes\
+    \ lists only the GETs while Actions lists only the direct endpoints\n    consequence:\
+    \ PW0201 exists and cannot see this collision, because the pattern that panics\
+    \ is registered and published nowhere\n    so: the collision check is blocked\
+    \ on the route table carrying it, which is an upstream ask rather than work here\n\
+    \  a_malformed_csrf_secret_fails_exactly_like_an_absent_one:\n    found: the token\
+    \ derivation decodes the secret and yields nothing when it cannot, so a placeholder\
+    \ secret produces the same ErrNoCSRFToken and the same opaque 500\n    where_it_bit:\
+    \ the page tree fixture, which needed a minted secret rather than any string\n\
+    \    worth_stating: the failure a page author meets is a 500 saying internal error,\
+    \ with the reason in the log only, which is the diagnosis gap this requirement\
+    \ should close next\n  runtime_interception:\n    built: the submit path takes\
+    \ a form naming a server function ahead of the navigation rules, and the click\
+    \ path takes an element no submit event covers\n    body: the form's fields plus\
+    \ the pressed button's own pair, and nothing at all for a bare element\n    in_flight:\
+    \ the element is marked aria-busy and a second activation is ignored rather than\
+    \ queued, which is the redraw supersession rule inverted because a mutation is\
+    \ not idempotent\n    failure: a reload rather than a resubmit, because nothing\
+    \ can tell a request that never arrived from one whose answer was unusable, and\
+    \ resubmitting would perform the mutation twice\n    covered: six cases in the\
+    \ conformance harness, including that a plain GET form is still the search form\
+    \ it was\n  the_parser_as_built:\n    where: internal/pwscript, a scanner rather\
+    \ than a parser\n    what_it_skips: a string, a template literal including its\
+    \ interpolations, a line and block comment, and a regular expression literal,\
+    \ which are the four things a pattern match reads wrong; a slash is division or\
+    \ a literal depending on the token before it, and reading that wrong swallows\
+    \ the rest of a file\n    what_it_reads: a top-level setup, the parameter names\
+    \ nested under one key in its pattern, and the keys of an object literal returned\
+    \ at the function's own top level\n    what_it_declines: a returned variable,\
+    \ a spread, a nested return, and the bag taken whole under one name, each of which\
+    \ leaves the component unchecked rather than half-published\n    the_declining_is_the_design:\
+    \ decision:component-handler-namespace records checking as total for the idiomatic\
+    \ shape and partial in general, and a scanner that guessed would publish a handler\
+    \ that does not exist\n    wired_at: the routetree ScriptResolver, which refuses\
+    \ a referenced name the block does not return and supplies the reason, while the\
+    \ module supplies the position\n    proved: a typo in the fixture fails generation\
+    \ naming the file, line, column, component, the name, and the reason\n    unwalkable_is_different_from_unread:\
+    \ a block whose quoting never closes is an error, because that is not this scanner's\
+    \ limit and the browser meets the same source next\n  the_signature_migration_and_the_binding:\n\
+    \    built: setup takes one destructured object carrying el, teardown, onSignal\
+    \ and props, and returns the handlers the markup may name\n    the_break_was_loud_as_designed:\
+    \ the signal harness failed at once on the fixture still taking positional arguments,\
+    \ which is the property that made a compatibility shim unnecessary and impossible\
+    \ in the same breath\n    ordering: a descendant's setup waits for its ancestors\
+    \ to settle and not for its siblings, so an await that never settles stalls its\
+    \ own subtree rather than every remaining component on the page\n    binding:\
+    \ after setup returns, the mounted subtree is scanned once and a listener added\
+    \ per declared pair; nothing is recorded for release, because a listener on a\
+    \ node dies with the node and these sit on the nodes a swap destroys\n    props:\
+    \ parsed from the emitted attribute, empty rather than absent when unreadable\
+    \ so a destructuring reads undefined instead of throwing\n    migrated: two harness\
+    \ fixtures, the page tree fixture, the live_render example and its regenerated\
+    \ asset, and eight documentation pages in both locales\n  the_csrf_field_name_check:\n\
+    \    built: a startup refusal when the configured field name is not the one generated\
+    \ forms carry\n    why_startup: generation never takes the setting, so the failure\
+    \ it replaces is a 403 on every submission with the reason in the log only, which\
+    \ reads as a broken request rather than as a setting\n  documentation:\n    added:\
+    \ a server actions guide in both locales, covering which element to choose, what\
+    \ the handler owes, the two entry points and what each carries, the CSRF posture,\
+    \ and the POST registration\n    corrected: the interactivity overview said intercepting\
+    \ the click was still the application's, which the runtime interception made false,\
+    \ and the template syntax reference described the bare-element lowering as the\
+    \ only one\n    the_recommendation_it_lands: put a server action on a form, because\
+    \ a bare button loses the no-script path and posts to a constant address carrying\
+    \ no path parameters\n  what_is_not_done:\n    the_post_collision_check: withdrawn\
+    \ rather than blocked; the panic already names both sites, and analysis excludes\
+    \ the generated registry by design\n    none_of_this_framework_s: the actions\
+    \ namespace landed 2026-08-12, which was the last item that was ours\n    a_form_action_needs_csrf_turned_on_and_the_scaffold_does_not_always_turn_it_on:\n\
+    \      chain: generation writes the hidden field because the form is unsafe, the\
+    \ render needs a token to fill it, the token comes from a secret, and the secret\
+    \ is minted by the CSRF middleware alone\n      so: with security.csrf.enabled\
+    \ false, which is the shipped default, every render of a page declaring a form\
+    \ action fails\n      verified: the page tree fixture answered 500 until its requests\
+    \ carried a secret, and setupCSRF returns no middleware at all when the setting\
+    \ is off\n      the_scaffold_gap: securityRuntimeConfig writes the whole security\
+    \ section only for a project serving a browser login, so a page-tree project with\
+    \ no login, and a JWT-only one, are scaffolded into exactly that state\n     \
+    \ derived_not_run: the scaffold path was read rather than exercised; what was\
+    \ exercised is the render behaviour a project in that state gets\n      why_it_is_new:\
+    \ before v0.5.8 a form carrying server-action emitted no token field, so it needed\
+    \ no token; adopting the feature is what makes a working page fail\n      what_the_author_sees:\
+    \ a 500 whose body says internal error, because sanitizedProblem strips the cause\
+    \ from every 5xx, which is right in general and wrong for a configuration mistake\
+    \ reported through the same channel\n      built_2026_08_12: the render supplies\
+    \ the module's explicit no-token option when the configuration says the check\
+    \ is off, so the form renders unprotected because that is what the deployment\
+    \ asked for\n      the_distinction_that_makes_it_safe:\n        check_on_and_no_secret:\
+    \ still a failed render; no session, or a store that failed, and rendering an\
+    \ unprotected form would hide it\n        check_off: renders, because the choice\
+    \ is in the configuration and this render is reading it\n        why_it_does_not_contradict_module_native_csrf:\
+    \ what that requirement refuses is treating an absent token as none wanted, which\
+    \ turns a forgotten option into an unprotected form nobody chose; the setting\
+    \ is not a forgotten option\n        the_tests_could_not_tell_them_apart: a bare\
+    \ context reads the zero SecurityConfig where the check is off, so a case meaning\
+    \ no session was also saying no protection wanted, and both now say which they\
+    \ are\n      what_it_leaves: the hidden field is still emitted and empty, because\
+    \ the generation-time mode is not threaded into a page tree's compile; removing\
+    \ it is an upstream ask the module has already offered\n      why_not_take_that_ask_first:\n\
+    \        coupling: the mode is decided at generation and the setting is read at\
+    \ runtime, so a build with the mode off deployed with the check on would emit\
+    \ forms carrying no token and have every submission refused\n        worse_than_today:\
+    \ that fails at submit rather than at render, and the form looks correct while\
+    \ it happens\n        so: threading the mode needs a startup guard comparing the\
+    \ two, where reading one runtime value at render time needs none\n      scaffold_closed_2026_08_12:\n\
+    \        was: the security section was written for a browser login and nothing\
+    \ else, on the ground that a project with no session has nothing to bind a token\
+    \ to\n        why_that_was_already_untrue: sessionRuntimeConfig writes session.enabled\
+    \ unconditionally and says why, that session storage is not a login, so a page-tree\
+    \ project was scaffolded able to hold a secret and configured not to\n       \
+    \ now: the section is written for a page tree as well, and the comment it emits\
+    \ names the unsafe route that project actually ships rather than the general case\n\
+    \      rejected: minting a secret regardless of the setting, which would emit\
+    \ a token nothing verifies and make the form look protected when the deployment\
+    \ turned protection off\n      also_required_and_not_only_the_check: sessions,\
+    \ since the secret is a session slot and pwsession.Setup returns nothing when\
+    \ session.enabled is false, so csrf.enabled alone is not sufficient\nsequencing:\n\
+    \  first: the version bump and the attribute names, since they change generated\
+    \ bytes and nothing else works until the markup is this framework's\n  second:\
+    \ the two checks, because both fail a build rather than a request and are cheap\n\
+    \  third: the runtime interception, which is what makes a server action perform\
+    \ its mutation\n  fourth: the parser and the handler binding, which are one feature\
+    \ and the largest piece\nacceptance:\n  - a form carrying server-action reaches\
+    \ its handler with scripting disabled, and is never submitted as a GET\n  - the\
+    \ same form is intercepted by the runtime and its response applied\n  - a bare\
+    \ button posts to its direct endpoint and never to the page URL\n  - a page whose\
+    \ template declares a form action and whose application registers POST at the\
+    \ same path fails a check rather than panicking at startup\n  - a project configuring\
+    \ a non-default CSRF field name in a page tree fails with that reason named\n\
+    \  - every attribute this framework's runtime reads carries this framework's prefix\n\
+    \  - a component declaring a script block reports its parameters, and only the\
+    \ destructured ones reach the DOM\n  - a project declaring no script block and\
+    \ no server action regenerates byte-identical output\n```"
+  source: the v0.5.8 client behaviour document, verified against the module source
+    2026-08-12
+  verified_against_the_code:
+    reporting_seam: templates/htmlbind/script_report.go ComponentScripts returns Component,
+      Script, Pos, Handlers and Parameters, and runs the same analysis Generate does
+    answer_seam: GenerateOptions ClientHandlers, ClientHandlerAttr, ComponentParameters
+      and ComponentParameterAttr, plus Result.ComponentScripts for a compile that
+      already ran
+    tree_seam: routetree GenerateOptions.ScriptResolver returning ScriptAnswers, and
+      ClientHandlerAttr and ComponentParameterAttr on the emitter
+    dispatch: httpbind.ActionSelector reads the query before the body, and httpbind.DispatchAction
+      applies the 303 when the handler wrote nothing
+    defaults: data-tb-action, data-tb-on, data-tb-props, _action, _csrf
+    parity: fasthttpbind carries its own action dispatch, so requirement:alternate-http-backend-readiness
+      is not regressed by adopting this
+  what_upstream_answered_differently_and_better:
+    no_action_attribute: the form carries method=post and no action at all, so a native
+      submit goes to the document URL, which already holds this page's path parameters
+      and keeps its query; decision:action-entry-point-selection asked for the page
+      pattern to be written in and this is the same destination with nothing to write
+    selector_in_a_hidden_field: _action carrying hash and name, read by ActionSelector
+      with the query winning over the body so a submit button's formaction can override
+      the form
+    the_page_registers_post: only when a template declares a form action, which is
+      why a bare button's direct endpoint stays the only address that answers for
+      it
+  three_things_that_break_a_page:
+    csrf_option_is_mandatory:
+      rule: a render reaching an unsafe form with no token fails with ErrNoCSRFToken
+        rather than emitting an empty field
+      already_satisfied: requirement:module-native-csrf added the option in the one
+        document render entry every page branch funnels through, and states the sessionless
+        case as a deliberate failure
+      what_changed: one form now makes this true for every render of that page, so
+        a page that never had an unsafe form can acquire one by adopting a server
+        action
+    post_collision:
+      rule: a page whose template declares a form action registers POST on its own
+        path beside its GET, and a hand-registered POST at the same address panics
+        decision:stdlib-servemux at startup
+      who_can_hit_it: a page-tree project that already hand-registers a POST at a
+        page path, which is legal today because the tree registered only GET there;
+        adopting a form action on that page is what turns a working pair into a panic
+      reproduced: 2026-08-12, by registering POST on the fixture's page path before
+        pages.Register
+      the_check_it_seemed_to_need_is_worth_less_than_it_looked:
+        what_the_panic_already_says: both patterns, both registration sites, each
+          with a file and a line, one of which is the generated registry and the other
+          the application's own
+        so: it is a startup failure that names its own cause, which is the outcome
+          a doctor check would have been buying
+        and_a_check_cannot_see_it_anyway: analysis skips a file carrying the generated
+          header, deliberately, or a page registry read back as a source would turn
+          every page into a documented API route; the page POST is registered only
+          there
+        therefore: the RouteTable input PW0201 declares would not carry this pattern
+          even once it exists, so closing it means analysis reading generated registrations
+          for one purpose while excluding them for another
+      what_is_worth_doing_instead: documenting the upgrade hazard where a project
+        adopts a form action, since the panic is legible and the surprise is only
+        that generation added a registration
+    csrf_field_name_is_not_forwarded:
+      fact: CSRFFieldName and CSRFMode are templates/htmlbind options and routetree
+        forwards neither, so a page tree always emits _csrf and always emits it
+      bites_us_when: a project configures another field name, which policy:csrf-protection
+        permits while recommending the module default
+      answer: refuse a configured field name that is not the module default in a page-tree
+        project, naming this as the reason, rather than emitting a token the middleware
+        will not find
+      alternative: ask upstream for the emitter setting, which the document says is
+        available for the asking
+  this_frameworks_half:
+    the_parser:
+      what: reads the reported block and answers which names setup returned and which
+        parameters it destructured, per decision:script-block-parsing-ownership
+      wired_at: the routetree ScriptResolver, which is the seam that was asked for
+        and shipped
+      cost: one extra parse per template carrying a block, because the blocks are
+        reported before the compile that consumes the answers
+      refusal_is_explicit: an unresolved name is reported with a reason rather than
+        omitted, because an omission cannot be told from a map that was never populated
+        and a mis-read block would then report every name as unknown
+      unchecked_is_legal: a component with no entry at all is accepted, which is what
+        lets a first pass run before the parser exists
+    four_attribute_names:
+      why: DataAttributePrefix renames the boundary and declaration markers and does
+        not reach these four, so a project setting it gets data-pw-component beside
+        data-tb-on
+      already_set: ActionAttr, which internal/pwgen has carried since the action endpoint
+        landed
+      to_set: ClientHandlerAttr and ComponentParameterAttr, to this framework's prefix
+      left_at_the_default: the hidden field names, which are form fields rather than
+        data attributes and which the middleware reads by name
+    the_runtime:
+      interception_must_move: the submit path keys on a GET form today, and the emitted
+        form now declares method=post, so it stops matching; the key becomes the presence
+        of the action attribute
+      what_that_fixes: the GET-form failure requirement:action-invocation-runtime
+        records is closed by the method alone, before any interception is written
+      where_to_post:
+        form: its own action, which resolves to the document URL and already carries
+          the selector, so no header names the handler
+        bare_element: the attribute's direct endpoint, because the page POST is registered
+          only for a handler a form names and would otherwise answer 405
+      two_extra_fields: a FormData body carries _action and _csrf beside the author's
+        fields, which the binder ignores because nothing rejects an undeclared field
+      redirect_following: the page POST answers 303 by default and fetch follows it,
+        so a caller wanting regions uses the direct endpoint or has the handler write
+        its own response
+    binding_the_handlers: requirement:component-script-event-binding, whose emitted
+      shape is now fixed by the module rather than proposed
+  as_built_2026_08_12:
+    version: v0.5.8 adopted, with the configbind bindings regenerated because the
+      dependency map gained a type in the same release
+    two_pw_calls_were_missing_and_had_to_exist:
+      found: the generated dispatcher calls pw.ActionSelector and pw.DispatchAction,
+        and neither existed, so a page tree declaring a form action did not compile
+      not_anticipated_here: this requirement listed four attribute names and two checks
+        and did not name the runtime surface generation calls into, which is the thing
+        that fails first
+      built: pw/action.go and pwfast/action.go, wrapping the module's own halves
+      the_wrapper_earns_its_place: DispatchAction routes its redirect through Redirect
+        rather than the module's, because the runtime posts an intercepted form to
+        this same route, and a fetch follows a 303 and would apply a whole page where
+        a region set belongs; Redirect already branches on the update mode, so a scriptless
+        submit and an intercepted one each get the answer their own client can use
+      guards_caught_both_halves: the pw-call-registration tests refused the new functions
+        until a pattern was registered, and then refused the pattern until pwfast
+        declared a counterpart, which is exactly what requirement:pw-call-registration
+        was written to do
+    the_attribute_prefix_was_the_real_question:
+      found: UpdateAttributePrefix is tb, deliberately, while PageActionAttr was already
+        data-pw-action, so the document already held two spellings before this feature
+        added two more
+      the_stated_reason_was_stale: it said routetree did not thread the prefix, and
+        pwAttributePrefix already records that v0.5.6 closed that and both paths pass
+        the value
+      chosen: all three behaviour attributes derive from the one prefix, which moves
+        PageActionAttr to data-tb-action
+      why: the runtime builds every attribute name it reads from one configured value,
+        and branding these three would have needed a second constant in the JavaScript
+        to find half of them
+      what_it_leaves_open: whether that prefix becomes this framework's brand, which
+        is a decision the tree already records as available and which now moves all
+        four attributes together
+    the_page_post_is_not_in_the_route_table:
+      found: the generated registry registers POST on the page pattern, and Routes
+        lists only the GETs while Actions lists only the direct endpoints
+      consequence: PW0201 exists and cannot see this collision, because the pattern
+        that panics is registered and published nowhere
+      so: the collision check is blocked on the route table carrying it, which is
+        an upstream ask rather than work here
+    a_malformed_csrf_secret_fails_exactly_like_an_absent_one:
+      found: the token derivation decodes the secret and yields nothing when it cannot,
+        so a placeholder secret produces the same ErrNoCSRFToken and the same opaque
+        500
+      where_it_bit: the page tree fixture, which needed a minted secret rather than
+        any string
+      worth_stating: the failure a page author meets is a 500 saying internal error,
+        with the reason in the log only, which is the diagnosis gap this requirement
+        should close next
+    runtime_interception:
+      built: the submit path takes a form naming a server function ahead of the navigation
+        rules, and the click path takes an element no submit event covers
+      body: the form's fields plus the pressed button's own pair, and nothing at all
+        for a bare element
+      in_flight: the element is marked aria-busy and a second activation is ignored
+        rather than queued, which is the redraw supersession rule inverted because
+        a mutation is not idempotent
+      failure: a reload rather than a resubmit, because nothing can tell a request
+        that never arrived from one whose answer was unusable, and resubmitting would
+        perform the mutation twice
+      covered: six cases in the conformance harness, including that a plain GET form
+        is still the search form it was
+    the_parser_as_built:
+      where: internal/pwscript, a scanner rather than a parser
+      what_it_skips: a string, a template literal including its interpolations, a
+        line and block comment, and a regular expression literal, which are the four
+        things a pattern match reads wrong; a slash is division or a literal depending
+        on the token before it, and reading that wrong swallows the rest of a file
+      what_it_reads: a top-level setup, the parameter names nested under one key in
+        its pattern, and the keys of an object literal returned at the function's
+        own top level
+      what_it_declines: a returned variable, a spread, a nested return, and the bag
+        taken whole under one name, each of which leaves the component unchecked rather
+        than half-published
+      the_declining_is_the_design: decision:component-handler-namespace records checking
+        as total for the idiomatic shape and partial in general, and a scanner that
+        guessed would publish a handler that does not exist
+      wired_at: the routetree ScriptResolver, which refuses a referenced name the
+        block does not return and supplies the reason, while the module supplies the
+        position
+      proved: a typo in the fixture fails generation naming the file, line, column,
+        component, the name, and the reason
+      unwalkable_is_different_from_unread: a block whose quoting never closes is an
+        error, because that is not this scanner's limit and the browser meets the
+        same source next
+    the_signature_migration_and_the_binding:
+      built: setup takes one destructured object carrying el, teardown, onSignal and
+        props, and returns the handlers the markup may name
+      the_break_was_loud_as_designed: the signal harness failed at once on the fixture
+        still taking positional arguments, which is the property that made a compatibility
+        shim unnecessary and impossible in the same breath
+      ordering: a descendant's setup waits for its ancestors to settle and not for
+        its siblings, so an await that never settles stalls its own subtree rather
+        than every remaining component on the page
+      binding: after setup returns, the mounted subtree is scanned once and a listener
+        added per declared pair; nothing is recorded for release, because a listener
+        on a node dies with the node and these sit on the nodes a swap destroys
+      props: parsed from the emitted attribute, empty rather than absent when unreadable
+        so a destructuring reads undefined instead of throwing
+      migrated: two harness fixtures, the page tree fixture, the live_render example
+        and its regenerated asset, and eight documentation pages in both locales
+    the_csrf_field_name_check:
+      built: a startup refusal when the configured field name is not the one generated
+        forms carry
+      why_startup: generation never takes the setting, so the failure it replaces
+        is a 403 on every submission with the reason in the log only, which reads
+        as a broken request rather than as a setting
+    documentation:
+      added: a server actions guide in both locales, covering which element to choose,
+        what the handler owes, the two entry points and what each carries, the CSRF
+        posture, and the POST registration
+      corrected: the interactivity overview said intercepting the click was still
+        the application's, which the runtime interception made false, and the template
+        syntax reference described the bare-element lowering as the only one
+      the_recommendation_it_lands: put a server action on a form, because a bare button
+        loses the no-script path and posts to a constant address carrying no path
+        parameters
+    what_is_not_done:
+      the_post_collision_check: withdrawn rather than blocked; the panic already names
+        both sites, and analysis excludes the generated registry by design
+      none_of_this_framework_s: the actions namespace landed 2026-08-12, which was
+        the last item that was ours
+      a_form_action_needs_csrf_turned_on_and_the_scaffold_does_not_always_turn_it_on:
+        chain: generation writes the hidden field because the form is unsafe, the
+          render needs a token to fill it, the token comes from a secret, and the
+          secret is minted by the CSRF middleware alone
+        so: with security.csrf.enabled false, which is the shipped default, every
+          render of a page declaring a form action fails
+        verified: the page tree fixture answered 500 until its requests carried a
+          secret, and setupCSRF returns no middleware at all when the setting is off
+        the_scaffold_gap: securityRuntimeConfig writes the whole security section
+          only for a project serving a browser login, so a page-tree project with
+          no login, and a JWT-only one, are scaffolded into exactly that state
+        derived_not_run: the scaffold path was read rather than exercised; what was
+          exercised is the render behaviour a project in that state gets
+        why_it_is_new: before v0.5.8 a form carrying server-action emitted no token
+          field, so it needed no token; adopting the feature is what makes a working
+          page fail
+        what_the_author_sees: a 500 whose body says internal error, because sanitizedProblem
+          strips the cause from every 5xx, which is right in general and wrong for
+          a configuration mistake reported through the same channel
+        built_2026_08_12: the render supplies the module's explicit no-token option
+          when the configuration says the check is off, so the form renders unprotected
+          because that is what the deployment asked for
+        the_distinction_that_makes_it_safe:
+          check_on_and_no_secret: still a failed render; no session, or a store that
+            failed, and rendering an unprotected form would hide it
+          check_off: renders, because the choice is in the configuration and this
+            render is reading it
+          why_it_does_not_contradict_module_native_csrf: what that requirement refuses
+            is treating an absent token as none wanted, which turns a forgotten option
+            into an unprotected form nobody chose; the setting is not a forgotten
+            option
+          the_tests_could_not_tell_them_apart: a bare context reads the zero SecurityConfig
+            where the check is off, so a case meaning no session was also saying no
+            protection wanted, and both now say which they are
+        what_it_leaves: the hidden field is still emitted and empty, because the generation-time
+          mode is not threaded into a page tree's compile; removing it is an upstream
+          ask the module has already offered
+        why_not_take_that_ask_first:
+          coupling: the mode is decided at generation and the setting is read at runtime,
+            so a build with the mode off deployed with the check on would emit forms
+            carrying no token and have every submission refused
+          worse_than_today: that fails at submit rather than at render, and the form
+            looks correct while it happens
+          so: threading the mode needs a startup guard comparing the two, where reading
+            one runtime value at render time needs none
+        scaffold_closed_2026_08_12:
+          was: the security section was written for a browser login and nothing else,
+            on the ground that a project with no session has nothing to bind a token
+            to
+          why_that_was_already_untrue: sessionRuntimeConfig writes session.enabled
+            unconditionally and says why, that session storage is not a login, so
+            a page-tree project was scaffolded able to hold a secret and configured
+            not to
+          now: the section is written for a page tree as well, and the comment it
+            emits names the unsafe route that project actually ships rather than the
+            general case
+        rejected: minting a secret regardless of the setting, which would emit a token
+          nothing verifies and make the form look protected when the deployment turned
+          protection off
+        also_required_and_not_only_the_check: sessions, since the secret is a session
+          slot and pwsession.Setup returns nothing when session.enabled is false,
+          so csrf.enabled alone is not sufficient
+  sequencing:
+    first: the version bump and the attribute names, since they change generated bytes
+      and nothing else works until the markup is this framework's
+    second: the two checks, because both fail a build rather than a request and are
+      cheap
+    third: the runtime interception, which is what makes a server action perform its
+      mutation
+    fourth: the parser and the handler binding, which are one feature and the largest
+      piece
+  acceptance:
+  - a form carrying server-action reaches its handler with scripting disabled, and
+    is never submitted as a GET
+  - the same form is intercepted by the runtime and its response applied
+  - a bare button posts to its direct endpoint and never to the page URL
+  - a page whose template declares a form action and whose application registers POST
+    at the same path fails a check rather than panicking at startup
+  - a project configuring a non-default CSRF field name in a page tree fails with
+    that reason named
+  - every attribute this framework's runtime reads carries this framework's prefix
+  - a component declaring a script block reports its parameters, and only the destructured
+    ones reach the DOM
+  - a project declaring no script block and no server action regenerates byte-identical
+    output
+acceptance:
+  item-51c10df1d3675ebd:
+    text: a form carrying server-action reaches its handler with scripting disabled,
+      and is never submitted as a GET
+  item-2c792afef4c2059d:
+    text: the same form is intercepted by the runtime and its response applied
+  item-5401a969adf7985c:
+    text: a bare button posts to its direct endpoint and never to the page URL
+  item-a7dfb99c360b8810:
+    text: a page whose template declares a form action and whose application registers
+      POST at the same path fails a check rather than panicking at startup
+  item-0e4022fb52027874:
+    text: a project configuring a non-default CSRF field name in a page tree fails
+      with that reason named
+  item-c364ff4fbf18bdbf:
+    text: every attribute this framework's runtime reads carries this framework's
+      prefix
+  item-09b1c9638614e7be:
+    text: a component declaring a script block reports its parameters, and only the
+      destructured ones reach the DOM
+  item-abb83c1d01e6d7eb:
+    text: a project declaring no script block and no server action regenerates byte-identical
+      output
+relations:
+- relation: mentions
+  to: decision:action-entry-point-selection
+  resolution: resolved
+- relation: mentions
+  to: decision:component-handler-namespace
+  resolution: resolved
+- relation: mentions
+  to: decision:script-block-parsing-ownership
+  resolution: resolved
+- relation: mentions
+  to: decision:stdlib-servemux
+  resolution: resolved
+- relation: mentions
+  to: policy:csrf-protection
+  resolution: resolved
+- relation: mentions
+  to: requirement:action-invocation-runtime
+  resolution: resolved
+- relation: mentions
+  to: requirement:alternate-http-backend-readiness
+  resolution: resolved
+- relation: mentions
+  to: requirement:component-script-event-binding
+  resolution: resolved
+- relation: mentions
+  to: requirement:module-native-csrf
+  resolution: resolved
+- relation: mentions
+  to: requirement:pw-call-registration
+  resolution: resolved
+- relation: mentions
+  to: system:tinybind
+  resolution: resolved

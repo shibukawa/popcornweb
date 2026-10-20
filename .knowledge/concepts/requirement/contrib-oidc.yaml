@@ -1,0 +1,198 @@
+id: requirement:contrib-oidc
+type: requirement
+title: TinyGo OpenID Connect Client
+summary: contrib/oidc implements an OpenID Connect Relying Party over requirement:contrib-oauth
+  using requirement:contrib-jwt.
+facts:
+  legacy_body: "contrib/oidc implements an OpenID Connect Relying Party over requirement:contrib-oauth\
+    \ using requirement:contrib-jwt.\n\n```yaml\npackage: contrib/oidc\nscope: relying\
+    \ party only\npublic_api:\n  - Discover(context, issuer, options) returns Provider\n\
+    \  - Client.BeginAuthorization(context, options) returns URL and transaction key\n\
+    \  - Client.HandleCallback(context, transaction key, callback values) returns\
+    \ TokenSet\n  - Client.VerifyIDToken(context, raw) returns IDToken\n  - Client.UserInfo(context,\
+    \ accessToken) optional\n  - Client.UserInfoWithSubject(context, accessToken,\
+    \ expectedSubject) optional\n  - Provider.EndSessionEndpoint() reports the discovered\
+    \ RP-initiated logout endpoint\n  - Client.EndSessionURL(options) builds a logout\
+    \ request, or an empty string when the provider advertises none\n  - Provider.DeviceAuthorizationEndpoint()\
+    \ reports the validated discovered endpoint\n  - NewDeviceClient(provider, config,\
+    \ options) returns the requirement:oidc-device-authorization client\n  - DeviceClient.Begin(context,\
+    \ options) returns data:device-authorization with openid scope\n  - DeviceClient.Poll(context,\
+    \ authorization) returns TokenSet and verified IDToken\nflows:\n  - flow:oidc-auth-code\n\
+    \  - flow:oidc-device-authorization\nrequired:\n  - discovery metadata validation\n\
+    \  - caller-configurable endpoint host/IP trust policy\n  - endpoint trust policy\
+    \ applies to authorization, token, JWKS, and UserInfo metadata endpoints\n  -\
+    \ endpoint validator errors are normalized without exposing caller error strings\n\
+    \  - endpoint validators receive a copy and cannot rewrite the URL used for requests\n\
+    \  - JWKS retrieval, cache expiry, and one refresh on unknown kid\n  - concurrent\
+    \ refresh attempts are serialized to bound network amplification\n  - requirement:contrib-oauth\
+    \ Authorization Code and S256 PKCE behavior\n  - nonce transaction binding is\
+    \ validated before OAuth token exchange and again against the ID Token\n  - issuer,\
+    \ audience, azp, exp, iat, nonce, and signature validation\n  - a present `azp`\
+    \ claim must be a non-empty string matching the client ID\n  - ID Token parser\
+    \ size options have hard upper bounds at client construction\n  - UserInfo responses\
+    \ require a non-empty sub claim and support subject binding\n  - bearer access\
+    \ tokens reject control and whitespace bytes before header use\n  - token exchange\
+    \ accepts only the Bearer token type used by the OIDC UserInfo flow\n  - exact\
+    \ redirect URI supplied by application\n  - end_session_endpoint is validated\
+    \ like every other discovered endpoint\n  - device_authorization_endpoint is optional\
+    \ discovery metadata and is validated like every other discovered endpoint\n \
+    \ - the device client refuses construction when discovery advertises no device\
+    \ authorization endpoint\n  - device completion verifies the ID Token without\
+    \ requiring a nonce; no other verification entry point gains that exemption\n\
+    \  - id_token_hint, post_logout_redirect_uri, and state are bounded and rejected\
+    \ when malformed\nassurance:\n  status: implemented\n  needed_by: requirement:session-assurance-levels\
+    \ through policy:reauthentication\n  surface:\n    - BeginOptions.MaxAge is a\
+    \ pointer, so a zero duration is a request for authentication now rather than\
+    \ an unset field\n    - BeginOptions.Prompt accepts the prompt_values of policy:reauthentication,\
+    \ refuses an unlisted or duplicated value, and refuses none beside another\n \
+    \   - setting max_age or prompt through the untyped Params map is refused, because\
+    \ that path carries no verification obligation this package can see\n    - IDToken.AuthTime\
+    \ is the verified auth_time, and IDToken.ACR the verified acr\n    - CallbackOptions.RequireAuthTime\
+    \ rejects a token that omits auth_time, which a caller sets whenever it set MaxAge\n\
+    \  layering:\n    verified_here: that auth_time is present when required, is a\
+    \ JSON number, is non-negative, and is not in the future beyond the configured\
+    \ leeway\n    left_to_caller: comparing auth_time against a freshness requirement,\
+    \ because recent enough is policy and carries the zero_semantics of api:assurance-guard,\
+    \ which a timestamp comparison cannot express\n  hardening:\n    quoted_number:\
+    \ encoding/json decodes a quoted \"1700000000\" into a json.Number, so the JSON\
+    \ type is checked on the raw bytes before parsing\n    future_auth_time: refused,\
+    \ because accepting a provider clock ahead of ours would satisfy any freshness\
+    \ requirement trivially\n    non_string_acr: refused rather than read as absent\n\
+    \  callback_signature:\n    changed: HandleCallback returns the verified IDToken\
+    \ and takes CallbackOptions\n    reason: it verified the token and discarded the\
+    \ result, so a caller needing a claim re-verified through VerifyIDToken, the entry\
+    \ point whose own documentation warns against use outside HandleCallback\n   \
+    \ effect: plugin/auth reads the already-verified claims and no longer verifies\
+    \ the same token twice\ndeferred:\n  - OpenID Provider implementation beyond the\
+    \ development-only requirement:contrib-devidp\n  - public clients outside the\
+    \ typed device authorization surface\n  - dynamic client registration\n  - implicit\
+    \ and hybrid flows\n  - JWE ID Tokens\n  - private_key_jwt\nsecurity: policy:oidc-security\n\
+    standards:\n  core: https://openid.net/specs/openid-connect-core-1_0-18.html\n\
+    \  rp_initiated_logout: https://openid.net/specs/openid-connect-rpinitiated-1_0.html\n\
+    ```"
+  package: contrib/oidc
+  scope: relying party only
+  public_api:
+  - Discover(context, issuer, options) returns Provider
+  - Client.BeginAuthorization(context, options) returns URL and transaction key
+  - Client.HandleCallback(context, transaction key, callback values) returns TokenSet
+  - Client.VerifyIDToken(context, raw) returns IDToken
+  - Client.UserInfo(context, accessToken) optional
+  - Client.UserInfoWithSubject(context, accessToken, expectedSubject) optional
+  - Provider.EndSessionEndpoint() reports the discovered RP-initiated logout endpoint
+  - Client.EndSessionURL(options) builds a logout request, or an empty string when
+    the provider advertises none
+  - Provider.DeviceAuthorizationEndpoint() reports the validated discovered endpoint
+  - NewDeviceClient(provider, config, options) returns the requirement:oidc-device-authorization
+    client
+  - DeviceClient.Begin(context, options) returns data:device-authorization with openid
+    scope
+  - DeviceClient.Poll(context, authorization) returns TokenSet and verified IDToken
+  flows:
+  - flow:oidc-auth-code
+  - flow:oidc-device-authorization
+  required:
+  - discovery metadata validation
+  - caller-configurable endpoint host/IP trust policy
+  - endpoint trust policy applies to authorization, token, JWKS, and UserInfo metadata
+    endpoints
+  - endpoint validator errors are normalized without exposing caller error strings
+  - endpoint validators receive a copy and cannot rewrite the URL used for requests
+  - JWKS retrieval, cache expiry, and one refresh on unknown kid
+  - concurrent refresh attempts are serialized to bound network amplification
+  - requirement:contrib-oauth Authorization Code and S256 PKCE behavior
+  - nonce transaction binding is validated before OAuth token exchange and again against
+    the ID Token
+  - issuer, audience, azp, exp, iat, nonce, and signature validation
+  - a present `azp` claim must be a non-empty string matching the client ID
+  - ID Token parser size options have hard upper bounds at client construction
+  - UserInfo responses require a non-empty sub claim and support subject binding
+  - bearer access tokens reject control and whitespace bytes before header use
+  - token exchange accepts only the Bearer token type used by the OIDC UserInfo flow
+  - exact redirect URI supplied by application
+  - end_session_endpoint is validated like every other discovered endpoint
+  - device_authorization_endpoint is optional discovery metadata and is validated
+    like every other discovered endpoint
+  - the device client refuses construction when discovery advertises no device authorization
+    endpoint
+  - device completion verifies the ID Token without requiring a nonce; no other verification
+    entry point gains that exemption
+  - id_token_hint, post_logout_redirect_uri, and state are bounded and rejected when
+    malformed
+  assurance:
+    status: implemented
+    needed_by: requirement:session-assurance-levels through policy:reauthentication
+    surface:
+    - BeginOptions.MaxAge is a pointer, so a zero duration is a request for authentication
+      now rather than an unset field
+    - BeginOptions.Prompt accepts the prompt_values of policy:reauthentication, refuses
+      an unlisted or duplicated value, and refuses none beside another
+    - setting max_age or prompt through the untyped Params map is refused, because
+      that path carries no verification obligation this package can see
+    - IDToken.AuthTime is the verified auth_time, and IDToken.ACR the verified acr
+    - CallbackOptions.RequireAuthTime rejects a token that omits auth_time, which
+      a caller sets whenever it set MaxAge
+    layering:
+      verified_here: that auth_time is present when required, is a JSON number, is
+        non-negative, and is not in the future beyond the configured leeway
+      left_to_caller: comparing auth_time against a freshness requirement, because
+        recent enough is policy and carries the zero_semantics of api:assurance-guard,
+        which a timestamp comparison cannot express
+    hardening:
+      quoted_number: encoding/json decodes a quoted "1700000000" into a json.Number,
+        so the JSON type is checked on the raw bytes before parsing
+      future_auth_time: refused, because accepting a provider clock ahead of ours
+        would satisfy any freshness requirement trivially
+      non_string_acr: refused rather than read as absent
+    callback_signature:
+      changed: HandleCallback returns the verified IDToken and takes CallbackOptions
+      reason: it verified the token and discarded the result, so a caller needing
+        a claim re-verified through VerifyIDToken, the entry point whose own documentation
+        warns against use outside HandleCallback
+      effect: plugin/auth reads the already-verified claims and no longer verifies
+        the same token twice
+  deferred:
+  - OpenID Provider implementation beyond the development-only requirement:contrib-devidp
+  - public clients outside the typed device authorization surface
+  - dynamic client registration
+  - implicit and hybrid flows
+  - JWE ID Tokens
+  - private_key_jwt
+  security: policy:oidc-security
+  standards:
+    core: https://openid.net/specs/openid-connect-core-1_0-18.html
+    rp_initiated_logout: https://openid.net/specs/openid-connect-rpinitiated-1_0.html
+relations:
+- relation: mentions
+  to: api:assurance-guard
+  resolution: resolved
+- relation: mentions
+  to: data:device-authorization
+  resolution: resolved
+- relation: mentions
+  to: flow:oidc-auth-code
+  resolution: resolved
+- relation: mentions
+  to: flow:oidc-device-authorization
+  resolution: resolved
+- relation: mentions
+  to: policy:oidc-security
+  resolution: resolved
+- relation: mentions
+  to: policy:reauthentication
+  resolution: resolved
+- relation: mentions
+  to: requirement:contrib-devidp
+  resolution: resolved
+- relation: mentions
+  to: requirement:contrib-jwt
+  resolution: resolved
+- relation: mentions
+  to: requirement:contrib-oauth
+  resolution: resolved
+- relation: mentions
+  to: requirement:oidc-device-authorization
+  resolution: resolved
+- relation: mentions
+  to: requirement:session-assurance-levels
+  resolution: resolved

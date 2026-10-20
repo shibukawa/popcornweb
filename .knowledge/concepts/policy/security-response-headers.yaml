@@ -1,0 +1,108 @@
+id: policy:security-response-headers
+type: policy
+title: Security Response Headers
+summary: Security header middleware applies one validated browser policy to normal,
+  error, and operational responses.
+facts:
+  legacy_body: "Security header middleware applies one validated browser policy to\
+    \ normal, error, and operational responses.\n\n```yaml\nmanaged:\n  content_type_options:\
+    \ X-Content-Type-Options nosniff when enabled\n  frame_options: X-Frame-Options\
+    \ DENY or SAMEORIGIN\n  referrer_policy: Referrer-Policy configured value\n  csp:\
+    \ Content-Security-Policy optional value\n  csp_report_only: Content-Security-Policy-Report-Only\
+    \ optional value\n  permissions: Permissions-Policy optional value\n  hsts: Strict-Transport-Security\
+    \ configured directives\n  reporting_endpoints: Reporting-Endpoints naming one\
+    \ endpoint called default, emitted when requirement:browser-report-ingest is enabled\n\
+    \  nel: NEL policy object naming that same endpoint, emitted when requirement:network-error-logging\
+    \ is enabled\nrules:\n  - set configured headers before downstream response commitment\n\
+    \  - apply to api:error-renderer and policy:operational-endpoints responses, and\
+    \ from slot 52 to the 429 and 503 of SlotRateLimitProcess as well, which slot\
+    \ 60 had left uncovered\n  - answer a CORS preflight and stop, per requirement:cors-middleware,\
+    \ which is the one branch of this frame that does not reach the handler\n  - send\
+    \ no managed header at all while headers.enabled is false, since the cross-origin\
+    \ half can install this frame on its own and a deployment that turned the headers\
+    \ off must not get them back by admitting an origin\n  - emit HSTS only for an\
+    \ effective HTTPS request, resolved through requirement:proxied-request-identity\
+    \ under decision:forwarded-header-trust rather than by this middleware's own copy\
+    \ of the evaluation\n  - HSTS preload requires includeSubDomains and at least\
+    \ 31536000 seconds max-age\n  - enforced and report-only CSP values may coexist\n\
+    \  - reject carriage return, line feed, and invalid field values at startup\n\
+    \  - omit obsolete X-XSS-Protection\n  - append report-to and report-uri to both\
+    \ CSP values while requirement:browser-report-ingest is enabled, and leave a policy\
+    \ that already names either exactly as the author wrote it\nboundaries:\n  - application\
+    \ authors own CSP sources, nonces, hashes, and Permissions-Policy capabilities\n\
+    \  - CORS is no longer a separate middleware; requirement:cors-middleware is answered\
+    \ by this frame, moved from slot 60 to 52 per decision:cors-above-the-refusals,\
+    \ which supersedes the earlier statement here that it was a concern next door\n\
+    \  - cache policy and Content-Disposition are response-specific application concerns\n\
+    \  - this is not the only source of a CSP header: policy:svg-active-content adds\
+    \ a sandbox policy beside the configured one on an image/svg+xml response, which\
+    \ the browser intersects with this one and can only tighten\n```"
+  managed:
+    content_type_options: X-Content-Type-Options nosniff when enabled
+    frame_options: X-Frame-Options DENY or SAMEORIGIN
+    referrer_policy: Referrer-Policy configured value
+    csp: Content-Security-Policy optional value
+    csp_report_only: Content-Security-Policy-Report-Only optional value
+    permissions: Permissions-Policy optional value
+    hsts: Strict-Transport-Security configured directives
+    reporting_endpoints: Reporting-Endpoints naming one endpoint called default, emitted
+      when requirement:browser-report-ingest is enabled
+    nel: NEL policy object naming that same endpoint, emitted when requirement:network-error-logging
+      is enabled
+  rules:
+  - set configured headers before downstream response commitment
+  - apply to api:error-renderer and policy:operational-endpoints responses, and from
+    slot 52 to the 429 and 503 of SlotRateLimitProcess as well, which slot 60 had
+    left uncovered
+  - answer a CORS preflight and stop, per requirement:cors-middleware, which is the
+    one branch of this frame that does not reach the handler
+  - send no managed header at all while headers.enabled is false, since the cross-origin
+    half can install this frame on its own and a deployment that turned the headers
+    off must not get them back by admitting an origin
+  - emit HSTS only for an effective HTTPS request, resolved through requirement:proxied-request-identity
+    under decision:forwarded-header-trust rather than by this middleware's own copy
+    of the evaluation
+  - HSTS preload requires includeSubDomains and at least 31536000 seconds max-age
+  - enforced and report-only CSP values may coexist
+  - reject carriage return, line feed, and invalid field values at startup
+  - omit obsolete X-XSS-Protection
+  - append report-to and report-uri to both CSP values while requirement:browser-report-ingest
+    is enabled, and leave a policy that already names either exactly as the author
+    wrote it
+  boundaries:
+  - application authors own CSP sources, nonces, hashes, and Permissions-Policy capabilities
+  - CORS is no longer a separate middleware; requirement:cors-middleware is answered
+    by this frame, moved from slot 60 to 52 per decision:cors-above-the-refusals,
+    which supersedes the earlier statement here that it was a concern next door
+  - cache policy and Content-Disposition are response-specific application concerns
+  - this is not the only source of a CSP header: policy:svg-active-content adds a
+      sandbox policy beside the configured one on an image/svg+xml response, which
+      the browser intersects with this one and can only tighten
+relations:
+- relation: mentions
+  to: api:error-renderer
+  resolution: resolved
+- relation: mentions
+  to: decision:cors-above-the-refusals
+  resolution: resolved
+- relation: mentions
+  to: decision:forwarded-header-trust
+  resolution: resolved
+- relation: mentions
+  to: policy:operational-endpoints
+  resolution: resolved
+- relation: mentions
+  to: policy:svg-active-content
+  resolution: resolved
+- relation: mentions
+  to: requirement:browser-report-ingest
+  resolution: resolved
+- relation: mentions
+  to: requirement:cors-middleware
+  resolution: resolved
+- relation: mentions
+  to: requirement:network-error-logging
+  resolution: resolved
+- relation: mentions
+  to: requirement:proxied-request-identity
+  resolution: resolved

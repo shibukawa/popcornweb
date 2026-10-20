@@ -1,0 +1,83 @@
+id: requirement:editor-workspace-symbols
+type: requirement
+title: Workspace Symbol Search Across Dialects
+summary: Every declaration in every .pw.* source of the project is findable by name
+  from one search, so a component, a statement, and a page are reachable without knowing
+  which dialect declared them.
+facts:
+  legacy_body: "Every declaration in every .pw.* source of the project is findable\
+    \ by name from one search, so a component, a statement, and a page are reachable\
+    \ without knowing which dialect declared them.\n\n```yaml\nstatus: implemented\
+    \ at internal/pwlsp\nstage: 2 of vision:editor-support\nserver: requirement:pw-language-server\n\
+    why: requirement:pw-language-server lists documentSymbol and stops there, so finding\
+    \ a declaration requires already knowing its file\nindex:\n  built_from: the same\
+    \ project model the server loads, so no second scan of the tree\n  contains: component,\
+    \ statement, dynamo statement, page, layout, and external declarations\n  excludes:\
+    \ a *_pw_gen.go symbol, because policy:generated-artifacts makes it output and\
+    \ gopls already indexes it\n  scope: the decision:explicit-generation-sources\
+    \ purposes, so a .pw.html outside every declared purpose is absent rather than\
+    \ silently included\n  freshness: updated from open-document changes without saving,\
+    \ and from a file-system change for closed files\npresentation:\n  kind: mapped\
+    \ to an LSP symbol kind that distinguishes the dialects, so a result list is readable\
+    \ without opening anything\n  container: the declaring file, and for a page the\
+    \ route it serves, per concept:page-tree\n  match: name substring and camel-hump,\
+    \ which is what the editor's own symbol search users expect\nacceptance:\n  -\
+    \ a component declared in one file is found from a document in another\n  - a\
+    \ page is found by its route as well as by its declaration name\n  - no result\
+    \ names a *_pw_gen.go\n  - a declaration added to an unsaved document is findable\
+    \ before the save\n  - a project that has never generated still returns every\
+    \ declaration\n```"
+  status: implemented at internal/pwlsp
+  stage: 2 of vision:editor-support
+  server: requirement:pw-language-server
+  why: requirement:pw-language-server lists documentSymbol and stops there, so finding
+    a declaration requires already knowing its file
+  index:
+    built_from: the same project model the server loads, so no second scan of the
+      tree
+    contains: component, statement, dynamo statement, page, layout, and external declarations
+    excludes: a *_pw_gen.go symbol, because policy:generated-artifacts makes it output
+      and gopls already indexes it
+    scope: the decision:explicit-generation-sources purposes, so a .pw.html outside
+      every declared purpose is absent rather than silently included
+    freshness: updated from open-document changes without saving, and from a file-system
+      change for closed files
+  presentation:
+    kind: mapped to an LSP symbol kind that distinguishes the dialects, so a result
+      list is readable without opening anything
+    container: the declaring file, and for a page the route it serves, per concept:page-tree
+    match: name substring and camel-hump, which is what the editor's own symbol search
+      users expect
+  acceptance:
+  - a component declared in one file is found from a document in another
+  - a page is found by its route as well as by its declaration name
+  - no result names a *_pw_gen.go
+  - a declaration added to an unsaved document is findable before the save
+  - a project that has never generated still returns every declaration
+acceptance:
+  item-7f42d92e0d0cd435:
+    text: a component declared in one file is found from a document in another
+  item-e112a850a7d175aa:
+    text: a page is found by its route as well as by its declaration name
+  item-a1d95bd5a114bae6:
+    text: no result names a *_pw_gen.go
+  item-d343aa9d4b20a2a6:
+    text: a declaration added to an unsaved document is findable before the save
+  item-43c0305d9877bb80:
+    text: a project that has never generated still returns every declaration
+relations:
+- relation: mentions
+  to: concept:page-tree
+  resolution: resolved
+- relation: mentions
+  to: decision:explicit-generation-sources
+  resolution: resolved
+- relation: mentions
+  to: policy:generated-artifacts
+  resolution: resolved
+- relation: mentions
+  to: requirement:pw-language-server
+  resolution: resolved
+- relation: mentions
+  to: vision:editor-support
+  resolution: resolved

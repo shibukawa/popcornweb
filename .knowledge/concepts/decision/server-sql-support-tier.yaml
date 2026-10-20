@@ -1,0 +1,89 @@
+id: decision:server-sql-support-tier
+type: decision
+title: Server SQL Support Tier
+summary: PostgreSQL and MySQL are first-class alongside SQLite, because system:tinygodriver
+  ships drivers that build under TinyGo and upgrade TLS in band on the already-connected
+  socket.
+facts:
+  legacy_body: "PostgreSQL and MySQL are first-class alongside SQLite, because system:tinygodriver\
+    \ ships drivers that build under TinyGo and upgrade TLS in band on the already-connected\
+    \ socket.\n\n```yaml\nstatus: accepted\nverified: 2026-07-29\nsupersedes: the\
+    \ exclusion that named driver and protocol compatibility the blocker\nfirst_class:\n\
+    \  - requirement:contrib-sqlite\n  - requirement:contrib-postgresql\n  - requirement:contrib-mysql\n\
+    default_engine: requirement:contrib-sqlite, because a scaffolded project runs\
+    \ with no server to start\nresolved_blocker:\n  was: TinyGo ships crypto/tls as\
+    \ a stub, so no maintained driver could upgrade a connected socket\n  now: both\
+    \ drivers route the handshake through the system:tinygodriver https upgrade seam\
+    \ over the OS TLS stack\n  shape: each driver is a fork of its maintained upstream\
+    \ with the TLS call replaced, not a new wire implementation\n  release: system:tinygodriver\
+    \ v1.1.0\nplatform_bounds:\n  standard_go: crypto/tls on every OS, client certificates\
+    \ included\n  tinygo_linux: mbedTLS, TLS 1.3, client certificates supported\n\
+    \  tinygo_darwin: Secure Transport, TLS 1.2 maximum on the upgrade path, no client\
+    \ certificates; -tags darwinstarttlswith13 selects mbedTLS and TLS 1.3\n  tinygo_windows:\
+    \ Schannel, implemented and build-verified but never executed on Windows, so it\
+    \ stays unverified rather than supported\n  every_tinygo_target:\n    - IPv4 TCP\
+    \ only; no Unix domain socket and no IPv6\n    - \"-scheduler=threads required\
+    \ per rule:tinygo-runtime-compatibility\"\n  never: silent plaintext fallback;\
+    \ a platform without a TLS backend refuses any mode but disable\npromoted_effects:\n\
+    \  - api:cli-init and api:cli-add offer an engine choice per requirement:database-engine-selection\n\
+    \  - rule:rdb-dsn-resolution resolves all three schemes and no longer assumes\
+    \ a registered driver name\n  - system:goose treats sqlite3, postgres, and mysql\
+    \ as supported dialects\n  - rule:savepoint-dialect-support and rule:explain-dialect-support\
+    \ mappings activate for the selected driver\n  - release acceptance runs the shared\
+    \ SQL contract fixtures on all three engines\n  - documentation may claim runtime\
+    \ interoperability inside platform_bounds\nretained_bounds:\n  - decision:local-tls-proxy-boundary\
+    \ stays a supported deployment and is no longer a prerequisite\n  - policy:outbound-transport-security\
+    \ still governs every hop that leaves the local workload\n  - a .pw.sql source\
+    \ and a migration are written for one dialect, and the framework does not translate\
+    \ between them\n  - an unverified platform is documented as unverified rather\
+    \ than claimed\ndemotion_triggers:\n  - an upstream bump the vendored fork cannot\
+    \ follow without unsafe patches\n  - a supported platform losing its TLS upgrade\
+    \ backend\n  - contract fixtures that cannot pass on an engine without dialect-specific\
+    \ application code\n```"
+  legacy_parse_issues:
+  - kind: legacy_parse_error
+    block: 0
+    message: Object of type date is not JSON serializable
+relations:
+- relation: mentions
+  to: api:cli-add
+  resolution: resolved
+- relation: mentions
+  to: api:cli-init
+  resolution: resolved
+- relation: mentions
+  to: decision:local-tls-proxy-boundary
+  resolution: resolved
+- relation: mentions
+  to: policy:outbound-transport-security
+  resolution: resolved
+- relation: mentions
+  to: requirement:contrib-mysql
+  resolution: resolved
+- relation: mentions
+  to: requirement:contrib-postgresql
+  resolution: resolved
+- relation: mentions
+  to: requirement:contrib-sqlite
+  resolution: resolved
+- relation: mentions
+  to: requirement:database-engine-selection
+  resolution: resolved
+- relation: mentions
+  to: rule:explain-dialect-support
+  resolution: resolved
+- relation: mentions
+  to: rule:rdb-dsn-resolution
+  resolution: resolved
+- relation: mentions
+  to: rule:savepoint-dialect-support
+  resolution: resolved
+- relation: mentions
+  to: rule:tinygo-runtime-compatibility
+  resolution: resolved
+- relation: mentions
+  to: system:goose
+  resolution: resolved
+- relation: mentions
+  to: system:tinygodriver
+  resolution: resolved

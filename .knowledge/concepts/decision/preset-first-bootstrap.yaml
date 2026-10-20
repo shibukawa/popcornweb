@@ -1,0 +1,92 @@
+id: decision:preset-first-bootstrap
+type: decision
+title: Preset First, Questions Behind It
+summary: api:cli-init opens on the requirement:init-presets list rather than on its
+  first question, and a preset answers every capability question at once, leaving
+  the project name as the only thing still asked.
+facts:
+  legacy_body: "api:cli-init opens on the requirement:init-presets list rather than\
+    \ on its first question, and a preset answers every capability question at once,\
+    \ leaving the project name as the only thing still asked.\n\n```yaml\nstatus:\
+    \ accepted\ndecided: user 2026-08-05\nsupersedes: the decision:interactive-project-bootstrap\
+    \ ordering, under which every run walked the whole question list from the project\
+    \ name down\nquestion: how a bootstrap stays explainable once the answers outnumber\
+    \ what a first project can decide\nanswer:\n  step_one: a single-select of the\
+    \ presets, Manual last\n  preset_path: project name, then the review; nothing\
+    \ else is asked\n  manual_path: decision:navigable-answer-hub, which is the review\
+    \ screen with every row editable\n  review_is_shared: a preset's review and the\
+    \ Manual hub are one screen, seeded differently\nwhy_the_review_is_the_hub:\n\
+    \  observation: the review screen already lists every question and its answer,\
+    \ which is the shape a preset needs to explain itself and the shape a back-and-forth\
+    \ editor needs to navigate\n  effect: a preset is not a path that hides the questions;\
+    \ it is a path that answers them and shows the answers in the same place Manual\
+    \ edits them\n  consequence: enter on a review row opens that question and returns\
+    \ to the review, so a preset is a starting point rather than a commitment\n  cost:\
+    \ one screen instead of two, and the linear stepper stays for the commands that\
+    \ still want it\nname_argument: unchanged; it seeds the project name step, and\
+    \ the preset list is still the first screen\nshortcut_flags:\n  preset: --preset=<name>,\
+    \ which answers what the wizard would have asked\n  conflict: --preset with any\
+    \ capability flag is refused before anything is written, because both answer the\
+    \ same questions and neither is obviously the winner\n  yes: --yes without --preset\
+    \ keeps its current meaning, the flags and the defaults\n  no_terminal: unchanged,\
+    \ per decision:interactive-project-bootstrap\nproject_kind:\n  rule: a preset\
+    \ may set project.kind, and one that does removes the questions that do not apply\
+    \ to the kind\n  instance: the package preset, per requirement:package-project-scaffold,\
+    \ which reaches the api:cli-package scaffold rather than answering the application\
+    \ questions\n  mechanism: the same conditional-step rule that already hides a\
+    \ question the answers do not reach, read against the kind\n  flag: --kind stays\
+    \ the scriptable spelling, and --preset=package is the discoverable one\nwhat_stays:\n\
+    \  question_list: every question survives; a preset supplies answers to it rather\
+    \ than replacing it\n  conditional_steps: unchanged, and a preset that answers\
+    \ a step whose condition does not hold has that answer dropped the same way a\
+    \ flag does\n  extension_cost: a new option is still one option field, one flag,\
+    \ one step, and one scaffold branch, plus a line in each preset that has an opinion\
+    \ about it\n  linear_stepper: kept for api:cli-add and api:cli-new, per decision:post-init-scaffold-wizard,\
+    \ which review a plan rather than a set of answers\nrationale:\n  - the ten questions\
+    \ were each defensible and the sequence was not, because most of the combinations\
+    \ they can express are ones nobody wants\n  - a named shape is documentable, recommendable,\
+    \ and comparable; a combination of ten answers is none of those\n  - showing the\
+    \ answers a preset gave is what keeps it from being a black box, and it costs\
+    \ the screen that already existed\nrejected_fewer_questions:\n  form: drop or\
+    \ merge questions until the list is short\n  why_not: every question the list\
+    \ carries decides something a project cannot change cheaply afterwards, and merging\
+    \ them makes the answers less visible rather than fewer\nrejected_preset_only:\n\
+    \  form: presets replace the questions\n  why_not: the combinations outside the\
+    \ four are ordinary, and requirement:incremental-project-capabilities would become\
+    \ the only way to reach them, one reviewed command at a time\nnon_goals:\n  -\
+    \ remembering the last run's answers\n  - a user-defined preset file\n```"
+  legacy_parse_issues:
+  - kind: legacy_parse_error
+    block: 0
+    message: '''<'' not supported between instances of ''bool'' and ''str'''
+relations:
+- relation: mentions
+  to: api:cli-add
+  resolution: resolved
+- relation: mentions
+  to: api:cli-init
+  resolution: resolved
+- relation: mentions
+  to: api:cli-new
+  resolution: resolved
+- relation: mentions
+  to: api:cli-package
+  resolution: resolved
+- relation: mentions
+  to: decision:interactive-project-bootstrap
+  resolution: resolved
+- relation: mentions
+  to: decision:navigable-answer-hub
+  resolution: resolved
+- relation: mentions
+  to: decision:post-init-scaffold-wizard
+  resolution: resolved
+- relation: mentions
+  to: requirement:incremental-project-capabilities
+  resolution: resolved
+- relation: mentions
+  to: requirement:init-presets
+  resolution: resolved
+- relation: mentions
+  to: requirement:package-project-scaffold
+  resolution: resolved

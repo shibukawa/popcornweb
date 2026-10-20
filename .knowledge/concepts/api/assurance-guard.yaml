@@ -1,0 +1,176 @@
+id: api:assurance-guard
+type: api
+title: Assurance Guard
+summary: An application declares one thing about assurance, that an operation needs
+  recent proof, and the framework supplies the challenge and the way back.
+facts:
+  legacy_body: "An application declares one thing about assurance, that an operation\
+    \ needs recent proof, and the framework supplies the challenge and the way back.\n\
+    \n```yaml\npackage: github.com/shibukawa/popcornweb/plugin/auth\nstatus: implemented,\
+    \ except the strength requirement deferred below\nimplemented:\n  requirement_sources:\
+    \ auth.MaxAge, auth.Policy, auth.Dynamic, and auth.Default, behind one auth.Requirement\
+    \ interface\n  wrappers: auth.Ensure redirects and auth.EnsureAPI answers 401\n\
+    \  escape_hatch: auth.IsRecent and auth.Challenge\n  reader: auth.LastProvedAt\n\
+    \  config: the auth.assurance.policy array of tables, validated for a missing\
+    \ name, a duplicate name, and a negative window\n  zero_window: SessionData.StepUpAt,\
+    \ set by a completed step-up and bounded by a short admission window\n  existing_use:\
+    \ the api:passkey-endpoints enrollment check now calls auth.IsRecent and auth.Challenge,\
+    \ so its refusal names what was missing instead of being a bare 403\n  freshness_source:\
+    \ SessionData.ProviderAuthTime when the provider reported auth_time, and the session\
+    \ AuthenticatedAt otherwise\napplication_states:\n  authenticated: policy:authenticated-path-protection,\
+    \ declared by path in configuration and needing no handler code\n  recently_proved:\
+    \ this concept, declared per operation in the handler that performs it\n  reason:\
+    \ an application developer branches on these two and on nothing else; every other\
+    \ level of concept:assurance-axes is configuration or framework-internal\nform:\n\
+    \  shape: a handler decorator applied where the route is registered, not a middleware\n\
+    \  reason: pw.Middleware is applied by App.Use across the whole application, and\
+    \ App.Handle takes one handler with no per-route middleware slot, so the registration\
+    \ site is the only place a per-route requirement can be stated\n  benefit: the\
+    \ requirement sits beside the pattern it guards, so a route cannot be added without\
+    \ deciding it\nsurface:\n  - auth.Ensure(handlerFunc, maxAge) wraps a page route\
+    \ and answers an unmet requirement with a redirect\n  - auth.EnsureAPI(handlerFunc,\
+    \ maxAge) wraps an API route and answers with 401 and a problem document\n  -\
+    \ auth.IsRecent(r, maxAge) reports whether the requirement is met and writes nothing\n\
+    \  - auth.Challenge(w, r, maxAge) writes the challenge and starts flow:step-up-reauthentication\n\
+    \  - auth.StepUp(w, r, maxAge, intent) parks an application-owned opaque intent,\
+    \ for a mutation that must resume\n  - auth.LastProvedAt(context) reports effective\
+    \ freshness, so a page can warn before the user commits to a long form\nsplit_predicate_and_challenge:\n\
+    \  reason: a function that both returns a decision and writes a response hides\
+    \ control flow, so the escape hatch is two calls\n  use: a threshold that depends\
+    \ on the request, such as a stricter window above a payment amount\nsignature:\n\
+    \  takes_and_returns: http.HandlerFunc, so one name serves both App.Handle and\
+    \ App.HandleFunc and a function literal needs no http.HandlerFunc conversion\n\
+    \  requirement_type: the second parameter is an auth.Requirement rather than a\
+    \ time.Duration, because Go has no overloading and the sources of a window are\
+    \ plural\nrequirement_sources:\n  - auth.MaxAge(d) states the window literally,\
+    \ for a route whose window is a property of the code\n  - auth.Policy(name) reads\
+    \ the window from auth.assurance.policy.<name>, so a deployment tunes user experience\
+    \ without a rebuild\n  - auth.Dynamic(func(*http.Request) time.Duration) computes\
+    \ it, for a wall-clock deadline that no fixed duration expresses\n  extensibility:\
+    \ one parameter type absorbs each source without adding a wrapper name\nnamed_policy:\n\
+    \  config: auth.assurance.policy.<name>.max_age\n  validation: a Policy naming\
+    \ an undefined entry fails startup rather than at request time\n  purpose: the\
+    \ same handler code serves a consumer deployment with a long window and an internal\
+    \ one with a short window\n  reuse: one name applied across many routes keeps\
+    \ them consistent, which a literal repeated at each registration does not\nwall_clock_windows:\n\
+    \  case: an internal system requiring re-confirmation after every midnight, which\
+    \ is a deadline rather than a duration\n  form: auth.Dynamic returning the elapsed\
+    \ time since the most recent boundary, so the proof must postdate it\n  reason:\
+    \ max_age is defined as elapsed seconds, so a deadline is expressed by computing\
+    \ the elapsed value at request time\nregistration_example:\n  read: App.HandleFunc(\"\
+    GET /payment\", auth.Ensure(page, auth.MaxAge(30*time.Minute)))\n  write: App.HandleFunc(\"\
+    POST /api/payment\", auth.EnsureAPI(charge, auth.MaxAge(45*time.Minute)))\n  area:\
+    \ App.HandleFunc(\"GET /admin\", auth.Ensure(adminPage, auth.Policy(\"admin\"\
+    )))\n  operation: App.HandleFunc(\"POST /api/admin/drop\", auth.EnsureAPI(drop,\
+    \ auth.Policy(\"danger\")))\n  boundary: guarding the read is user experience,\
+    \ because a client can post directly; the mutation is the security boundary and\
+    \ needs its own guard\n  asymmetry: the write window is the more generous one,\
+    \ so a user who reads, fills a long form, and submits does not lose the input\
+    \ to a guard the read had just satisfied\n  resumption: a mutation that must survive\
+    \ the step-up passes an application-owned intent to auth.StepUp, because flow:step-up-reauthentication\
+    \ refuses to park a request body\nmax_age:\n  omitted: auth.recent_auth_max_age,\
+    \ the existing default\n  positive: the recent level of concept:assurance-axes,\
+    \ such as entering an administration area\n  zero: the per-operation level, such\
+    \ as a destructive action inside an area the user already entered recently\n \
+    \ two_levels_one_predicate: entering an area and performing a dangerous action\
+    \ inside it are the same check with different windows, so the guard needs one\
+    \ predicate rather than two strengths\n  guidance: the window is the expressive\
+    \ part; a deployment tunes it, and no new level is needed to say a stronger thing\n\
+    zero_semantics:\n  hazard: evaluating zero as elapsed time since the proof never\
+    \ converges, because the redirect to the provider and back always consumes more\
+    \ than zero seconds, so the guard challenges again immediately after a successful\
+    \ re-proof\n  rule: zero is satisfied only by a single-use admission that a completed\
+    \ flow:step-up-reauthentication round trip issues, never by a timestamp comparison\n\
+    \  implemented: a StepUpAt stamp written into the session at the completed step-up,\
+    \ admitted while it is within a short window\n  why_the_session: a cookie would\
+    \ be forgeable by anything that can set one, and the session is the only unforgeable\
+    \ place this package can write without owning a new server-side table\n  single_use:\
+    \ the admission is spent where the guard admits, so two zero-window operations\
+    \ cannot share one proof\n  how: clearing the stamp is an ordinary api:session-registry\
+    \ slot write, which is what made exact single use possible; before per-slot writes\
+    \ existed it would have meant rotating the session inside a read, and the stamp\
+    \ was left to expire instead\n  window_is_now_a_backstop: the thirty seconds bound\
+    \ an admission nobody spent, such as one the user abandoned\n  escape_hatch: a\
+    \ handler calling auth.IsRecent and auth.Challenge itself keeps the time-bounded\
+    \ behavior, because IsRecent writes nothing by contract and owns its own denial\n\
+    resumption_limit:\n  fact: the callback returns through a redirect, which is a\
+    \ GET, so the wrapper can resume only a safe method\n  consequence: a guarded\
+    \ mutation cannot be replayed by the wrapper; it answers the challenge and the\
+    \ user arrives back on the page that submitted it\n  escape: auth.StepUp carries\
+    \ an application-owned intent for a mutation that must survive, per flow:step-up-reauthentication\n\
+    \  pairing: this is why the read route carries the real window and the write route\
+    \ carries the boundary, so the write guard is rarely the one that fires\nplacement:\n\
+    \  order: after session and authentication middleware, and after policy:authenticated-path-protection\n\
+    \  reason: an anonymous request is a login problem rather than an assurance problem,\
+    \ so the guard never sees one\nresponse:\n  selection: the wrapper chosen at registration,\
+    \ never negotiated from a request header\n  redirect: auth.Ensure sends the browser\
+    \ into flow:step-up-reauthentication\n  reject: auth.EnsureAPI answers 401 with\
+    \ a problem document naming the unmet max_age, so a client can start the step-up\
+    \ itself\n  status: 401 rather than 403, because the remedy exists and the client\
+    \ is meant to re-prove and retry, which is also what RFC 9470 returns\n  header:\
+    \ the RFC 9470 insufficient_user_authentication challenge is emitted only for\
+    \ a Bearer-protected endpoint, because that challenge belongs to the Bearer scheme\
+    \ and a cookie-authenticated route is not in it\n  existing_403: the current api:passkey-endpoints\
+    \ refusal is 403, which is honest only while no remedy exists; adding the step-up\
+    \ path makes 401 the correct code\nno_negotiation:\n  rejected: choosing between\
+    \ redirect and reject from Accept or Sec-Fetch-Mode\n  asymmetry: misreading an\
+    \ API call as a page returns a redirect that an XHR follows transparently, so\
+    \ the client receives 200 and an HTML login page instead of an error, which fails\
+    \ silently; misreading a page as an API shows a raw 401 and fails loudly\n  unreliable_signal:\
+    \ fetch defaults to Accept */* and so does HTMX, so the header is weakest exactly\
+    \ where the routes differ\n  precedent: policy:authenticated-path-protection already\
+    \ settles the same question explicitly through protection.unauthenticated, and\
+    \ negotiating here would contradict it\n  no_default: the behavior is two function\
+    \ names rather than an option with a default, because an API route that forgets\
+    \ the option would take the silent failure mode\nexisting_use:\n  target: the\
+    \ api:passkey-endpoints register/begin freshness check becomes auth.Ensure with\
+    \ the same default\n  effect: a refusal that is a dead end today gains a remediation\
+    \ path\ndeferred:\n  strength_requirement:\n    surface: auth.RequireStrength\
+    \ and the ordered auth.assurance.strengths list\n    reason:\n      - oidc_only\
+    \ and passkey_only each produce one method, so an ordering has nothing to order\n\
+    \      - oidc_passkey produces two, and neither is stronger in general; a provider\
+    \ with a hardware key outranks a local passkey without user verification, and\
+    \ the reverse also happens\n      - an ordering is therefore a deployment claim,\
+    \ and no default the framework picks is defensible\n    until: a deployment states\
+    \ an ordering the framework can carry rather than invent, most plausibly as acr\
+    \ through requirement:contrib-oidc\nrules:\n  - a requirement names assurance\
+    \ and never an issuer, a provider, or a ceremony\n  - the guard reads assurance\
+    \ and never writes it; only policy:reauthentication writes it\n  - a handler reading\
+    \ auth.LastProvedAt or auth.IsRecent without guarding owns its own denial\n  -\
+    \ a decorated read route is not a boundary for its matching write route; each\
+    \ pattern carries its own requirement\n  - the surface is identical across auth\
+    \ modes, so an application does not branch on oidc_only, oidc_passkey, or passkey_only\n\
+    \  - api:testutil-auth sets authenticated_at, so a test proves the admit path\
+    \ and the challenge path without a provider\n```"
+  legacy_parse_issues:
+  - kind: legacy_parse_error
+    block: 0
+    message: "while parsing a block collection\n  in \"<unicode string>\", line 34,\
+      \ column 3:\n      - auth.MaxAge(d) states the wind ... \n      ^\nexpected\
+      \ <block end>, but found '?'\n  in \"<unicode string>\", line 37, column 3:\n\
+      \      extensibility: one parameter typ ... \n      ^"
+relations:
+- relation: mentions
+  to: api:passkey-endpoints
+  resolution: resolved
+- relation: mentions
+  to: api:session-registry
+  resolution: resolved
+- relation: mentions
+  to: api:testutil-auth
+  resolution: resolved
+- relation: mentions
+  to: concept:assurance-axes
+  resolution: resolved
+- relation: mentions
+  to: flow:step-up-reauthentication
+  resolution: resolved
+- relation: mentions
+  to: policy:authenticated-path-protection
+  resolution: resolved
+- relation: mentions
+  to: policy:reauthentication
+  resolution: resolved
+- relation: mentions
+  to: requirement:contrib-oidc
+  resolution: resolved

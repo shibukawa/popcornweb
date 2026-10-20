@@ -1,0 +1,109 @@
+id: system:vscode
+type: system
+title: Visual Studio Code
+summary: Visual Studio Code is the first editor Popcorn Web targets; its extension
+  contract decides what vision:editor-support can deliver without a server and what
+  needs one.
+facts:
+  legacy_body: "Visual Studio Code is the first editor Popcorn Web targets; its extension\
+    \ contract decides what vision:editor-support can deliver without a server and\
+    \ what needs one.\n\n```yaml\nextension_points_used:\n  contributes.languages:\
+    \ language id, file extensions, and configuration file, per requirement:editor-language-registration\n\
+    \  contributes.grammars: TextMate grammar plus embeddedLanguages, per requirement:template-syntax-highlighting\n\
+    \  contributes.configurationDefaults: per-language editor defaults\n  contributes.commands\
+    \ and contributes.taskDefinitions: requirement:editor-tasks\n  contributes.problemMatchers:\
+    \ maps api:cli-generate and api:cli-doctor output into the Problems view\n  languageClient:\
+    \ requirement:pw-language-server, only from stage 2\ngrammar_engine:\n  implementation:\
+    \ Oniguruma regular expressions over a line-oriented scope stack\n  can: nested\
+    \ begin/end rules, embedded grammars by scope name, injection into another grammar\n\
+    \  cannot: count, balance braces reliably, resolve types, or see another file\n\
+    \  consequence: decision:textmate-grammar-first accepts approximate highlighting;\
+    \ anything needing resolution waits for the server\nembedded_language_support:\n\
+    \  mechanism: a grammar region tagged with a scope whose language is declared\
+    \ in embeddedLanguages\n  effect: bracket matching, comment toggling, and snippets\
+    \ follow the embedded language inside the region\n  limit: one region has one\
+    \ language, so an HTML body containing a template expression must reopen the outer\
+    \ scope for that expression\nworkspace_trust:\n  fact: an untrusted window may\
+    \ load an extension in restricted mode and must not run workspace binaries\n \
+    \ consequence: policy:editor-tool-execution\ndistribution:\n  registries: Visual\
+    \ Studio Marketplace and Open VSX\n  package: vsix, built by vsce or ovsx\n  consumer:\
+    \ requirement:extension-distribution\nalready_scaffolded:\n  file: the concept:project-layout\
+    \ .vscode/settings.json that hides **/*_pw_gen.go\n  relation: the extension supersedes\
+    \ the need for that hand-written entry but does not remove it\nnon_targets_for_now:\n\
+    \  - JetBrains and Neovim, which decision:language-server-in-pw-cli keeps reachable\
+    \ without a second analysis implementation\n```"
+  extension_points_used:
+    contributes.languages: language id, file extensions, and configuration file, per
+      requirement:editor-language-registration
+    contributes.grammars: TextMate grammar plus embeddedLanguages, per requirement:template-syntax-highlighting
+    contributes.configurationDefaults: per-language editor defaults
+    contributes.commands and contributes.taskDefinitions: requirement:editor-tasks
+    contributes.problemMatchers: maps api:cli-generate and api:cli-doctor output into
+      the Problems view
+    languageClient: requirement:pw-language-server, only from stage 2
+  grammar_engine:
+    implementation: Oniguruma regular expressions over a line-oriented scope stack
+    can: nested begin/end rules, embedded grammars by scope name, injection into another
+      grammar
+    cannot: count, balance braces reliably, resolve types, or see another file
+    consequence: decision:textmate-grammar-first accepts approximate highlighting;
+      anything needing resolution waits for the server
+  embedded_language_support:
+    mechanism: a grammar region tagged with a scope whose language is declared in
+      embeddedLanguages
+    effect: bracket matching, comment toggling, and snippets follow the embedded language
+      inside the region
+    limit: one region has one language, so an HTML body containing a template expression
+      must reopen the outer scope for that expression
+  workspace_trust:
+    fact: an untrusted window may load an extension in restricted mode and must not
+      run workspace binaries
+    consequence: policy:editor-tool-execution
+  distribution:
+    registries: Visual Studio Marketplace and Open VSX
+    package: vsix, built by vsce or ovsx
+    consumer: requirement:extension-distribution
+  already_scaffolded:
+    file: the concept:project-layout .vscode/settings.json that hides **/*_pw_gen.go
+    relation: the extension supersedes the need for that hand-written entry but does
+      not remove it
+  non_targets_for_now:
+  - JetBrains and Neovim, which decision:language-server-in-pw-cli keeps reachable
+    without a second analysis implementation
+relations:
+- relation: mentions
+  to: api:cli-doctor
+  resolution: resolved
+- relation: mentions
+  to: api:cli-generate
+  resolution: resolved
+- relation: mentions
+  to: concept:project-layout
+  resolution: resolved
+- relation: mentions
+  to: decision:language-server-in-pw-cli
+  resolution: resolved
+- relation: mentions
+  to: decision:textmate-grammar-first
+  resolution: resolved
+- relation: mentions
+  to: policy:editor-tool-execution
+  resolution: resolved
+- relation: mentions
+  to: requirement:editor-language-registration
+  resolution: resolved
+- relation: mentions
+  to: requirement:editor-tasks
+  resolution: resolved
+- relation: mentions
+  to: requirement:extension-distribution
+  resolution: resolved
+- relation: mentions
+  to: requirement:pw-language-server
+  resolution: resolved
+- relation: mentions
+  to: requirement:template-syntax-highlighting
+  resolution: resolved
+- relation: mentions
+  to: vision:editor-support
+  resolution: resolved

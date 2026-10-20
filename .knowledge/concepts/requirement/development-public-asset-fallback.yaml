@@ -1,0 +1,258 @@
+id: requirement:development-public-asset-fallback
+type: requirement
+title: Development Public Asset Fallback
+summary: A development public mount must serve an explicitly registered embedded asset on an ordinary derived-tree
+  miss, or make the unavailable mount a visible startup failure.
+authority: authored
+lifecycle: accepted
+review_state: confirmed
+facts:
+  origin:
+    request: concept:bdf-printmanager-integration
+    source: source:bdf-printmanager-request
+    section: 'Ask 2: a development mount that does not go silently empty'
+  requester_priority: secondary; requester prefers fallback plus a diagnostic
+  implementation_status: Implemented and verified in this repository; no BDF deployment is claimed.
+  reported_trigger: Under pwdev a missing dist/public or local file produces 404 even when pw.WithPublicFS provides
+    that file.
+  preferred_behavior:
+  - Try the configured derived tree first.
+  - On an ordinary miss, fall back to the filesystem explicitly supplied by pw.WithPublicFS or registered by the
+    application.
+  - Report a missing derived tree once at startup; indicate fallback/stale embedded bytes when relevant.
+  accepted_alternative: If fallback is not chosen, pw dev must fail nonzero on the asset-build failure or expose
+    it as an error, and the application must explicitly report that the public mount has no usable tree.
+  staleness_tradeoff: Embedded fallback may be one build stale; the requester accepts this in preference to an unexplained
+    empty mount.
+  existing_conflict: 'Resolved: derived-tree-development now allows embedded fallback for ordinary misses; the older
+    authored-tree development decision is superseded.'
+  implementation_report: docs/requests/bdf-printmanager-implementation.md
+relations:
+- relation: requested_by
+  to: concept:bdf-printmanager-integration
+  resolution: resolved
+  evidence:
+    source_id: source:bdf-printmanager-request
+    path: bdf-printmanager-public-assets.md
+    heading: 'Ask 2: a development mount that does not go silently empty'
+    input_hash: a2df65a9a5a065a50b78c3559e0f9b0c559e18ff5d7c22f9a08352ad4674a426
+- relation: revises
+  to: decision:derived-tree-development
+  resolution: resolved
+  evidence:
+    source_id: source:bdf-printmanager-request
+    path: bdf-printmanager-public-assets.md
+    heading: 'Ask 2: a development mount that does not go silently empty'
+    input_hash: a2df65a9a5a065a50b78c3559e0f9b0c559e18ff5d7c22f9a08352ad4674a426
+- relation: revises
+  to: decision:development-public-assets
+  resolution: resolved
+  evidence:
+    source_id: source:bdf-printmanager-request
+    path: bdf-printmanager-public-assets.md
+    heading: 'Ask 2: a development mount that does not go silently empty'
+    input_hash: a2df65a9a5a065a50b78c3559e0f9b0c559e18ff5d7c22f9a08352ad4674a426
+- relation: affects
+  to: api:public-asset-middleware
+  resolution: resolved
+  evidence:
+    source_id: source:bdf-printmanager-request
+    path: bdf-printmanager-public-assets.md
+    heading: 'Ask 2: a development mount that does not go silently empty'
+    input_hash: a2df65a9a5a065a50b78c3559e0f9b0c559e18ff5d7c22f9a08352ad4674a426
+- relation: affects
+  to: api:cli-dev
+  resolution: resolved
+  evidence:
+    source_id: source:bdf-printmanager-request
+    path: bdf-printmanager-public-assets.md
+    heading: 'Ask 2: a development mount that does not go silently empty'
+    input_hash: a2df65a9a5a065a50b78c3559e0f9b0c559e18ff5d7c22f9a08352ad4674a426
+- relation: constrained_by
+  to: policy:public-asset-resolution
+  resolution: resolved
+  evidence:
+    source_id: source:bdf-printmanager-request
+    path: bdf-printmanager-public-assets.md
+    heading: 'Ask 2: a development mount that does not go silently empty'
+    input_hash: a2df65a9a5a065a50b78c3559e0f9b0c559e18ff5d7c22f9a08352ad4674a426
+acceptance:
+  missing-tree:
+    text: Under pwdev with no configured derived tree, a file in pw.WithPublicFS is served; alternatively the chosen
+      strict mode exits nonzero with the embed/asset error.
+    authority: authored
+    evidence:
+      source_id: source:bdf-printmanager-request
+      path: bdf-printmanager-public-assets.md
+      heading: 'Ask 2: a development mount that does not go silently empty'
+      input_hash: a2df65a9a5a065a50b78c3559e0f9b0c559e18ff5d7c22f9a08352ad4674a426
+    verified_by:
+    - missing-tree
+  missing-file:
+    text: The preferred fallback serves an embedded file on an ordinary local-file miss while a present local file
+      still wins.
+    authority: authored
+    evidence:
+      source_id: source:bdf-printmanager-request
+      path: bdf-printmanager-public-assets.md
+      heading: 'Ask 2: a development mount that does not go silently empty'
+      input_hash: a2df65a9a5a065a50b78c3559e0f9b0c559e18ff5d7c22f9a08352ad4674a426
+    verified_by:
+    - missing-file
+  visible-failure:
+    text: A missing derived tree or unusable public mount is explicitly diagnosed once instead of leaving every
+      /public request as an unexplained 404.
+    authority: authored
+    evidence:
+      source_id: source:bdf-printmanager-request
+      path: bdf-printmanager-public-assets.md
+      heading: 'Ask 2: a development mount that does not go silently empty'
+      input_hash: a2df65a9a5a065a50b78c3559e0f9b0c559e18ff5d7c22f9a08352ad4674a426
+    verified_by:
+    - visible-failure
+  rejection-boundary:
+    text: Path traversal, symbolic-link rejection, and unsafe-file rejection retain their refusal behavior rather
+      than becoming ordinary fallback misses.
+    authority: authored
+    evidence:
+      source_id: source:bdf-printmanager-request
+      path: bdf-printmanager-public-assets.md
+      heading: 'Ask 2: a development mount that does not go silently empty'
+      input_hash: a2df65a9a5a065a50b78c3559e0f9b0c559e18ff5d7c22f9a08352ad4674a426
+    verified_by:
+    - rejection-boundary
+verification:
+  missing-tree:
+    state: passed
+    method: integration
+    test: TestDevelopmentPublicAssetsFallbackWithoutDerivedTree; pwfast.TestDevelopmentPublicAssetsFallbackWithoutLocalTree
+    authority: observed
+    evidence:
+      path: middlewares/publicassets_dev_test.go
+      locator: TestDevelopmentPublicAssetsFallbackWithoutDerivedTree; pwfast.TestDevelopmentPublicAssetsFallbackWithoutLocalTree
+    basis:
+    - path: go.mod
+      input_hash: 6395d43e84ea0b7fc07ade55b2846879f49afc2a2484ece5121ed4444ce5ed6f
+    - path: middlewares/publicassets.go
+      input_hash: 7173f615f299433d84ea98c38b860610b9adb18ea2296f3c06c2b510e8255218
+    - path: middlewares/publicassets_local.go
+      input_hash: aa6ad2ca0460c3cacfdffc54079cca7c791b41904024fc004d33c40fea2cc5ae
+    - path: pwfast/publicassets.go
+      input_hash: 8307497280f18bcaaafed7a4a79ead79c4dff72d2c51927d57a15b32ddfae10b
+    - path: pwruntime/publicassets.go
+      input_hash: 5e4611857904ee2f1205f7d06aacbc8bbd525e32524d2a44bf03d88baf100e89
+    - path: middlewares/publicassets_dev_test.go
+      input_hash: 8f0dabccbb021e7863681663ddaa45aea5bf810e72c78dbd8742283b4f454ec7
+    - path: pwfast/publicassets_dev_test.go
+      input_hash: eccdd23657b0646a822d3c2df0ab83291e67133a5a1a50d19bbab8ca3896484e
+  missing-file:
+    state: passed
+    method: unit
+    test: TestDevelopmentPublicAssetsPreferLocalIdentity
+    authority: observed
+    evidence:
+      path: middlewares/publicassets_dev_test.go
+      locator: TestDevelopmentPublicAssetsPreferLocalIdentity
+    basis:
+    - path: go.mod
+      input_hash: 6395d43e84ea0b7fc07ade55b2846879f49afc2a2484ece5121ed4444ce5ed6f
+    - path: middlewares/publicassets.go
+      input_hash: 7173f615f299433d84ea98c38b860610b9adb18ea2296f3c06c2b510e8255218
+    - path: middlewares/publicassets_local.go
+      input_hash: aa6ad2ca0460c3cacfdffc54079cca7c791b41904024fc004d33c40fea2cc5ae
+    - path: pwfast/publicassets.go
+      input_hash: 8307497280f18bcaaafed7a4a79ead79c4dff72d2c51927d57a15b32ddfae10b
+    - path: pwruntime/publicassets.go
+      input_hash: 5e4611857904ee2f1205f7d06aacbc8bbd525e32524d2a44bf03d88baf100e89
+    - path: middlewares/publicassets_dev_test.go
+      input_hash: 8f0dabccbb021e7863681663ddaa45aea5bf810e72c78dbd8742283b4f454ec7
+    - path: pwfast/publicassets_dev_test.go
+      input_hash: eccdd23657b0646a822d3c2df0ab83291e67133a5a1a50d19bbab8ca3896484e
+  visible-failure:
+    state: passed
+    method: integration
+    test: TestDevelopmentMissingTreeDiagnosticIsEmittedOnce
+    authority: observed
+    evidence:
+      path: middlewares/publicassets_dev_test.go
+      locator: TestDevelopmentMissingTreeDiagnosticIsEmittedOnce
+    basis:
+    - path: go.mod
+      input_hash: 6395d43e84ea0b7fc07ade55b2846879f49afc2a2484ece5121ed4444ce5ed6f
+    - path: middlewares/publicassets.go
+      input_hash: 7173f615f299433d84ea98c38b860610b9adb18ea2296f3c06c2b510e8255218
+    - path: middlewares/publicassets_local.go
+      input_hash: aa6ad2ca0460c3cacfdffc54079cca7c791b41904024fc004d33c40fea2cc5ae
+    - path: pwfast/publicassets.go
+      input_hash: 8307497280f18bcaaafed7a4a79ead79c4dff72d2c51927d57a15b32ddfae10b
+    - path: pwruntime/publicassets.go
+      input_hash: 5e4611857904ee2f1205f7d06aacbc8bbd525e32524d2a44bf03d88baf100e89
+    - path: middlewares/publicassets_dev_test.go
+      input_hash: 8f0dabccbb021e7863681663ddaa45aea5bf810e72c78dbd8742283b4f454ec7
+    - path: pwfast/publicassets_dev_test.go
+      input_hash: eccdd23657b0646a822d3c2df0ab83291e67133a5a1a50d19bbab8ca3896484e
+  rejection-boundary:
+    state: passed
+    method: unit
+    test: TestDevelopmentPublicAssetsRejectLocalSymlinkWithoutFallback; existing path-security tests
+    authority: observed
+    evidence:
+      path: middlewares/publicassets_dev_test.go
+      locator: TestDevelopmentPublicAssetsRejectLocalSymlinkWithoutFallback; existing path-security tests
+    basis:
+    - path: go.mod
+      input_hash: 6395d43e84ea0b7fc07ade55b2846879f49afc2a2484ece5121ed4444ce5ed6f
+    - path: middlewares/publicassets.go
+      input_hash: 7173f615f299433d84ea98c38b860610b9adb18ea2296f3c06c2b510e8255218
+    - path: middlewares/publicassets_local.go
+      input_hash: aa6ad2ca0460c3cacfdffc54079cca7c791b41904024fc004d33c40fea2cc5ae
+    - path: pwfast/publicassets.go
+      input_hash: 8307497280f18bcaaafed7a4a79ead79c4dff72d2c51927d57a15b32ddfae10b
+    - path: pwruntime/publicassets.go
+      input_hash: 5e4611857904ee2f1205f7d06aacbc8bbd525e32524d2a44bf03d88baf100e89
+    - path: middlewares/publicassets_dev_test.go
+      input_hash: 8f0dabccbb021e7863681663ddaa45aea5bf810e72c78dbd8742283b4f454ec7
+    - path: pwfast/publicassets_dev_test.go
+      input_hash: eccdd23657b0646a822d3c2df0ab83291e67133a5a1a50d19bbab8ca3896484e
+constraints:
+- Never fall back to the authored input tree.
+- Keep existing mount and path-security rules.
+open_questions:
+  fallback-policy:
+    text: Adopt the requester’s preferred embedded fallback plus startup diagnostic, or the accepted strict-startup
+      alternative?
+    state: answered
+    resolution: Adopt embedded fallback on ordinary misses plus one startup diagnostic for a missing tree. Keep
+      security rejections as refusals. An initial pw dev asset-build failure exits with its reported error.
+capabilities:
+  requested-behavior:
+    state: implemented
+    authority: observed
+    verified_by:
+    - missing-tree
+    - missing-file
+    - visible-failure
+    - rejection-boundary
+    basis:
+    - path: go.mod
+      input_hash: 6395d43e84ea0b7fc07ade55b2846879f49afc2a2484ece5121ed4444ce5ed6f
+    - path: middlewares/publicassets.go
+      input_hash: 7173f615f299433d84ea98c38b860610b9adb18ea2296f3c06c2b510e8255218
+    - path: middlewares/publicassets_local.go
+      input_hash: aa6ad2ca0460c3cacfdffc54079cca7c791b41904024fc004d33c40fea2cc5ae
+    - path: pwfast/publicassets.go
+      input_hash: 8307497280f18bcaaafed7a4a79ead79c4dff72d2c51927d57a15b32ddfae10b
+    - path: pwruntime/publicassets.go
+      input_hash: 5e4611857904ee2f1205f7d06aacbc8bbd525e32524d2a44bf03d88baf100e89
+    - path: middlewares/publicassets_dev_test.go
+      input_hash: 8f0dabccbb021e7863681663ddaa45aea5bf810e72c78dbd8742283b4f454ec7
+    - path: pwfast/publicassets_dev_test.go
+      input_hash: eccdd23657b0646a822d3c2df0ab83291e67133a5a1a50d19bbab8ca3896484e
+    evidence:
+      path: docs/requests/bdf-printmanager-implementation.md
+history:
+  implementation:
+    summary: Implemented the requested behavior and documentation; acceptance verification records refer to local
+      fixtures and saved input hashes.
+    evidence:
+      path: docs/requests/bdf-printmanager-implementation.md

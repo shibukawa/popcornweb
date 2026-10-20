@@ -1,0 +1,39 @@
+id: data:auth-state-record
+type: data
+title: Authentication State Record
+summary: Durable authentication state stores persist one namespaced, expiring, single-use
+  record without exposing its secret payload.
+facts:
+  legacy_body: "Durable authentication state stores persist one namespaced, expiring,\
+    \ single-use record without exposing its secret payload.\n\n```yaml\nfields:\n\
+    \  namespace: bounded non-empty deployment and protocol scope\n  key: bounded\
+    \ opaque correlation key\n  expires_at_ms: absolute Unix millisecond deadline\n\
+    \  payload: bounded api:auth-state-codec bytes\nsemantics:\n  put: create only\
+    \ while no unexpired namespace and key record exists\n  take: atomically remove\
+    \ before expiry validation, decode, or return\n  expired: remove and return requirement:contrib-auth-state\
+    \ ErrExpired or ErrNotFound\n  malformed: remain consumed and return a stable\
+    \ decode error\nsecurity:\n  - namespace, key, expiry, and payload never enter\
+    \ logs or stable error text\n  - storage and transport protections match the deployment\
+    \ threat model\n  - payload encryption is an explicit codec or deployment responsibility\n\
+    ```"
+  fields:
+    namespace: bounded non-empty deployment and protocol scope
+    key: bounded opaque correlation key
+    expires_at_ms: absolute Unix millisecond deadline
+    payload: bounded api:auth-state-codec bytes
+  semantics:
+    put: create only while no unexpired namespace and key record exists
+    take: atomically remove before expiry validation, decode, or return
+    expired: remove and return requirement:contrib-auth-state ErrExpired or ErrNotFound
+    malformed: remain consumed and return a stable decode error
+  security:
+  - namespace, key, expiry, and payload never enter logs or stable error text
+  - storage and transport protections match the deployment threat model
+  - payload encryption is an explicit codec or deployment responsibility
+relations:
+- relation: mentions
+  to: api:auth-state-codec
+  resolution: resolved
+- relation: mentions
+  to: requirement:contrib-auth-state
+  resolution: resolved

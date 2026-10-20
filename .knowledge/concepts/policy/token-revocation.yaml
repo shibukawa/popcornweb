@@ -1,0 +1,241 @@
+id: policy:token-revocation
+type: policy
+title: Bearer Token Revocation Policy
+summary: A verified access token is valid until it expires, which is the one property
+  a resource server cannot change on its own; revocation gives the deployment a server-side
+  list that refuses a token before its expiry.
+facts:
+  legacy_body: "A verified access token is valid until it expires, which is the one\
+    \ property a resource server cannot change on its own; revocation gives the deployment\
+    \ a server-side list that refuses a token before its expiry.\n\n```yaml\nproblem:\
+    \ a stolen token stays valid for its whole lifetime, and this application neither\
+    \ issued it nor can withdraw it at the issuer\nanswer: a bounded revocation list\
+    \ this application consults on every admitted request\nenabled: auth.jwt.revocation.mode,\
+    \ stated explicitly and never defaulted; a deployment with short token lifetimes\
+    \ may accept the exposure by writing off, and says so\nforms:\n  selection: auth.jwt.revocation.mode,\
+    \ naming off, token, subject, or both; selecting a form is what turns its requirement\
+    \ on, rather than a separate switch that can disagree with it\n  token:\n    key:\
+    \ the jti claim, scoped by issuer\n    revokes: one token\n    requires: jti,\
+    \ which policy:access-token-verification already demands of an at+jwt token; selecting\
+    \ this form extends that demand to a relaxed token type as well\n    missing_jti:\
+    \ refused, because a token nobody can name is a token nobody can revoke\n  subject:\n\
+    \    key: the value of auth.jwt.identity_claim, scoped by issuer\n    revokes:\
+    \ every token for that identity issued before a stamp\n    compares: the iat claim\
+    \ against the stored stamp, so a token minted after the revocation is admitted\
+    \ and the identity keeps working once it re-authenticates\n    bounded_by: auth.jwt.max_token_lifetime,\
+    \ which the mode requires of every jwt_only configuration, because the entry has\
+    \ to outlive every token it must refuse and this application does not know how\
+    \ long the issuer mints for\n    fits: a compromised account, where enumerating\
+    \ the outstanding jti values is exactly what nobody can do\n  both: the ordinary\
+    \ answer; the token form ends one leaked credential and the subject form ends\
+    \ a compromised identity, and neither substitutes for the other\nrecord: data:revoked-token-record\n\
+    storage:\n  shipped: the relational database alone, read directly rather than\
+    \ through the session backend contract; auth.backend must answer rdb once jwt_only\
+    \ reads any store, and Config.validateShape refuses redis and dynamo by name rather\
+    \ than silently ignoring the revocation keys\n  designed_wider: the first draft\
+    \ placed this on the server backends of requirement:state-storage-tiers through\
+    \ api:session-backend-plugin; the implementation narrowed to SQL because the allowlist\
+    \ beside it is relational and neither list has a non-relational implementation\
+    \ today\n  not_a_session: the entries are not data:session-record values and carry\
+    \ no token, so concept:session-storage-boundary is not crossed\n  refused_backend:\
+    \ cookie, which has no server storage and no revocation, per decision:cookie-session-storage\n\
+    \  why_not_authstate: requirement:contrib-auth-state Take is destructive by contract,\
+    \ and a revocation entry is read many times and consumed never\n  owned_table:\
+    \ popcornweb_auth_revocation, under rule:framework-owned-tables, published by\
+    \ auth.MigrationSQL beside the allowlist table\nkey_handling:\n  designed: a hash\
+    \ of the issuer and the identifier, matching the key-hash discipline api:session-store\
+    \ already applies, because a leaked list should not be a list of live token names\n\
+    \  shipped: the raw identifier in the key_value column, keyed (issuer, kind, key_value);\
+    \ the hash discipline is not implemented as of 2026-08-14 and stands as the one\
+    \ open divergence from this policy\n  mitigating: a token row's jti names a credential\
+    \ only together with the rest of the token, and a subject row's value is an identity\
+    \ key the allowlist table beside it already stores in the clear\nexpiry:\n  token_form:\
+    \ the exp of the revoked token, plus the verification leeway\n  subject_form:\
+    \ the stamp plus auth.jwt.max_token_lifetime\n  rule: an entry must outlive every\
+    \ token it refuses, so a shorter TTL is a revocation that silently expires\n \
+    \ sweep: the backend's own, per api:session-store; nothing accumulates beyond\
+    \ the longest token lifetime\nunavailable:\n  default: refuse the request as an\
+    \ error, not as a denial, per auth.jwt.revocation.on_unavailable\n  status: 503\
+    \ rather than 401, because the credential was not judged and retrying it may succeed\n\
+    \  reason: admitting on an outage turns the store into an optimization and makes\
+    \ every revocation conditional on infrastructure being up\n  override: on_unavailable\
+    \ admit, kept so an outage has an operator lever rather than none, and reported\
+    \ by rule:configuration-advisories at error level rather than as a note\n  override_meaning:\
+    \ with it set, revocation is advisory and every revoked token works again for\
+    \ the duration of the outage; it is a temporary act during an incident, not a\
+    \ deployment posture\ncaching:\n  default: none; a cached admit is a revocation\
+    \ that has not taken effect yet\n  bounded: auth.jwt.revocation.max_propagation_delay,\
+    \ off by default, which permits a per-process cache no longer than the delay it\
+    \ names\n  honesty: the configured delay is the answer to how fast a revocation\
+    \ takes effect, and there is no other\n  bounded_in_size_too: the delay bounds\
+    \ how long an entry is trusted, and a cap on entries bounds how many are held;\
+    \ an unauthenticated caller chooses the keys, so the second bound is not an optimization\n\
+    \  eviction: an entry past the delay is dropped rather than kept and re-judged\
+    \ on every read\n  cap: 4096 entries, swept of what the delay retired and discarded\
+    \ whole when that is not enough\n  why_discarding_is_enough: an entry is only\
+    \ an optimization, it is valid for the delay at most, and losing one costs a single\
+    \ indexed read, so the bookkeeping an eviction order would need buys nothing\n\
+    surface: api:bearer-authentication publishes the revoke and reinstate calls; no\
+    \ HTTP endpoint is mounted, because an endpoint that revokes tokens needs an authorization\
+    \ rule this framework has no basis to write\nrules:\n  - consult the list only\
+    \ after policy:access-token-verification and policy:bearer-admission both pass\n\
+    \  - a revoked token is refused with the revoked category of policy:access-token-verification,\
+    \ indistinguishable to the client from an expired one\n  - revoking an unknown\
+    \ identifier succeeds, because the caller cannot know whether a token was ever\
+    \ presented\n  - revoking twice is idempotent and does not extend an entry past\
+    \ its own expiry\n  - the list is never enumerated or scanned at request time\n\
+    \  - audit every revocation with the actor, the reason, and the hashed key, never\
+    \ the jti itself\nnon_goals:\n  - propagating a revocation to the issuer or to\
+    \ any other resource server\n  - RFC 7009 token revocation, which is an authorization\
+    \ server endpoint\n  - an allowlist of live tokens, which is a session store with\
+    \ extra steps and defeats the point of a stateless credential\n```"
+  problem: a stolen token stays valid for its whole lifetime, and this application
+    neither issued it nor can withdraw it at the issuer
+  answer: a bounded revocation list this application consults on every admitted request
+  enabled: auth.jwt.revocation.mode, stated explicitly and never defaulted; a deployment
+    with short token lifetimes may accept the exposure by writing off, and says so
+  forms:
+    selection: auth.jwt.revocation.mode, naming off, token, subject, or both; selecting
+      a form is what turns its requirement on, rather than a separate switch that
+      can disagree with it
+    token:
+      key: the jti claim, scoped by issuer
+      revokes: one token
+      requires: jti, which policy:access-token-verification already demands of an
+        at+jwt token; selecting this form extends that demand to a relaxed token type
+        as well
+      missing_jti: refused, because a token nobody can name is a token nobody can
+        revoke
+    subject:
+      key: the value of auth.jwt.identity_claim, scoped by issuer
+      revokes: every token for that identity issued before a stamp
+      compares: the iat claim against the stored stamp, so a token minted after the
+        revocation is admitted and the identity keeps working once it re-authenticates
+      bounded_by: auth.jwt.max_token_lifetime, which the mode requires of every jwt_only
+        configuration, because the entry has to outlive every token it must refuse
+        and this application does not know how long the issuer mints for
+      fits: a compromised account, where enumerating the outstanding jti values is
+        exactly what nobody can do
+    both: the ordinary answer; the token form ends one leaked credential and the subject
+      form ends a compromised identity, and neither substitutes for the other
+  record: data:revoked-token-record
+  storage:
+    shipped: the relational database alone, read directly rather than through the
+      session backend contract; auth.backend must answer rdb once jwt_only reads any
+      store, and Config.validateShape refuses redis and dynamo by name rather than
+      silently ignoring the revocation keys
+    designed_wider: the first draft placed this on the server backends of requirement:state-storage-tiers
+      through api:session-backend-plugin; the implementation narrowed to SQL because
+      the allowlist beside it is relational and neither list has a non-relational
+      implementation today
+    not_a_session: the entries are not data:session-record values and carry no token,
+      so concept:session-storage-boundary is not crossed
+    refused_backend: cookie, which has no server storage and no revocation, per decision:cookie-session-storage
+    why_not_authstate: requirement:contrib-auth-state Take is destructive by contract,
+      and a revocation entry is read many times and consumed never
+    owned_table: popcornweb_auth_revocation, under rule:framework-owned-tables, published
+      by auth.MigrationSQL beside the allowlist table
+  key_handling:
+    designed: a hash of the issuer and the identifier, matching the key-hash discipline
+      api:session-store already applies, because a leaked list should not be a list
+      of live token names
+    shipped: the raw identifier in the key_value column, keyed (issuer, kind, key_value);
+      the hash discipline is not implemented as of 2026-08-14 and stands as the one
+      open divergence from this policy
+    mitigating: a token row's jti names a credential only together with the rest of
+      the token, and a subject row's value is an identity key the allowlist table
+      beside it already stores in the clear
+  expiry:
+    token_form: the exp of the revoked token, plus the verification leeway
+    subject_form: the stamp plus auth.jwt.max_token_lifetime
+    rule: an entry must outlive every token it refuses, so a shorter TTL is a revocation
+      that silently expires
+    sweep: the backend's own, per api:session-store; nothing accumulates beyond the
+      longest token lifetime
+  unavailable:
+    default: refuse the request as an error, not as a denial, per auth.jwt.revocation.on_unavailable
+    status: 503 rather than 401, because the credential was not judged and retrying
+      it may succeed
+    reason: admitting on an outage turns the store into an optimization and makes
+      every revocation conditional on infrastructure being up
+    override: on_unavailable admit, kept so an outage has an operator lever rather
+      than none, and reported by rule:configuration-advisories at error level rather
+      than as a note
+    override_meaning: with it set, revocation is advisory and every revoked token
+      works again for the duration of the outage; it is a temporary act during an
+      incident, not a deployment posture
+  caching:
+    default: none; a cached admit is a revocation that has not taken effect yet
+    bounded: auth.jwt.revocation.max_propagation_delay, off by default, which permits
+      a per-process cache no longer than the delay it names
+    honesty: the configured delay is the answer to how fast a revocation takes effect,
+      and there is no other
+    bounded_in_size_too: the delay bounds how long an entry is trusted, and a cap
+      on entries bounds how many are held; an unauthenticated caller chooses the keys,
+      so the second bound is not an optimization
+    eviction: an entry past the delay is dropped rather than kept and re-judged on
+      every read
+    cap: 4096 entries, swept of what the delay retired and discarded whole when that
+      is not enough
+    why_discarding_is_enough: an entry is only an optimization, it is valid for the
+      delay at most, and losing one costs a single indexed read, so the bookkeeping
+      an eviction order would need buys nothing
+  surface: api:bearer-authentication publishes the revoke and reinstate calls; no
+    HTTP endpoint is mounted, because an endpoint that revokes tokens needs an authorization
+    rule this framework has no basis to write
+  rules:
+  - consult the list only after policy:access-token-verification and policy:bearer-admission
+    both pass
+  - a revoked token is refused with the revoked category of policy:access-token-verification,
+    indistinguishable to the client from an expired one
+  - revoking an unknown identifier succeeds, because the caller cannot know whether
+    a token was ever presented
+  - revoking twice is idempotent and does not extend an entry past its own expiry
+  - the list is never enumerated or scanned at request time
+  - audit every revocation with the actor, the reason, and the hashed key, never the
+    jti itself
+  non_goals:
+  - propagating a revocation to the issuer or to any other resource server
+  - RFC 7009 token revocation, which is an authorization server endpoint
+  - an allowlist of live tokens, which is a session store with extra steps and defeats
+    the point of a stateless credential
+relations:
+- relation: mentions
+  to: api:bearer-authentication
+  resolution: resolved
+- relation: mentions
+  to: api:session-backend-plugin
+  resolution: resolved
+- relation: mentions
+  to: api:session-store
+  resolution: resolved
+- relation: mentions
+  to: concept:session-storage-boundary
+  resolution: resolved
+- relation: mentions
+  to: data:revoked-token-record
+  resolution: resolved
+- relation: mentions
+  to: data:session-record
+  resolution: resolved
+- relation: mentions
+  to: decision:cookie-session-storage
+  resolution: resolved
+- relation: mentions
+  to: policy:access-token-verification
+  resolution: resolved
+- relation: mentions
+  to: policy:bearer-admission
+  resolution: resolved
+- relation: mentions
+  to: requirement:contrib-auth-state
+  resolution: resolved
+- relation: mentions
+  to: requirement:state-storage-tiers
+  resolution: resolved
+- relation: mentions
+  to: rule:configuration-advisories
+  resolution: resolved
+- relation: mentions
+  to: rule:framework-owned-tables
+  resolution: resolved

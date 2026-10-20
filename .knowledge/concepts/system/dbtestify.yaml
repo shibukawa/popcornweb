@@ -1,0 +1,92 @@
+id: system:dbtestify
+type: system
+title: dbtestify
+summary: dbtestify is the external owner of dataset-driven database seeding and assertion
+  logic consumed by requirement:test-data-seeding.
+facts:
+  legacy_body: "dbtestify is the external owner of dataset-driven database seeding\
+    \ and assertion logic consumed by requirement:test-data-seeding.\n\n```yaml\n\
+    module: github.com/shibukawa/dbtestify\nsource: https://github.com/shibukawa/dbtestify\n\
+    packages:\n  core: github.com/shibukawa/dbtestify\n  assertdb: github.com/shibukawa/dbtestify/assertdb\n\
+    \  httpapi: github.com/shibukawa/dbtestify/httpapi\n  cli: github.com/shibukawa/dbtestify/cmd/dbtestify\n\
+    core_surface:\n  - ParseYAML(io.Reader) (*DataSet, error)\n  - Seed(ctx, DBConnector,\
+    \ *DataSet, SeedOpt) error\n  - Assert(ctx, DBConnector, *DataSet, AssertOpt)\
+    \ (bool, []AssertTableResult, error)\n  - DBConnector interface over TableNames,\
+    \ PrimaryKeys, Insert, Delete, Upsert, Truncate, DB\n  - NewDBConnector(ctx, \"\
+    postgres|mysql|sqlite://dsn\") (DBConnector, error)\n  - Operation clear-insert,\
+    \ insert, upsert, delete, truncate\n  - MatchStrategy exact, sub\n  - DumpDiffCLICallback(showTableName,\
+    \ quiet bool)\nconsumed:\n  - core only\nnot_consumed:\n  assertdb: binds concrete\
+    \ *testing.T and t.Context, and opens its own pool; decision:testutil-testing-interface\
+    \ rules it out\n  httpapi: out of scope for requirement:test-data-seeding\n  cli:\
+    \ replaced by api:cli-seed so one runtime configuration source stays authoritative\n\
+    added_for_popcornweb:\n  released: v0.2.0 and v0.3.0\n  rationale: decision:dbtestify-integration\n\
+    \  surface:\n    - NewDBConnectorFromDB(db *sql.DB, dialect Dialect) (DBConnector,\
+    \ error)\n    - Dialect, ParseDialect(name), SplitSource(source)\n    - DiffFormat,\
+    \ FormatTableDiff, DumpDiffCallback(io.Writer, DiffFormat)\n    - github.com/shibukawa/dbtestify/connect\
+    \ owns NewDBConnector and the driver imports\n    - Executor, NewDBConnectorFromTx,\
+    \ NewDBConnectorFromExecutor\n    - assertdb SeedDataSetDB, AssertDBWithDB, SeedDataSetTx,\
+    \ AssertDBTx\n  core_dependencies_after: fatih/color and goccy/go-yaml only\n\
+    \  breaking:\n    - v0.2.0 moved dbtestify.NewDBConnector to connect.NewDBConnector\n\
+    \    - v0.3.0 DBConnector operations take an Executor instead of a *sql.Tx\n \
+    \   - v0.5.0 made Executor driver-agnostic — Exec returns (int64, error), Query\n\
+    \      returns a Rows cursor interface — with FromSQL adapting database/sql\n\
+    \      handles; requested by requirement:pgx-native-execution so seeding and\n\
+    \      assertion run inside a native pgx transaction\n```"
+  module: github.com/shibukawa/dbtestify
+  source: https://github.com/shibukawa/dbtestify
+  packages:
+    core: github.com/shibukawa/dbtestify
+    assertdb: github.com/shibukawa/dbtestify/assertdb
+    httpapi: github.com/shibukawa/dbtestify/httpapi
+    cli: github.com/shibukawa/dbtestify/cmd/dbtestify
+  core_surface:
+  - ParseYAML(io.Reader) (*DataSet, error)
+  - Seed(ctx, DBConnector, *DataSet, SeedOpt) error
+  - Assert(ctx, DBConnector, *DataSet, AssertOpt) (bool, []AssertTableResult, error)
+  - DBConnector interface over TableNames, PrimaryKeys, Insert, Delete, Upsert, Truncate,
+    DB
+  - NewDBConnector(ctx, "postgres|mysql|sqlite://dsn") (DBConnector, error)
+  - Operation clear-insert, insert, upsert, delete, truncate
+  - MatchStrategy exact, sub
+  - DumpDiffCLICallback(showTableName, quiet bool)
+  consumed:
+  - core only
+  not_consumed:
+    assertdb: binds concrete *testing.T and t.Context, and opens its own pool; decision:testutil-testing-interface
+      rules it out
+    httpapi: out of scope for requirement:test-data-seeding
+    cli: replaced by api:cli-seed so one runtime configuration source stays authoritative
+  added_for_popcornweb:
+    released: v0.2.0 and v0.3.0
+    rationale: decision:dbtestify-integration
+    surface:
+    - NewDBConnectorFromDB(db *sql.DB, dialect Dialect) (DBConnector, error)
+    - Dialect, ParseDialect(name), SplitSource(source)
+    - DiffFormat, FormatTableDiff, DumpDiffCallback(io.Writer, DiffFormat)
+    - github.com/shibukawa/dbtestify/connect owns NewDBConnector and the driver imports
+    - Executor, NewDBConnectorFromTx, NewDBConnectorFromExecutor
+    - assertdb SeedDataSetDB, AssertDBWithDB, SeedDataSetTx, AssertDBTx
+    core_dependencies_after: fatih/color and goccy/go-yaml only
+    breaking:
+    - v0.2.0 moved dbtestify.NewDBConnector to connect.NewDBConnector
+    - v0.3.0 DBConnector operations take an Executor instead of a *sql.Tx
+    - v0.5.0 made Executor driver-agnostic — Exec returns (int64, error), Query returns
+      a Rows cursor interface — with FromSQL adapting database/sql handles; requested
+      by requirement:pgx-native-execution so seeding and assertion run inside a native
+      pgx transaction
+relations:
+- relation: mentions
+  to: api:cli-seed
+  resolution: resolved
+- relation: mentions
+  to: decision:dbtestify-integration
+  resolution: resolved
+- relation: mentions
+  to: decision:testutil-testing-interface
+  resolution: resolved
+- relation: mentions
+  to: requirement:pgx-native-execution
+  resolution: resolved
+- relation: mentions
+  to: requirement:test-data-seeding
+  resolution: resolved

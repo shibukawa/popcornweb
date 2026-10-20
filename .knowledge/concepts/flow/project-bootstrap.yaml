@@ -1,0 +1,110 @@
+id: flow:project-bootstrap
+type: flow
+title: Project Bootstrap Flow
+summary: Project bootstrap turns a project name into a runnable Popcorn Web application
+  and a reproducible Devbox development environment.
+facts:
+  legacy_body: "Project bootstrap turns a project name into a runnable Popcorn Web\
+    \ application and a reproducible Devbox development environment.\n\n```yaml\n\
+    flow:\n  trigger: actor:application-developer invokes api:cli-init\n  steps:\n\
+    \    - id: choose\n      actor: actor:application-developer\n      action: pick\
+    \ a requirement:init-presets preset, per decision:preset-first-bootstrap; a named\
+    \ preset then asks the project name only, and Manual opens the decision:navigable-answer-hub\
+    \ over the decision:interactive-project-bootstrap questions\n      seeded_by:\
+    \ a project name argument, which seeds its step rather than skipping the wizard\n\
+    \      shortcut: --preset, --yes, or a session with no terminal takes the flags\
+    \ instead\n    - id: validate\n      actor: system:pw-cli\n      action: validate\
+    \ project name and destination\n    - id: scaffold\n      action: write concept:project-layout\
+    \ handwritten files, including requirement:nested-html-templates document shell,\
+    \ ui:starter-landing-page, and data:migration-source version 1\n    - id: toolchain\n\
+    \      action: record project.toolchain and emit the flow:handler-registration\
+    \ mux for it, adding TinyGo to Devbox when selected\n    - id: generate\n    \
+    \  action: invoke api:cli-generate\n    - id: optional-css\n      action: pin\
+    \ decision:tailwind-host-toolchain in Devbox and scaffold the CSS entry when requested\n\
+    \    - id: summarize\n      action: report the created sources under policy:cli-progress-reporting,\
+    \ counting rather than listing the generated artifacts\n      output: cd, devbox\
+    \ shell, and api:cli-dev commands\n  failure:\n    default: report failing phase\
+    \ and leave no partial replacement of existing files\n    canceled_wizard: write\
+    \ nothing and exit successfully\n```"
+  flow:
+    trigger: actor:application-developer invokes api:cli-init
+    steps:
+    - id: choose
+      actor: actor:application-developer
+      action: pick a requirement:init-presets preset, per decision:preset-first-bootstrap;
+        a named preset then asks the project name only, and Manual opens the decision:navigable-answer-hub
+        over the decision:interactive-project-bootstrap questions
+      seeded_by: a project name argument, which seeds its step rather than skipping
+        the wizard
+      shortcut: --preset, --yes, or a session with no terminal takes the flags instead
+    - id: validate
+      actor: system:pw-cli
+      action: validate project name and destination
+    - id: scaffold
+      action: write concept:project-layout handwritten files, including requirement:nested-html-templates
+        document shell, ui:starter-landing-page, and data:migration-source version
+        1
+    - id: toolchain
+      action: record project.toolchain and emit the flow:handler-registration mux
+        for it, adding TinyGo to Devbox when selected
+    - id: generate
+      action: invoke api:cli-generate
+    - id: optional-css
+      action: pin decision:tailwind-host-toolchain in Devbox and scaffold the CSS
+        entry when requested
+    - id: summarize
+      action: report the created sources under policy:cli-progress-reporting, counting
+        rather than listing the generated artifacts
+      output: cd, devbox shell, and api:cli-dev commands
+    failure:
+      default: report failing phase and leave no partial replacement of existing files
+      canceled_wizard: write nothing and exit successfully
+relations:
+- relation: mentions
+  to: actor:application-developer
+  resolution: resolved
+- relation: mentions
+  to: api:cli-dev
+  resolution: resolved
+- relation: mentions
+  to: api:cli-generate
+  resolution: resolved
+- relation: mentions
+  to: api:cli-init
+  resolution: resolved
+- relation: mentions
+  to: concept:project-layout
+  resolution: resolved
+- relation: mentions
+  to: data:migration-source
+  resolution: resolved
+- relation: mentions
+  to: decision:interactive-project-bootstrap
+  resolution: resolved
+- relation: mentions
+  to: decision:navigable-answer-hub
+  resolution: resolved
+- relation: mentions
+  to: decision:preset-first-bootstrap
+  resolution: resolved
+- relation: mentions
+  to: decision:tailwind-host-toolchain
+  resolution: resolved
+- relation: mentions
+  to: flow:handler-registration
+  resolution: resolved
+- relation: mentions
+  to: policy:cli-progress-reporting
+  resolution: resolved
+- relation: mentions
+  to: requirement:init-presets
+  resolution: resolved
+- relation: mentions
+  to: requirement:nested-html-templates
+  resolution: resolved
+- relation: mentions
+  to: system:pw-cli
+  resolution: resolved
+- relation: mentions
+  to: ui:starter-landing-page
+  resolution: resolved

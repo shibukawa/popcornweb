@@ -1,0 +1,87 @@
+id: api:public-asset-middleware
+type: api
+title: Public Asset Middleware
+summary: Application lifecycle construction selects one static-file middleware implementation
+  behind the same public asset registration.
+facts:
+  legacy_body: "Application lifecycle construction selects one static-file middleware\
+    \ implementation behind the same public asset registration.\n\n```yaml\nregistration:\n\
+    \  implementation: github.com/shibukawa/popcornweb/middlewares\n  generated_project:\
+    \ public.go init calls middlewares.RegisterPublicFS(PublicFS())\n  compatibility_override:\
+    \ WithPublicFS(fs.FS)\n  linker: generated main bootstrap blank-imports the public\
+    \ package\n  lifecycle: api:application-lifecycle\n  mount: data:server-runtime-config\
+    \ server.public.mount\nselection:\n  development:\n    condition: api:cli-dev\
+    \ reserved pwdev build mode\n    implementation: decision:development-public-assets\n\
+    \  production:\n    condition: ordinary api:cli-build or application build\n \
+    \   lookup: policy:public-asset-resolution\n    encoding: policy:public-asset-negotiation\n\
+    response:\n  found: 200 with inferred Content-Type and selected representation\n\
+    \  revision_stamped: long max-age with immutable under a requirement:framework-script-assets\
+    \ revision segment\n  mount_without_trailing_slash: 308 to the canonical mount\
+    \ root\n  missing_or_hidden: 404\n  unsupported_method: 405 with Allow\nmiddleware_order:\n\
+    \  - public assets bypass session, CSRF, and policy:authenticated-path-protection\n\
+    \  - security response headers, access logging, tracing, and request recovery\
+    \ still apply\n  - dynamic response compression skips this middleware response\n\
+    startup:\n  - server.public.enabled requires a registered or explicitly supplied\
+    \ fs.FS in production\n  - reject an invalid mount before accepting requests\n\
+    \  - reject application content under the reserved requirement:framework-script-assets\
+    \ subtree\n```"
+  registration:
+    implementation: github.com/shibukawa/popcornweb/middlewares
+    generated_project: public.go init calls middlewares.RegisterPublicFS(PublicFS())
+    compatibility_override: WithPublicFS(fs.FS)
+    linker: generated main bootstrap blank-imports the public package
+    lifecycle: api:application-lifecycle
+    mount: data:server-runtime-config server.public.mount
+  selection:
+    development:
+      condition: api:cli-dev reserved pwdev build mode
+      implementation: decision:development-public-assets
+    production:
+      condition: ordinary api:cli-build or application build
+      lookup: policy:public-asset-resolution
+      encoding: policy:public-asset-negotiation
+  response:
+    found: 200 with inferred Content-Type and selected representation
+    revision_stamped: long max-age with immutable under a requirement:framework-script-assets
+      revision segment
+    mount_without_trailing_slash: 308 to the canonical mount root
+    missing_or_hidden: 404
+    unsupported_method: 405 with Allow
+  middleware_order:
+  - public assets bypass session, CSRF, and policy:authenticated-path-protection
+  - security response headers, access logging, tracing, and request recovery still
+    apply
+  - dynamic response compression skips this middleware response
+  startup:
+  - server.public.enabled requires a registered or explicitly supplied fs.FS in production
+  - reject an invalid mount before accepting requests
+  - reject application content under the reserved requirement:framework-script-assets
+    subtree
+relations:
+- relation: mentions
+  to: api:application-lifecycle
+  resolution: resolved
+- relation: mentions
+  to: api:cli-build
+  resolution: resolved
+- relation: mentions
+  to: api:cli-dev
+  resolution: resolved
+- relation: mentions
+  to: data:server-runtime-config
+  resolution: resolved
+- relation: mentions
+  to: decision:development-public-assets
+  resolution: resolved
+- relation: mentions
+  to: policy:authenticated-path-protection
+  resolution: resolved
+- relation: mentions
+  to: policy:public-asset-negotiation
+  resolution: resolved
+- relation: mentions
+  to: policy:public-asset-resolution
+  resolution: resolved
+- relation: mentions
+  to: requirement:framework-script-assets
+  resolution: resolved

@@ -1,0 +1,58 @@
+id: requirement:contrib-sqlite
+type: requirement
+title: Portable SQLite Facade
+summary: system:tinygodriver exposes one database/sql SQLite contract while decision:sqlite-backend-selection
+  chooses the build-specific implementation.
+facts:
+  legacy_body: "system:tinygodriver exposes one database/sql SQLite contract while\
+    \ decision:sqlite-backend-selection chooses the build-specific implementation.\n\
+    \n```yaml\npackage: github.com/shibukawa/tinygodriver/database/sql/sqlite\ndriver_name:\
+    \ sqlite\nselection: decision:sqlite-backend-selection\ntinygo_backend: requirement:contrib-cgosqlite\n\
+    public:\n  - DriverName constant\n  - import registers exactly one sqlite driver\n\
+    supported:\n  - file and in-memory databases\n  - prepared statements and transactions\n\
+    \  - context-aware exec, query, prepare, and begin\n  - null and data:database-driver-contract\
+    \ scalar values\nportable_dsn:\n  - plain file path\n  - :memory:\n  - allowlisted\
+    \ file URI subset\nrules:\n  - application code imports only this facade when\
+    \ backend portability matters\n  - backend-specific connection types, pragmas,\
+    \ and DSN parameters are not portable API\n  - shared behavior tests run unchanged\
+    \ against every selected backend\nnon_goals:\n  - ORM\n  - migrations\n  - cross-backend\
+    \ byte-identical error messages\napi: https://sqlite.org/capi3ref.html\n```"
+  package: github.com/shibukawa/tinygodriver/database/sql/sqlite
+  driver_name: sqlite
+  selection: decision:sqlite-backend-selection
+  tinygo_backend: requirement:contrib-cgosqlite
+  public:
+  - DriverName constant
+  - import registers exactly one sqlite driver
+  supported:
+  - file and in-memory databases
+  - prepared statements and transactions
+  - context-aware exec, query, prepare, and begin
+  - null and data:database-driver-contract scalar values
+  portable_dsn:
+  - plain file path
+  - :memory: null
+  - allowlisted file URI subset
+  rules:
+  - application code imports only this facade when backend portability matters
+  - backend-specific connection types, pragmas, and DSN parameters are not portable
+    API
+  - shared behavior tests run unchanged against every selected backend
+  non_goals:
+  - ORM
+  - migrations
+  - cross-backend byte-identical error messages
+  api: https://sqlite.org/capi3ref.html
+relations:
+- relation: mentions
+  to: data:database-driver-contract
+  resolution: resolved
+- relation: mentions
+  to: decision:sqlite-backend-selection
+  resolution: resolved
+- relation: mentions
+  to: requirement:contrib-cgosqlite
+  resolution: resolved
+- relation: mentions
+  to: system:tinygodriver
+  resolution: resolved

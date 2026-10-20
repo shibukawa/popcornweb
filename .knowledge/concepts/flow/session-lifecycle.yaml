@@ -1,0 +1,130 @@
+id: flow:session-lifecycle
+type: flow
+title: Session Lifecycle
+summary: Session middleware resolves one token into the registered slots of api:session-registry,
+  applies renewal or revocation, and never exposes the token itself.
+facts:
+  legacy_body: "Session middleware resolves one token into the registered slots of\
+    \ api:session-registry, applies renewal or revocation, and never exposes the token\
+    \ itself.\n\n```yaml\nrequest:\n  - read the token cookie once\n  - treat a missing\
+    \ token as a browser with no session yet, not as a failure\n  - validate token\
+    \ syntax and hash it before store lookup\n  - bind the request and response for\
+    \ a store that keeps its records in the browser\n  - load each server-placed slot\
+    \ through api:session-store, and decode each cookie-placed slot from its own cookie\n\
+    \  - read a session.Private slot from the server once the session is authenticated,\
+    \ and from its cookie before that\n  - reject absolute, idle, or version expiry\n\
+    \  - add the safe slot views and data:request-authentication to the request capsule\n\
+    \  - derive the masked policy:csrf-protection token when enabled\nissuance:\n\
+    \  - a bare read issues nothing\n  - the first Set on any slot issues the token\
+    \ and writes the record its placement selects, per api:session-manager\n  - an\
+    \ anonymous browser therefore holds a session before any login\n  - an anonymous\
+    \ session reaches the server only where a session.ServerOnly slot was written\n\
+    write:\n  - a Set is visible to the rest of the request without a re-read\n  -\
+    \ a cookie-placed slot writes Set-Cookie immediately and therefore precedes response\
+    \ commitment\n  - a server-placed slot is flushed once per request, replacing\
+    \ its record atomically\n  - a write touching both placements fails the request\
+    \ rather than committing one of them\nrenewal:\n  - touch only after renewal_interval\n\
+    \  - never extend beyond absolute expiry\n  - align cookie lifetime with authoritative\
+    \ server expiry\n  - any request counts as activity, including a live-connection\
+    \ reconnect an unattended page makes on its own; requirement:presence-signal is\
+    \ the wanted replacement\nlogin:\n  - popcornweb/plugin/auth writes its own slot\
+    \ and calls Rotate, per policy:session-security\n  - rotation preserves every\
+    \ other slot, so state written before the login survives it\n  - rotation promotes\
+    \ every session.Private slot into the server backend and expires its anonymous\
+    \ cookie, per decision:slot-declared-placement\n  - a failed promotion leaves\
+    \ the anonymous record intact and the login unfinished\nlogout:\n  - plugin/auth\
+    \ calls Destroy, which revokes every record and expires every cookie the session\
+    \ owns\n  - every registered slot is destroyed together, whatever tier it carries\n\
+    \  - a private slot is not written back to a cookie; nothing travels from the\
+    \ server to the client on the way out\n  - a cookie meant to outlive this, such\
+    \ as the policy:session-downgrade hint, is an api:cookie-jar cookie and not a\
+    \ slot\nfailure:\n  malformed_or_expired: clear the session cookies and continue\
+    \ with no session\n  store_unavailable: fail closed with a safe service error\
+    \ instead of silently downgrading authentication\n  oversized_cookie_slot: refuse\
+    \ the write naming the slot, because a browser drops an oversized cookie silently;\
+    \ an anonymous session.Private slot is not spilled to the server instead\n```"
+  request:
+  - read the token cookie once
+  - treat a missing token as a browser with no session yet, not as a failure
+  - validate token syntax and hash it before store lookup
+  - bind the request and response for a store that keeps its records in the browser
+  - load each server-placed slot through api:session-store, and decode each cookie-placed
+    slot from its own cookie
+  - read a session.Private slot from the server once the session is authenticated,
+    and from its cookie before that
+  - reject absolute, idle, or version expiry
+  - add the safe slot views and data:request-authentication to the request capsule
+  - derive the masked policy:csrf-protection token when enabled
+  issuance:
+  - a bare read issues nothing
+  - the first Set on any slot issues the token and writes the record its placement
+    selects, per api:session-manager
+  - an anonymous browser therefore holds a session before any login
+  - an anonymous session reaches the server only where a session.ServerOnly slot was
+    written
+  write:
+  - a Set is visible to the rest of the request without a re-read
+  - a cookie-placed slot writes Set-Cookie immediately and therefore precedes response
+    commitment
+  - a server-placed slot is flushed once per request, replacing its record atomically
+  - a write touching both placements fails the request rather than committing one
+    of them
+  renewal:
+  - touch only after renewal_interval
+  - never extend beyond absolute expiry
+  - align cookie lifetime with authoritative server expiry
+  - any request counts as activity, including a live-connection reconnect an unattended
+    page makes on its own; requirement:presence-signal is the wanted replacement
+  login:
+  - popcornweb/plugin/auth writes its own slot and calls Rotate, per policy:session-security
+  - rotation preserves every other slot, so state written before the login survives
+    it
+  - rotation promotes every session.Private slot into the server backend and expires
+    its anonymous cookie, per decision:slot-declared-placement
+  - a failed promotion leaves the anonymous record intact and the login unfinished
+  logout:
+  - plugin/auth calls Destroy, which revokes every record and expires every cookie
+    the session owns
+  - every registered slot is destroyed together, whatever tier it carries
+  - a private slot is not written back to a cookie; nothing travels from the server
+    to the client on the way out
+  - a cookie meant to outlive this, such as the policy:session-downgrade hint, is
+    an api:cookie-jar cookie and not a slot
+  failure:
+    malformed_or_expired: clear the session cookies and continue with no session
+    store_unavailable: fail closed with a safe service error instead of silently downgrading
+      authentication
+    oversized_cookie_slot: refuse the write naming the slot, because a browser drops
+      an oversized cookie silently; an anonymous session.Private slot is not spilled
+      to the server instead
+relations:
+- relation: mentions
+  to: api:cookie-jar
+  resolution: resolved
+- relation: mentions
+  to: api:session-manager
+  resolution: resolved
+- relation: mentions
+  to: api:session-registry
+  resolution: resolved
+- relation: mentions
+  to: api:session-store
+  resolution: resolved
+- relation: mentions
+  to: data:request-authentication
+  resolution: resolved
+- relation: mentions
+  to: decision:slot-declared-placement
+  resolution: resolved
+- relation: mentions
+  to: policy:csrf-protection
+  resolution: resolved
+- relation: mentions
+  to: policy:session-downgrade
+  resolution: resolved
+- relation: mentions
+  to: policy:session-security
+  resolution: resolved
+- relation: mentions
+  to: requirement:presence-signal
+  resolution: resolved

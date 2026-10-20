@@ -1,0 +1,99 @@
+id: decision:goose-migration-engine
+type: decision
+title: Statically Linked goose Engine
+summary: system:goose is statically linked into every host binary that must apply
+  migrations and is never linked into a TinyGo binary.
+facts:
+  legacy_body: "system:goose is statically linked into every host binary that must\
+    \ apply migrations and is never linked into a TinyGo binary.\n\n```yaml\nstatus:\
+    \ accepted\nlink_targets:\n  pw_cli:\n    reason: pw migrate applies migrations\
+    \ without an application binary\n    rule: api:cli-migrate is self-sufficient\
+    \ once pw is installed\n  host_application_and_test:\n    reason: decision:migration-execution-split\
+    \ in-process path and api:test-run\n    rule: linked through one opt-in package,\
+    \ never from the pw runtime package\n  tinygo_binary:\n    reason: system:goose\
+    \ is host-only\n    rule: excluded by build tag; the delegated path is used instead\n\
+    alternatives_rejected:\n  own_engine: duplicates version-table, ordering, and\
+    \ dialect work already solved by goose\n  goose_binary_only: requires a separately\
+    \ installed tool and loses fs.FS embedding\n  pw_only_linkage: an isolated in-memory\
+    \ test database is unreachable from a child process, so host tests must link the\
+    \ engine\ncontainment:\n  package: the engine lives behind one opt-in package,\
+    \ not in the pw runtime package\n  import_style: blank import opts the engine\
+    \ and its configuration into the binary, following decision:import-registered-session-plugins\n\
+    \  cli: system:pw-cli imports the engine directly because it is a host tool under\
+    \ decision:host-tools-target-runtime\nconstraints:\n  - the pw runtime package\
+    \ must not import system:goose\n  - a project that never imports the engine keeps\
+    \ its current linked dependency set\n  - only SQL migrations are supported so\
+    \ host and TinyGo paths stay equivalent\n  - the goose Provider API is used; global\
+    \ goose state is never mutated\n  - the pinned goose version is recorded and upgraded\
+    \ deliberately\naccepted_cost:\n  module_graph: the goose requirement set enters\
+    \ the module graph of applications that depend on the framework module\n  mitigation:\
+    \ package-level pruning keeps unimported drivers out of the built binary\n  escape_hatch:\
+    \ move the engine package into its own Go module if go.sum weight becomes unacceptable\n\
+    verification:\n  - build an application without the engine and assert no goose\
+    \ package is linked\n  - build an application with the engine and assert migrations\
+    \ apply\n  - rule:tinygo-runtime-compatibility passes for both selections\n```"
+  status: accepted
+  link_targets:
+    pw_cli:
+      reason: pw migrate applies migrations without an application binary
+      rule: api:cli-migrate is self-sufficient once pw is installed
+    host_application_and_test:
+      reason: decision:migration-execution-split in-process path and api:test-run
+      rule: linked through one opt-in package, never from the pw runtime package
+    tinygo_binary:
+      reason: system:goose is host-only
+      rule: excluded by build tag; the delegated path is used instead
+  alternatives_rejected:
+    own_engine: duplicates version-table, ordering, and dialect work already solved
+      by goose
+    goose_binary_only: requires a separately installed tool and loses fs.FS embedding
+    pw_only_linkage: an isolated in-memory test database is unreachable from a child
+      process, so host tests must link the engine
+  containment:
+    package: the engine lives behind one opt-in package, not in the pw runtime package
+    import_style: blank import opts the engine and its configuration into the binary,
+      following decision:import-registered-session-plugins
+    cli: system:pw-cli imports the engine directly because it is a host tool under
+      decision:host-tools-target-runtime
+  constraints:
+  - the pw runtime package must not import system:goose
+  - a project that never imports the engine keeps its current linked dependency set
+  - only SQL migrations are supported so host and TinyGo paths stay equivalent
+  - the goose Provider API is used; global goose state is never mutated
+  - the pinned goose version is recorded and upgraded deliberately
+  accepted_cost:
+    module_graph: the goose requirement set enters the module graph of applications
+      that depend on the framework module
+    mitigation: package-level pruning keeps unimported drivers out of the built binary
+    escape_hatch: move the engine package into its own Go module if go.sum weight
+      becomes unacceptable
+  verification:
+  - build an application without the engine and assert no goose package is linked
+  - build an application with the engine and assert migrations apply
+  - rule:tinygo-runtime-compatibility passes for both selections
+lifecycle: accepted
+relations:
+- relation: mentions
+  to: api:cli-migrate
+  resolution: resolved
+- relation: mentions
+  to: api:test-run
+  resolution: resolved
+- relation: mentions
+  to: decision:host-tools-target-runtime
+  resolution: resolved
+- relation: mentions
+  to: decision:import-registered-session-plugins
+  resolution: resolved
+- relation: mentions
+  to: decision:migration-execution-split
+  resolution: resolved
+- relation: mentions
+  to: rule:tinygo-runtime-compatibility
+  resolution: resolved
+- relation: mentions
+  to: system:goose
+  resolution: resolved
+- relation: mentions
+  to: system:pw-cli
+  resolution: resolved

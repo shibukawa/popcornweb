@@ -1,0 +1,70 @@
+id: requirement:contrib-auth-state
+type: requirement
+title: Authentication State Store
+summary: authstate provides expiring single-use state storage shared by requirement:contrib-passkey,
+  requirement:contrib-oauth, and requirement:contrib-oidc.
+facts:
+  legacy_body: "authstate provides expiring single-use state storage shared by requirement:contrib-passkey,\
+    \ requirement:contrib-oauth, and requirement:contrib-oidc.\n\n```yaml\npackage:\
+    \ authstate\npublic_api:\n  - Store[T] with Put(context, key, value, expiresAt)\
+    \ and atomic Take(context, key)\n  - api:auth-state-codec for durable adapters\n\
+    errors:\n  - ErrCodec identifies bounded encode, malformed record, and decode\
+    \ failures\n  - ErrUnavailable identifies sanitized Redis, Valkey, or SQLite availability\
+    \ failures\n  - context cancellation remains detectable through context errors\n\
+    adapters:\n  - requirement:contrib-auth-state-memory\n  - requirement:contrib-auth-state-redis\n\
+    \  - requirement:contrib-auth-state-sqlite\n  - requirement:contrib-auth-state-dynamo\n\
+    required:\n  - Take removes a value atomically before returning it\n  - expired\
+    \ values are removed and never returned\n  - caller cancellation is honored\n\
+    \  - nil context is rejected with a stable error rather than panicking\n  - stable\
+    \ errors reveal no stored value\nconstraints:\n  - stored values are treated as\
+    \ immutable\n  - implementations live in adapter subpackages; the contract package\
+    \ has no backend\n  - applications select an adapter without changing authentication\
+    \ flows\n```"
+  package: authstate
+  public_api:
+  - Store[T] with Put(context, key, value, expiresAt) and atomic Take(context, key)
+  - api:auth-state-codec for durable adapters
+  errors:
+  - ErrCodec identifies bounded encode, malformed record, and decode failures
+  - ErrUnavailable identifies sanitized Redis, Valkey, or SQLite availability failures
+  - context cancellation remains detectable through context errors
+  adapters:
+  - requirement:contrib-auth-state-memory
+  - requirement:contrib-auth-state-redis
+  - requirement:contrib-auth-state-sqlite
+  - requirement:contrib-auth-state-dynamo
+  required:
+  - Take removes a value atomically before returning it
+  - expired values are removed and never returned
+  - caller cancellation is honored
+  - nil context is rejected with a stable error rather than panicking
+  - stable errors reveal no stored value
+  constraints:
+  - stored values are treated as immutable
+  - implementations live in adapter subpackages; the contract package has no backend
+  - applications select an adapter without changing authentication flows
+relations:
+- relation: mentions
+  to: api:auth-state-codec
+  resolution: resolved
+- relation: mentions
+  to: requirement:contrib-auth-state-dynamo
+  resolution: resolved
+- relation: mentions
+  to: requirement:contrib-auth-state-memory
+  resolution: resolved
+- relation: mentions
+  to: requirement:contrib-auth-state-redis
+  resolution: resolved
+- relation: mentions
+  to: requirement:contrib-auth-state-sqlite
+  resolution: resolved
+- relation: mentions
+  to: requirement:contrib-oauth
+  resolution: resolved
+- relation: mentions
+  to: requirement:contrib-oidc
+  resolution: resolved
+- relation: mentions
+  to: requirement:contrib-passkey
+  resolution: resolved

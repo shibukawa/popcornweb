@@ -1,0 +1,242 @@
+id: requirement:database-engine-selection
+type: requirement
+title: Database Engine Selection
+summary: A project picks its database engine while it is being created, because the
+  DSN, the development server, the migration dialect, and the starter SQL all follow
+  from that answer.
+facts:
+  legacy_body: "A project picks its database engine while it is being created, because\
+    \ the DSN, the development server, the migration dialect, and the starter SQL\
+    \ all follow from that answer.\n\n```yaml\nmotivation:\n  - decision:server-sql-support-tier\
+    \ makes three engines first-class, so the scaffold can no longer assume one\n\
+    \  - an engine changed after the fact costs a DSN rewrite, a dialect rewrite of\
+    \ every migration and .pw.sql source, and a new development server\n  - a project\
+    \ that targets PostgreSQL should not start on SQLite and be migrated by hand on\
+    \ day two\nscope:\n  init: api:cli-init engine question\n  add: api:cli-add database\
+    \ capability\n  resolution: rule:rdb-dsn-resolution\n  interaction: decision:interactive-project-bootstrap\n\
+    question:\n  step: conditional, asked only when the database answer is yes\n \
+    \ position: directly after the database question and before authentication, so\
+    \ a dependent question follows the one it depends on\n  choices:\n    - sqlite\n\
+    \    - postgres\n    - mysql\n  default: sqlite, because the scaffolded project\
+    \ then runs with no server to start\n  shortcut: \"--db=sqlite|postgres|mysql,\
+    \ which conflicts with --no-database\"\n  skipped_effect: a declined database\
+    \ never applies an engine, per the decision:interactive-project-bootstrap conditional-step\
+    \ rule\nper_engine_scaffold:\n  sqlite:\n    dsn: sqlite://{project}.db\n    development_server:\
+    \ none\n  postgres:\n    dsn: postgres://{project}:{project}@127.0.0.1:5432/{project}?sslmode=disable\n\
+    \    development_server: the PostgreSQL package in devbox.json\n  mysql:\n   \
+    \ dsn: mysql://{project}:{project}@tcp(127.0.0.1:3306)/{project}\n    development_server:\
+    \ the MySQL package in devbox.json\ncommon_to_every_engine:\n  - one data:middleware-runtime-config\
+    \ rdb section, differing in the DSN and in pool bounds sized for the engine\n\
+    \  - data:project-config project.database naming the engine, which is what generation\
+    \ reads\n  - the starter migration, written in the selected dialect\n  - the starter\
+    \ .pw.sql example, generated for the selected dialect\n  - the rule:framework-owned-tables\
+    \ migrations, in the dialect the owning package publishes for it\n  - a blank\
+    \ import of the selected rule:rdb-dsn-resolution engine package in the entry point\n\
+    \  - data:project-config project.toolchain unchanged, because the engine does\
+    \ not change the compiler\ngenerated_sql:\n  recorded_in: data:project-config\
+    \ project.database, written by the same answer\n  read_by: api:cli-generate, which\
+    \ passes it to system:tinybind\n  effect: every engine has a working generated\
+    \ SQL path, so the .pw.sql example is scaffolded for all three\n  detail: flow:sql-generation\n\
+    development_server:\n  model: the requirement:contrib-redis-valkey model, a package\
+    \ in devbox.json that api:cli-dev starts\n  reason: one mechanism already exists\
+    \ for a development service, so a second one would have to be kept in agreement\
+    \ with it\n  without_devbox: the DSN is still written, and the server the operator\
+    \ must supply is printed as a follow-up\n  credentials: development-only values\
+    \ in config.dev.toml, never reused as a deployment default\n  transport: the scaffolded\
+    \ DSN is loopback plaintext, which policy:outbound-transport-security permits\
+    \ inside the local hop\ntinygo_interaction:\n  scheduler: a TinyGo project on\
+    \ a server engine builds with -scheduler=threads per rule:tinygo-runtime-compatibility\n\
+    \  netdev: the existing tinygohelper.go blank import already satisfies the driver's\
+    \ network requirement\nacceptance:\n  - each engine produces a project where pw\
+    \ dev applies migrations and serves the starter page without hand edits\n  - the\
+    \ DSN, the schema dialect, the development server package, the driver import,\
+    \ and the generation dialect all follow the one answer\n  - a generated query\
+    \ runs unchanged against the engine the same answer selected\n  - the recorded\
+    \ engine and the rdb DSN scheme name the same engine\n  - the engine question\
+    \ is absent from the wizard, the step counter, and the review screen when the\
+    \ database is declined\n  - \"--db with --no-database fails before anything is\
+    \ written\"\n  - api:cli-add database reaches the same file state for the same\
+    \ engine as api:cli-init\n  - a project without the Devbox environment still receives\
+    \ a valid DSN and a printed server requirement\n  - no scaffolded credential appears\
+    \ in a file the project would deploy\nnot_an_engine_here:\n  store: requirement:dynamodb-store\n\
+    \  reason: it is not a database/sql engine, so it resolves no DSN scheme, compiles\
+    \ no .pw.sql, and shares no migration engine; adding it as a fourth choice would\
+    \ make the three SQL surfaces unreachable for that project\n  question: DynamoDB\
+    \ is a separate capability answer in decision:interactive-project-bootstrap, asked\
+    \ independently of this one and combinable with any answer including no database\n\
+    non_goals:\n  - converting an existing project from one engine to another\n  -\
+    \ one .pw.sql source that compiles for every dialect at once; a project picks\
+    \ its engine and generates for it\n  - more than one relational database in a\
+    \ project; a second kind of store is requirement:dynamodb-store, not a second\
+    \ engine here\n  - provisioning a managed or remote database\n```"
+  motivation:
+  - decision:server-sql-support-tier makes three engines first-class, so the scaffold
+    can no longer assume one
+  - an engine changed after the fact costs a DSN rewrite, a dialect rewrite of every
+    migration and .pw.sql source, and a new development server
+  - a project that targets PostgreSQL should not start on SQLite and be migrated by
+    hand on day two
+  scope:
+    init: api:cli-init engine question
+    add: api:cli-add database capability
+    resolution: rule:rdb-dsn-resolution
+    interaction: decision:interactive-project-bootstrap
+  question:
+    step: conditional, asked only when the database answer is yes
+    position: directly after the database question and before authentication, so a
+      dependent question follows the one it depends on
+    choices:
+    - sqlite
+    - postgres
+    - mysql
+    default: sqlite, because the scaffolded project then runs with no server to start
+    shortcut: --db=sqlite|postgres|mysql, which conflicts with --no-database
+    skipped_effect: a declined database never applies an engine, per the decision:interactive-project-bootstrap
+      conditional-step rule
+  per_engine_scaffold:
+    sqlite:
+      dsn: sqlite://{project}.db
+      development_server: none
+    postgres:
+      dsn: postgres://{project}:{project}@127.0.0.1:5432/{project}?sslmode=disable
+      development_server: the PostgreSQL package in devbox.json
+    mysql:
+      dsn: mysql://{project}:{project}@tcp(127.0.0.1:3306)/{project}
+      development_server: the MySQL package in devbox.json
+  common_to_every_engine:
+  - one data:middleware-runtime-config rdb section, differing in the DSN and in pool
+    bounds sized for the engine
+  - data:project-config project.database naming the engine, which is what generation
+    reads
+  - the starter migration, written in the selected dialect
+  - the starter .pw.sql example, generated for the selected dialect
+  - the rule:framework-owned-tables migrations, in the dialect the owning package
+    publishes for it
+  - a blank import of the selected rule:rdb-dsn-resolution engine package in the entry
+    point
+  - data:project-config project.toolchain unchanged, because the engine does not change
+    the compiler
+  generated_sql:
+    recorded_in: data:project-config project.database, written by the same answer
+    read_by: api:cli-generate, which passes it to system:tinybind
+    effect: every engine has a working generated SQL path, so the .pw.sql example
+      is scaffolded for all three
+    detail: flow:sql-generation
+  development_server:
+    model: the requirement:contrib-redis-valkey model, a package in devbox.json that
+      api:cli-dev starts
+    reason: one mechanism already exists for a development service, so a second one
+      would have to be kept in agreement with it
+    without_devbox: the DSN is still written, and the server the operator must supply
+      is printed as a follow-up
+    credentials: development-only values in config.dev.toml, never reused as a deployment
+      default
+    transport: the scaffolded DSN is loopback plaintext, which policy:outbound-transport-security
+      permits inside the local hop
+  tinygo_interaction:
+    scheduler: a TinyGo project on a server engine builds with -scheduler=threads
+      per rule:tinygo-runtime-compatibility
+    netdev: the existing tinygohelper.go blank import already satisfies the driver's
+      network requirement
+  acceptance:
+  - each engine produces a project where pw dev applies migrations and serves the
+    starter page without hand edits
+  - the DSN, the schema dialect, the development server package, the driver import,
+    and the generation dialect all follow the one answer
+  - a generated query runs unchanged against the engine the same answer selected
+  - the recorded engine and the rdb DSN scheme name the same engine
+  - the engine question is absent from the wizard, the step counter, and the review
+    screen when the database is declined
+  - --db with --no-database fails before anything is written
+  - api:cli-add database reaches the same file state for the same engine as api:cli-init
+  - a project without the Devbox environment still receives a valid DSN and a printed
+    server requirement
+  - no scaffolded credential appears in a file the project would deploy
+  not_an_engine_here:
+    store: requirement:dynamodb-store
+    reason: it is not a database/sql engine, so it resolves no DSN scheme, compiles
+      no .pw.sql, and shares no migration engine; adding it as a fourth choice would
+      make the three SQL surfaces unreachable for that project
+    question: DynamoDB is a separate capability answer in decision:interactive-project-bootstrap,
+      asked independently of this one and combinable with any answer including no
+      database
+  non_goals:
+  - converting an existing project from one engine to another
+  - one .pw.sql source that compiles for every dialect at once; a project picks its
+    engine and generates for it
+  - more than one relational database in a project; a second kind of store is requirement:dynamodb-store,
+    not a second engine here
+  - provisioning a managed or remote database
+acceptance:
+  item-ee0efe70ba40d0fc:
+    text: each engine produces a project where pw dev applies migrations and serves
+      the starter page without hand edits
+  item-2307c8a1b98479e3:
+    text: the DSN, the schema dialect, the development server package, the driver
+      import, and the generation dialect all follow the one answer
+  item-3b25da11bec1a141:
+    text: a generated query runs unchanged against the engine the same answer selected
+  item-f835f45d4826afd8:
+    text: the recorded engine and the rdb DSN scheme name the same engine
+  item-61dc36144b5350e5:
+    text: the engine question is absent from the wizard, the step counter, and the
+      review screen when the database is declined
+  item-9b5390ef42627314:
+    text: --db with --no-database fails before anything is written
+  item-474e0285d783f962:
+    text: api:cli-add database reaches the same file state for the same engine as
+      api:cli-init
+  item-db608b2de3a05dc7:
+    text: a project without the Devbox environment still receives a valid DSN and
+      a printed server requirement
+  item-a601f1687e3e77aa:
+    text: no scaffolded credential appears in a file the project would deploy
+relations:
+- relation: mentions
+  to: api:cli-add
+  resolution: resolved
+- relation: mentions
+  to: api:cli-dev
+  resolution: resolved
+- relation: mentions
+  to: api:cli-generate
+  resolution: resolved
+- relation: mentions
+  to: api:cli-init
+  resolution: resolved
+- relation: mentions
+  to: data:middleware-runtime-config
+  resolution: resolved
+- relation: mentions
+  to: data:project-config
+  resolution: resolved
+- relation: mentions
+  to: decision:interactive-project-bootstrap
+  resolution: resolved
+- relation: mentions
+  to: decision:server-sql-support-tier
+  resolution: resolved
+- relation: mentions
+  to: flow:sql-generation
+  resolution: resolved
+- relation: mentions
+  to: policy:outbound-transport-security
+  resolution: resolved
+- relation: mentions
+  to: requirement:contrib-redis-valkey
+  resolution: resolved
+- relation: mentions
+  to: requirement:dynamodb-store
+  resolution: resolved
+- relation: mentions
+  to: rule:framework-owned-tables
+  resolution: resolved
+- relation: mentions
+  to: rule:rdb-dsn-resolution
+  resolution: resolved
+- relation: mentions
+  to: rule:tinygo-runtime-compatibility
+  resolution: resolved
+- relation: mentions
+  to: system:tinybind
+  resolution: resolved

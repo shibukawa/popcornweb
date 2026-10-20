@@ -1,0 +1,43 @@
+id: decision:root-pw-api
+type: decision
+title: Root pw API
+summary: Popcorn Web hides routine TinyBind usage behind the root pw package while
+  preserving standard net/http handler signatures and intentional low-level escape
+  hatches.
+facts:
+  legacy_body: "Popcorn Web hides routine TinyBind usage behind the root pw package\
+    \ while preserving standard net/http handler signatures and intentional low-level\
+    \ escape hatches.\n\n```yaml\nstatus: accepted\npreserve_in_handler:\n  - \"pw.Parse[Request](r)\"\
+    \n  - \"pw.WriteHTML(w, r, template, params)\"\n  - \"pw.WriteAPI(w, r, response)\"\
+    \n  - \"pw.WriteProblem(w, r, err)\"\n  - \"pw.NewStream[Event](w, r)\"\nrationale:\n\
+    \  - system:tinybind remains the generator and runtime implementation\n  - the\
+    \ small root vocabulary keeps generated analysis aligned with runtime behavior\n\
+    \  - standard handlers remain independently testable\nboundaries:\n  - no custom\
+    \ handler invocation abstraction\n  - no reflection-based automatic handler invocation\n\
+    \  - low-level TinyBind packages remain importable by deliberate application choice\n\
+    \  - w and r stay visible in the signature and stop at this surface, per decision:transport-handle-containment\n\
+    ```"
+  status: accepted
+  preserve_in_handler:
+  - pw.Parse[Request](r)
+  - pw.WriteHTML(w, r, template, params)
+  - pw.WriteAPI(w, r, response)
+  - pw.WriteProblem(w, r, err)
+  - pw.NewStream[Event](w, r)
+  rationale:
+  - system:tinybind remains the generator and runtime implementation
+  - the small root vocabulary keeps generated analysis aligned with runtime behavior
+  - standard handlers remain independently testable
+  boundaries:
+  - no custom handler invocation abstraction
+  - no reflection-based automatic handler invocation
+  - low-level TinyBind packages remain importable by deliberate application choice
+  - w and r stay visible in the signature and stop at this surface, per decision:transport-handle-containment
+lifecycle: accepted
+relations:
+- relation: mentions
+  to: decision:transport-handle-containment
+  resolution: resolved
+- relation: mentions
+  to: system:tinybind
+  resolution: resolved

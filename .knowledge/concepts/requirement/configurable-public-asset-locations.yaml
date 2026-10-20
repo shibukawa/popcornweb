@@ -1,0 +1,477 @@
+id: requirement:configurable-public-asset-locations
+type: requirement
+title: Configurable Public Asset Locations
+summary: Keep the module-root tooling configuration while locating one application’s authored assets, derived assets,
+  and embed file below that root.
+authority: authored
+lifecycle: accepted
+review_state: confirmed
+facts:
+  origin:
+    request: concept:bdf-printmanager-integration
+    source: source:bdf-printmanager-request
+    section: 'Ask 1: configurable asset locations'
+  requester_priority: primary; Ask 1 is the integration blocker
+  implementation_status: Implemented and verified in this repository; no BDF deployment is claimed.
+  configuration:
+    file: popcornweb.toml
+    base: Directory containing popcornweb.toml, unchanged from the current project root.
+    assets.public:
+      default: public
+      example: cmd/printmanager/public
+      meaning: authored input tree
+    assets.derived:
+      default: dist/public
+      example: cmd/printmanager/dist/public
+      meaning: derived served and embedded tree
+    assets.embed:
+      default: public.go
+      example: cmd/printmanager/public.go
+      meaning: authored embed scaffold checked by verifyPublicEmbed
+  embed:
+    directive_base: Directory of the configured embed file, not the module root.
+    example: //go:embed all:dist/public in cmd/printmanager/public.go
+    package: Read the package of the configured embed file; package main in cmd/printmanager is valid.
+  generated_locations:
+    served_tree: assets.derived
+    go_manifest: public_manifest_pw_gen.go beside assets.embed, in the same Go package.
+    json_manifest: The request groups the manifest with application-local outputs; exact JSON-manifest placement
+      for independent derived/embed overrides remains an open design question.
+    tailwind: Existing assets.tailwind.input and output remain relative to the project root.
+  runtime_handoff:
+    required: pw dev must tell the child process where the configured derived tree is, independent of a working-directory
+      dist/public assumption.
+    suggested: server.public.local_root with default dist/public, injected as SERVER_PUBLIC_LOCAL_ROOT by pw dev.
+    also_acceptable: An equivalent explicit directory/path handoff preserving the existing root semantics.
+  affected_surfaces:
+  - pw generate
+  - pw dev
+  - pw build and target packaging
+  - runtime public asset mount
+  suggested_next_slice: A module with root package fixture and an application in cmd/app generates and serves app.css
+    using all three configured paths.
+  implementation_report: docs/requests/bdf-printmanager-implementation.md
+  verification_notes: Default-path equivalence is verified with the updated dependencies. Dependency-driven generated-code
+    changes are intentionally regenerated rather than claimed byte-identical to the old dependency versions.
+relations:
+- relation: requested_by
+  to: concept:bdf-printmanager-integration
+  resolution: resolved
+  evidence:
+    source_id: source:bdf-printmanager-request
+    path: bdf-printmanager-public-assets.md
+    heading: 'Ask 1: configurable asset locations'
+    input_hash: a2df65a9a5a065a50b78c3559e0f9b0c559e18ff5d7c22f9a08352ad4674a426
+- relation: extends
+  to: requirement:derived-asset-pipeline
+  resolution: resolved
+  evidence:
+    source_id: source:bdf-printmanager-request
+    path: bdf-printmanager-public-assets.md
+    heading: 'Ask 1: configurable asset locations'
+    input_hash: a2df65a9a5a065a50b78c3559e0f9b0c559e18ff5d7c22f9a08352ad4674a426
+- relation: extends
+  to: requirement:public-asset-delivery
+  resolution: resolved
+  evidence:
+    source_id: source:bdf-printmanager-request
+    path: bdf-printmanager-public-assets.md
+    heading: 'Ask 1: configurable asset locations'
+    input_hash: a2df65a9a5a065a50b78c3559e0f9b0c559e18ff5d7c22f9a08352ad4674a426
+- relation: affects
+  to: data:project-config
+  resolution: resolved
+  evidence:
+    source_id: source:bdf-printmanager-request
+    path: bdf-printmanager-public-assets.md
+    heading: 'Ask 1: configurable asset locations'
+    input_hash: a2df65a9a5a065a50b78c3559e0f9b0c559e18ff5d7c22f9a08352ad4674a426
+- relation: affects
+  to: data:public-asset-manifest
+  resolution: resolved
+  evidence:
+    source_id: source:bdf-printmanager-request
+    path: bdf-printmanager-public-assets.md
+    heading: 'Ask 1: configurable asset locations'
+    input_hash: a2df65a9a5a065a50b78c3559e0f9b0c559e18ff5d7c22f9a08352ad4674a426
+- relation: affects
+  to: flow:derived-asset-build
+  resolution: resolved
+  evidence:
+    source_id: source:bdf-printmanager-request
+    path: bdf-printmanager-public-assets.md
+    heading: 'Ask 1: configurable asset locations'
+    input_hash: a2df65a9a5a065a50b78c3559e0f9b0c559e18ff5d7c22f9a08352ad4674a426
+- relation: constrained_by
+  to: policy:public-asset-resolution
+  resolution: resolved
+  evidence:
+    source_id: source:bdf-printmanager-request
+    path: bdf-printmanager-public-assets.md
+    heading: 'Ask 1: configurable asset locations'
+    input_hash: a2df65a9a5a065a50b78c3559e0f9b0c559e18ff5d7c22f9a08352ad4674a426
+acceptance:
+  nested-generate:
+    text: A fixture module with root package fixture and application cmd/app runs pw generate, produces cmd/app/dist/public
+      and both manifests in the application locations, and never requires root public.go.
+    authority: authored
+    evidence:
+      source_id: source:bdf-printmanager-request
+      path: bdf-printmanager-public-assets.md
+      heading: 'Ask 1: configurable asset locations'
+      input_hash: a2df65a9a5a065a50b78c3559e0f9b0c559e18ff5d7c22f9a08352ad4674a426
+    verified_by:
+    - nested-generate
+  nested-dev:
+    text: pw dev serves /public/app.css from the configured derived tree in that fixture.
+    authority: authored
+    evidence:
+      source_id: source:bdf-printmanager-request
+      path: bdf-printmanager-public-assets.md
+      heading: 'Ask 1: configurable asset locations'
+      input_hash: a2df65a9a5a065a50b78c3559e0f9b0c559e18ff5d7c22f9a08352ad4674a426
+    verified_by:
+    - nested-dev
+  nested-build:
+    text: pw build embeds the configured derived assets and its built application serves app.css.
+    authority: authored
+    evidence:
+      source_id: source:bdf-printmanager-request
+      path: bdf-printmanager-public-assets.md
+      heading: 'Ask 1: configurable asset locations'
+      input_hash: a2df65a9a5a065a50b78c3559e0f9b0c559e18ff5d7c22f9a08352ad4674a426
+    verified_by:
+    - nested-build
+  root-isolation:
+    text: The fixture writes no application asset or manifest at the module root; root writes are limited to locations
+      explicitly named by generate configuration.
+    authority: authored
+    evidence:
+      source_id: source:bdf-printmanager-request
+      path: bdf-printmanager-public-assets.md
+      heading: 'Ask 1: configurable asset locations'
+      input_hash: a2df65a9a5a065a50b78c3559e0f9b0c559e18ff5d7c22f9a08352ad4674a426
+    verified_by:
+    - root-isolation
+  default-compatibility:
+    text: Existing fixtures with no assets location overrides produce byte-identical output.
+    authority: authored
+    evidence:
+      source_id: source:bdf-printmanager-request
+      path: bdf-printmanager-public-assets.md
+      heading: 'Ask 1: configurable asset locations'
+      input_hash: a2df65a9a5a065a50b78c3559e0f9b0c559e18ff5d7c22f9a08352ad4674a426
+    verified_by:
+    - default-compatibility
+  safe-paths:
+    text: Reject escaping paths and paths traversing symbolic links before any read, clear, or write of configured
+      asset locations.
+    authority: authored
+    evidence:
+      source_id: source:bdf-printmanager-request
+      path: bdf-printmanager-public-assets.md
+      heading: 'Ask 1: configurable asset locations'
+      input_hash: a2df65a9a5a065a50b78c3559e0f9b0c559e18ff5d7c22f9a08352ad4674a426
+    verified_by:
+    - safe-paths
+  relative-embed:
+    text: Validate the configured embed file using the derived path relative to that file’s directory, and generate
+      the Go manifest in its package.
+    authority: authored
+    evidence:
+      source_id: source:bdf-printmanager-request
+      path: bdf-printmanager-public-assets.md
+      heading: 'Ask 1: configurable asset locations'
+      input_hash: a2df65a9a5a065a50b78c3559e0f9b0c559e18ff5d7c22f9a08352ad4674a426
+    verified_by:
+    - relative-embed
+  location-docs:
+    text: Document assets.public, assets.derived, assets.embed, their defaults, relative-path base, and development
+      handoff in ja/guides/frontend/static-assets.md and ja/reference/build-configuration.md.
+    authority: authored
+    evidence:
+      source_id: source:bdf-printmanager-request
+      path: bdf-printmanager-public-assets.md
+      heading: 'Ask 1: configurable asset locations'
+      input_hash: a2df65a9a5a065a50b78c3559e0f9b0c559e18ff5d7c22f9a08352ad4674a426
+    verified_by:
+    - location-docs
+verification:
+  nested-generate:
+    state: passed
+    method: integration
+    test: TestNestedApplicationPublicAssets
+    authority: observed
+    evidence:
+      path: internal/pwcli/assetlocations_test.go
+      locator: TestNestedApplicationPublicAssets
+    basis:
+    - path: go.mod
+      input_hash: 6395d43e84ea0b7fc07ade55b2846879f49afc2a2484ece5121ed4444ce5ed6f
+    - path: internal/pwcli/assetlocations.go
+      input_hash: ee60939143c76b92180ce7c252c4e87c0a6a3f6987e1be62deddc1d9123ddfc2
+    - path: internal/pwcli/project.go
+      input_hash: 6396191791796ff8fc8a77da7f8d1812e52a38506f6c7ddbe9b98d7e74f2f982
+    - path: internal/pwcli/derivedassets.go
+      input_hash: 2bb4ebd55753d707a2f51cb4d6b49d620a8b0d935903047c9c2a164073554a51
+    - path: internal/pwcli/assetmanifest.go
+      input_hash: b907dcd0563d1348812394deb4b32f7957430239c20ff39658c1ca644aae63c6
+    - path: internal/pwcli/generate.go
+      input_hash: 5c9f11dbb235809dabf97b98d5323bfee71365f547569d27d3db2e8a67571931
+    - path: internal/pwcli/assethooks.go
+      input_hash: d4ac2c8f70e4863a922c2ed3a33c81ae35790095a4ffb4c93937d5bea5d230db
+    - path: internal/pwcli/dev.go
+      input_hash: db6b42cbb127305fb96b07ef0e3b773cb5850e7d5682278b04f4efb0cc56f40e
+    - path: internal/pwcli/assetlocations_test.go
+      input_hash: bcbf4509080639a19bfb8c853000387da2e5ef2b92ccf340288c8c21694a27c1
+  nested-dev:
+    state: passed
+    method: integration
+    test: TestNestedApplicationPublicAssets
+    authority: observed
+    evidence:
+      path: internal/pwcli/assetlocations_test.go
+      locator: TestNestedApplicationPublicAssets
+    basis:
+    - path: go.mod
+      input_hash: 6395d43e84ea0b7fc07ade55b2846879f49afc2a2484ece5121ed4444ce5ed6f
+    - path: internal/pwcli/assetlocations.go
+      input_hash: ee60939143c76b92180ce7c252c4e87c0a6a3f6987e1be62deddc1d9123ddfc2
+    - path: internal/pwcli/project.go
+      input_hash: 6396191791796ff8fc8a77da7f8d1812e52a38506f6c7ddbe9b98d7e74f2f982
+    - path: internal/pwcli/derivedassets.go
+      input_hash: 2bb4ebd55753d707a2f51cb4d6b49d620a8b0d935903047c9c2a164073554a51
+    - path: internal/pwcli/assetmanifest.go
+      input_hash: b907dcd0563d1348812394deb4b32f7957430239c20ff39658c1ca644aae63c6
+    - path: internal/pwcli/generate.go
+      input_hash: 5c9f11dbb235809dabf97b98d5323bfee71365f547569d27d3db2e8a67571931
+    - path: internal/pwcli/assethooks.go
+      input_hash: d4ac2c8f70e4863a922c2ed3a33c81ae35790095a4ffb4c93937d5bea5d230db
+    - path: internal/pwcli/dev.go
+      input_hash: db6b42cbb127305fb96b07ef0e3b773cb5850e7d5682278b04f4efb0cc56f40e
+    - path: internal/pwcli/assetlocations_test.go
+      input_hash: bcbf4509080639a19bfb8c853000387da2e5ef2b92ccf340288c8c21694a27c1
+  nested-build:
+    state: passed
+    method: integration
+    test: TestNestedApplicationPublicAssets
+    authority: observed
+    evidence:
+      path: internal/pwcli/assetlocations_test.go
+      locator: TestNestedApplicationPublicAssets
+    basis:
+    - path: go.mod
+      input_hash: 6395d43e84ea0b7fc07ade55b2846879f49afc2a2484ece5121ed4444ce5ed6f
+    - path: internal/pwcli/assetlocations.go
+      input_hash: ee60939143c76b92180ce7c252c4e87c0a6a3f6987e1be62deddc1d9123ddfc2
+    - path: internal/pwcli/project.go
+      input_hash: 6396191791796ff8fc8a77da7f8d1812e52a38506f6c7ddbe9b98d7e74f2f982
+    - path: internal/pwcli/derivedassets.go
+      input_hash: 2bb4ebd55753d707a2f51cb4d6b49d620a8b0d935903047c9c2a164073554a51
+    - path: internal/pwcli/assetmanifest.go
+      input_hash: b907dcd0563d1348812394deb4b32f7957430239c20ff39658c1ca644aae63c6
+    - path: internal/pwcli/generate.go
+      input_hash: 5c9f11dbb235809dabf97b98d5323bfee71365f547569d27d3db2e8a67571931
+    - path: internal/pwcli/assethooks.go
+      input_hash: d4ac2c8f70e4863a922c2ed3a33c81ae35790095a4ffb4c93937d5bea5d230db
+    - path: internal/pwcli/dev.go
+      input_hash: db6b42cbb127305fb96b07ef0e3b773cb5850e7d5682278b04f4efb0cc56f40e
+    - path: internal/pwcli/assetlocations_test.go
+      input_hash: bcbf4509080639a19bfb8c853000387da2e5ef2b92ccf340288c8c21694a27c1
+  root-isolation:
+    state: passed
+    method: integration
+    test: TestNestedApplicationPublicAssets
+    authority: observed
+    evidence:
+      path: internal/pwcli/assetlocations_test.go
+      locator: TestNestedApplicationPublicAssets
+    basis:
+    - path: go.mod
+      input_hash: 6395d43e84ea0b7fc07ade55b2846879f49afc2a2484ece5121ed4444ce5ed6f
+    - path: internal/pwcli/assetlocations.go
+      input_hash: ee60939143c76b92180ce7c252c4e87c0a6a3f6987e1be62deddc1d9123ddfc2
+    - path: internal/pwcli/project.go
+      input_hash: 6396191791796ff8fc8a77da7f8d1812e52a38506f6c7ddbe9b98d7e74f2f982
+    - path: internal/pwcli/derivedassets.go
+      input_hash: 2bb4ebd55753d707a2f51cb4d6b49d620a8b0d935903047c9c2a164073554a51
+    - path: internal/pwcli/assetmanifest.go
+      input_hash: b907dcd0563d1348812394deb4b32f7957430239c20ff39658c1ca644aae63c6
+    - path: internal/pwcli/generate.go
+      input_hash: 5c9f11dbb235809dabf97b98d5323bfee71365f547569d27d3db2e8a67571931
+    - path: internal/pwcli/assethooks.go
+      input_hash: d4ac2c8f70e4863a922c2ed3a33c81ae35790095a4ffb4c93937d5bea5d230db
+    - path: internal/pwcli/dev.go
+      input_hash: db6b42cbb127305fb96b07ef0e3b773cb5850e7d5682278b04f4efb0cc56f40e
+    - path: internal/pwcli/assetlocations_test.go
+      input_hash: bcbf4509080639a19bfb8c853000387da2e5ef2b92ccf340288c8c21694a27c1
+  default-compatibility:
+    state: passed
+    method: integration
+    test: TestExplicitDefaultAssetLocationsAreByteIdentical; existing FastFixture/PagesFixture generation checks
+    authority: observed
+    evidence:
+      path: internal/pwcli/assetlocations_test.go
+      locator: TestExplicitDefaultAssetLocationsAreByteIdentical; existing FastFixture/PagesFixture generation checks
+    basis:
+    - path: go.mod
+      input_hash: 6395d43e84ea0b7fc07ade55b2846879f49afc2a2484ece5121ed4444ce5ed6f
+    - path: internal/pwcli/assetlocations.go
+      input_hash: ee60939143c76b92180ce7c252c4e87c0a6a3f6987e1be62deddc1d9123ddfc2
+    - path: internal/pwcli/project.go
+      input_hash: 6396191791796ff8fc8a77da7f8d1812e52a38506f6c7ddbe9b98d7e74f2f982
+    - path: internal/pwcli/derivedassets.go
+      input_hash: 2bb4ebd55753d707a2f51cb4d6b49d620a8b0d935903047c9c2a164073554a51
+    - path: internal/pwcli/assetmanifest.go
+      input_hash: b907dcd0563d1348812394deb4b32f7957430239c20ff39658c1ca644aae63c6
+    - path: internal/pwcli/generate.go
+      input_hash: 5c9f11dbb235809dabf97b98d5323bfee71365f547569d27d3db2e8a67571931
+    - path: internal/pwcli/assethooks.go
+      input_hash: d4ac2c8f70e4863a922c2ed3a33c81ae35790095a4ffb4c93937d5bea5d230db
+    - path: internal/pwcli/dev.go
+      input_hash: db6b42cbb127305fb96b07ef0e3b773cb5850e7d5682278b04f4efb0cc56f40e
+    - path: internal/pwcli/assetlocations_test.go
+      input_hash: bcbf4509080639a19bfb8c853000387da2e5ef2b92ccf340288c8c21694a27c1
+  safe-paths:
+    state: passed
+    method: integration
+    test: TestAssetLocationsRejectUnsafeOrOverlappingPaths; TestUnsafeAssetBuildPreservesAuthoredFiles
+    authority: observed
+    evidence:
+      path: internal/pwcli/assetlocations_test.go
+      locator: TestAssetLocationsRejectUnsafeOrOverlappingPaths; TestUnsafeAssetBuildPreservesAuthoredFiles
+    basis:
+    - path: go.mod
+      input_hash: 6395d43e84ea0b7fc07ade55b2846879f49afc2a2484ece5121ed4444ce5ed6f
+    - path: internal/pwcli/assetlocations.go
+      input_hash: ee60939143c76b92180ce7c252c4e87c0a6a3f6987e1be62deddc1d9123ddfc2
+    - path: internal/pwcli/project.go
+      input_hash: 6396191791796ff8fc8a77da7f8d1812e52a38506f6c7ddbe9b98d7e74f2f982
+    - path: internal/pwcli/derivedassets.go
+      input_hash: 2bb4ebd55753d707a2f51cb4d6b49d620a8b0d935903047c9c2a164073554a51
+    - path: internal/pwcli/assetmanifest.go
+      input_hash: b907dcd0563d1348812394deb4b32f7957430239c20ff39658c1ca644aae63c6
+    - path: internal/pwcli/generate.go
+      input_hash: 5c9f11dbb235809dabf97b98d5323bfee71365f547569d27d3db2e8a67571931
+    - path: internal/pwcli/assethooks.go
+      input_hash: d4ac2c8f70e4863a922c2ed3a33c81ae35790095a4ffb4c93937d5bea5d230db
+    - path: internal/pwcli/dev.go
+      input_hash: db6b42cbb127305fb96b07ef0e3b773cb5850e7d5682278b04f4efb0cc56f40e
+    - path: internal/pwcli/assetlocations_test.go
+      input_hash: bcbf4509080639a19bfb8c853000387da2e5ef2b92ccf340288c8c21694a27c1
+  relative-embed:
+    state: passed
+    method: integration
+    test: TestNestedApplicationPublicAssets
+    authority: observed
+    evidence:
+      path: internal/pwcli/assetlocations_test.go
+      locator: TestNestedApplicationPublicAssets
+    basis:
+    - path: go.mod
+      input_hash: 6395d43e84ea0b7fc07ade55b2846879f49afc2a2484ece5121ed4444ce5ed6f
+    - path: internal/pwcli/assetlocations.go
+      input_hash: ee60939143c76b92180ce7c252c4e87c0a6a3f6987e1be62deddc1d9123ddfc2
+    - path: internal/pwcli/project.go
+      input_hash: 6396191791796ff8fc8a77da7f8d1812e52a38506f6c7ddbe9b98d7e74f2f982
+    - path: internal/pwcli/derivedassets.go
+      input_hash: 2bb4ebd55753d707a2f51cb4d6b49d620a8b0d935903047c9c2a164073554a51
+    - path: internal/pwcli/assetmanifest.go
+      input_hash: b907dcd0563d1348812394deb4b32f7957430239c20ff39658c1ca644aae63c6
+    - path: internal/pwcli/generate.go
+      input_hash: 5c9f11dbb235809dabf97b98d5323bfee71365f547569d27d3db2e8a67571931
+    - path: internal/pwcli/assethooks.go
+      input_hash: d4ac2c8f70e4863a922c2ed3a33c81ae35790095a4ffb4c93937d5bea5d230db
+    - path: internal/pwcli/dev.go
+      input_hash: db6b42cbb127305fb96b07ef0e3b773cb5850e7d5682278b04f4efb0cc56f40e
+    - path: internal/pwcli/assetlocations_test.go
+      input_hash: bcbf4509080639a19bfb8c853000387da2e5ef2b92ccf340288c8c21694a27c1
+  location-docs:
+    state: passed
+    method: static
+    test: 'Astro build: English/Japanese assets location documentation'
+    authority: observed
+    evidence:
+      path: website/src/content/docs/ja/reference/build-configuration.md
+      locator: 'Astro build: English/Japanese assets location documentation'
+    basis:
+    - path: go.mod
+      input_hash: 6395d43e84ea0b7fc07ade55b2846879f49afc2a2484ece5121ed4444ce5ed6f
+    - path: internal/pwcli/assetlocations.go
+      input_hash: ee60939143c76b92180ce7c252c4e87c0a6a3f6987e1be62deddc1d9123ddfc2
+    - path: internal/pwcli/project.go
+      input_hash: 6396191791796ff8fc8a77da7f8d1812e52a38506f6c7ddbe9b98d7e74f2f982
+    - path: internal/pwcli/derivedassets.go
+      input_hash: 2bb4ebd55753d707a2f51cb4d6b49d620a8b0d935903047c9c2a164073554a51
+    - path: internal/pwcli/assetmanifest.go
+      input_hash: b907dcd0563d1348812394deb4b32f7957430239c20ff39658c1ca644aae63c6
+    - path: internal/pwcli/generate.go
+      input_hash: 5c9f11dbb235809dabf97b98d5323bfee71365f547569d27d3db2e8a67571931
+    - path: internal/pwcli/assethooks.go
+      input_hash: d4ac2c8f70e4863a922c2ed3a33c81ae35790095a4ffb4c93937d5bea5d230db
+    - path: internal/pwcli/dev.go
+      input_hash: db6b42cbb127305fb96b07ef0e3b773cb5850e7d5682278b04f4efb0cc56f40e
+    - path: internal/pwcli/assetlocations_test.go
+      input_hash: bcbf4509080639a19bfb8c853000387da2e5ef2b92ccf340288c8c21694a27c1
+    - path: website/src/content/docs/ja/reference/build-configuration.md
+      input_hash: 742bcb7c2975e475bc632fab24a7a0a5c973a54acb0355e81cf517bef0a9b4cd
+constraints:
+- All configured locations stay within the project root and must not traverse symbolic links.
+- The authored tree remains input only; the derived tree is the served and embedded tree.
+- Projects omitting the new keys retain the existing paths and behavior.
+non_goals:
+- Move popcornweb.toml below go.mod or change project-root discovery.
+- Rebase generated import paths, runtime configuration files, or dotenv discovery.
+open_questions:
+  runtime-path-handoff:
+    text: Use server.public.local_root plus child environment injection, or an equivalent explicit handoff?
+    state: answered
+    resolution: Use server.public.local_root (default dist/public); pw dev overrides SERVER_PUBLIC_LOCAL_ROOT for
+      each child and reloads project configuration on edits.
+  auxiliary-output-layout:
+    text: For independently configured embed and derived paths, where do the JSON manifest, staging tree, conversion
+      cache, and extracted component assets live?
+    state: answered
+    resolution: The Go manifest shares the embed directory/package. JSON manifest, route table, staging, and cache
+      share the derived tree’s parent. Extracted component files use assets.public/generated. Defaults retain their
+      previous locations.
+capabilities:
+  requested-behavior:
+    state: implemented
+    authority: observed
+    verified_by:
+    - nested-generate
+    - nested-dev
+    - nested-build
+    - root-isolation
+    - default-compatibility
+    - safe-paths
+    - relative-embed
+    - location-docs
+    basis:
+    - path: go.mod
+      input_hash: 6395d43e84ea0b7fc07ade55b2846879f49afc2a2484ece5121ed4444ce5ed6f
+    - path: internal/pwcli/assetlocations.go
+      input_hash: ee60939143c76b92180ce7c252c4e87c0a6a3f6987e1be62deddc1d9123ddfc2
+    - path: internal/pwcli/project.go
+      input_hash: 6396191791796ff8fc8a77da7f8d1812e52a38506f6c7ddbe9b98d7e74f2f982
+    - path: internal/pwcli/derivedassets.go
+      input_hash: 2bb4ebd55753d707a2f51cb4d6b49d620a8b0d935903047c9c2a164073554a51
+    - path: internal/pwcli/assetmanifest.go
+      input_hash: b907dcd0563d1348812394deb4b32f7957430239c20ff39658c1ca644aae63c6
+    - path: internal/pwcli/generate.go
+      input_hash: 5c9f11dbb235809dabf97b98d5323bfee71365f547569d27d3db2e8a67571931
+    - path: internal/pwcli/assethooks.go
+      input_hash: d4ac2c8f70e4863a922c2ed3a33c81ae35790095a4ffb4c93937d5bea5d230db
+    - path: internal/pwcli/dev.go
+      input_hash: db6b42cbb127305fb96b07ef0e3b773cb5850e7d5682278b04f4efb0cc56f40e
+    - path: internal/pwcli/assetlocations_test.go
+      input_hash: bcbf4509080639a19bfb8c853000387da2e5ef2b92ccf340288c8c21694a27c1
+    evidence:
+      path: docs/requests/bdf-printmanager-implementation.md
+history:
+  implementation:
+    summary: Implemented the requested behavior and documentation; acceptance verification records refer to local
+      fixtures and saved input hashes.
+    evidence:
+      path: docs/requests/bdf-printmanager-implementation.md

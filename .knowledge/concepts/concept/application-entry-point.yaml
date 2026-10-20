@@ -1,0 +1,48 @@
+id: concept:application-entry-point
+type: concept
+title: Application Entry Point
+summary: The generated application entry point selects drivers explicitly and starts
+  the handler package through the root pw lifecycle.
+facts:
+  legacy_body: "The generated application entry point selects drivers explicitly and\
+    \ starts the handler package through the root pw lifecycle.\n\n```yaml\nhandwritten_shape:\n\
+    \  imports:\n    - context\n    - application handlers package\n    - github.com/shibukawa/popcornweb/pw\n\
+    \  run: pw.Run(context.Background(), handlers.Handlers())\nrules:\n  - data:project-config\
+    \ project.main selects this package for api:cli-build\n  - database startup follows\
+    \ decision:config-driven-database\n  - requirement:built-in-config-generation\
+    \ needs no application command type or dispatch\n  - application subcommands use\
+    \ api:subcommands RegisterSubCommand\n  - api:application-lifecycle returns startup,\
+    \ serving, or shutdown errors to main\n  - applications needing a custom http.Server\
+    \ use pw.Middlewares instead\n```"
+  handwritten_shape:
+    imports:
+    - context
+    - application handlers package
+    - github.com/shibukawa/popcornweb/pw
+    run: pw.Run(context.Background(), handlers.Handlers())
+  rules:
+  - data:project-config project.main selects this package for api:cli-build
+  - database startup follows decision:config-driven-database
+  - requirement:built-in-config-generation needs no application command type or dispatch
+  - application subcommands use api:subcommands RegisterSubCommand
+  - api:application-lifecycle returns startup, serving, or shutdown errors to main
+  - applications needing a custom http.Server use pw.Middlewares instead
+relations:
+- relation: mentions
+  to: api:application-lifecycle
+  resolution: resolved
+- relation: mentions
+  to: api:cli-build
+  resolution: resolved
+- relation: mentions
+  to: api:subcommands
+  resolution: resolved
+- relation: mentions
+  to: data:project-config
+  resolution: resolved
+- relation: mentions
+  to: decision:config-driven-database
+  resolution: resolved
+- relation: mentions
+  to: requirement:built-in-config-generation
+  resolution: resolved

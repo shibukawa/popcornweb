@@ -1,0 +1,49 @@
+id: api:subcommands
+type: api
+title: Application Subcommands
+summary: Applications may register typed subcommand inputs but retain explicit dispatch
+  control outside the HTTP lifecycle.
+facts:
+  legacy_body: "Applications may register typed subcommand inputs but retain explicit\
+    \ dispatch control outside the HTTP lifecycle.\n\n```yaml\nsurface:\n  - RegisterSubCommand[T](name,\
+    \ help string)\n  - Command[T]() returns parsed command state\nflow:\n  - register\
+    \ every command input type during initialization\n  - call api:runtime-configuration\
+    \ ParseConfig\n  - inspect Command[T] for the selected command\n  - application\
+    \ dispatches command logic or starts api:application-lifecycle\nrules:\n  - name\
+    \ is the stable CLI token and help is its human-readable description\n  - name\
+    \ and help are compile-time strings consumed by system:tinybind generation\n \
+    \ - api:application-lifecycle may handle framework-owned options such as requirement:built-in-config-generation\
+    \ before application command dispatch\n  - Run does not dispatch application-defined\
+    \ subcommand bodies\n  - subcommand fields participate in the same generated config\
+    \ and CLI parsing system\n  - exact Command lookup return shape may be refined\
+    \ without changing explicit application dispatch\n```"
+  surface:
+  - RegisterSubCommand[T](name, help string)
+  - Command[T]() returns parsed command state
+  flow:
+  - register every command input type during initialization
+  - call api:runtime-configuration ParseConfig
+  - inspect Command[T] for the selected command
+  - application dispatches command logic or starts api:application-lifecycle
+  rules:
+  - name is the stable CLI token and help is its human-readable description
+  - name and help are compile-time strings consumed by system:tinybind generation
+  - api:application-lifecycle may handle framework-owned options such as requirement:built-in-config-generation
+    before application command dispatch
+  - Run does not dispatch application-defined subcommand bodies
+  - subcommand fields participate in the same generated config and CLI parsing system
+  - exact Command lookup return shape may be refined without changing explicit application
+    dispatch
+relations:
+- relation: mentions
+  to: api:application-lifecycle
+  resolution: resolved
+- relation: mentions
+  to: api:runtime-configuration
+  resolution: resolved
+- relation: mentions
+  to: requirement:built-in-config-generation
+  resolution: resolved
+- relation: mentions
+  to: system:tinybind
+  resolution: resolved

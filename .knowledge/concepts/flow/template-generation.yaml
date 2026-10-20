@@ -1,0 +1,87 @@
+id: flow:template-generation
+type: flow
+title: HTML Template Generation Flow
+summary: Template generation validates .pw.html syntax, typed parameters, slots, Go
+  model access, loops, JSON type graphs, and output context before emitting TinyGo-safe
+  Fragment and Wrapper code beside the template.
+facts:
+  legacy_body: "Template generation validates .pw.html syntax, typed parameters, slots,\
+    \ Go model access, loops, JSON type graphs, and output context before emitting\
+    \ TinyGo-safe Fragment and Wrapper code beside the template.\n\n```yaml\nflow:\n\
+    \  trigger: api:cli-generate finds a .pw.html source\n  steps:\n    - id: parse\n\
+    \      action: parse Popcorn Web static template syntax without requiring standard\
+    \ html/template compatibility\n    - id: resolve-model\n      action: load the\
+    \ declared Go package and resolve exported fields, pointers, loop element types,\
+    \ map key and value types, and permitted helpers with go/types\n    - id: resolve-json\n\
+    \      action: build the reachable JSON encoding graph for the page model and\
+    \ JSON expressions\n    - id: escape-analysis\n      action: assign each interpolation\
+    \ an HTML, attribute, URL, JavaScript, CSS, JSON script data, or text context\n\
+    \    - id: validate\n      action: reject missing fields, invalid loops, unsupported\
+    \ JSON types, recursive inclusion or data graphs, ambiguous contexts, and invalid\
+    \ slot placement\n    - id: validate-async\n      action: reject an async call\
+    \ or async parameter read outside an await binding, an await block without a fallback\
+    \ clause, a slot inside an await block, and a cached component that reaches an\
+    \ async value\n    - id: emit\n      action: generate immutable htmlbind.Fragment\
+    \ plans, htmlbind.Wrapper binders for unnamed-slot components, direct typed field\
+    \ access, native Go loops, context escaping, and typed JSON writer calls\n   \
+    \ - id: emit-async\n      action: emit htmlbind.Pending fields for async parameters,\
+    \ await boundary plans with fallback and recover subtrees, unset-value checks,\
+    \ and the constant HasAwaitBlock flag\n    - id: format\n      action: format\
+    \ and atomically update policy:generated-artifacts\n  failure:\n    default: report\
+    \ source file, line, column, and template expansion stack\nspecialization: flow:error-template-generation\
+    \ uses the same parser, escaping, and atomic output rules\ncomposition: requirement:nested-html-templates\
+    \ uses api:render-html-chain after generation\n```"
+  flow:
+    trigger: api:cli-generate finds a .pw.html source
+    steps:
+    - id: parse
+      action: parse Popcorn Web static template syntax without requiring standard
+        html/template compatibility
+    - id: resolve-model
+      action: load the declared Go package and resolve exported fields, pointers,
+        loop element types, map key and value types, and permitted helpers with go/types
+    - id: resolve-json
+      action: build the reachable JSON encoding graph for the page model and JSON
+        expressions
+    - id: escape-analysis
+      action: assign each interpolation an HTML, attribute, URL, JavaScript, CSS,
+        JSON script data, or text context
+    - id: validate
+      action: reject missing fields, invalid loops, unsupported JSON types, recursive
+        inclusion or data graphs, ambiguous contexts, and invalid slot placement
+    - id: validate-async
+      action: reject an async call or async parameter read outside an await binding,
+        an await block without a fallback clause, a slot inside an await block, and
+        a cached component that reaches an async value
+    - id: emit
+      action: generate immutable htmlbind.Fragment plans, htmlbind.Wrapper binders
+        for unnamed-slot components, direct typed field access, native Go loops, context
+        escaping, and typed JSON writer calls
+    - id: emit-async
+      action: emit htmlbind.Pending fields for async parameters, await boundary plans
+        with fallback and recover subtrees, unset-value checks, and the constant HasAwaitBlock
+        flag
+    - id: format
+      action: format and atomically update policy:generated-artifacts
+    failure:
+      default: report source file, line, column, and template expansion stack
+  specialization: flow:error-template-generation uses the same parser, escaping, and
+    atomic output rules
+  composition: requirement:nested-html-templates uses api:render-html-chain after
+    generation
+relations:
+- relation: mentions
+  to: api:cli-generate
+  resolution: resolved
+- relation: mentions
+  to: api:render-html-chain
+  resolution: resolved
+- relation: mentions
+  to: flow:error-template-generation
+  resolution: resolved
+- relation: mentions
+  to: policy:generated-artifacts
+  resolution: resolved
+- relation: mentions
+  to: requirement:nested-html-templates
+  resolution: resolved

@@ -1,0 +1,220 @@
+id: decision:live-delivery-transport
+type: decision
+title: Live Deliveries On The Page Route
+summary: Carry live deliveries on the page's own route, selected by a request header,
+  and frame each delivery as a record rather than as markup.
+facts:
+  legacy_body: "Carry live deliveries on the page's own route, selected by a request\
+    \ header, and frame each delivery as a record rather than as markup.\n\n```yaml\n\
+    status: accepted and implemented\nshipped:\n  header: Pw-Response-Mode, with the\
+    \ token live; pw.ResponseModeHeader and pw.LiveResponseMode name them\n  media_type:\
+    \ application/x-ndjson, one record per line\n  entry: api:html-response reads\
+    \ the header before choosing a branch, so every page route answers both modes\
+    \ with no generated code change\n  uncompressed:\n    decided: a live response\
+    \ is not compressed, where a document still is\n    why: flushing every few seconds\
+    \ keeps the ratio poor and emits a sync marker per delivery, and a long-lived\
+    \ stream mixing personalized content with request-influenced values offers a compression\
+    \ oracle far more samples than one document does\n    revisit: when a measured\
+    \ deployment shows the bandwidth mattering more than either\n  streaming_carries_it:\
+    \ a buffered document settles its live boundaries in place and writes no placeholder,\
+    \ so html.streaming false disables live mode rather than leaving a client applying\
+    \ deliveries to ids that address nothing\nsource:\n  - requirement:live-html-rendering\n\
+    \  - the system:tinybind live transport and response mode designs, neither of\
+    \ them implemented upstream\nproblem:\n  document_must_end: the document response\
+    \ ends when every request-owned boundary settles, and a browser that never reaches\
+    \ load completion has a wrong loading state, no back-forward cache eligibility,\
+    \ and middleware that never observes completion\n  reconnect_has_no_home: a dropped\
+    \ document response can only be recovered by re-requesting the whole document,\
+    \ which repaints regions the user asked to leave alone\nchosen:\n  route: the\
+    \ page's own URL and the generated route, requested again with a live mode header\n\
+    \  body: the route executes normally and writes no document bytes; htmlbind.RenderChainLive\
+    \ takes io.Discard as its writer and only deliveries are transferred\n  framing:\
+    \ newline-delimited records from htmlbind.Content.AppendJSON, per api:live-delivery-protocol\n\
+    \  duration: open for as long as the subscription lives, bounded by policy:live-subscription-bounds\n\
+    \  multiplexed: one response carries every live boundary of that page, so a dashboard\
+    \ with several live regions costs one connection\nreconstruction_is_execution:\n\
+    \  mechanism: the route handler, its layouts, and its page run again for the same\
+    \ URL and the same credentials, so every live binding sees the arguments it saw\
+    \ before\n  identity: htmlbind boundary ids are positional and repeat across executions\
+    \ of the same chain, so the ids line up with the placeholders already on screen\
+    \ with nothing sent to align them\n  no_continuation: no token, no server-held\
+    \ subscription state, and no client-held arguments\n  cost: the page's own work\
+    \ runs again per connection, including await boundaries whose results are discarded;\
+    \ policy:live-subscription-bounds counts it\n  handler_constraint: a page handler\
+    \ must be safe to execute again for the same URL, which is what a GET already\
+    \ promised\nwhy_a_header:\n  same_path: routing, authentication, parameter binding,\
+    \ and the handler are the ones already generated and already tested; the mode\
+    \ changes what is written, not what is computed\n  no_url_change: the page renders\
+    \ from its own path and search parameters, so a mode token must not appear among\
+    \ them\n  csrf_synergy: a simple cross-origin form or link cannot set a custom\
+    \ request header, which is exactly the class policy:csrf-protection targets\n\
+    \  extensible: a mode is a registered token, so flow:partial-refresh could become\
+    \ a mode later rather than a second endpoint\n  vary_required: every mode-capable\
+    \ response sends Vary on the mode header, because a shared cache that stored a\
+    \ delivery stream under the page URL would serve it where a document was expected\n\
+    \  unknown_token: answered as the ordinary document, so an older client against\
+    \ a newer server stays functional\nrejected_separate_endpoint:\n  shape: a caller-authored\
+    \ live channel route beside every page, addressed by boundary handle\n  why:\n\
+    \    - it doubles the route surface and lets the live path drift from the document\
+    \ path\n    - with no page execution behind it, it needs a capability token to\
+    \ prove what a client may watch, which the header makes unnecessary\n    - its\
+    \ correctness would depend on generated identity rules the application does not\
+    \ own\nrejected_endless_document:\n  shape: hold the document response open for\
+    \ the life of the screen\n  why: the document never completes, a dropped connection\
+    \ has no selective resume, and the connection is pinned for the session against\
+    \ per-origin connection limits\ntransport_shape:\n  chosen_first: chunked response\
+    \ read as a fetch stream, because it carries the CSRF and mode headers a browser\
+    \ cannot attach to an EventSource\n  rejected_sse: EventSource sends no custom\
+    \ header and no credentials the same way, so the mode and the token would have\
+    \ to move into the URL\n  compression: decision:streaming-response-compression\
+    \ applies, and flushing per delivery over a long-lived stream is a poor ratio\
+    \ and a compression-oracle surface worth stating; see policy:live-subscription-bounds\n\
+    delivery_record:\n  today: id and HTML, which is what htmlbind yields; a delivery\
+    \ replaces the whole boundary subtree\n  later: operations and a revision, once\
+    \ boundary-level diffing exists, which is the same record grown rather than a\
+    \ different one\n  no_markup: past the initial document no parser is reading,\
+    \ so the template-and-marker framing of api:html-boundary-protocol has nothing\
+    \ to trigger\nopen_questions:\n  - the header name and the live token spelling,\
+    \ and whether they are shared with a future navigation mode\n  - whether the mode\
+    \ is read by generated route code or by a framework wrapper installed around it\n\
+    \  - whether a live-mode execution can skip the await boundaries whose output\
+    \ is discarded, which needs a plan slice htmlbind does not yet expose\n```"
+  status: accepted and implemented
+  shipped:
+    header: Pw-Response-Mode, with the token live; pw.ResponseModeHeader and pw.LiveResponseMode
+      name them
+    media_type: application/x-ndjson, one record per line
+    entry: api:html-response reads the header before choosing a branch, so every page
+      route answers both modes with no generated code change
+    uncompressed:
+      decided: a live response is not compressed, where a document still is
+      why: flushing every few seconds keeps the ratio poor and emits a sync marker
+        per delivery, and a long-lived stream mixing personalized content with request-influenced
+        values offers a compression oracle far more samples than one document does
+      revisit: when a measured deployment shows the bandwidth mattering more than
+        either
+    streaming_carries_it: a buffered document settles its live boundaries in place
+      and writes no placeholder, so html.streaming false disables live mode rather
+      than leaving a client applying deliveries to ids that address nothing
+  source:
+  - requirement:live-html-rendering
+  - the system:tinybind live transport and response mode designs, neither of them
+    implemented upstream
+  problem:
+    document_must_end: the document response ends when every request-owned boundary
+      settles, and a browser that never reaches load completion has a wrong loading
+      state, no back-forward cache eligibility, and middleware that never observes
+      completion
+    reconnect_has_no_home: a dropped document response can only be recovered by re-requesting
+      the whole document, which repaints regions the user asked to leave alone
+  chosen:
+    route: the page's own URL and the generated route, requested again with a live
+      mode header
+    body: the route executes normally and writes no document bytes; htmlbind.RenderChainLive
+      takes io.Discard as its writer and only deliveries are transferred
+    framing: newline-delimited records from htmlbind.Content.AppendJSON, per api:live-delivery-protocol
+    duration: open for as long as the subscription lives, bounded by policy:live-subscription-bounds
+    multiplexed: one response carries every live boundary of that page, so a dashboard
+      with several live regions costs one connection
+  reconstruction_is_execution:
+    mechanism: the route handler, its layouts, and its page run again for the same
+      URL and the same credentials, so every live binding sees the arguments it saw
+      before
+    identity: htmlbind boundary ids are positional and repeat across executions of
+      the same chain, so the ids line up with the placeholders already on screen with
+      nothing sent to align them
+    no_continuation: no token, no server-held subscription state, and no client-held
+      arguments
+    cost: the page's own work runs again per connection, including await boundaries
+      whose results are discarded; policy:live-subscription-bounds counts it
+    handler_constraint: a page handler must be safe to execute again for the same
+      URL, which is what a GET already promised
+  why_a_header:
+    same_path: routing, authentication, parameter binding, and the handler are the
+      ones already generated and already tested; the mode changes what is written,
+      not what is computed
+    no_url_change: the page renders from its own path and search parameters, so a
+      mode token must not appear among them
+    csrf_synergy: a simple cross-origin form or link cannot set a custom request header,
+      which is exactly the class policy:csrf-protection targets
+    extensible: a mode is a registered token, so flow:partial-refresh could become
+      a mode later rather than a second endpoint
+    vary_required: every mode-capable response sends Vary on the mode header, because
+      a shared cache that stored a delivery stream under the page URL would serve
+      it where a document was expected
+    unknown_token: answered as the ordinary document, so an older client against a
+      newer server stays functional
+  rejected_separate_endpoint:
+    shape: a caller-authored live channel route beside every page, addressed by boundary
+      handle
+    why:
+    - it doubles the route surface and lets the live path drift from the document
+      path
+    - with no page execution behind it, it needs a capability token to prove what
+      a client may watch, which the header makes unnecessary
+    - its correctness would depend on generated identity rules the application does
+      not own
+  rejected_endless_document:
+    shape: hold the document response open for the life of the screen
+    why: the document never completes, a dropped connection has no selective resume,
+      and the connection is pinned for the session against per-origin connection limits
+  transport_shape:
+    chosen_first: chunked response read as a fetch stream, because it carries the
+      CSRF and mode headers a browser cannot attach to an EventSource
+    rejected_sse: EventSource sends no custom header and no credentials the same way,
+      so the mode and the token would have to move into the URL
+    compression: decision:streaming-response-compression applies, and flushing per
+      delivery over a long-lived stream is a poor ratio and a compression-oracle surface
+      worth stating; see policy:live-subscription-bounds
+  delivery_record:
+    today: id and HTML, which is what htmlbind yields; a delivery replaces the whole
+      boundary subtree
+    later: operations and a revision, once boundary-level diffing exists, which is
+      the same record grown rather than a different one
+    no_markup: past the initial document no parser is reading, so the template-and-marker
+      framing of api:html-boundary-protocol has nothing to trigger
+  open_questions:
+  - the header name and the live token spelling, and whether they are shared with
+    a future navigation mode
+  - whether the mode is read by generated route code or by a framework wrapper installed
+    around it
+  - whether a live-mode execution can skip the await boundaries whose output is discarded,
+    which needs a plan slice htmlbind does not yet expose
+open_questions:
+  item-f1cc225f3c6f36ff:
+    text: the header name and the live token spelling, and whether they are shared
+      with a future navigation mode
+  item-d0148dcf250b2bbf:
+    text: whether the mode is read by generated route code or by a framework wrapper
+      installed around it
+  item-ae9e74e7bd8d5a89:
+    text: whether a live-mode execution can skip the await boundaries whose output
+      is discarded, which needs a plan slice htmlbind does not yet expose
+relations:
+- relation: mentions
+  to: api:html-boundary-protocol
+  resolution: resolved
+- relation: mentions
+  to: api:html-response
+  resolution: resolved
+- relation: mentions
+  to: api:live-delivery-protocol
+  resolution: resolved
+- relation: mentions
+  to: decision:streaming-response-compression
+  resolution: resolved
+- relation: mentions
+  to: flow:partial-refresh
+  resolution: resolved
+- relation: mentions
+  to: policy:csrf-protection
+  resolution: resolved
+- relation: mentions
+  to: policy:live-subscription-bounds
+  resolution: resolved
+- relation: mentions
+  to: requirement:live-html-rendering
+  resolution: resolved
+- relation: mentions
+  to: system:tinybind
+  resolution: resolved

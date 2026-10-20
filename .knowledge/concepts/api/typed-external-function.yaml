@@ -1,0 +1,34 @@
+id: api:typed-external-function
+type: api
+title: Typed External Function
+summary: Templates call only declared functions bound by generated code to ordinary
+  Go functions.
+facts:
+  legacy_body: "Templates call only declared functions bound by generated code to\
+    \ ordinary Go functions.\n\n```yaml\ngeneration_validation:\n  - name\n  - arguments\n\
+    \  - result type\n  - error behavior\nruntime:\n  context: explicit request context\
+    \ and cancellation\n  results: synchronous, or `external async` returning a value\
+    \ and an error\n  async_placement: an async call is legal only inside an await\
+    \ binding, and its work starts when the boundary reaches it\n  caller_started_alternative:\
+    \ api:async-html-value starts the work earlier\n  cache: declarative policy and\
+    \ invalidation tags\nforbidden:\n  - reflection-based dispatch\n  - arbitrary\
+    \ dynamic function lookup\n```"
+  generation_validation:
+  - name
+  - arguments
+  - result type
+  - error behavior
+  runtime:
+    context: explicit request context and cancellation
+    results: synchronous, or `external async` returning a value and an error
+    async_placement: an async call is legal only inside an await binding, and its
+      work starts when the boundary reaches it
+    caller_started_alternative: api:async-html-value starts the work earlier
+    cache: declarative policy and invalidation tags
+  forbidden:
+  - reflection-based dispatch
+  - arbitrary dynamic function lookup
+relations:
+- relation: mentions
+  to: api:async-html-value
+  resolution: resolved

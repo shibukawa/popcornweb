@@ -1,0 +1,245 @@
+id: requirement:native-pgx-escape-hatch
+type: requirement
+title: Direct pgx Reach On A Native Connection
+summary: A requirement:pgx-native-execution connection must offer the direct-to-pgx
+  escape hatch requirement:contrib-postgresql already promises, because the native
+  migration removed the only route to it and left that promise stale.
+facts:
+  legacy_body: "A requirement:pgx-native-execution connection must offer the direct-to-pgx\
+    \ escape hatch requirement:contrib-postgresql already promises, because the native\
+    \ migration removed the only route to it and left that promise stale.\n\n```yaml\n\
+    status: implemented 2026-08-09\npriority: should\nsurface: api:native-connection-access\n\
+    transaction: decision:escape-hatch-transaction-scope\nbatch_capability: rule:batch-engine-capability\n\
+    problem:\n  the_claim: >\n    requirement:contrib-postgresql records sql.Conn.Raw\
+    \ as the escape hatch\n    keeping Batch, CopyFrom, and LISTEN/NOTIFY reachable\
+    \ without widening the\n    framework surface, and requirement:pgx-native-execution\
+    \ repeats it when it\n    excludes those three from that surface\n  the_reality:\
+    \ >\n    Raw needs a *sql.DB, and pw.DB reports absence on a native connection.\
+    \ A\n    request has two doors, pw.DB and the sqlbind executor, and neither reaches\n\
+    \    pgx. The claim now holds only for the migration and seeding handles of the\n\
+    \    requirement:pgx-native-execution audit\n  the_cost: >\n    the engine with\
+    \ the best batch transport is the one a request cannot batch\n    on. The same\
+    \ is true of CopyFrom and LISTEN/NOTIFY, which were already\n    supposed to be\
+    \ reachable and are the reason the escape hatch was recorded\n  not_a_regression_anyone_reported:\
+    \ >\n    the audit moved every framework consumer off *sql.DB deliberately and\n\
+    \    completely. What it did not carry across was the caller-facing hatch, which\n\
+    \    no framework code uses and therefore no test missed\nscope:\n  is: one accessor\
+    \ on the postgres engine package that hands the pgx connection\n    to a callback,\
+    \ plus the documentation of what each engine offers\n  is_not:\n    - a framework\
+    \ batch API; nothing named Batch enters pw\n    - a portable surface across engines.\
+    \ sqlite and mysql already reach their\n      own batch path through pw.DB, per\
+    \ rule:batch-engine-capability\n    - a wrapper, a queue type, a result type,\
+    \ or an error type of our own\n  why_so_small: >\n    the batch, copy, and notify\
+    \ transports are all built and verified upstream.\n    What was missing was reach,\
+    \ so reach is the whole requirement. A queue API\n    over three engines would\
+    \ have been a second implementation of something\n    only one engine benefits\
+    \ from\nmust:\n  - hand the caller the same pgx connection type on both compilers,\
+    \ so callers\n    compile under TinyGo and host Go alike\n  - run the callback\
+    \ inside the active data:transaction-scope when one is open,\n    per decision:escape-hatch-transaction-scope\n\
+    \  - resolve the connection from the effective group, exactly as\n    api:database-selection\
+    \ resolves one statement\n  - refuse a connection that is not pgx with a named\
+    \ error rather than a panic,\n    so a sqlite or mysql group says so\n  - keep\
+    \ pgx out of every pw signature; the accessor lives in the engine package\n  \
+    \  an application already blank-imports\ndocumentation:\n  owner: the database\
+    \ guide, written from rule:batch-engine-capability\n  postgres: batching through\
+    \ this accessor, with the parse-before-execute and\n    snapshot caveats stated\
+    \ rather than implied\n  sqlite: >\n    api:transaction-runner is the whole feature.\
+    \ The sequential batch path is\n    one statement at a time inside one transaction,\
+    \ which is what\n    pw.Transaction already opens, so the fsync win needs no new\
+    \ API and the\n    guide says exactly that\n  mysql: >\n    sqlbatch reached directly\
+    \ through pw.DB, with the two required DSN flags,\n    the exec-only limit, the\
+    \ unknown failing index, and the loss of server-side\n    prepare all stated.\
+    \ Presented as a trade to take deliberately, not a\n    recommended default\n\
+    \  observability: >\n    every entry shows the span and the log the caller writes\
+    \ by hand, because\n    none of this work reaches api:instrumented-sql-executor.\
+    \ pw.StartSpanKind\n    and pw.Logger are already public and already correlate,\
+    \ so the guide\n    teaches a pattern instead of announcing an API; the shape\
+    \ is the\n    observability recipe of api:native-connection-access\n  honesty:\
+    \ a guide that describes a batch only as faster is wrong on every\n    engine\
+    \ here; each entry names what it costs, and the logging section says\n    plainly\
+    \ that the automatic query log stops at the accessor\nacceptance:\n  - a handler\
+    \ reaches pgx SendBatch, CopyFrom, and LISTEN/NOTIFY on a postgres\n    group,\
+    \ on both compilers\n  - work done inside the callback while api:transaction-runner\
+    \ holds a\n    transaction is rolled back with that transaction\n  - the accessor\
+    \ on a sqlite or mysql group returns a named error\n  - the requirement:contrib-postgresql\
+    \ escape_hatch line describes something\n    that exists again\n  - the guide\
+    \ covers all three engines and states a cost for each\n  - the guide shows a span\
+    \ and a log written by hand around the work, and the\n    records land under that\
+    \ span with no wiring\nverified:\n  unit: >\n    a nil callback, a context carrying\
+    \ no connection, and a sqlite group whose\n    error names the dialect, all without\
+    \ a server\n  integration: >\n    against postgres 17 on a pool bounded to one\
+    \ connection: a queued batch on\n    the pool, a second call that only succeeds\
+    \ because the first released, and\n    a batch inside the transaction runner whose\
+    \ rows are gone after the\n    rollback. That last case is the whole of\n    decision:escape-hatch-transaction-scope,\
+    \ so it is asserted rather than\n    reasoned about\n  suites_pass: database and\
+    \ pwruntime under -race\n  documentation: >\n    guides/storage/batching in both\
+    \ locales, with both code examples compiled\n    verbatim before publication,\
+    \ and the interoperability appendix corrected in\n    both locales where it implied\
+    \ a second pool was the only option\nlater:\n  automatic_tracing: >\n    installing\
+    \ a pgx tracer on the pool config would observe batches and copies\n    without\
+    \ wrapping anything, which is the only way to close the gap rather\n    than document\
+    \ it. It waits on system:tinygodriver aliasing the batch tracer\n    interface,\
+    \ and is a separate requirement when it lands\n```"
+  status: implemented 2026-08-09
+  priority: should
+  surface: api:native-connection-access
+  transaction: decision:escape-hatch-transaction-scope
+  batch_capability: rule:batch-engine-capability
+  problem:
+    the_claim: 'requirement:contrib-postgresql records sql.Conn.Raw as the escape
+      hatch keeping Batch, CopyFrom, and LISTEN/NOTIFY reachable without widening
+      the framework surface, and requirement:pgx-native-execution repeats it when
+      it excludes those three from that surface
+
+      '
+    the_reality: 'Raw needs a *sql.DB, and pw.DB reports absence on a native connection.
+      A request has two doors, pw.DB and the sqlbind executor, and neither reaches
+      pgx. The claim now holds only for the migration and seeding handles of the requirement:pgx-native-execution
+      audit
+
+      '
+    the_cost: 'the engine with the best batch transport is the one a request cannot
+      batch on. The same is true of CopyFrom and LISTEN/NOTIFY, which were already
+      supposed to be reachable and are the reason the escape hatch was recorded
+
+      '
+    not_a_regression_anyone_reported: 'the audit moved every framework consumer off
+      *sql.DB deliberately and completely. What it did not carry across was the caller-facing
+      hatch, which no framework code uses and therefore no test missed
+
+      '
+  scope:
+    is: one accessor on the postgres engine package that hands the pgx connection
+      to a callback, plus the documentation of what each engine offers
+    is_not:
+    - a framework batch API; nothing named Batch enters pw
+    - a portable surface across engines. sqlite and mysql already reach their own
+      batch path through pw.DB, per rule:batch-engine-capability
+    - a wrapper, a queue type, a result type, or an error type of our own
+    why_so_small: 'the batch, copy, and notify transports are all built and verified
+      upstream. What was missing was reach, so reach is the whole requirement. A queue
+      API over three engines would have been a second implementation of something
+      only one engine benefits from
+
+      '
+  must:
+  - hand the caller the same pgx connection type on both compilers, so callers compile
+    under TinyGo and host Go alike
+  - run the callback inside the active data:transaction-scope when one is open, per
+    decision:escape-hatch-transaction-scope
+  - resolve the connection from the effective group, exactly as api:database-selection
+    resolves one statement
+  - refuse a connection that is not pgx with a named error rather than a panic, so
+    a sqlite or mysql group says so
+  - keep pgx out of every pw signature; the accessor lives in the engine package an
+    application already blank-imports
+  documentation:
+    owner: the database guide, written from rule:batch-engine-capability
+    postgres: batching through this accessor, with the parse-before-execute and snapshot
+      caveats stated rather than implied
+    sqlite: 'api:transaction-runner is the whole feature. The sequential batch path
+      is one statement at a time inside one transaction, which is what pw.Transaction
+      already opens, so the fsync win needs no new API and the guide says exactly
+      that
+
+      '
+    mysql: 'sqlbatch reached directly through pw.DB, with the two required DSN flags,
+      the exec-only limit, the unknown failing index, and the loss of server-side
+      prepare all stated. Presented as a trade to take deliberately, not a recommended
+      default
+
+      '
+    observability: 'every entry shows the span and the log the caller writes by hand,
+      because none of this work reaches api:instrumented-sql-executor. pw.StartSpanKind
+      and pw.Logger are already public and already correlate, so the guide teaches
+      a pattern instead of announcing an API; the shape is the observability recipe
+      of api:native-connection-access
+
+      '
+    honesty: a guide that describes a batch only as faster is wrong on every engine
+      here; each entry names what it costs, and the logging section says plainly that
+      the automatic query log stops at the accessor
+  acceptance:
+  - a handler reaches pgx SendBatch, CopyFrom, and LISTEN/NOTIFY on a postgres group,
+    on both compilers
+  - work done inside the callback while api:transaction-runner holds a transaction
+    is rolled back with that transaction
+  - the accessor on a sqlite or mysql group returns a named error
+  - the requirement:contrib-postgresql escape_hatch line describes something that
+    exists again
+  - the guide covers all three engines and states a cost for each
+  - the guide shows a span and a log written by hand around the work, and the records
+    land under that span with no wiring
+  verified:
+    unit: 'a nil callback, a context carrying no connection, and a sqlite group whose
+      error names the dialect, all without a server
+
+      '
+    integration: 'against postgres 17 on a pool bounded to one connection: a queued
+      batch on the pool, a second call that only succeeds because the first released,
+      and a batch inside the transaction runner whose rows are gone after the rollback.
+      That last case is the whole of decision:escape-hatch-transaction-scope, so it
+      is asserted rather than reasoned about
+
+      '
+    suites_pass: database and pwruntime under -race
+    documentation: 'guides/storage/batching in both locales, with both code examples
+      compiled verbatim before publication, and the interoperability appendix corrected
+      in both locales where it implied a second pool was the only option
+
+      '
+  later:
+    automatic_tracing: 'installing a pgx tracer on the pool config would observe batches
+      and copies without wrapping anything, which is the only way to close the gap
+      rather than document it. It waits on system:tinygodriver aliasing the batch
+      tracer interface, and is a separate requirement when it lands
+
+      '
+acceptance:
+  item-77810e01086efe0a:
+    text: a handler reaches pgx SendBatch, CopyFrom, and LISTEN/NOTIFY on a postgres
+      group, on both compilers
+  item-4a63b363cb38393c:
+    text: work done inside the callback while api:transaction-runner holds a transaction
+      is rolled back with that transaction
+  item-27be53b2576da209:
+    text: the accessor on a sqlite or mysql group returns a named error
+  item-8040523690bef280:
+    text: the requirement:contrib-postgresql escape_hatch line describes something
+      that exists again
+  item-45b2a25fc1ce6341:
+    text: the guide covers all three engines and states a cost for each
+  item-e1420d53c9ca30ea:
+    text: the guide shows a span and a log written by hand around the work, and the
+      records land under that span with no wiring
+relations:
+- relation: mentions
+  to: api:database-selection
+  resolution: resolved
+- relation: mentions
+  to: api:instrumented-sql-executor
+  resolution: resolved
+- relation: mentions
+  to: api:native-connection-access
+  resolution: resolved
+- relation: mentions
+  to: api:transaction-runner
+  resolution: resolved
+- relation: mentions
+  to: data:transaction-scope
+  resolution: resolved
+- relation: mentions
+  to: decision:escape-hatch-transaction-scope
+  resolution: resolved
+- relation: mentions
+  to: requirement:contrib-postgresql
+  resolution: resolved
+- relation: mentions
+  to: requirement:pgx-native-execution
+  resolution: resolved
+- relation: mentions
+  to: rule:batch-engine-capability
+  resolution: resolved
+- relation: mentions
+  to: system:tinygodriver
+  resolution: resolved

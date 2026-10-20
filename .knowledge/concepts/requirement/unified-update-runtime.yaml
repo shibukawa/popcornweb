@@ -1,0 +1,336 @@
+id: requirement:unified-update-runtime
+type: requirement
+title: Unified Update Runtime
+summary: One browser asset, popcornweb-runtime.js, carries every client capability
+  the framework owns, so a document declares one module reference whether it streams
+  boundaries, keeps a live connection, applies a navigation delta, redraws a region,
+  or applies an action response.
+facts:
+  legacy_body: "One browser asset, popcornweb-runtime.js, carries every client capability\
+    \ the framework owns, so a document declares one module reference whether it streams\
+    \ boundaries, keeps a live connection, applies a navigation delta, redraws a region,\
+    \ or applies an action response.\n\n```yaml\nsource: decision:update-runtime-convergence\n\
+    supersedes_delivery_of: requirement:external-boundary-runtime, whose scope becomes\
+    \ one half of this asset rather than its own file\nas_built:\n  asset: one served\
+    \ file composed at process start from boundary.js, update.js, and a bootstrap\
+    \ that builds the instance\n  every_half_is_a_file: all three are real files embedded\
+    \ at build time rather than Go string literals, so a formatter, a linter, and\
+    \ an editor read them\n  no_dependency_bytes: nothing here comes from the module\
+    \ any more, so an upgrade cannot change what a browser runs; what an upgrade can\
+    \ change is the wire, which the conformance harness is what catches\n  order_is_load_bearing:\
+    \ boundary.js defines custom elements at module scope and the parser may upgrade\
+    \ one inside the define call, so it comes first and everything reachable at that\
+    \ moment is declared inside it; update.js installs nothing and the bootstrap builds\
+    \ the instance\n  configuration_channel: an inert escaped meta element, because\
+    \ a module script has no way to read its own tag\ncomposition:\n  every_byte_is_this_frameworks:\
+    \ since 2026-08-04 the asset is boundary.js, update.js, and a bootstrap, with\
+    \ nothing from the dependency in it\n  boundary_half: the apply core, the parser-path\
+    \ custom elements, the document end marker, truncation reload, and the live reader\
+    \ of api:live-delivery-protocol\n  update_half: mode negotiation, manifest bookkeeping,\
+    \ delta application, head installation, redraw, action apply, link and GET-form\
+    \ interception, history, scroll, route-level focus, the announcement, the busy\
+    \ marker, supersession, form-state reconciliation, and preserved islands\n  shared_core:\n\
+    \    what: one function carries client state from the outgoing nodes into a replacement,\
+    \ and both halves call it\n    covers: preserved islands, per-control form-state\
+    \ restoration against each control's own default, and the file input that cannot\
+    \ be restored by value at all\n    why_one: a delta swaps a region and a live\
+    \ delivery refills one, and a user who lost their typing would not care which\
+    \ did it; two implementations is what the merged asset used to be\n    guarded_by:\
+    \ a test asserting the core is declared exactly once in the served bytes\n  what_the_previous_composition_was:\n\
+    \    shape: the dependency's client concatenated above this framework's, with\
+    \ a factory the bootstrap called\n    recorded_as: one apply function both halves\
+    \ call, which was never true; the module referenced neither exported apply function\
+    \ and swapped through its own\n    also_duplicated: a live reader, a record stream\
+    \ consumer, and a reconnect policy, all speaking the token this framework defined\n\
+    \    why_it_could_not_be_fixed_in_place: the halves were concatenated text and\
+    \ the configuration reached the module as JSON from a meta element, so there was\
+    \ no channel an apply function could travel on\n  written_against: the wire contract\
+    \ system:tinybind publishes rather than against its client, which is what makes\
+    \ this an implementation of a specification rather than a fork\n  header_names:\
+    \ read from the configuration object the server builds, so a deployment that changes\
+    \ the prefix and a client that did not is impossible rather than silent\n  instantiation:\
+    \ update.js exports a factory and installs nothing; the bootstrap builds the single\
+    \ instance and gives it this framework's name\nconformance:\n  harness: a node\
+    \ suite drives the update runtime against a stubbed page, covering the requests\
+    \ issued, the responses consumed, validator bookkeeping, supersession, head ordering,\
+    \ the terminator reasons, and every fallback path\n  scope: the protocol half\
+    \ deliberately, since real DOM insertion is the browser's job and what this framework\
+    \ can be wrong about alone is the wire\n  interception_is_protocol: which URL\
+    \ and which method a gesture turns into is decided here rather than by the browser,\
+    \ so the harness dispatches clicks and submits, per requirement:query-navigation-interception\n\
+    \  run_by: a Go test that skips when node is absent, so the toolchain is not a\
+    \ build dependency of a Go library\n  parse_guard: the merged asset is parsed\
+    \ as a module, because a load-time throw leaves a page with no updates, no boundaries,\
+    \ and nothing in the console saying why\ndelivery:\n  path: the revision-stamped\
+    \ reserved path of requirement:framework-script-assets, under the name popcornweb-runtime.js\n\
+    \  revision: a digest over the merged bytes, so an upstream upgrade that changes\
+    \ the runtime changes the URL with no constant to bump\n  caching: public, max-age\
+    \ one year, immutable, which stays honest because a revision segment never serves\
+    \ different bytes\n  form: an ES module referenced with type=module, so it defers\
+    \ by default and never blocks parsing\n  no_inline: nothing is inlined on any\
+    \ path, so policy:security-response-headers can enforce script-src self with no\
+    \ nonce\nbootstrap:\n  tag: contributed by the framework at the render call, per\
+    \ decision:runtime-tag-injection, so no application file has to carry it and no\
+    \ shell edit can remove it\n  url_stability: the framework builds the reference\
+    \ from its own revision, so nothing in any template names the URL and an upgrade\
+    \ moves it with no edit anywhere\n  runtime_data: the endpoint prefix and the\
+    \ build identity travel as inert escaped head metadata on the same channel, never\
+    \ as inline script\n  csrf_token: read from a cookie at the moment a request is\
+    \ issued rather than from the page, per requirement:module-native-csrf, so a rotation\
+    \ reaches an already-open screen\n  capability_gating: gated on updates being\
+    \ enabled or the chain declaring an await or live block; decision:automatic-async-render-selection\
+    \ still decides only how to render, and injection is what makes not loading an\
+    \ option at all\n  fragment_path: nothing is contributed, since decision:fragment-head-rejection\
+    \ means a fragment response has no head to merge into\nclient_state_preservation:\n\
+    \  unchanged_boundary: never touched, which is what makes focus, selection, and\
+    \ animation survive\n  form_values: reconciled by comparing each control against\
+    \ its own default, so a user's typing survives an update that did not assert a\
+    \ new value, and a changed default wins\n  ime: an update is deferred while a\
+    \ composition is active, on every path that applies one, per requirement:update-navigation-continuity\n\
+    \  caret: the focused control's selection is carried across a swap by the shared\
+    \ core, so a region that updates as it is typed keeps the cursor\n  preserved_islands:\
+    \ a marked region has its live node moved into the replacement, for a third-party\
+    \ widget, a canvas, or a media element the server does not own\n  file_input:\
+    \ not restorable by value at all, so it belongs in a preserved island or outside\
+    \ the region\n  known_gap: a GET update cannot express clearing a form back to\
+    \ an unchanged default, because the markup is identical; post-redirect-get clears\
+    \ through an ordinary page load and is outside the rule\n  scripting_off: none\
+    \ of this is needed, because a link, a GET form, and back all work by themselves;\
+    \ the runtime is an optimization of behavior the markup already has, which is\
+    \ what makes the fallback the absence of a code path rather than one more of them\n\
+    failure_behavior:\n  rule: every failure path performs the ordinary browser navigation\
+    \ to the same URL, so a user action is never lost\n  no_javascript: links and\
+    \ forms work as they always have\n  truncation: a streamed document reaching readyState\
+    \ complete with no end marker is reloaded once, with the guard that stops a server\
+    \ truncating every response from producing a reload loop\ndeclaration_order:\n\
+    \  rule: every module-level binding is declared above the first customElements.define,\
+    \ since defining an element upgrades already-parsed ones synchronously inside\
+    \ the call\n  guarded_by: a test over the script text, because the failure is\
+    \ a silent load-time throw invisible to every Go-level assertion\nacceptance:\n\
+    \  - a strict CSP with no inline allowance applies every boundary, every delta,\
+    \ and every action response\n  - one document loads exactly one framework script,\
+    \ whatever capabilities it uses\n  - a change to any of the three files changes\
+    \ the served URL without editing the scaffolded shell\n  - an unknown revision\
+    \ under the reserved path answers 404 rather than reaching the application\n \
+    \ - a completion whose bytes are split across chunks never destroys its fallback\n\
+    \  - typed text survives an update whose server-rendered default did not change\n\
+    \  - an application removing every script tag from its document shell still applies\
+    \ boundaries and still updates\n  - the served bytes carry no dependency code,\
+    \ and the shared client-state core is declared exactly once\n  - no application\
+    \ template and no served byte carries the dependency's name\nopen_questions:\n\
+    \  - whether the upstream half is fetched on demand as a capability module, keeping\
+    \ a static page at today's bytes, per the loading design of requirement:framework-script-assets\n\
+    ```"
+  source: decision:update-runtime-convergence
+  supersedes_delivery_of: requirement:external-boundary-runtime, whose scope becomes
+    one half of this asset rather than its own file
+  as_built:
+    asset: one served file composed at process start from boundary.js, update.js,
+      and a bootstrap that builds the instance
+    every_half_is_a_file: all three are real files embedded at build time rather than
+      Go string literals, so a formatter, a linter, and an editor read them
+    no_dependency_bytes: nothing here comes from the module any more, so an upgrade
+      cannot change what a browser runs; what an upgrade can change is the wire, which
+      the conformance harness is what catches
+    order_is_load_bearing: boundary.js defines custom elements at module scope and
+      the parser may upgrade one inside the define call, so it comes first and everything
+      reachable at that moment is declared inside it; update.js installs nothing and
+      the bootstrap builds the instance
+    configuration_channel: an inert escaped meta element, because a module script
+      has no way to read its own tag
+  composition:
+    every_byte_is_this_frameworks: since 2026-08-04 the asset is boundary.js, update.js,
+      and a bootstrap, with nothing from the dependency in it
+    boundary_half: the apply core, the parser-path custom elements, the document end
+      marker, truncation reload, and the live reader of api:live-delivery-protocol
+    update_half: mode negotiation, manifest bookkeeping, delta application, head installation,
+      redraw, action apply, link and GET-form interception, history, scroll, route-level
+      focus, the announcement, the busy marker, supersession, form-state reconciliation,
+      and preserved islands
+    shared_core:
+      what: one function carries client state from the outgoing nodes into a replacement,
+        and both halves call it
+      covers: preserved islands, per-control form-state restoration against each control's
+        own default, and the file input that cannot be restored by value at all
+      why_one: a delta swaps a region and a live delivery refills one, and a user
+        who lost their typing would not care which did it; two implementations is
+        what the merged asset used to be
+      guarded_by: a test asserting the core is declared exactly once in the served
+        bytes
+    what_the_previous_composition_was:
+      shape: the dependency's client concatenated above this framework's, with a factory
+        the bootstrap called
+      recorded_as: one apply function both halves call, which was never true; the
+        module referenced neither exported apply function and swapped through its
+        own
+      also_duplicated: a live reader, a record stream consumer, and a reconnect policy,
+        all speaking the token this framework defined
+      why_it_could_not_be_fixed_in_place: the halves were concatenated text and the
+        configuration reached the module as JSON from a meta element, so there was
+        no channel an apply function could travel on
+    written_against: the wire contract system:tinybind publishes rather than against
+      its client, which is what makes this an implementation of a specification rather
+      than a fork
+    header_names: read from the configuration object the server builds, so a deployment
+      that changes the prefix and a client that did not is impossible rather than
+      silent
+    instantiation: update.js exports a factory and installs nothing; the bootstrap
+      builds the single instance and gives it this framework's name
+  conformance:
+    harness: a node suite drives the update runtime against a stubbed page, covering
+      the requests issued, the responses consumed, validator bookkeeping, supersession,
+      head ordering, the terminator reasons, and every fallback path
+    scope: the protocol half deliberately, since real DOM insertion is the browser's
+      job and what this framework can be wrong about alone is the wire
+    interception_is_protocol: which URL and which method a gesture turns into is decided
+      here rather than by the browser, so the harness dispatches clicks and submits,
+      per requirement:query-navigation-interception
+    run_by: a Go test that skips when node is absent, so the toolchain is not a build
+      dependency of a Go library
+    parse_guard: the merged asset is parsed as a module, because a load-time throw
+      leaves a page with no updates, no boundaries, and nothing in the console saying
+      why
+  delivery:
+    path: the revision-stamped reserved path of requirement:framework-script-assets,
+      under the name popcornweb-runtime.js
+    revision: a digest over the merged bytes, so an upstream upgrade that changes
+      the runtime changes the URL with no constant to bump
+    caching: public, max-age one year, immutable, which stays honest because a revision
+      segment never serves different bytes
+    form: an ES module referenced with type=module, so it defers by default and never
+      blocks parsing
+    no_inline: nothing is inlined on any path, so policy:security-response-headers
+      can enforce script-src self with no nonce
+  bootstrap:
+    tag: contributed by the framework at the render call, per decision:runtime-tag-injection,
+      so no application file has to carry it and no shell edit can remove it
+    url_stability: the framework builds the reference from its own revision, so nothing
+      in any template names the URL and an upgrade moves it with no edit anywhere
+    runtime_data: the endpoint prefix and the build identity travel as inert escaped
+      head metadata on the same channel, never as inline script
+    csrf_token: read from a cookie at the moment a request is issued rather than from
+      the page, per requirement:module-native-csrf, so a rotation reaches an already-open
+      screen
+    capability_gating: gated on updates being enabled or the chain declaring an await
+      or live block; decision:automatic-async-render-selection still decides only
+      how to render, and injection is what makes not loading an option at all
+    fragment_path: nothing is contributed, since decision:fragment-head-rejection
+      means a fragment response has no head to merge into
+  client_state_preservation:
+    unchanged_boundary: never touched, which is what makes focus, selection, and animation
+      survive
+    form_values: reconciled by comparing each control against its own default, so
+      a user's typing survives an update that did not assert a new value, and a changed
+      default wins
+    ime: an update is deferred while a composition is active, on every path that applies
+      one, per requirement:update-navigation-continuity
+    caret: the focused control's selection is carried across a swap by the shared
+      core, so a region that updates as it is typed keeps the cursor
+    preserved_islands: a marked region has its live node moved into the replacement,
+      for a third-party widget, a canvas, or a media element the server does not own
+    file_input: not restorable by value at all, so it belongs in a preserved island
+      or outside the region
+    known_gap: a GET update cannot express clearing a form back to an unchanged default,
+      because the markup is identical; post-redirect-get clears through an ordinary
+      page load and is outside the rule
+    scripting_off: none of this is needed, because a link, a GET form, and back all
+      work by themselves; the runtime is an optimization of behavior the markup already
+      has, which is what makes the fallback the absence of a code path rather than
+      one more of them
+  failure_behavior:
+    rule: every failure path performs the ordinary browser navigation to the same
+      URL, so a user action is never lost
+    no_javascript: links and forms work as they always have
+    truncation: a streamed document reaching readyState complete with no end marker
+      is reloaded once, with the guard that stops a server truncating every response
+      from producing a reload loop
+  declaration_order:
+    rule: every module-level binding is declared above the first customElements.define,
+      since defining an element upgrades already-parsed ones synchronously inside
+      the call
+    guarded_by: a test over the script text, because the failure is a silent load-time
+      throw invisible to every Go-level assertion
+  acceptance:
+  - a strict CSP with no inline allowance applies every boundary, every delta, and
+    every action response
+  - one document loads exactly one framework script, whatever capabilities it uses
+  - a change to any of the three files changes the served URL without editing the
+    scaffolded shell
+  - an unknown revision under the reserved path answers 404 rather than reaching the
+    application
+  - a completion whose bytes are split across chunks never destroys its fallback
+  - typed text survives an update whose server-rendered default did not change
+  - an application removing every script tag from its document shell still applies
+    boundaries and still updates
+  - the served bytes carry no dependency code, and the shared client-state core is
+    declared exactly once
+  - no application template and no served byte carries the dependency's name
+  open_questions:
+  - whether the upstream half is fetched on demand as a capability module, keeping
+    a static page at today's bytes, per the loading design of requirement:framework-script-assets
+acceptance:
+  item-550e5e6dcc60a1a4:
+    text: a strict CSP with no inline allowance applies every boundary, every delta,
+      and every action response
+  item-c4f12ca671813e34:
+    text: one document loads exactly one framework script, whatever capabilities it
+      uses
+  item-88921391ba9d9e22:
+    text: a change to any of the three files changes the served URL without editing
+      the scaffolded shell
+  item-e31671596b09259a:
+    text: an unknown revision under the reserved path answers 404 rather than reaching
+      the application
+  item-f27fa6a71c723508:
+    text: a completion whose bytes are split across chunks never destroys its fallback
+  item-6592f60f74065fa1:
+    text: typed text survives an update whose server-rendered default did not change
+  item-e04cdc772e304f1a:
+    text: an application removing every script tag from its document shell still applies
+      boundaries and still updates
+  item-3a560c293c54f9b1:
+    text: the served bytes carry no dependency code, and the shared client-state core
+      is declared exactly once
+  item-cbed4e5251de6fb7:
+    text: no application template and no served byte carries the dependency's name
+open_questions:
+  item-e7de524a920bcb6d:
+    text: whether the upstream half is fetched on demand as a capability module, keeping
+      a static page at today's bytes, per the loading design of requirement:framework-script-assets
+relations:
+- relation: mentions
+  to: api:live-delivery-protocol
+  resolution: resolved
+- relation: mentions
+  to: decision:automatic-async-render-selection
+  resolution: resolved
+- relation: mentions
+  to: decision:fragment-head-rejection
+  resolution: resolved
+- relation: mentions
+  to: decision:runtime-tag-injection
+  resolution: resolved
+- relation: mentions
+  to: decision:update-runtime-convergence
+  resolution: resolved
+- relation: mentions
+  to: policy:security-response-headers
+  resolution: resolved
+- relation: mentions
+  to: requirement:external-boundary-runtime
+  resolution: resolved
+- relation: mentions
+  to: requirement:framework-script-assets
+  resolution: resolved
+- relation: mentions
+  to: requirement:module-native-csrf
+  resolution: resolved
+- relation: mentions
+  to: requirement:query-navigation-interception
+  resolution: resolved
+- relation: mentions
+  to: requirement:update-navigation-continuity
+  resolution: resolved
+- relation: mentions
+  to: system:tinybind
+  resolution: resolved

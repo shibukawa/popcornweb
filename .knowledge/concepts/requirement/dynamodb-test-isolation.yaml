@@ -1,0 +1,129 @@
+id: requirement:dynamodb-test-isolation
+type: requirement
+title: Isolated DynamoDB Tests
+summary: DynamoDB tests stay independent by giving each test server its own table
+  prefix and its own created tables, because the store has no transaction to roll
+  back.
+facts:
+  legacy_body: "DynamoDB tests stay independent by giving each test server its own\
+    \ table prefix and its own created tables, because the store has no transaction\
+    \ to roll back.\n\n```yaml\nproblem: requirement:parallel-database-tests isolates\
+    \ SQL tests inside one rolled-back transaction, and system:tinygodriver-dynamodb\
+    \ has no transaction at all\nmechanism:\n  prefix: api:test-run assigns a unique\
+    \ data:dynamodb-runtime-config table_prefix per test server, per rule:dynamodb-table-naming\n\
+    \  create: the run applies flow:dynamodb-migration into that prefixed set before\
+    \ the first test\n  cleanup: the run deletes its own prefixed tables at teardown,\
+    \ which is the one place policy:dynamodb-migration-safety allows a delete, because\
+    \ the run created them and owns the prefix\n  parallelism: two test servers never\
+    \ address one table, so t.Parallel needs no further coordination\nendpoint:\n\
+    \  development: amazon/dynamodb-local, the same server api:cli-dev starts, per\
+    \ system:tinygodriver-dynamodb\n  in_memory: the local server is started with\
+    \ -inMemory and -sharedDb, so a run leaves nothing behind and one credential can\
+    \ see another's tables\n  real_account: supported and slow; table creation is\
+    \ asynchronous, so a suite against a real endpoint pays the active-state poll\
+    \ per table\nwhy_the_prefix_reaches_every_call:\n  fact: the resolver runs inside\
+    \ the runtime entry, so a declared name in a .pw.dynamo statement and a literal\
+    \ in an item call are both mapped\n  effect: a test needs no discipline at the\
+    \ call site; installing the client with a per-run prefix is the whole mechanism\n\
+    \  second_client: a test installs a second context rather than a second signature,\
+    \ which is what makes two servers in one process independent\ntest_author_responsibility:\n\
+    \  - avoid asserting on a global table list, which sees every parallel run's tables\n\
+    \  - keep the item key distinct per test where a suite deliberately shares one\
+    \ prefix\nacceptance:\n  - two test servers running in parallel create disjoint\
+    \ table sets and produce stable results\n  - a failing test leaves no table behind\n\
+    \  - a call naming a table literally still reaches the run's own prefixed table,\
+    \ because the resolver maps it\n  - a suite against the local server needs no\
+    \ AWS account or credential beyond a non-empty placeholder pair\nseeding: requirement:dynamodb-test-data,\
+    \ which loads its baseline into the prefixed table set this requirement created\n\
+    non_goals:\n  - transactional rollback, which the store does not offer\n  - sharing\
+    \ one table set across parallel tests and cleaning items between them\nrelated:\n\
+    \  - requirement:parallel-database-tests\n  - api:test-run\n  - requirement:dynamodb-migration\n\
+    ```"
+  problem: requirement:parallel-database-tests isolates SQL tests inside one rolled-back
+    transaction, and system:tinygodriver-dynamodb has no transaction at all
+  mechanism:
+    prefix: api:test-run assigns a unique data:dynamodb-runtime-config table_prefix
+      per test server, per rule:dynamodb-table-naming
+    create: the run applies flow:dynamodb-migration into that prefixed set before
+      the first test
+    cleanup: the run deletes its own prefixed tables at teardown, which is the one
+      place policy:dynamodb-migration-safety allows a delete, because the run created
+      them and owns the prefix
+    parallelism: two test servers never address one table, so t.Parallel needs no
+      further coordination
+  endpoint:
+    development: amazon/dynamodb-local, the same server api:cli-dev starts, per system:tinygodriver-dynamodb
+    in_memory: the local server is started with -inMemory and -sharedDb, so a run
+      leaves nothing behind and one credential can see another's tables
+    real_account: supported and slow; table creation is asynchronous, so a suite against
+      a real endpoint pays the active-state poll per table
+  why_the_prefix_reaches_every_call:
+    fact: the resolver runs inside the runtime entry, so a declared name in a .pw.dynamo
+      statement and a literal in an item call are both mapped
+    effect: a test needs no discipline at the call site; installing the client with
+      a per-run prefix is the whole mechanism
+    second_client: a test installs a second context rather than a second signature,
+      which is what makes two servers in one process independent
+  test_author_responsibility:
+  - avoid asserting on a global table list, which sees every parallel run's tables
+  - keep the item key distinct per test where a suite deliberately shares one prefix
+  acceptance:
+  - two test servers running in parallel create disjoint table sets and produce stable
+    results
+  - a failing test leaves no table behind
+  - a call naming a table literally still reaches the run's own prefixed table, because
+    the resolver maps it
+  - a suite against the local server needs no AWS account or credential beyond a non-empty
+    placeholder pair
+  seeding: requirement:dynamodb-test-data, which loads its baseline into the prefixed
+    table set this requirement created
+  non_goals:
+  - transactional rollback, which the store does not offer
+  - sharing one table set across parallel tests and cleaning items between them
+  related:
+  - requirement:parallel-database-tests
+  - api:test-run
+  - requirement:dynamodb-migration
+acceptance:
+  item-dbfe3709b7d3e783:
+    text: two test servers running in parallel create disjoint table sets and produce
+      stable results
+  item-ed1bf335ee84fe79:
+    text: a failing test leaves no table behind
+  item-a334ba24a76d2bc0:
+    text: a call naming a table literally still reaches the run's own prefixed table,
+      because the resolver maps it
+  item-bdf681c537d7e26a:
+    text: a suite against the local server needs no AWS account or credential beyond
+      a non-empty placeholder pair
+relations:
+- relation: mentions
+  to: api:cli-dev
+  resolution: resolved
+- relation: mentions
+  to: api:test-run
+  resolution: resolved
+- relation: mentions
+  to: data:dynamodb-runtime-config
+  resolution: resolved
+- relation: mentions
+  to: flow:dynamodb-migration
+  resolution: resolved
+- relation: mentions
+  to: policy:dynamodb-migration-safety
+  resolution: resolved
+- relation: mentions
+  to: requirement:dynamodb-migration
+  resolution: resolved
+- relation: mentions
+  to: requirement:dynamodb-test-data
+  resolution: resolved
+- relation: mentions
+  to: requirement:parallel-database-tests
+  resolution: resolved
+- relation: mentions
+  to: rule:dynamodb-table-naming
+  resolution: resolved
+- relation: mentions
+  to: system:tinygodriver-dynamodb
+  resolution: resolved

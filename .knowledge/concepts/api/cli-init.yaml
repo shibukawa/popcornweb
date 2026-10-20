@@ -1,0 +1,454 @@
+id: api:cli-init
+type: api
+title: pw init
+summary: pw init creates a runnable Popcorn Web project with a shared document shell,
+  representative handler, typed page template, SQL query, error pages, Devbox environment,
+  and generated-artifact conventions.
+facts:
+  legacy_body: "pw init creates a runnable Popcorn Web project with a shared document\
+    \ shell, representative handler, typed page template, SQL query, error pages,\
+    \ Devbox environment, and generated-artifact conventions.\n\n```yaml\nusage: pw\
+    \ init [myapp] [--preset=<name>] [--yes] [--router=registered|discovered|both]\
+    \ [--tailwind|--no-tailwind] [--tinygo|--no-tinygo] [--devbox|--no-devbox] [--database|--no-database]\
+    \ [--db=sqlite|postgres|mysql] [--dynamo|--no-dynamo] [--redis|--no-redis] [--auth=none|oidc|oidc-passkey|passkey]\
+    \ [--session=rdb|cookie|redis|dynamo] [--devidp|--no-devidp] [--skills=claude|agents|none]\n\
+    mode: decision:interactive-project-bootstrap, opening on the preset step of decision:preset-first-bootstrap\n\
+    catalog: the capability questions are the requirement:incremental-project-capabilities\
+    \ catalog api:cli-add installs into an existing project\ninputs:\n  directory:\
+    \ project directory; it seeds the project name step rather than skipping the wizard\n\
+    \  flags: shortcut answers that also seed the wizard\n  preset: requirement:init-presets\
+    \ answers, refused together with any capability flag it would answer\n  yes: takes\
+    \ the flags and the defaults without asking, for a scripted run inside a terminal\n\
+    questions:\n  preset:\n    first: the screen every terminal run opens on\n   \
+    \ catalog: requirement:init-presets\n    effect: a named preset answers every\
+    \ question below except the project name, and the review screen shows what it\
+    \ answered\n    manual: opens decision:navigable-answer-hub on the defaults instead\n\
+    \    kind: the package preset reaches the api:cli-package scaffold, per requirement:package-project-scaffold,\
+    \ and removes the questions that describe an application rather than answering\
+    \ them\n    api_server: the api-server preset writes requirement:jwt-only-api-authentication,\
+    \ per requirement:api-server-scaffold, which the authentication question below\
+    \ still refuses to offer\n    shortcut: --preset, beside the --kind spelling api:cli-package\
+    \ already carries\n  project_name: directory and Go module name\n  tinygo_support:\n\
+    \    default: yes\n    yes: api:serve-mux routing and the TinyGo toolchain in\
+    \ Devbox\n    no: net/http.ServeMux routing and the host Go toolchain only\n \
+    \   rationale: TinyGo produces much smaller binaries and has the more complete\
+    \ wasm target\n  router:\n    default: registered\n    owner: decision:page-router-scaffold-choice\n\
+    \    registered: the handlers tree, its route example, and OpenAPI, which is the\
+    \ shape every existing project has\n    discovered: a concept:page-tree only,\
+    \ for a project whose whole job is an HTML website\n    both: both trees on one\
+    \ mux, per decision:dual-router-coexistence\n    asked_after: the toolchain question,\
+    \ because it decides which source trees the later answers write their examples\
+    \ into\n    shortcut: --router\n    directories: the answer scaffolds handlers\
+    \ and pages, which are defaults the purpose lists can move afterwards\n  tailwind:\
+    \ optional_css below\n  devbox:\n    default: yes\n    asked_last: it decides\
+    \ how this machine gets its tools rather than what the project contains\n    yes:\
+    \ devbox.json and devbox.lock pinning the toolchain and the services\n    no:\
+    \ the operator keeps their own setup, such as mise, Docker Compose, Nix, Homebrew,\
+    \ or Scoop; the Valkey question is skipped with it\n    consequence: without it\
+    \ nothing pins the decision:tailwind-host-toolchain version, so api:cli-init and\
+    \ api:cli-build name the requirement, the standalone CLI at version 4 or later,\
+    \ rather than the Devbox package identifier that only nixpkgs understands\n  agent_skill:\n\
+    \    asked_last: it selects a discovery adapter for the machines editing the project\
+    \ rather than an application capability\n    default: claude\n    choices:\n \
+    \     claude: .claude/skills/popcornweb/\n      agents: .agents/skills/popcornweb/\n\
+    \      none: no generated copy\n    source: decision:canonical-popcornweb-skill-source\n\
+    \    preset: never answered by a project preset\n    shortcut: --skills\n  database:\n\
+    \    default: yes\n    yes: data:middleware-runtime-config rdb section, the migrations\
+    \ directory, and the .pw.sql and migration examples\n    no: no rdb section and\
+    \ no SQL example, leaving a project that renders and serves only\n    rationale:\
+    \ the SQL example, the initial migration, and rule:framework-owned-tables migrations\
+    \ all need a database, so declining it removes them together\n  database_engine:\n\
+    \    asked_when: the database answer is yes\n    default: sqlite\n    choices:\
+    \ sqlite, postgres, and mysql per requirement:database-engine-selection\n    writes:\
+    \ the rdb DSN, the dialect of the scaffolded migration and .pw.sql example, and\
+    \ the development server package\n    shortcut: --db, which conflicts with --no-database\n\
+    \  dynamodb:\n    default: no\n    asked_when: always, per requirement:dynamodb-store;\
+    \ it combines with any relational answer including none\n    yes: data:dynamodb-runtime-config\
+    \ section, the starter dynamo-tagged type and .pw.dynamo declaration, the generate.dynamo\
+    \ purpose, and the amazon/dynamodb-local package in Devbox\n    no: no dynamo\
+    \ section and no generate.dynamo key; pw add dynamo enables it later\n    shortcut:\
+    \ --dynamo\n    writes_no_migration: the schema is the generated table set, per\
+    \ decision:dynamodb-desired-state-migration\n    starter_uses_its_own_type: the\
+    \ scaffolded record carries a store and a load call, because requirement:dynamodb-generation\
+    \ emits a codec only for the directions something uses; a tagged type nobody calls\
+    \ generates nothing at all\n    not_an_engine: it never becomes a project.database\
+    \ value, and selecting it alone leaves a project with no SQL dialect and no migrations\
+    \ directory\n  redis_valkey:\n    default: yes\n    requires: the Devbox environment,\
+    \ which is the only thing this answer writes to\n    yes: Valkey in the Devbox\
+    \ environment for requirement:contrib-redis-valkey consumers\n    no: no Valkey\
+    \ package, keeping the development environment minimal\n  authentication:\n  \
+    \  default: none\n    requires: database, because the login session store is the\
+    \ rdb backend\n    none: no data:authentication-runtime-config section is written\n\
+    \    oidc: auth.mode oidc\n    oidc-passkey: auth.mode oidc_passkey per decision:authentication-bootstrap-strategy,\
+    \ with recovery.policy oidc\n    passkey: auth.mode passkey_only, with registration.policy\
+    \ and recovery.policy both administrator and the bootstrap bounds set\n    oauth:\
+    \ auth.mode oauth_only per requirement:init-oauth-login-choice, with auth.oauth.provider\
+    \ x and the client values empty; the emulator question is skipped, because the\
+    \ mode has no issuer to emulate\n    not_offered: jwt_only is absent from this\
+    \ question and from --auth, per decision:jwt-only-mode-not-scaffolded; the enum\
+    \ is the four values above and an unrecognized --auth is rejected rather than\
+    \ passed through\n    passkey_scaffold:\n      when: the selected mode mounts\
+    \ api:passkey-endpoints\n      config: passkey.rp_id localhost, passkey.origins\
+    \ the development origin, user_verification required, discoverable preferred\n\
+    \      origin: an OIDC redirect_url in a passkey mode uses localhost rather than\
+    \ 127.0.0.1, because an origin has to sit inside the RP ID and an address can\
+    \ never be one\n      loopback_pair: a written-out loopback http redirect_url\
+    \ is scaffolded together with allow_loopback_http true, for every provider answer;\
+    \ the external-provider OIDC branch wrote them apart and produced a project that\
+    \ started and then answered the first login 503, which data:authentication-runtime-config\
+    \ now refuses at startup\n      accounts: SetAccountLookup for every passkey mode,\
+    \ plus SetAccountActivator and an IssueBootstrapCredential wrapper for passkey_only\n\
+    \      browser: public/passkey.js, dependency free, because the framework serves\
+    \ the endpoints but cannot call navigator.credentials for the page\n      page:\
+    \ controls bound by element id, so the template carries no inline script\n   \
+    \   emulator: refused outside an OIDC mode, so passkey_only never scaffolds an\
+    \ identity provider roster\n  session_storage:\n    asked_when: always; session\
+    \ storage is not a login, so a project declaring only a language preference still\
+    \ gets the middleware\n    default_without_a_login: cookie, which needs no table,\
+    \ no migration, and no import to hold state that fits in a sealed cookie\n   \
+    \ default_with_a_login: rdb, because a login writes a record on every sign-in\
+    \ and normally must end one on demand\n    default: rdb\n    choices: requirement:state-storage-tiers\
+    \ opaque backends\n    rdb: one row per session through the sessionstore/sqlite\
+    \ blank import, with its rule:framework-owned-tables migration\n    cookie: sealed\
+    \ into a second cookie with no storage and no import, and cookie_store.secret\
+    \ read from the environment\n    redis: server-side TTL through the sessionstore/redis\
+    \ blank import, taking the Valkey development server with it\n    dynamo: one\
+    \ item per session through the sessionstore/dynamo blank import, expired by table\
+    \ TTL, per requirement:dynamodb-session-store; it is what the website-aws preset\
+    \ of requirement:init-presets takes\n    writes: session.backend, the keys of\
+    \ the selected backend only, and the api:session-backend-plugin import in main\n\
+    \    rationale: the choice is a deployment decision, because every backend reads\
+    \ the same in a handler\n  oidc_provider:\n    asked_when: the selected mode uses\
+    \ OIDC\n    local_emulator: requirement:contrib-devidp enabled through data:project-config\
+    \ dev.idp, with a data:devidp-config starter roster\n    external: empty issuer,\
+    \ client id, and client secret that the operator or the environment must supply\n\
+    \    rationale: a skipped question never applies its answer, so a provider choice\
+    \ cannot leak into a project without OIDC\noutputs:\n  - data:project-config\n\
+    \  - concept:project-layout\n  - config.dev.toml for requirement:environment-switching\n\
+    \  - Go module and cmd/myapp/main.go\n  - project.toolchain in data:project-config\
+    \ recording the selected compiler\n  - the decision:explicit-generation-sources\
+    \ purpose lists in data:project-config, each naming the directories this scaffold\
+    \ actually created, with generate.pages named only for a router answer that creates\
+    \ a tree\n  - flow:handler-registration mux for the selected toolchain, only for\
+    \ a router answer that includes the handlers tree\n  - handler registration and\
+    \ pw.Parse example, only for a router answer that includes the handlers tree\n\
+    \  - pages/page.pw.html, pages/layout.pw.html, and a pages/users/id_ dynamic route\
+    \ example, only for a router answer that includes the page tree\n  - api:page-registry\
+    \ Register wiring in concept:application-entry-point for a page tree, over the\
+    \ pw.NewServeMux mux when the handlers tree was declined and over the handler\
+    \ package mux when it was not\n  - templates/document.pw.html shared document\
+    \ shell\n  - ui:starter-landing-page as the scaffolded page of every router answer,\
+    \ rather than a greeting heading\n  - .pw.html page and 400, 401, 403, 404, 409,\
+    \ 413, and 500 templates, each taking the api:error-renderer model as parameters\
+    \ rather than a fixed heading\n  - config.dev.toml observability.stdout_format\
+    \ plaintext, the data:observability-runtime-config development default written\
+    \ down where the operator can see it\n  - data:project-config dev.console.port\
+    \ and dev.console.launcher.corner, the two development console values a project\
+    \ has an opinion about; both work absent, and both are written because a developer\
+    \ meets their defaults by finding a bookmarked address moved or a requirement:dev-console-launcher\
+    \ button over their own layout\n  - data:dynamodb-runtime-config section, the\
+    \ starter dynamo-tagged type, its .pw.dynamo declaration, and the generate.dynamo\
+    \ purpose, only when DynamoDB is selected\n  - .pw.sql query example, only when\
+    \ the database is selected\n  - data:project-config project.database naming the\
+    \ selected engine, which api:cli-generate reads as its SQL dialect\n  - migrations/00001_init.sql\
+    \ as migration version 1, in the dialect of the selected engine, with the data:migration-source\
+    \ scaffolded_version_1 comment-only body\n  - the selected rule:rdb-dsn-resolution\
+    \ engine blank import in main whenever the database capability is selected\n \
+    \ - public directory with non-served .keep sentinel and stable public.go embedding\
+    \ scaffold\n  - tinygohelper.go netdev registration for rule:tinygo-runtime-compatibility,\
+    \ only when TinyGo is selected\n  - .gitignore excluding **/*_pw_gen.go generated\
+    \ application build inputs, the requirement:local-jsonl-log-capture .log/ directory,\
+    \ and the requirement:dotenv-files .env.local and .env.*.local\n  - .env.example,\
+    \ the requirement:dotenv-files template naming every secret-classified variable\
+    \ of the selected capabilities with no value\n  - data:project-config dev.logs\
+    \ enabled at .log\n  - config.prod.toml beside config.dev.toml, per requirement:environment-switching,\
+    \ carrying the same endpoint paths, data:observability-runtime-config stdout_format\
+    \ json, and no secret\n  - the requirement:container-image-scaffold files, which\
+    \ every answer set receives: Dockerfile and .dockerignore, plus Dockerfile.tinygo\
+    \ when TinyGo is selected\n  - .vscode/settings.json hiding **/*_pw_gen.go\n \
+    \ - one generated copy of decision:canonical-popcornweb-skill-source at the selected\
+    \ agent discovery path, including requirement:agent-log-analysis-skill, unless\
+    \ --skills=none\n  - editor_configuration below\n  - Devbox configuration with\
+    \ Valkey when selected, TinyGo when selected, and the selected requirement:database-engine-selection\
+    \ server package, only when the Devbox environment is selected\n  - data:authentication-runtime-config\
+    \ section for the selected authentication mode\n  - data:devidp-config roster\
+    \ and data:project-config dev.idp when the local emulator is selected, with dev.idp.port\
+    \ pinned rather than reserved, because api:auth-credential-store derives the scaffolded\
+    \ account ID from the issuer and a moving port issues a new account on every run\n\
+    \  - api:authentication-endpoints blank import in main and a sign-in and sign-out\
+    \ control on the starter page\n  - api:session-backend-plugin blank import in\
+    \ main for a selected backend other than cookie\n  - a data:session-runtime-config\
+    \ keyring.secret generated from crypto/rand, written as a literal into config.dev.toml\
+    \ only, per its development_generation; it is per project rather than a template\
+    \ constant, and rule:configuration-advisories reports it as an error if the same\
+    \ file is ever diagnosed as another token\n  - rule:framework-owned-tables migrations\
+    \ from the packages that own those tables, at the versions after the application\
+    \ schema, when the mode serves a login\n  - the session table migration only for\
+    \ the rdb backend; another backend leaves that version to the auth migration\n\
+    \  - data:middleware-runtime-config rdb settings carrying the requirement:database-engine-selection\
+    \ DSN for the chosen engine, because the scaffolded migrations and queries need\
+    \ a database, only when the database is selected\neditor_configuration:\n  editorconfig:\n\
+    \    file: .editorconfig, root true\n    defaults: utf-8, lf, a final newline,\
+    \ and trimmed trailing whitespace\n    go: tabs, restating what gofmt already\
+    \ does so an editor with no Go support does not fight it\n    two_space: .pw.html,\
+    \ .pw.sql, TOML, JSON, CSS, and JavaScript, which is the width rule:template-source-layout\
+    \ indents a block by\n    reason: the scaffold writes sources in five languages,\
+    \ and the editor that opens them first decides what the next contributor sees\n\
+    \  extensions:\n    file: .vscode/extensions.json recommendations\n    always:\
+    \ the Go extension and the EditorConfig extension, which are what the scaffolded\
+    \ sources need to be edited the way they were written\n    tailwind: the Tailwind\
+    \ CSS extension, only for a project that selected Tailwind, since a declined capability\
+    \ is never advertised as present\n    form: recommendations only; nothing is marked\
+    \ unwanted and nothing is required\n    scope: VS Code alone, because it is the\
+    \ only editor with a project-local recommendation file the scaffold can write;\
+    \ .editorconfig is the part every other editor reads\noptional_css:\n  tailwind:\n\
+    \    - configure requirement:tailwind-css-integration in data:project-config\n\
+    \    - add pinned decision:tailwind-host-toolchain package to Devbox\n    - create\
+    \ assets/app.css and application-owned CSS output wiring\nbehavior:\n  - start\
+    \ the wizard on the preset step for every terminal run, seeding the project name\
+    \ step from the directory argument when one was given\n  - ask nothing but the\
+    \ project name for a named preset, and show the review it answered\n  - refuse\
+    \ --preset together with any flag that answers a question the preset answers,\
+    \ before anything is written\n  - skip the wizard only for --yes, or for a session\
+    \ with no terminal that was given a name\n  - accept --interactive as a no-op,\
+    \ since the wizard it used to request is now the default\n  - refuse and print\
+    \ usage when the session has no terminal and no name\n  - validate the project\
+    \ name and destination, in the wizard before any file is written\n  - refuse to\
+    \ overwrite nonempty destinations by default\n  - create files atomically\n  -\
+    \ run api:cli-generate\n  - scaffold classic rendering according to requirement:nested-html-templates,\
+    \ writing every template under rule:template-source-layout\n  - scaffold every\
+    \ tree the router answer selects, and write the document shell and error pages\
+    \ for all three answers because both routers render through them\n  - scaffold\
+    \ runtime database configuration for decision:config-driven-database when the\
+    \ database example is enabled\n  - refuse an authentication mode without the database,\
+    \ because its login ceremony and allowlist tables need one whatever backend stores\
+    \ the sessions\n  - refuse --db together with --no-database, before anything is\
+    \ written\n  - accept DynamoDB beside any relational answer, and accept it as\
+    \ the only store, per requirement:dynamodb-store\n  - accept an authentication\
+    \ mode backed only by DynamoDB, writing auth.backend = \"dynamo\", both storage\
+    \ imports, and no auth migration file, per requirement:dynamodb-auth-backend\n\
+    \  - refuse a login with neither store, naming both ways out rather than only\
+    \ the database\n  - follow the store the project has when nothing selected a session\
+    \ backend, so a DynamoDB-only project does not default to a relational pool it\
+    \ never opens\n  - write the starter migration and .pw.sql example in the dialect\
+    \ of the selected engine, since decision:server-sql-support-tier does not translate\
+    \ between them\n  - take the Valkey development server with a Redis-backed session,\
+    \ because the configured session needs a server to reach\n  - print the command\
+    \ that generates cookie_store.secret when the cookie backend is selected\n  -\
+    \ leave every declined capability to api:cli-add, which reaches the same file\
+    \ state later\nreporting:\n  policy: policy:cli-progress-reporting\n  during:\
+    \ a progress region over the scaffold write, the module resolution, and the api:cli-generate\
+    \ run\n  after: the handwritten sources it created, grouped by concept:project-layout\
+    \ directory\n  generated: a count and the api:cli-generate command, never the\
+    \ policy:generated-artifacts path list, which is what the same scaffold puts in\
+    \ .gitignore\nnext_steps:\n  - cd myapp\n  - devbox shell, only for a project\
+    \ with the Devbox environment\n  - pw dev\n  - a line naming .env.example and\
+    \ that a copy named .env.local or .env.dev.local is read and ignored by git, per\
+    \ requirement:dotenv-files\n  - a notice naming every declined capability, because\
+    \ a scripted run never sees the wizard say it\n  - for a server engine, the server\
+    \ to start and the role and database to create\nexit:\n  success: 0\n  wizard_canceled:\
+    \ 0 with a canceled notice and no files written\n  invalid_input_or_collision:\
+    \ nonzero with actionable path\n```"
+  legacy_parse_issues:
+  - kind: legacy_parse_error
+    block: 0
+    message: '''<'' not supported between instances of ''bool'' and ''str'''
+relations:
+- relation: mentions
+  to: api:auth-credential-store
+  resolution: resolved
+- relation: mentions
+  to: api:authentication-endpoints
+  resolution: resolved
+- relation: mentions
+  to: api:cli-add
+  resolution: resolved
+- relation: mentions
+  to: api:cli-build
+  resolution: resolved
+- relation: mentions
+  to: api:cli-generate
+  resolution: resolved
+- relation: mentions
+  to: api:cli-package
+  resolution: resolved
+- relation: mentions
+  to: api:error-renderer
+  resolution: resolved
+- relation: mentions
+  to: api:page-registry
+  resolution: resolved
+- relation: mentions
+  to: api:passkey-endpoints
+  resolution: resolved
+- relation: mentions
+  to: api:serve-mux
+  resolution: resolved
+- relation: mentions
+  to: api:session-backend-plugin
+  resolution: resolved
+- relation: mentions
+  to: concept:application-entry-point
+  resolution: resolved
+- relation: mentions
+  to: concept:page-tree
+  resolution: resolved
+- relation: mentions
+  to: concept:project-layout
+  resolution: resolved
+- relation: mentions
+  to: data:authentication-runtime-config
+  resolution: resolved
+- relation: mentions
+  to: data:devidp-config
+  resolution: resolved
+- relation: mentions
+  to: data:dynamodb-runtime-config
+  resolution: resolved
+- relation: mentions
+  to: data:middleware-runtime-config
+  resolution: resolved
+- relation: mentions
+  to: data:migration-source
+  resolution: resolved
+- relation: mentions
+  to: data:observability-runtime-config
+  resolution: resolved
+- relation: mentions
+  to: data:project-config
+  resolution: resolved
+- relation: mentions
+  to: data:session-runtime-config
+  resolution: resolved
+- relation: mentions
+  to: decision:authentication-bootstrap-strategy
+  resolution: resolved
+- relation: mentions
+  to: decision:canonical-popcornweb-skill-source
+  resolution: resolved
+- relation: mentions
+  to: decision:config-driven-database
+  resolution: resolved
+- relation: mentions
+  to: decision:dual-router-coexistence
+  resolution: resolved
+- relation: mentions
+  to: decision:dynamodb-desired-state-migration
+  resolution: resolved
+- relation: mentions
+  to: decision:explicit-generation-sources
+  resolution: resolved
+- relation: mentions
+  to: decision:interactive-project-bootstrap
+  resolution: resolved
+- relation: mentions
+  to: decision:jwt-only-mode-not-scaffolded
+  resolution: resolved
+- relation: mentions
+  to: decision:navigable-answer-hub
+  resolution: resolved
+- relation: mentions
+  to: decision:page-router-scaffold-choice
+  resolution: resolved
+- relation: mentions
+  to: decision:preset-first-bootstrap
+  resolution: resolved
+- relation: mentions
+  to: decision:server-sql-support-tier
+  resolution: resolved
+- relation: mentions
+  to: decision:tailwind-host-toolchain
+  resolution: resolved
+- relation: mentions
+  to: flow:handler-registration
+  resolution: resolved
+- relation: mentions
+  to: policy:cli-progress-reporting
+  resolution: resolved
+- relation: mentions
+  to: policy:generated-artifacts
+  resolution: resolved
+- relation: mentions
+  to: requirement:agent-log-analysis-skill
+  resolution: resolved
+- relation: mentions
+  to: requirement:api-server-scaffold
+  resolution: resolved
+- relation: mentions
+  to: requirement:container-image-scaffold
+  resolution: resolved
+- relation: mentions
+  to: requirement:contrib-devidp
+  resolution: resolved
+- relation: mentions
+  to: requirement:contrib-redis-valkey
+  resolution: resolved
+- relation: mentions
+  to: requirement:database-engine-selection
+  resolution: resolved
+- relation: mentions
+  to: requirement:dev-console-launcher
+  resolution: resolved
+- relation: mentions
+  to: requirement:dotenv-files
+  resolution: resolved
+- relation: mentions
+  to: requirement:dynamodb-auth-backend
+  resolution: resolved
+- relation: mentions
+  to: requirement:dynamodb-generation
+  resolution: resolved
+- relation: mentions
+  to: requirement:dynamodb-session-store
+  resolution: resolved
+- relation: mentions
+  to: requirement:dynamodb-store
+  resolution: resolved
+- relation: mentions
+  to: requirement:environment-switching
+  resolution: resolved
+- relation: mentions
+  to: requirement:incremental-project-capabilities
+  resolution: resolved
+- relation: mentions
+  to: requirement:init-oauth-login-choice
+  resolution: resolved
+- relation: mentions
+  to: requirement:init-presets
+  resolution: resolved
+- relation: mentions
+  to: requirement:jwt-only-api-authentication
+  resolution: resolved
+- relation: mentions
+  to: requirement:local-jsonl-log-capture
+  resolution: resolved
+- relation: mentions
+  to: requirement:nested-html-templates
+  resolution: resolved
+- relation: mentions
+  to: requirement:package-project-scaffold
+  resolution: resolved
+- relation: mentions
+  to: requirement:state-storage-tiers
+  resolution: resolved
+- relation: mentions
+  to: requirement:tailwind-css-integration
+  resolution: resolved
+- relation: mentions
+  to: rule:configuration-advisories
+  resolution: resolved
+- relation: mentions
+  to: rule:framework-owned-tables
+  resolution: resolved
+- relation: mentions
+  to: rule:rdb-dsn-resolution
+  resolution: resolved
+- relation: mentions
+  to: rule:template-source-layout
+  resolution: resolved
+- relation: mentions
+  to: rule:tinygo-runtime-compatibility
+  resolution: resolved
+- relation: mentions
+  to: ui:starter-landing-page
+  resolution: resolved

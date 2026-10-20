@@ -1,0 +1,99 @@
+id: decision:development-public-assets
+type: decision
+title: Development Public Assets
+summary: '`pw dev` serves the project public directory directly so asset edits require neither precompression nor
+  application rebuild.'
+facts:
+  legacy_body: "`pw dev` serves the project public directory directly so asset edits require neither precompression\
+    \ nor application rebuild.\n\n```yaml\nsource: project-root public/\nmode:\n  selection: reserved pwdev build\
+    \ mode used by api:cli-dev, whose admitted uses policy:dev-console-boundary now bounds\n  sibling: requirement:dev-error-overlay\
+    \ is the second use of the same mode\n  visibility: requirement:dev-asset-inspector reports how this reading\
+    \ differs from the production one, since a developer otherwise meets the difference only after a release build\n\
+    \  enabled: server.public.enabled\n  mount: server.public.mount\n  local_read: forced true independently of\
+    \ server.public.read_local\n  embedded_fallback: disabled\n  content_encoding: identity only\nbehavior:\n  -\
+    \ do not run flow:public-asset-build\n  - do not create, update, delete, inspect, or serve .zstd sidecars\n\
+    \  - do not negotiate Accept-Encoding or emit Content-Encoding\n  - do not rebuild or restart Go for public\
+    \ file changes\n  - open each eligible file from the local filesystem per request\nmiddleware:\n  - selected\
+    \ while api:application-lifecycle constructs api:public-asset-middleware\n  - shares mount, method, path-security,\
+    \ and middleware-order behavior with production\nrules:\n  - path and file security remain policy:public-asset-resolution\n\
+    \  - missing local files return 404 even when an older embedded file exists\n  - production behavior remains\
+    \ requirement:public-asset-delivery\nrationale: direct reads provide immediate frontend feedback and avoid compression\
+    \ work in the development loop\n```"
+  source: project-root public/
+  mode:
+    selection: reserved pwdev build mode used by api:cli-dev, whose admitted uses policy:dev-console-boundary now
+      bounds
+    sibling: requirement:dev-error-overlay is the second use of the same mode
+    visibility: requirement:dev-asset-inspector reports how this reading differs from the production one, since
+      a developer otherwise meets the difference only after a release build
+    enabled: server.public.enabled
+    mount: server.public.mount
+    local_read: forced true independently of server.public.read_local
+    embedded_fallback: disabled
+    content_encoding: identity only
+  behavior:
+  - do not run flow:public-asset-build
+  - do not create, update, delete, inspect, or serve .zstd sidecars
+  - do not negotiate Accept-Encoding or emit Content-Encoding
+  - do not rebuild or restart Go for public file changes
+  - open each eligible file from the local filesystem per request
+  middleware:
+  - selected while api:application-lifecycle constructs api:public-asset-middleware
+  - shares mount, method, path-security, and middleware-order behavior with production
+  rules:
+  - path and file security remain policy:public-asset-resolution
+  - missing local files return 404 even when an older embedded file exists
+  - production behavior remains requirement:public-asset-delivery
+  rationale: direct reads provide immediate frontend feedback and avoid compression work in the development loop
+  resolved_change_requests:
+    bdf-printmanager:
+      request: concept:bdf-printmanager-integration
+      proposals:
+      - requirement:development-public-asset-fallback
+      standing: Implemented and verified; see linked requirement profiles and the implementation report.
+relations:
+- relation: mentions
+  to: api:application-lifecycle
+  resolution: resolved
+- relation: mentions
+  to: api:cli-dev
+  resolution: resolved
+- relation: mentions
+  to: api:public-asset-middleware
+  resolution: resolved
+- relation: mentions
+  to: flow:public-asset-build
+  resolution: resolved
+- relation: mentions
+  to: policy:dev-console-boundary
+  resolution: resolved
+- relation: mentions
+  to: policy:public-asset-resolution
+  resolution: resolved
+- relation: mentions
+  to: requirement:dev-asset-inspector
+  resolution: resolved
+- relation: mentions
+  to: requirement:dev-error-overlay
+  resolution: resolved
+- relation: mentions
+  to: requirement:public-asset-delivery
+  resolution: resolved
+- relation: revised_by
+  to: requirement:development-public-asset-fallback
+  resolution: resolved
+  evidence:
+    source_id: source:bdf-printmanager-request
+    path: bdf-printmanager-public-assets.md
+    heading: 'Ask 2: a development mount that does not go silently empty'
+    input_hash: a2df65a9a5a065a50b78c3559e0f9b0c559e18ff5d7c22f9a08352ad4674a426
+- relation: superseded_by
+  to: decision:derived-tree-development
+  resolution: resolved
+lifecycle: superseded
+history:
+  derived-tree-and-fallback:
+    summary: The authored-tree-only development behavior is historical. The configured derived tree is primary and
+      ordinary misses may fall back to embedded assets.
+    evidence:
+      path: docs/requests/bdf-printmanager-implementation.md

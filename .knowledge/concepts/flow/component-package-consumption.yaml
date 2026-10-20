@@ -1,0 +1,173 @@
+id: flow:component-package-consumption
+type: flow
+title: Component Package Consumption
+summary: Installing a concept:component-package is one line in data:project-config,
+  plus a Register call when it serves routes; generation links it, migration creates
+  its tables, and nothing is copied into the project tree.
+facts:
+  legacy_body: "Installing a concept:component-package is one line in data:project-config,\
+    \ plus a Register call when it serves routes; generation links it, migration creates\
+    \ its tables, and nothing is copied into the project tree.\n\n```yaml\nflow:\n\
+    \  trigger: an entry added to the data:project-config packages array, by hand\
+    \ or by api:cli-package\n  steps:\n    - id: resolve\n      action: add the module\
+    \ to go.mod through the Go tool\n      note: api:cli-package does this and writes\
+    \ the declaration in one step; both are ordinary edits an author can make without\
+    \ it\n    - id: read-manifest\n      action: api:cli-generate reads data:component-package-manifest\
+    \ from the module cache\n      failure: a declared module with no package section\
+    \ is an error naming the module, because the declaration claimed a capability\
+    \ the module does not publish\n    - id: check\n      action: verify policy:package-compatibility\
+    \ versions, the requirement:database-engine-selection engine, and every requires.capabilities\
+    \ member\n      failure: name the missing capability and stop; nothing has been\
+    \ written\n    - id: link\n      action: emit the blank import for each declared\
+    \ package into the generated bootstrap of the project.main package\n      effect:\
+    \ this links a package the application never names in Go, so the declaration alone\
+    \ installs it\n      redundant_when: the package serves routes and the application\
+    \ already imports it for the next step\n    - id: mount\n      actor: actor:application-developer\n\
+    \      action: call the package's Register on the mux, only for a package that\
+    \ serves routes\n      shape: identical to the api:page-registry call a project\
+    \ already makes for its own concept:page-tree\n      why_manual: decision:declared-package-installation\
+    \ rejected an installed route contributor, because mounting is the one contribution\
+    \ an application has an opinion about\n    - id: generate\n      action: the rest\
+    \ of api:cli-generate over the project's own sources, unchanged\n      note: no\
+    \ dependency is read as a generation source at any point\n    - id: migrate\n\
+    \      action: api:cli-migrate applies each declared package's requirement:package-schema-contribution\
+    \ stream, then the application's\n      review: pending package statements are\
+    \ printed before they are applied\n  runtime:\n    - api:package-registration\
+    \ runs from each linked package's init\n    - requirement:package-asset-delivery\
+    \ mounts the embedded assets\n    - an api:framework-extension the package registered\
+    \ installs at its slot\n    - the package's generated configuration binding registers\
+    \ its defaults, which an environment file may override and need not mention\n\
+    \  failure:\n    stale_artifact: a package published with a stale generated file\
+    \ fails at go build, naming the package\n    route_collision: an ordinary mux\
+    \ registration conflict, because the application performed both registrations\n\
+    upgrade:\n  action: go get -u, then api:cli-generate and api:cli-migrate\n  copied_nothing:\
+    \ so there is no second install step to forget, per decision:declared-package-installation\n\
+    removal:\n  action: delete the declaration and any Register call, then api:cli-generate\n\
+    \  effect: the blank import disappears and the package stops linking; its tables\
+    \ stay and api:cli-doctor reports them as unowned\nrelated:\n  - flow:capability-addition,\
+    \ which is the wizard against the built-in catalog and still writes files, per\
+    \ rule:framework-owned-tables\n  - requirement:component-package-distribution\n\
+    ```"
+  flow:
+    trigger: an entry added to the data:project-config packages array, by hand or
+      by api:cli-package
+    steps:
+    - id: resolve
+      action: add the module to go.mod through the Go tool
+      note: api:cli-package does this and writes the declaration in one step; both
+        are ordinary edits an author can make without it
+    - id: read-manifest
+      action: api:cli-generate reads data:component-package-manifest from the module
+        cache
+      failure: a declared module with no package section is an error naming the module,
+        because the declaration claimed a capability the module does not publish
+    - id: check
+      action: verify policy:package-compatibility versions, the requirement:database-engine-selection
+        engine, and every requires.capabilities member
+      failure: name the missing capability and stop; nothing has been written
+    - id: link
+      action: emit the blank import for each declared package into the generated bootstrap
+        of the project.main package
+      effect: this links a package the application never names in Go, so the declaration
+        alone installs it
+      redundant_when: the package serves routes and the application already imports
+        it for the next step
+    - id: mount
+      actor: actor:application-developer
+      action: call the package's Register on the mux, only for a package that serves
+        routes
+      shape: identical to the api:page-registry call a project already makes for its
+        own concept:page-tree
+      why_manual: decision:declared-package-installation rejected an installed route
+        contributor, because mounting is the one contribution an application has an
+        opinion about
+    - id: generate
+      action: the rest of api:cli-generate over the project's own sources, unchanged
+      note: no dependency is read as a generation source at any point
+    - id: migrate
+      action: api:cli-migrate applies each declared package's requirement:package-schema-contribution
+        stream, then the application's
+      review: pending package statements are printed before they are applied
+    runtime:
+    - api:package-registration runs from each linked package's init
+    - requirement:package-asset-delivery mounts the embedded assets
+    - an api:framework-extension the package registered installs at its slot
+    - the package's generated configuration binding registers its defaults, which
+      an environment file may override and need not mention
+    failure:
+      stale_artifact: a package published with a stale generated file fails at go
+        build, naming the package
+      route_collision: an ordinary mux registration conflict, because the application
+        performed both registrations
+  upgrade:
+    action: go get -u, then api:cli-generate and api:cli-migrate
+    copied_nothing: so there is no second install step to forget, per decision:declared-package-installation
+  removal:
+    action: delete the declaration and any Register call, then api:cli-generate
+    effect: the blank import disappears and the package stops linking; its tables
+      stay and api:cli-doctor reports them as unowned
+  related:
+  - flow:capability-addition, which is the wizard against the built-in catalog and
+    still writes files, per rule:framework-owned-tables
+  - requirement:component-package-distribution
+relations:
+- relation: mentions
+  to: actor:application-developer
+  resolution: resolved
+- relation: mentions
+  to: api:cli-doctor
+  resolution: resolved
+- relation: mentions
+  to: api:cli-generate
+  resolution: resolved
+- relation: mentions
+  to: api:cli-migrate
+  resolution: resolved
+- relation: mentions
+  to: api:cli-package
+  resolution: resolved
+- relation: mentions
+  to: api:framework-extension
+  resolution: resolved
+- relation: mentions
+  to: api:package-registration
+  resolution: resolved
+- relation: mentions
+  to: api:page-registry
+  resolution: resolved
+- relation: mentions
+  to: concept:component-package
+  resolution: resolved
+- relation: mentions
+  to: concept:page-tree
+  resolution: resolved
+- relation: mentions
+  to: data:component-package-manifest
+  resolution: resolved
+- relation: mentions
+  to: data:project-config
+  resolution: resolved
+- relation: mentions
+  to: decision:declared-package-installation
+  resolution: resolved
+- relation: mentions
+  to: flow:capability-addition
+  resolution: resolved
+- relation: mentions
+  to: policy:package-compatibility
+  resolution: resolved
+- relation: mentions
+  to: requirement:component-package-distribution
+  resolution: resolved
+- relation: mentions
+  to: requirement:database-engine-selection
+  resolution: resolved
+- relation: mentions
+  to: requirement:package-asset-delivery
+  resolution: resolved
+- relation: mentions
+  to: requirement:package-schema-contribution
+  resolution: resolved
+- relation: mentions
+  to: rule:framework-owned-tables
+  resolution: resolved

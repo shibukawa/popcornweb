@@ -1,0 +1,66 @@
+id: rule:savepoint-dialect-support
+type: rule
+title: Savepoint Dialect Support
+summary: Savepoint capability is a static property of the dialect rule:rdb-dsn-resolution
+  reports, not a runtime probe.
+facts:
+  legacy_body: "Savepoint capability is a static property of the dialect rule:rdb-dsn-resolution\
+    \ reports, not a runtime probe.\n\n```yaml\nstatements:\n  open: SAVEPOINT {name}\n\
+    \  release: RELEASE SAVEPOINT {name}\n  rollback: ROLLBACK TO SAVEPOINT {name}\n\
+    supported:\n  - requirement:contrib-sqlite\n  - requirement:contrib-postgresql\n\
+    \  - requirement:contrib-mysql\nsupport_tier_note: every listed dialect is first-class\
+    \ under decision:server-sql-support-tier, so this list and the support tier now\
+    \ agree\nunknown_driver:\n  default: unsupported\n  effect: nested api:transaction-runner\
+    \ calls fail; depth 0 transactions still work\ncaveats:\n  mysql: DDL commits\
+    \ implicitly and drops every open savepoint, so schema changes inside a scope\
+    \ are unsupported\n  sqlite:\n    - a scope holds one connection, so concurrent\
+    \ writers to one file serialize\n    - a second write transaction on the same\
+    \ file waits, then fails with database is locked\n    - parallel writing tests\
+    \ need one file per test or a server database\nverification:\n  - open, release,\
+    \ and rollback fixtures per supported driver\n  - nested rollback leaves outer\
+    \ work committable\n  - unsupported driver returns an explicit nesting error\n\
+    ```"
+  statements:
+    open: SAVEPOINT {name}
+    release: RELEASE SAVEPOINT {name}
+    rollback: ROLLBACK TO SAVEPOINT {name}
+  supported:
+  - requirement:contrib-sqlite
+  - requirement:contrib-postgresql
+  - requirement:contrib-mysql
+  support_tier_note: every listed dialect is first-class under decision:server-sql-support-tier,
+    so this list and the support tier now agree
+  unknown_driver:
+    default: unsupported
+    effect: nested api:transaction-runner calls fail; depth 0 transactions still work
+  caveats:
+    mysql: DDL commits implicitly and drops every open savepoint, so schema changes
+      inside a scope are unsupported
+    sqlite:
+    - a scope holds one connection, so concurrent writers to one file serialize
+    - a second write transaction on the same file waits, then fails with database
+      is locked
+    - parallel writing tests need one file per test or a server database
+  verification:
+  - open, release, and rollback fixtures per supported driver
+  - nested rollback leaves outer work committable
+  - unsupported driver returns an explicit nesting error
+relations:
+- relation: mentions
+  to: api:transaction-runner
+  resolution: resolved
+- relation: mentions
+  to: decision:server-sql-support-tier
+  resolution: resolved
+- relation: mentions
+  to: requirement:contrib-mysql
+  resolution: resolved
+- relation: mentions
+  to: requirement:contrib-postgresql
+  resolution: resolved
+- relation: mentions
+  to: requirement:contrib-sqlite
+  resolution: resolved
+- relation: mentions
+  to: rule:rdb-dsn-resolution
+  resolution: resolved

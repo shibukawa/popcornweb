@@ -1,0 +1,101 @@
+id: api:cli-build
+type: api
+title: pw build
+summary: pw build generates current source artifacts and builds the configured application entry point.
+facts:
+  legacy_body: "pw build generates current source artifacts and builds the configured application entry point.\n\
+    \n```yaml\nusage: pw build [--debug] [--backend nethttp|fasthttp] [--target lambda|azure-functions|google-cloud-run-functions|vercel-go|cloudflare-workers]\n\
+    steps:\n  - run api:cli-generate\n  - run flow:tailwind-css-build production mode when enabled\n  - run flow:public-asset-build\n\
+    \  - resolve project.main and optional build settings from data:project-config\n  - reject the build when the\
+    \ dependency graph of project.main contains a development-only package such as requirement:contrib-devidp\n\
+    \  - run go build with the resolved settings\ndefaults:\n  package: data:project-config project.main\ndeployment:\n\
+    \  targets: decision:serverless-target-scope build_axes; the stage and manifest are per target and backend\n\
+    \  cloudflare_workers: requirement:cloudflare-workers-build-target, which reads deploy.cloudflare from data:project-config\
+    \ and is the one target this command compiles with tinygo when the project says so\ntinygo:\n  invocation: none\
+    \ for the plain build; the command builds with host go even for a project whose toolchain is TinyGo, and only\
+    \ --target cloudflare-workers invokes tinygo, because that target has no Dockerfile for the operator to own\
+    \ the line in\n  consequence: the rule:tinygo-runtime-compatibility scheduler constraint reaches an operator\
+    \ through documentation rather than through a flag this command passes\n  resolution: decision:explicit-tinygo-compile-step\
+    \ keeps it that way; a TinyGo build is api:cli-generate plus a tinygo build invocation the caller writes, and\
+    \ -scheduler=threads is enforced by the engine package's compile-time guard rather than passed by this command\n\
+    split: api:cli-generate is every step above except the compiler, and this command is defined as that sequence\
+    \ plus go build, so the two cannot drift\ncontainer: this command is the whole builder stage of rule:container-build-inputs,\
+    \ which is why its steps are ordered before any compiler rather than beside it\nfailure:\n  - preserve previous\
+    \ successful output\n  - return compiler diagnostics and nonzero status\n  - an unlistable dependency graph\
+    \ skips the development-only check and lets the compiler report the real diagnostic\n```"
+  usage: pw build [--debug] [--backend nethttp|fasthttp] [--target lambda|azure-functions|google-cloud-run-functions|vercel-go|cloudflare-workers]
+  steps:
+  - run api:cli-generate
+  - run flow:tailwind-css-build production mode when enabled
+  - run flow:public-asset-build
+  - resolve project.main and optional build settings from data:project-config
+  - reject the build when the dependency graph of project.main contains a development-only package such as requirement:contrib-devidp
+  - run go build with the resolved settings
+  defaults:
+    package: data:project-config project.main
+  deployment:
+    targets: decision:serverless-target-scope build_axes; the stage and manifest are per target and backend
+    cloudflare_workers: requirement:cloudflare-workers-build-target, which reads deploy.cloudflare from data:project-config
+      and is the one target this command compiles with tinygo when the project says so
+  tinygo:
+    invocation: none for the plain build; the command builds with host go even for a project whose toolchain is
+      TinyGo, and only --target cloudflare-workers invokes tinygo, because that target has no Dockerfile for the
+      operator to own the line in
+    consequence: the rule:tinygo-runtime-compatibility scheduler constraint reaches an operator through documentation
+      rather than through a flag this command passes
+    resolution: decision:explicit-tinygo-compile-step keeps it that way; a TinyGo build is api:cli-generate plus
+      a tinygo build invocation the caller writes, and -scheduler=threads is enforced by the engine package's compile-time
+      guard rather than passed by this command
+  split: api:cli-generate is every step above except the compiler, and this command is defined as that sequence
+    plus go build, so the two cannot drift
+  container: this command is the whole builder stage of rule:container-build-inputs, which is why its steps are
+    ordered before any compiler rather than beside it
+  failure:
+  - preserve previous successful output
+  - return compiler diagnostics and nonzero status
+  - an unlistable dependency graph skips the development-only check and lets the compiler report the real diagnostic
+  resolved_change_requests:
+    bdf-printmanager:
+      request: concept:bdf-printmanager-integration
+      proposals:
+      - requirement:optional-production-config-packaging
+      standing: Implemented and verified; see linked requirement profiles and the implementation report.
+relations:
+- relation: mentions
+  to: api:cli-generate
+  resolution: resolved
+- relation: mentions
+  to: data:project-config
+  resolution: resolved
+- relation: mentions
+  to: decision:explicit-tinygo-compile-step
+  resolution: resolved
+- relation: mentions
+  to: decision:serverless-target-scope
+  resolution: resolved
+- relation: mentions
+  to: flow:public-asset-build
+  resolution: resolved
+- relation: mentions
+  to: flow:tailwind-css-build
+  resolution: resolved
+- relation: mentions
+  to: requirement:cloudflare-workers-build-target
+  resolution: resolved
+- relation: mentions
+  to: requirement:contrib-devidp
+  resolution: resolved
+- relation: mentions
+  to: rule:container-build-inputs
+  resolution: resolved
+- relation: mentions
+  to: rule:tinygo-runtime-compatibility
+  resolution: resolved
+- relation: implemented_extension
+  to: requirement:optional-production-config-packaging
+  resolution: resolved
+  evidence:
+    source_id: source:bdf-printmanager-request
+    path: bdf-printmanager-public-assets.md
+    heading: 'Ask 3 (lower priority): packaging that follows Ask 1'
+    input_hash: a2df65a9a5a065a50b78c3559e0f9b0c559e18ff5d7c22f9a08352ad4674a426

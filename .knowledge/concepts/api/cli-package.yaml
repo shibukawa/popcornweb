@@ -1,0 +1,133 @@
+id: api:cli-package
+type: api
+title: Package Authoring Commands
+summary: The CLI gains a package project kind, so a concept:component-package is scaffolded,
+  generated, and checked by the same commands an application uses.
+facts:
+  legacy_body: "The CLI gains a package project kind, so a concept:component-package\
+    \ is scaffolded, generated, and checked by the same commands an application uses.\n\
+    \n```yaml\nscaffolding:\n  command: \"pw init --kind package\", reached from the\
+    \ package preset of requirement:init-presets, which is the same scaffold named\
+    \ in the list a reader is already looking at\n  detail: requirement:package-project-scaffold,\
+    \ which owns what this writes and adds the staleness-guard CI decision:committed-package-artifacts\
+    \ requires and nothing wrote\n  writes:\n    - data:project-config with project.kind\
+    \ = \"package\", no project.main, and the data:component-package-manifest package\
+    \ section\n    - go.mod, .editorconfig, and .vscode settings, unchanged from the\
+    \ api:cli-init application scaffold\n    - .gitignore without the **/*_pw_gen.go\
+    \ rule, per decision:committed-package-artifacts\n    - a starter component or\
+    \ handler for the shape being authored\n  omits:\n    - concept:application-entry-point\
+    \ and its generated registration linker\n    - a requirement:nested-html-templates\
+    \ document shell and the error pages, which belong to the consuming application\n\
+    \    - environment configuration files\n    - devbox.json, unless the package's\
+    \ own tests need a service\ngeneration:\n  command: api:cli-generate, unchanged\n\
+    \  differences_in_package_kind:\n    - no generate.config fixed path, because\
+    \ there is no main package to receive the registration linker\n    - no document\
+    \ shell lookup, so a generate.templates entry holding one is an error instead\
+    \ of the project's shell\n    - no generate.queries entry may be non-empty, per\
+    \ the requirement:component-package-distribution non-goal\n    - the emitted artifacts\
+    \ are the same in every other respect, which is what makes a package's output\
+    \ linkable\n  check: api:cli-check is the package's release gate, per decision:committed-package-artifacts\n\
+    consuming:\n  command: \"pw add <module-path>\"\n  writes: the go.mod requirement\
+    \ and one entry in the data:project-config packages array, and nothing else\n\
+    \  optional: the command is a convenience; adding both lines by hand is a supported\
+    \ install, per decision:declared-package-installation\n  no_wizard: there is nothing\
+    \ to review, because nothing is copied; a package needing a capability the project\
+    \ lacks is reported and the built-in wizard is offered for that capability alone\n\
+    \  prints: the Register call, for a package whose manifest names one, because\
+    \ concept:application-entry-point is application-owned\n  behavior: flow:component-package-consumption\n\
+    \  relation: api:cli-add gains a module argument beside its capability argument;\
+    \ the capability path still writes files, per rule:framework-owned-tables\nlinking:\n\
+    \  where: the generated bootstrap of the project.main package, which already exists\
+    \ as the registration linker\n  what: one blank import per declared package, emitted\
+    \ by api:cli-generate\n  effect: the declaration is the install, and removing\
+    \ the line removes the import on the next generation\ndiagnosis:\n  command: api:cli-doctor\n\
+    \  added_checks:\n    - every declared package, with its declared and resolved\
+    \ versions\n    - a policy:package-compatibility version outside the supported\
+    \ window\n    - a declared package whose requirement:package-schema-contribution\
+    \ stream has never been applied\n    - a declared module missing from go.mod,\
+    \ and a linked package the project never declared\n    - a package section in\
+    \ an application project, or project.main in a package project\n    - tables left\
+    \ by a declaration that was removed\ndevelopment:\n  api:cli-dev: unavailable\
+    \ in a package project, because there is nothing to run; the package's own tests\
+    \ are the loop\n  api:cli-build: unavailable for the same reason, and the release\
+    \ gate is the check above\nrules:\n  - every command reads project.kind first\
+    \ and reports a command that does not apply to the kind rather than failing later\n\
+    \  - a package project is otherwise an ordinary project, so api:cli-new adds sources\
+    \ into it under the same purposes\n  - nothing about an application project changes;\
+    \ project.kind defaults to application and a file without the key is an application\n\
+    ```"
+  legacy_parse_issues:
+  - kind: legacy_parse_error
+    block: 0
+    message: "while parsing a block mapping\n  in \"<unicode string>\", line 2, column\
+      \ 3:\n      command: \"pw init --kind package ... \n      ^\nexpected <block\
+      \ end>, but found ','\n  in \"<unicode string>\", line 2, column 36:\n     \
+      \ command: \"pw init --kind package\", reached from the package prese ... \n\
+      \                                       ^"
+relations:
+- relation: mentions
+  to: api:cli-add
+  resolution: resolved
+- relation: mentions
+  to: api:cli-build
+  resolution: resolved
+- relation: mentions
+  to: api:cli-check
+  resolution: resolved
+- relation: mentions
+  to: api:cli-dev
+  resolution: resolved
+- relation: mentions
+  to: api:cli-doctor
+  resolution: resolved
+- relation: mentions
+  to: api:cli-generate
+  resolution: resolved
+- relation: mentions
+  to: api:cli-init
+  resolution: resolved
+- relation: mentions
+  to: api:cli-new
+  resolution: resolved
+- relation: mentions
+  to: concept:application-entry-point
+  resolution: resolved
+- relation: mentions
+  to: concept:component-package
+  resolution: resolved
+- relation: mentions
+  to: data:component-package-manifest
+  resolution: resolved
+- relation: mentions
+  to: data:project-config
+  resolution: resolved
+- relation: mentions
+  to: decision:committed-package-artifacts
+  resolution: resolved
+- relation: mentions
+  to: decision:declared-package-installation
+  resolution: resolved
+- relation: mentions
+  to: flow:component-package-consumption
+  resolution: resolved
+- relation: mentions
+  to: policy:package-compatibility
+  resolution: resolved
+- relation: mentions
+  to: requirement:component-package-distribution
+  resolution: resolved
+- relation: mentions
+  to: requirement:init-presets
+  resolution: resolved
+- relation: mentions
+  to: requirement:nested-html-templates
+  resolution: resolved
+- relation: mentions
+  to: requirement:package-project-scaffold
+  resolution: resolved
+- relation: mentions
+  to: requirement:package-schema-contribution
+  resolution: resolved
+- relation: mentions
+  to: rule:framework-owned-tables
+  resolution: resolved

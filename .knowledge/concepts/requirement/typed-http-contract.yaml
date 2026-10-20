@@ -1,0 +1,47 @@
+id: requirement:typed-http-contract
+type: requirement
+title: Typed HTTP Contract
+summary: Generated mappings cover request inputs, typed HTML and API responses, application
+  problems, OpenAPI fragments, SQL, and enabled streaming types through the pw surface.
+facts:
+  legacy_body: "Generated mappings cover request inputs, typed HTML and API responses,\
+    \ application problems, OpenAPI fragments, SQL, and enabled streaming types through\
+    \ the pw surface.\n\n```yaml\ninputs:\n  - route parameters\n  - query parameters\n\
+    \  - headers\n  - cookies\n  - forms and multipart forms\n  - JSON bodies\noutputs:\n\
+    \  - api:html-response\n  - api:api-response\n  - api:problem-response\n  - deterministic\
+    \ assembled OpenAPI JSON and YAML\n  - api:typed-stream\ndatabase: flow:sql-generation\n\
+    errors: policy:validation-errors\n```"
+  inputs:
+  - route parameters
+  - query parameters
+  - headers
+  - cookies
+  - forms and multipart forms
+  - JSON bodies
+  outputs:
+  - api:html-response
+  - api:api-response
+  - api:problem-response
+  - deterministic assembled OpenAPI JSON and YAML
+  - api:typed-stream
+  database: flow:sql-generation
+  errors: policy:validation-errors
+relations:
+- relation: mentions
+  to: api:api-response
+  resolution: resolved
+- relation: mentions
+  to: api:html-response
+  resolution: resolved
+- relation: mentions
+  to: api:problem-response
+  resolution: resolved
+- relation: mentions
+  to: api:typed-stream
+  resolution: resolved
+- relation: mentions
+  to: flow:sql-generation
+  resolution: resolved
+- relation: mentions
+  to: policy:validation-errors
+  resolution: resolved

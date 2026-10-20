@@ -1,0 +1,64 @@
+id: decision:independent-runtime-config-bindings
+type: decision
+title: Independent Runtime Config Bindings
+summary: Register each runtime configuration type as an independent named configbind
+  target instead of nesting all settings under one root struct.
+facts:
+  legacy_body: "Register each runtime configuration type as an independent named configbind\
+    \ target instead of nesting all settings under one root struct.\n\n```yaml\nexamples:\n\
+    \  - pw.RegisterConfig[Config](\"config\")\nauto_registered_bindings:\n  server:\
+    \ data:server-runtime-config\n  session: data:session-runtime-config\n  observability:\
+    \ data:observability-runtime-config\n  security: data:security-runtime-config\n\
+    \  middleware: data:middleware-runtime-config\noptional_registered_bindings:\n\
+    \  auth: data:authentication-runtime-config\n  compression: data:compression-runtime-config\n\
+    rules:\n  - one Go type and prefix identify one binding\n  - api:runtime-configuration\
+    \ parses every registered binding together\n  - user-defined types and prefixes\
+    \ use the same registration and provenance behavior\n  - no Popcorn Web-owned\
+    \ root configuration struct is required\nfirst_release: one configuration load\
+    \ per process\nregistry: data:runtime-config-registry\n```"
+  examples:
+  - pw.RegisterConfig[Config]("config")
+  auto_registered_bindings:
+    server: data:server-runtime-config
+    session: data:session-runtime-config
+    observability: data:observability-runtime-config
+    security: data:security-runtime-config
+    middleware: data:middleware-runtime-config
+  optional_registered_bindings:
+    auth: data:authentication-runtime-config
+    compression: data:compression-runtime-config
+  rules:
+  - one Go type and prefix identify one binding
+  - api:runtime-configuration parses every registered binding together
+  - user-defined types and prefixes use the same registration and provenance behavior
+  - no Popcorn Web-owned root configuration struct is required
+  first_release: one configuration load per process
+  registry: data:runtime-config-registry
+relations:
+- relation: mentions
+  to: api:runtime-configuration
+  resolution: resolved
+- relation: mentions
+  to: data:authentication-runtime-config
+  resolution: resolved
+- relation: mentions
+  to: data:compression-runtime-config
+  resolution: resolved
+- relation: mentions
+  to: data:middleware-runtime-config
+  resolution: resolved
+- relation: mentions
+  to: data:observability-runtime-config
+  resolution: resolved
+- relation: mentions
+  to: data:runtime-config-registry
+  resolution: resolved
+- relation: mentions
+  to: data:security-runtime-config
+  resolution: resolved
+- relation: mentions
+  to: data:server-runtime-config
+  resolution: resolved
+- relation: mentions
+  to: data:session-runtime-config
+  resolution: resolved

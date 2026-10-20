@@ -1,0 +1,355 @@
+id: decision:event-binding-attribute-spelling
+type: decision
+title: Event Binding Attribute Spelling
+summary: Spell a component-script event binding as a reserved hyphenated attribute
+  of its own rather than reinterpreting an HTML event handler attribute, because the
+  two readings of `onclick` are not distinguishable and one of them ships.
+facts:
+  legacy_body: "Spell a component-script event binding as a reserved hyphenated attribute\
+    \ of its own rather than reinterpreting an HTML event handler attribute, because\
+    \ the two readings of `onclick` are not distinguishable and one of them ships.\n\
+    \n```yaml\nsource: requirement:component-script-event-binding\nreview_gate: proposed\n\
+    the_question: what an author writes to bind an exported function to an event,\
+    \ given the obvious spelling is the one HTML already defines\ncandidates:\n  reinterpret_on_click:\n\
+    \    shape: onclick=\"increment\", read as a reference when the value is a bare\
+    \ identifier\n    familiar: it is what an author reaches for first, and it needs\
+    \ no new vocabulary\n    why_not_ambiguous_in_principle: a bare identifier is\
+    \ a valid JavaScript expression statement, so onclick=\"increment\" already has\
+    \ a meaning, which is to evaluate a variable and discard it\n    why_not_in_practice:\
+    \ the event attribute context rule of system:tinybind keeps a static on-attribute\
+    \ untouched, and its RawJavaScript escape hatch is shipped, so an on-attribute\
+    \ carrying authored JavaScript is a supported thing today\n    what_reinterpreting_would_cost:\
+    \ the same failure system:tinybind records for the script block, where position\
+    \ alone could not say which of two readings a top-level script had, and taking\
+    \ it silently would have turned a shipped feature into literal text\n    heuristic_rejected:\
+    \ distinguishing by whether the value parses as an identifier is a JavaScript\
+    \ question, and neither this framework nor system:tinybind reads JavaScript\n\
+    \  namespaced_colon:\n    shape: on:click=\"increment\"\n    familiar: it is Svelte's,\
+    \ and the sigil forms of Vue are near it\n    why_not: the system:tinybind template\
+    \ grammar requires static attribute names and the HTML parser's name grammar is\
+    \ what the template parser follows; a colon is a name character no standard attribute\
+    \ uses, so accepting it is a grammar question to settle upstream for one feature's\
+    \ ergonomics\n    reconsider_when: the grammar admits it for another reason\n\
+    \  expression_in_an_on_attribute:\n    shape: onclick={increment}, using the template's\
+    \ own insertion syntax so the name looks like something the compiler resolves\n\
+    \    attractive_because: it reads as checked, and decision:component-handler-namespace\
+    \ does intend the name to be resolved at generation\n    why_not: the syntax is\
+    \ already taken; the event attribute context rule of system:tinybind makes an\
+    \ on-attribute a JavaScript insertion accepting trusted_javascript, so onclick={increment}\
+    \ today means insert the Go value named increment\n    what_reinterpreting_costs:\
+    \ a project holding a trusted_javascript Go symbol whose name matches a script\
+    \ function changes meaning silently, which is the same class of reinterpretation\
+    \ this decision rejects one candidate above\n    resolution_order_does_not_save_it:\
+    \ stating that the block wins over Go makes the collision decidable and leaves\
+    \ it invisible in the source, since neither name is written differently\n    kept:\
+    \ the idea that the name is resolved and checked, which decision:component-handler-namespace\
+    \ carries on the reserved attribute instead\n  a_second_sigil_for_client_expressions:\n\
+    \    shape: 'square brackets meaning a browser-side name where braces mean a server-side\
+    \ one: onclick=[increment] beside value={user.Name}'\n    the_instinct_is_right:\
+    \ it makes the two namespaces visibly different in the source, which is exactly\
+    \ what the candidate above fails to do and what resolution order cannot repair\n\
+    \    why_not_the_blast_radius: a bracket is ordinary content in a way a brace\
+    \ is not; alt=\"[PDF]\", a citation marker in prose, an attribute selector in\
+    \ a style block, and a filter[] query string are all things templates already\
+    \ contain, so a second active character needs a second escape rule and reinterprets\
+    \ existing text\n    why_not_the_scope: an event binding is the only position\
+    \ where a browser-side name means anything, so a general expression sigil buys\
+    \ generality nothing asks for and charges for it on every character of every template\n\
+    \    why_not_the_owner: the sigil and its escape belong to the system:tinybind\
+    \ grammar shared by all three dialects of concept:template-source-dialects, where\
+    \ a bracket is a quoted identifier in some SQL dialects, so the cost lands in\
+    \ places unrelated to this feature\n    buys_nothing_for_checking: whether a name\
+    \ is verified depends on reading the block, per decision:component-handler-namespace,\
+    \ and not on how the reference is spelled\n    what_satisfies_the_instinct_instead:\
+    \ the attribute name itself, since a reserved hyphenated name is already visibly\
+    \ not an on-attribute and its value is a plain literal with no expression syntax\
+    \ to disambiguate\n  client_action_mirroring_server_action:\n    shape: client-action=\"\
+    increment\", so the prefix names the side and the pair reads as one vocabulary\n\
+    \    asked: 2026-08-11, after settling that the two sides need different attribute\
+    \ names\n    what_is_right_about_it: it is guessable with no framework knowledge,\
+    \ and it reuses the naming this framework already established\n    why_it_does_not_fit:\
+    \ server-action needs no event because a server action is a destination and an\
+    \ element has one, with the trigger determined by the element — a form submits\
+    \ and a button is clicked; a client handler is a listener, an element may carry\
+    \ several, and most of them are not the activation event\n    what_it_would_reduce_the_feature_to:\
+    \ the element's default activation only, so a box filtering as it is typed, a\
+    \ field validating on blur, and a dialog closing on Escape are all inexpressible\n\
+    \    the_suffix_repair: client-action-click, which carries the event but is long\
+    \ and breaks the symmetry at exactly the point the symmetry was for, since server-action\
+    \ has no suffix\n    the_both_repair: client-action as sugar over on-click with\
+    \ the on-form for everything else, which is two spellings for one concept\n  \
+    \  the_asymmetry_is_information: one is singular and event-free because there\
+    \ is one destination, the other is plural and event-bearing because there can\
+    \ be several listeners; a symmetric name would hide a real difference in shape\n\
+    \  reserved_hyphenated:\n    shape: a plain hyphenated attribute name, parsed\
+    \ as an ordinary attribute everywhere and given meaning only where the lowering\
+    \ applies\n    chosen: yes\n    precedent: server-action is exactly this, reserved\
+    \ wherever a lowering applies, ordinary everywhere else, and never emitted\n \
+    \   second_precedent: that same grammar reserves slot as an element name while\
+    \ leaving it ordinary as an attribute, which is the same containment\n    costs:\
+    \ it is one more name an author learns, and it does not look like the platform's\n\
+    \    buys: no ambiguity to resolve, no grammar change, no shipped meaning taken\
+    \ away, and a diagnostic that can name the attribute because nothing else writes\
+    \ it\nlegibility_of_the_side:\n  the_concern_client_action_was_answering: on-click\
+    \ does not say browser the way server-action says server\n  why_it_is_smaller_than_it_looks:\
+    \ the on prefix is universally read as a browser event, and server-action states\
+    \ its side outright, so the pair communicates the split without being symmetric\n\
+    \  closed_by_a_diagnostic: a name in an on-attribute that resolves to an exported\
+    \ Go handler in the route package and to nothing in the component's script is\
+    \ reported with server-action named in the message, which is the one confusion\
+    \ the asymmetry could produce\nconsequence_for_the_inline_form:\n  unchanged:\
+    \ an on-attribute keeps meaning what it means, so an application that has one\
+    \ goes on working\n  still_broken_under_the_csp: an inline handler needs an allowance\
+    \ policy:security-response-headers is designed not to give, which is a fact about\
+    \ the deployment and not something this decision changes\n  worth_a_check: rule:route-and-template-checks\
+    \ reporting an on-attribute in a component that declares a script block, since\
+    \ that is almost always an author reaching for the wrong spelling\n  not_an_error:\
+    \ refusing it outright is a policy judgement about whether applications may use\
+    \ inline handlers, and system:tinybind already took the narrower position of making\
+    \ the type honest and leaving the choice to the author\naligning_the_two_sides:\n\
+    \  asked: 2026-08-11, whether one attribute should serve both, with on-click=\"\
+    increment\" naming a client handler and on-click={Rename} naming a Go one\n  what_is_right_about_it:\
+    \ it is teachable in two lines, and the quoting genuinely can carry the distinction,\
+    \ since a reserved attribute's value is under the lowering's control and never\
+    \ means ordinary insertion there\n  what_it_would_cost:\n    upstream_owns_the_name:\
+    \ server-action is system:tinybind's reserved spelling, documented and shipped,\
+    \ so renaming it is an upstream negotiation on top of the parser one this feature\
+    \ already needs\n    the_event_is_not_a_free_parameter_server_side: a form's is\
+    \ submit and a bare button's is click, so the event name is either redundant or\
+    \ the only option, and carrying it admits shapes needing diagnostics\n    it_opens_the_trigger_model:\
+    \ on-change={Save} reads as legal under a shared name and would post on a select\
+    \ change, which works only with a runtime and reopens the split decision:action-entry-point-selection\
+    \ just closed for forms\n    a_shared_name_hides_the_round_trip: server-action\
+    \ says this leaves the browser and on-click says this runs here, which is the\
+    \ asymmetry a reader benefits from\n  recommendation: keep two names, align the\
+    \ grammar and the naming convention rather than the name; the unified form stays\
+    \ available and its blocker is ownership rather than aesthetics\n  either_way:\
+    \ rule:template-behavior-attributes records that exactly one signal has to distinguish\
+    \ the sides, and both shapes satisfy it\nvalue_form:\n  rule: a quoted literal\
+    \ is a name the lowering resolves; a braced expression is a value from the template's\
+    \ own Go scope\n  already_true: concept:template-source-dialects makes braces\
+    \ the insertion and everything else literal text, so this needs no grammar change\
+    \ and no second sigil\n  applied_here: the handler attribute takes a quoted literal,\
+    \ and an expression in it is a generation error, exactly as system:tinybind forbids\
+    \ one in server-action for the same reason — a computed value cannot be resolved\
+    \ or checked at generation\n  the_tempting_generalization_is_wrong: reading quoting\
+    \ as browser-side against server-side does not hold, because server-action=\"\
+    Rename\" is a quoted literal naming a Go symbol\n  the_rule_that_does_hold: quoting\
+    \ says whether the value is a name or a value, and the attribute says which namespace\
+    \ a name is resolved in\n  why_that_is_enough: the front-and-server distinction\
+    \ the bracket sigil was reaching for is carried by the attribute, which is where\
+    \ it was always going to have to live, since one attribute means one namespace\n\
+    naming:\n  constraint: it must not collide with an author's own attribute, an\
+    \ ARIA attribute, or a custom element's property\n  candidates_not_settled_here:\
+    \ the exact word, which is worth choosing with the documentation rather than in\
+    \ isolation\n  requirement: the event name is part of the attribute rather than\
+    \ part of the value, so a diagnostic and a template check can read which event\
+    \ is bound without parsing a value\nconstraints:\n  - the authored attribute is\
+    \ never emitted, so nothing an author writes reaches the browser as-is\n  - the\
+    \ value stays a static string literal, so no expression machinery is involved\n\
+    \  - the name is reserved only where the lowering applies, and stays an ordinary\
+    \ attribute name elsewhere\n```"
+  source: requirement:component-script-event-binding
+  review_gate: proposed
+  the_question: what an author writes to bind an exported function to an event, given
+    the obvious spelling is the one HTML already defines
+  candidates:
+    reinterpret_on_click:
+      shape: onclick="increment", read as a reference when the value is a bare identifier
+      familiar: it is what an author reaches for first, and it needs no new vocabulary
+      why_not_ambiguous_in_principle: a bare identifier is a valid JavaScript expression
+        statement, so onclick="increment" already has a meaning, which is to evaluate
+        a variable and discard it
+      why_not_in_practice: the event attribute context rule of system:tinybind keeps
+        a static on-attribute untouched, and its RawJavaScript escape hatch is shipped,
+        so an on-attribute carrying authored JavaScript is a supported thing today
+      what_reinterpreting_would_cost: the same failure system:tinybind records for
+        the script block, where position alone could not say which of two readings
+        a top-level script had, and taking it silently would have turned a shipped
+        feature into literal text
+      heuristic_rejected: distinguishing by whether the value parses as an identifier
+        is a JavaScript question, and neither this framework nor system:tinybind reads
+        JavaScript
+    namespaced_colon:
+      shape: on:click="increment"
+      familiar: it is Svelte's, and the sigil forms of Vue are near it
+      why_not: the system:tinybind template grammar requires static attribute names
+        and the HTML parser's name grammar is what the template parser follows; a
+        colon is a name character no standard attribute uses, so accepting it is a
+        grammar question to settle upstream for one feature's ergonomics
+      reconsider_when: the grammar admits it for another reason
+    expression_in_an_on_attribute:
+      shape: onclick={increment}, using the template's own insertion syntax so the
+        name looks like something the compiler resolves
+      attractive_because: it reads as checked, and decision:component-handler-namespace
+        does intend the name to be resolved at generation
+      why_not: the syntax is already taken; the event attribute context rule of system:tinybind
+        makes an on-attribute a JavaScript insertion accepting trusted_javascript,
+        so onclick={increment} today means insert the Go value named increment
+      what_reinterpreting_costs: a project holding a trusted_javascript Go symbol
+        whose name matches a script function changes meaning silently, which is the
+        same class of reinterpretation this decision rejects one candidate above
+      resolution_order_does_not_save_it: stating that the block wins over Go makes
+        the collision decidable and leaves it invisible in the source, since neither
+        name is written differently
+      kept: the idea that the name is resolved and checked, which decision:component-handler-namespace
+        carries on the reserved attribute instead
+    a_second_sigil_for_client_expressions:
+      shape: 'square brackets meaning a browser-side name where braces mean a server-side
+        one: onclick=[increment] beside value={user.Name}'
+      the_instinct_is_right: it makes the two namespaces visibly different in the
+        source, which is exactly what the candidate above fails to do and what resolution
+        order cannot repair
+      why_not_the_blast_radius: a bracket is ordinary content in a way a brace is
+        not; alt="[PDF]", a citation marker in prose, an attribute selector in a style
+        block, and a filter[] query string are all things templates already contain,
+        so a second active character needs a second escape rule and reinterprets existing
+        text
+      why_not_the_scope: an event binding is the only position where a browser-side
+        name means anything, so a general expression sigil buys generality nothing
+        asks for and charges for it on every character of every template
+      why_not_the_owner: the sigil and its escape belong to the system:tinybind grammar
+        shared by all three dialects of concept:template-source-dialects, where a
+        bracket is a quoted identifier in some SQL dialects, so the cost lands in
+        places unrelated to this feature
+      buys_nothing_for_checking: whether a name is verified depends on reading the
+        block, per decision:component-handler-namespace, and not on how the reference
+        is spelled
+      what_satisfies_the_instinct_instead: the attribute name itself, since a reserved
+        hyphenated name is already visibly not an on-attribute and its value is a
+        plain literal with no expression syntax to disambiguate
+    client_action_mirroring_server_action:
+      shape: client-action="increment", so the prefix names the side and the pair
+        reads as one vocabulary
+      asked: 2026-08-11, after settling that the two sides need different attribute
+        names
+      what_is_right_about_it: it is guessable with no framework knowledge, and it
+        reuses the naming this framework already established
+      why_it_does_not_fit: server-action needs no event because a server action is
+        a destination and an element has one, with the trigger determined by the element
+        — a form submits and a button is clicked; a client handler is a listener,
+        an element may carry several, and most of them are not the activation event
+      what_it_would_reduce_the_feature_to: the element's default activation only,
+        so a box filtering as it is typed, a field validating on blur, and a dialog
+        closing on Escape are all inexpressible
+      the_suffix_repair: client-action-click, which carries the event but is long
+        and breaks the symmetry at exactly the point the symmetry was for, since server-action
+        has no suffix
+      the_both_repair: client-action as sugar over on-click with the on-form for everything
+        else, which is two spellings for one concept
+      the_asymmetry_is_information: one is singular and event-free because there is
+        one destination, the other is plural and event-bearing because there can be
+        several listeners; a symmetric name would hide a real difference in shape
+    reserved_hyphenated:
+      shape: a plain hyphenated attribute name, parsed as an ordinary attribute everywhere
+        and given meaning only where the lowering applies
+      chosen: true
+      precedent: server-action is exactly this, reserved wherever a lowering applies,
+        ordinary everywhere else, and never emitted
+      second_precedent: that same grammar reserves slot as an element name while leaving
+        it ordinary as an attribute, which is the same containment
+      costs: it is one more name an author learns, and it does not look like the platform's
+      buys: no ambiguity to resolve, no grammar change, no shipped meaning taken away,
+        and a diagnostic that can name the attribute because nothing else writes it
+  legibility_of_the_side:
+    the_concern_client_action_was_answering: on-click does not say browser the way
+      server-action says server
+    why_it_is_smaller_than_it_looks: the on prefix is universally read as a browser
+      event, and server-action states its side outright, so the pair communicates
+      the split without being symmetric
+    closed_by_a_diagnostic: a name in an on-attribute that resolves to an exported
+      Go handler in the route package and to nothing in the component's script is
+      reported with server-action named in the message, which is the one confusion
+      the asymmetry could produce
+  consequence_for_the_inline_form:
+    unchanged: an on-attribute keeps meaning what it means, so an application that
+      has one goes on working
+    still_broken_under_the_csp: an inline handler needs an allowance policy:security-response-headers
+      is designed not to give, which is a fact about the deployment and not something
+      this decision changes
+    worth_a_check: rule:route-and-template-checks reporting an on-attribute in a component
+      that declares a script block, since that is almost always an author reaching
+      for the wrong spelling
+    not_an_error: refusing it outright is a policy judgement about whether applications
+      may use inline handlers, and system:tinybind already took the narrower position
+      of making the type honest and leaving the choice to the author
+  aligning_the_two_sides:
+    asked: 2026-08-11, whether one attribute should serve both, with on-click="increment"
+      naming a client handler and on-click={Rename} naming a Go one
+    what_is_right_about_it: it is teachable in two lines, and the quoting genuinely
+      can carry the distinction, since a reserved attribute's value is under the lowering's
+      control and never means ordinary insertion there
+    what_it_would_cost:
+      upstream_owns_the_name: server-action is system:tinybind's reserved spelling,
+        documented and shipped, so renaming it is an upstream negotiation on top of
+        the parser one this feature already needs
+      the_event_is_not_a_free_parameter_server_side: a form's is submit and a bare
+        button's is click, so the event name is either redundant or the only option,
+        and carrying it admits shapes needing diagnostics
+      it_opens_the_trigger_model: on-change={Save} reads as legal under a shared name
+        and would post on a select change, which works only with a runtime and reopens
+        the split decision:action-entry-point-selection just closed for forms
+      a_shared_name_hides_the_round_trip: server-action says this leaves the browser
+        and on-click says this runs here, which is the asymmetry a reader benefits
+        from
+    recommendation: keep two names, align the grammar and the naming convention rather
+      than the name; the unified form stays available and its blocker is ownership
+      rather than aesthetics
+    either_way: rule:template-behavior-attributes records that exactly one signal
+      has to distinguish the sides, and both shapes satisfy it
+  value_form:
+    rule: a quoted literal is a name the lowering resolves; a braced expression is
+      a value from the template's own Go scope
+    already_true: concept:template-source-dialects makes braces the insertion and
+      everything else literal text, so this needs no grammar change and no second
+      sigil
+    applied_here: the handler attribute takes a quoted literal, and an expression
+      in it is a generation error, exactly as system:tinybind forbids one in server-action
+      for the same reason — a computed value cannot be resolved or checked at generation
+    the_tempting_generalization_is_wrong: reading quoting as browser-side against
+      server-side does not hold, because server-action="Rename" is a quoted literal
+      naming a Go symbol
+    the_rule_that_does_hold: quoting says whether the value is a name or a value,
+      and the attribute says which namespace a name is resolved in
+    why_that_is_enough: the front-and-server distinction the bracket sigil was reaching
+      for is carried by the attribute, which is where it was always going to have
+      to live, since one attribute means one namespace
+  naming:
+    constraint: it must not collide with an author's own attribute, an ARIA attribute,
+      or a custom element's property
+    candidates_not_settled_here: the exact word, which is worth choosing with the
+      documentation rather than in isolation
+    requirement: the event name is part of the attribute rather than part of the value,
+      so a diagnostic and a template check can read which event is bound without parsing
+      a value
+  constraints:
+  - the authored attribute is never emitted, so nothing an author writes reaches the
+    browser as-is
+  - the value stays a static string literal, so no expression machinery is involved
+  - the name is reserved only where the lowering applies, and stays an ordinary attribute
+    name elsewhere
+relations:
+- relation: mentions
+  to: concept:template-source-dialects
+  resolution: resolved
+- relation: mentions
+  to: decision:action-entry-point-selection
+  resolution: resolved
+- relation: mentions
+  to: decision:component-handler-namespace
+  resolution: resolved
+- relation: mentions
+  to: policy:security-response-headers
+  resolution: resolved
+- relation: mentions
+  to: requirement:component-script-event-binding
+  resolution: resolved
+- relation: mentions
+  to: rule:route-and-template-checks
+  resolution: resolved
+- relation: mentions
+  to: rule:template-behavior-attributes
+  resolution: resolved
+- relation: mentions
+  to: system:tinybind
+  resolution: resolved

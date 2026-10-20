@@ -1,0 +1,226 @@
+id: requirement:optional-production-config-packaging
+type: requirement
+title: Optional Production Configuration in Deployment Packaging
+summary: Deployment packaging must honor configured public asset locations and allow an application configured entirely
+  by environment variables to omit config.prod.toml.
+authority: authored
+lifecycle: accepted
+review_state: confirmed
+facts:
+  origin:
+    request: concept:bdf-printmanager-integration
+    source: source:bdf-printmanager-request
+    section: 'Ask 3 (lower priority): packaging that follows Ask 1'
+  requester_priority: lower than Ask 1 and Ask 2
+  implementation_status: Implemented and verified in this repository; no BDF deployment is claimed.
+  reported_blocker: pw build --target=lambda requires root public.go during asset generation and config.prod.toml
+    during packaging.
+  application_configuration: BDF Print Manager uses MANAGER_* and platform AWS_* environment variables without config.prod.toml.
+  allowed_designs:
+  - Treat an absent config.prod.toml as optional.
+  - Use an explicit declaration such as deploy.config_file = false.
+  artifact_contract: When no production config is carried, the Lambda Dockerfile omits COPY of config.prod.toml;
+    include it normally when configured and present.
+  requester_migration: BDF can remove cmd/printmanager/deploy/lambda/Dockerfile once the framework packages this
+    application.
+  implementation_report: docs/requests/bdf-printmanager-implementation.md
+relations:
+- relation: requested_by
+  to: concept:bdf-printmanager-integration
+  resolution: resolved
+  evidence:
+    source_id: source:bdf-printmanager-request
+    path: bdf-printmanager-public-assets.md
+    heading: 'Ask 3 (lower priority): packaging that follows Ask 1'
+    input_hash: a2df65a9a5a065a50b78c3559e0f9b0c559e18ff5d7c22f9a08352ad4674a426
+- relation: depends_on
+  to: requirement:configurable-public-asset-locations
+  resolution: resolved
+  evidence:
+    source_id: source:bdf-printmanager-request
+    path: bdf-printmanager-public-assets.md
+    heading: 'Ask 3 (lower priority): packaging that follows Ask 1'
+    input_hash: a2df65a9a5a065a50b78c3559e0f9b0c559e18ff5d7c22f9a08352ad4674a426
+- relation: extends
+  to: requirement:serverless-http-hosting
+  resolution: resolved
+  evidence:
+    source_id: source:bdf-printmanager-request
+    path: bdf-printmanager-public-assets.md
+    heading: 'Ask 3 (lower priority): packaging that follows Ask 1'
+    input_hash: a2df65a9a5a065a50b78c3559e0f9b0c559e18ff5d7c22f9a08352ad4674a426
+- relation: affects
+  to: api:cli-build
+  resolution: resolved
+  evidence:
+    source_id: source:bdf-printmanager-request
+    path: bdf-printmanager-public-assets.md
+    heading: 'Ask 3 (lower priority): packaging that follows Ask 1'
+    input_hash: a2df65a9a5a065a50b78c3559e0f9b0c559e18ff5d7c22f9a08352ad4674a426
+acceptance:
+  lambda-env-only:
+    text: The nested application builds for Lambda without config.prod.toml using the selected opt-out or absence
+      policy.
+    authority: authored
+    evidence:
+      source_id: source:bdf-printmanager-request
+      path: bdf-printmanager-public-assets.md
+      heading: 'Ask 3 (lower priority): packaging that follows Ask 1'
+      input_hash: a2df65a9a5a065a50b78c3559e0f9b0c559e18ff5d7c22f9a08352ad4674a426
+    verified_by:
+    - lambda-env-only
+  lambda-dockerfile:
+    text: The resulting Dockerfile and deployment stage do not reference or require an omitted config.prod.toml.
+    authority: authored
+    evidence:
+      source_id: source:bdf-printmanager-request
+      path: bdf-printmanager-public-assets.md
+      heading: 'Ask 3 (lower priority): packaging that follows Ask 1'
+      input_hash: a2df65a9a5a065a50b78c3559e0f9b0c559e18ff5d7c22f9a08352ad4674a426
+    verified_by:
+    - lambda-dockerfile
+  configured-assets:
+    text: Deployment generation uses assets.public, assets.derived, and assets.embed rather than requiring their
+      default root paths.
+    authority: authored
+    evidence:
+      source_id: source:bdf-printmanager-request
+      path: bdf-printmanager-public-assets.md
+      heading: 'Ask 3 (lower priority): packaging that follows Ask 1'
+      input_hash: a2df65a9a5a065a50b78c3559e0f9b0c559e18ff5d7c22f9a08352ad4674a426
+    verified_by:
+    - configured-assets
+    - other-target-builds
+  present-config:
+    text: An ordinary deployment with a production config still carries that file and retains its existing behavior.
+    authority: authored
+    evidence:
+      source_id: source:bdf-printmanager-request
+      path: bdf-printmanager-public-assets.md
+      heading: 'Ask 3 (lower priority): packaging that follows Ask 1'
+      input_hash: a2df65a9a5a065a50b78c3559e0f9b0c559e18ff5d7c22f9a08352ad4674a426
+    verified_by:
+    - present-config
+verification:
+  lambda-env-only:
+    state: passed
+    method: integration
+    test: TestNestedApplicationPublicAssets
+    authority: observed
+    evidence:
+      path: internal/pwcli/assetlocations_test.go
+      locator: TestNestedApplicationPublicAssets
+    basis:
+    - path: go.mod
+      input_hash: 6395d43e84ea0b7fc07ade55b2846879f49afc2a2484ece5121ed4444ce5ed6f
+    - path: internal/pwcli/deployment.go
+      input_hash: 84fe31ff6085e6c99da169f62a7f96950aa77b040772a6e7c1fabdae5447c346
+    - path: internal/pwcli/cloudflare.go
+      input_hash: dfcb7c69b10bfd100b99f467a93c0a7263149a2dfdcfe85e86386eedd48bf704
+    - path: internal/pwcli/assetlocations_test.go
+      input_hash: bcbf4509080639a19bfb8c853000387da2e5ef2b92ccf340288c8c21694a27c1
+  lambda-dockerfile:
+    state: passed
+    method: integration
+    test: TestNestedApplicationPublicAssets
+    authority: observed
+    evidence:
+      path: internal/pwcli/assetlocations_test.go
+      locator: TestNestedApplicationPublicAssets
+    basis:
+    - path: go.mod
+      input_hash: 6395d43e84ea0b7fc07ade55b2846879f49afc2a2484ece5121ed4444ce5ed6f
+    - path: internal/pwcli/deployment.go
+      input_hash: 84fe31ff6085e6c99da169f62a7f96950aa77b040772a6e7c1fabdae5447c346
+    - path: internal/pwcli/cloudflare.go
+      input_hash: dfcb7c69b10bfd100b99f467a93c0a7263149a2dfdcfe85e86386eedd48bf704
+    - path: internal/pwcli/assetlocations_test.go
+      input_hash: bcbf4509080639a19bfb8c853000387da2e5ef2b92ccf340288c8c21694a27c1
+  configured-assets:
+    state: passed
+    method: integration
+    test: TestNestedApplicationPublicAssets
+    authority: observed
+    evidence:
+      path: internal/pwcli/assetlocations_test.go
+      locator: TestNestedApplicationPublicAssets
+    basis:
+    - path: go.mod
+      input_hash: 6395d43e84ea0b7fc07ade55b2846879f49afc2a2484ece5121ed4444ce5ed6f
+    - path: internal/pwcli/deployment.go
+      input_hash: 84fe31ff6085e6c99da169f62a7f96950aa77b040772a6e7c1fabdae5447c346
+    - path: internal/pwcli/cloudflare.go
+      input_hash: dfcb7c69b10bfd100b99f467a93c0a7263149a2dfdcfe85e86386eedd48bf704
+    - path: internal/pwcli/assetlocations_test.go
+      input_hash: bcbf4509080639a19bfb8c853000387da2e5ef2b92ccf340288c8c21694a27c1
+  present-config:
+    state: passed
+    method: integration
+    test: TestNestedApplicationPublicAssets
+    authority: observed
+    evidence:
+      path: internal/pwcli/assetlocations_test.go
+      locator: TestNestedApplicationPublicAssets
+    basis:
+    - path: go.mod
+      input_hash: 6395d43e84ea0b7fc07ade55b2846879f49afc2a2484ece5121ed4444ce5ed6f
+    - path: internal/pwcli/deployment.go
+      input_hash: 84fe31ff6085e6c99da169f62a7f96950aa77b040772a6e7c1fabdae5447c346
+    - path: internal/pwcli/cloudflare.go
+      input_hash: dfcb7c69b10bfd100b99f467a93c0a7263149a2dfdcfe85e86386eedd48bf704
+    - path: internal/pwcli/assetlocations_test.go
+      input_hash: bcbf4509080639a19bfb8c853000387da2e5ef2b92ccf340288c8c21694a27c1
+  other-target-builds:
+    state: passed
+    method: manual
+    authority: observed
+    test: pw build --target=azure-functions, google-cloud-run-functions, and cloudflare-workers on a module-root
+      fixture with cmd/app/public.go and configured assets; no config.prod.toml.
+    evidence:
+      path: docs/requests/bdf-printmanager-implementation.md
+      locator: 検証結果
+    basis:
+    - path: go.mod
+      input_hash: 6395d43e84ea0b7fc07ade55b2846879f49afc2a2484ece5121ed4444ce5ed6f
+    - path: internal/pwcli/deployment.go
+      input_hash: 84fe31ff6085e6c99da169f62a7f96950aa77b040772a6e7c1fabdae5447c346
+    - path: internal/pwcli/cloudflare.go
+      input_hash: dfcb7c69b10bfd100b99f467a93c0a7263149a2dfdcfe85e86386eedd48bf704
+    - path: middlewares/publicassets_local.go
+      input_hash: aa6ad2ca0460c3cacfdffc54079cca7c791b41904024fc004d33c40fea2cc5ae
+    - path: docs/requests/bdf-printmanager-implementation.md
+      input_hash: 6b06f17b3e6b1941a3fff9fe797c151c7c8e63e80800d63f09d9d919861edf84
+open_questions:
+  production-config-policy:
+    text: Is missing config.prod.toml sufficient, or is deploy.config_file = false required?
+    state: answered
+    resolution: An absent config.prod.toml is sufficient; no opt-out flag is required. Copy it when present and
+      omit its Dockerfile COPY when absent. Source stages preserve the selected cmd subtree and relocate a main-local
+      embed tree with the transformed entrypoint.
+capabilities:
+  requested-behavior:
+    state: implemented
+    authority: observed
+    verified_by:
+    - lambda-env-only
+    - lambda-dockerfile
+    - configured-assets
+    - present-config
+    - other-target-builds
+    basis:
+    - path: go.mod
+      input_hash: 6395d43e84ea0b7fc07ade55b2846879f49afc2a2484ece5121ed4444ce5ed6f
+    - path: internal/pwcli/deployment.go
+      input_hash: 84fe31ff6085e6c99da169f62a7f96950aa77b040772a6e7c1fabdae5447c346
+    - path: internal/pwcli/cloudflare.go
+      input_hash: dfcb7c69b10bfd100b99f467a93c0a7263149a2dfdcfe85e86386eedd48bf704
+    - path: internal/pwcli/assetlocations_test.go
+      input_hash: bcbf4509080639a19bfb8c853000387da2e5ef2b92ccf340288c8c21694a27c1
+    evidence:
+      path: docs/requests/bdf-printmanager-implementation.md
+history:
+  implementation:
+    summary: Implemented the requested behavior and documentation; acceptance verification records refer to local
+      fixtures and saved input hashes.
+    evidence:
+      path: docs/requests/bdf-printmanager-implementation.md

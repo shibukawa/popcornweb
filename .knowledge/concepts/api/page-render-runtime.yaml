@@ -1,0 +1,113 @@
+id: api:page-render-runtime
+type: api
+title: Page Render Runtime
+summary: One pw-owned package supplies every symbol generated page code calls, so
+  decision:page-render-binding needs no generation template of its own and applications
+  never name it.
+facts:
+  legacy_body: "One pw-owned package supplies every symbol generated page code calls,\
+    \ so decision:page-render-binding needs no generation template of its own and\
+    \ applications never name it.\n\n```yaml\npackage: github.com/shibukawa/popcornweb/pwpage\n\
+    audience: generated page tree code, like the generated-runtime boundary of concept:public-package-boundaries\n\
+    backing_pw_api:\n  WriteHTMLPage: renders a page inside its own wrapper chain\
+    \ and the registered document, with the document outermost; it is the one thing\
+    \ this package could not compose itself, because the document is deliberately\
+    \ not reachable from outside pw\n  HTMLOption: the render option type, added so\
+    \ a caller can extend the set api:html-response derives rather than replace it\n\
+    \  threading: the option slice reaches both the buffered and the streaming branch,\
+    \ and caller options come last so a later one wins\nsurface:\n  Router: the one-method\
+    \ router interface the generated Register takes, satisfied by both mux types of\
+    \ flow:handler-registration\n  Wrapper: the layout wrapper type, an alias of the\
+    \ pw HTML wrapper\n  Option: the render option type, an alias of the runtime option\n\
+    \  Render: the render entry taking the writer, the request, the layout chain,\
+    \ the leaf fragment, and options, returning error\nnot_here:\n  errors: WriteProblem,\
+    \ BadRequest, and Problem come straight from pw, because system:tinybind v0.2.6\
+    \ made the failure selector a symbol and pw already spells the other two the way\
+    \ the decoder writes them\n  effect: this package holds no wrapper that exists\
+    \ only to rename something\nplacement:\n  package: its own package rather than\
+    \ pwruntime, because the render entry needs the pw response path and pw imports\
+    \ pwruntime, so pwruntime cannot import pw back\n  rejected_alternative: a function\
+    \ variable in pwruntime that pw sets during initialization, which turns a compile-time\
+    \ dependency into a runtime one and adds a nil state to the render path\n  not_pw_itself:\
+    \ the Option name is already the api:application-lifecycle option in pw, and generated\
+    \ code needs Option to mean a render option; that name collision is the entire\
+    \ reason this package exists\nrender_entry:\n  chain: takes the chain as given,\
+    \ nil for a page with no ancestor layout, so one entry covers both shapes\n  policy:\
+    \ derives its per-request options from data:html-render-config through api:html-response,\
+    \ then appends the ones the caller passed, so a call site cannot silently replace\
+    \ framework policy\n  error_result: returns an error because the generated caller\
+    \ writes one through WriteError, even though the pw response path already answers\
+    \ a failure itself; a nil return is the normal case\nrules:\n  - handwritten application\
+    \ code has no reason to import this package\n  - the surface is whatever the generation\
+    \ templates name, so it grows only when system:tinybind adds a called symbol\n\
+    \  - every entry delegates to pw rather than reimplementing a response decision\n\
+    ```"
+  package: github.com/shibukawa/popcornweb/pwpage
+  audience: generated page tree code, like the generated-runtime boundary of concept:public-package-boundaries
+  backing_pw_api:
+    WriteHTMLPage: renders a page inside its own wrapper chain and the registered
+      document, with the document outermost; it is the one thing this package could
+      not compose itself, because the document is deliberately not reachable from
+      outside pw
+    HTMLOption: the render option type, added so a caller can extend the set api:html-response
+      derives rather than replace it
+    threading: the option slice reaches both the buffered and the streaming branch,
+      and caller options come last so a later one wins
+  surface:
+    Router: the one-method router interface the generated Register takes, satisfied
+      by both mux types of flow:handler-registration
+    Wrapper: the layout wrapper type, an alias of the pw HTML wrapper
+    Option: the render option type, an alias of the runtime option
+    Render: the render entry taking the writer, the request, the layout chain, the
+      leaf fragment, and options, returning error
+  not_here:
+    errors: WriteProblem, BadRequest, and Problem come straight from pw, because system:tinybind
+      v0.2.6 made the failure selector a symbol and pw already spells the other two
+      the way the decoder writes them
+    effect: this package holds no wrapper that exists only to rename something
+  placement:
+    package: its own package rather than pwruntime, because the render entry needs
+      the pw response path and pw imports pwruntime, so pwruntime cannot import pw
+      back
+    rejected_alternative: a function variable in pwruntime that pw sets during initialization,
+      which turns a compile-time dependency into a runtime one and adds a nil state
+      to the render path
+    not_pw_itself: the Option name is already the api:application-lifecycle option
+      in pw, and generated code needs Option to mean a render option; that name collision
+      is the entire reason this package exists
+  render_entry:
+    chain: takes the chain as given, nil for a page with no ancestor layout, so one
+      entry covers both shapes
+    policy: derives its per-request options from data:html-render-config through api:html-response,
+      then appends the ones the caller passed, so a call site cannot silently replace
+      framework policy
+    error_result: returns an error because the generated caller writes one through
+      WriteError, even though the pw response path already answers a failure itself;
+      a nil return is the normal case
+  rules:
+  - handwritten application code has no reason to import this package
+  - the surface is whatever the generation templates name, so it grows only when system:tinybind
+    adds a called symbol
+  - every entry delegates to pw rather than reimplementing a response decision
+relations:
+- relation: mentions
+  to: api:application-lifecycle
+  resolution: resolved
+- relation: mentions
+  to: api:html-response
+  resolution: resolved
+- relation: mentions
+  to: concept:public-package-boundaries
+  resolution: resolved
+- relation: mentions
+  to: data:html-render-config
+  resolution: resolved
+- relation: mentions
+  to: decision:page-render-binding
+  resolution: resolved
+- relation: mentions
+  to: flow:handler-registration
+  resolution: resolved
+- relation: mentions
+  to: system:tinybind
+  resolution: resolved

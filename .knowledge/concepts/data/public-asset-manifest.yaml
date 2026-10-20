@@ -1,0 +1,107 @@
+id: data:public-asset-manifest
+type: data
+title: Public Asset Manifest
+summary: One build-produced record per served URL, listing every representation behind it with the bytes, digest,
+  and cache metadata api:public-asset-middleware answers with.
+facts:
+  legacy_body: "One build-produced record per served URL, listing every representation behind it with the bytes,\
+    \ digest, and cache metadata api:public-asset-middleware answers with.\n\n```yaml\nscope: concept:derived-public-tree,\
+    \ every file under dist/public\nentry:\n  url: mount-relative slash path, the value a rewritten reference names\n\
+    \  source: authored path it came from, or absent for a generated artifact\n  cache_control: the header to send,\
+    \ per requirement:derived-asset-pipeline caching\n  revision: digest of every representation of this URL, the\
+    \ segment policy:public-asset-revision serves it immutably under; empty for a URL that needs none or may not\
+    \ have one\n  representations:\n    - path: file under dist/public\n      media_type: Content-Type to send\n\
+    \      content_encoding: empty, br, zstd, or gzip, per policy:public-asset-precompression\n      bytes: encoded\
+    \ length\n      sha256: digest of the emitted bytes\n      etag: quoted strong tag derived from that digest\n\
+    \      preference: build-declared order among media types of one URL\nform:\n  emitted: generated Go table beside\
+    \ the embed, so nothing parses a manifest at startup and TinyGo pays no decoder\n  also_written: a JSON copy\
+    \ for api:cli-doctor and for a caller inspecting a build, never read at runtime\n  determinism: identical inputs\
+    \ produce identical entries in a stable order, so policy:generated-artifacts --check compares it\nrules:\n \
+    \ - a URL with no entry is 404 even when a file exists under dist/public, so serving is manifest-driven rather\
+    \ than filesystem-driven\n  - an entry with no representation is a build error\n  - each representation carries\
+    \ its own strong ETag, per policy:public-asset-negotiation\n  - the digest is over emitted bytes, so no two\
+    \ codings of one URL share a tag\n  - a URL carries the codings its file produced and no placeholder for one\
+    \ that was skipped, so the manifest states what exists rather than what was attempted\n  - the middleware computes\
+    \ no digest and reads no file metadata per request, which removes the current per-request sha256 and read\n\
+    \  - the manifest is embedded with the tree it describes and is never fetched or reloaded\n  - a media-type\
+    \ set larger than one enables policy:public-asset-media-negotiation for that URL only\n  - the revision covers\
+    \ the URL rather than any one representation, so a change to the avif of an image moves the same segment its\
+    \ webp is served under\nopen_questions:\n  - whether the local-override path of policy:public-asset-resolution\
+    \ keeps a manifest at all, or drops to today's per-request digest\n  - whether an entry records its transform\
+    \ and settings, which would make a stale-output diagnostic possible\n```"
+  scope: concept:derived-public-tree; files under assets.derived (default dist/public)
+  entry:
+    url: mount-relative slash path, the value a rewritten reference names
+    source: authored path it came from, or absent for a generated artifact
+    cache_control: the header to send, per requirement:derived-asset-pipeline caching
+    revision: digest of every representation of this URL, the segment policy:public-asset-revision serves it immutably
+      under; empty for a URL that needs none or may not have one
+    representations:
+    - path: file under dist/public
+      media_type: Content-Type to send
+      content_encoding: empty, br, zstd, or gzip, per policy:public-asset-precompression
+      bytes: encoded length
+      sha256: digest of the emitted bytes
+      etag: quoted strong tag derived from that digest
+      preference: build-declared order among media types of one URL
+  form:
+    emitted: Generated Go registration beside assets.embed, in its package; JSON is beside the configured derived
+      tree.
+    also_written: a JSON copy for api:cli-doctor and for a caller inspecting a build, never read at runtime
+    determinism: identical inputs produce identical entries in a stable order, so policy:generated-artifacts --check
+      compares it
+  rules:
+  - a URL with no entry is 404 even when a file exists under dist/public, so serving is manifest-driven rather than
+    filesystem-driven
+  - an entry with no representation is a build error
+  - each representation carries its own strong ETag, per policy:public-asset-negotiation
+  - the digest is over emitted bytes, so no two codings of one URL share a tag
+  - a URL carries the codings its file produced and no placeholder for one that was skipped, so the manifest states
+    what exists rather than what was attempted
+  - the middleware computes no digest and reads no file metadata per request, which removes the current per-request
+    sha256 and read
+  - the manifest is embedded with the tree it describes and is never fetched or reloaded
+  - a media-type set larger than one enables policy:public-asset-media-negotiation for that URL only
+  - the revision covers the URL rather than any one representation, so a change to the avif of an image moves the
+    same segment its webp is served under
+  open_questions:
+  - whether the local-override path of policy:public-asset-resolution keeps a manifest at all, or drops to today's
+    per-request digest
+  - whether an entry records its transform and settings, which would make a stale-output diagnostic possible
+open_questions:
+  item-aeea9ed687340b68:
+    text: whether the local-override path of policy:public-asset-resolution keeps a manifest at all, or drops to
+      today's per-request digest
+  item-ecabbeffa3c7cd44:
+    text: whether an entry records its transform and settings, which would make a stale-output diagnostic possible
+relations:
+- relation: mentions
+  to: api:cli-doctor
+  resolution: resolved
+- relation: mentions
+  to: api:public-asset-middleware
+  resolution: resolved
+- relation: mentions
+  to: concept:derived-public-tree
+  resolution: resolved
+- relation: mentions
+  to: policy:generated-artifacts
+  resolution: resolved
+- relation: mentions
+  to: policy:public-asset-media-negotiation
+  resolution: resolved
+- relation: mentions
+  to: policy:public-asset-negotiation
+  resolution: resolved
+- relation: mentions
+  to: policy:public-asset-precompression
+  resolution: resolved
+- relation: mentions
+  to: policy:public-asset-resolution
+  resolution: resolved
+- relation: mentions
+  to: policy:public-asset-revision
+  resolution: resolved
+- relation: mentions
+  to: requirement:derived-asset-pipeline
+  resolution: resolved

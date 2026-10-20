@@ -1,0 +1,279 @@
+id: requirement:preset-customization-docs
+type: requirement
+title: Preset and Customization Documentation
+summary: The documentation names every requirement:init-presets preset, says which
+  project each is for, and shows how to move a project off the answer its preset gave,
+  so a preset is a starting point a reader can leave rather than a shape they are
+  stuck inside.
+facts:
+  legacy_body: "The documentation names every requirement:init-presets preset, says\
+    \ which project each is for, and shows how to move a project off the answer its\
+    \ preset gave, so a preset is a starting point a reader can leave rather than\
+    \ a shape they are stuck inside.\n\n```yaml\naudience: actor:application-developer\n\
+    house_style: the documentation skill of this repository owns voice, structure,\
+    \ and the link and parity checks\npages:\n  preset_reference:\n    where: the\
+    \ api:cli-init page, pw/project/init\n    holds:\n      - the preset list, each\
+    \ with the project it is for and the answers that distinguish it\n      - what\
+    \ every preset answers the same way, so a reader knows what the choice is not\
+    \ about\n      - the --preset flag and its conflict with the capability flags\n\
+    \      - that Manual is the decision:navigable-answer-hub, and that a preset's\
+    \ review is that same hub\n    replaces: nothing; the per-option table stays,\
+    \ because it documents the questions a preset answers\n  customization_guide:\n\
+    \    where: a page of its own beside the api:cli-init page, pw/project/presets\n\
+    \    opens_with: a preset is ten answers with a name, and every answer is still\
+    \ an answer\n    holds:\n      - which changes are one api:cli-add away, per requirement:incremental-project-capabilities\n\
+    \      - which changes are an edit, and what the edit is\n      - which changes\
+    \ are neither, and what to do instead of trying\n    depth_rule: the guide names\
+    \ the change and links the page that owns it, rather than restating that page\n\
+    worked_cases:\n  rule: two or three cases in full, not one per answer\n  rdb_engine:\n\
+    \    why_first: the reader who asked for this guide asked about this case, and\
+    \ it is the answer that touches the most files\n    from: the sqlite the website-login\
+    \ preset gives\n    to: postgres or mysql, per requirement:database-engine-selection\n\
+    \    steps: the project.database key, the rdb DSN of rule:rdb-dsn-resolution,\
+    \ the driver blank import, the dialect of the migration and the .pw.sql sources,\
+    \ and the development server\n    two_more_with_a_login:\n      framework_migrations:\
+    \ the rule:framework-owned-tables files are in the old dialect and no command\
+    \ re-emits them, so the guide gives the procedure that works — scaffold a throwaway\
+    \ project on the target engine with the same answers and copy its files across\n\
+    \      auth_state_import: authstate is one package per engine, so the blank import\
+    \ changes with the DSN\n      found_by: performing the switch on a scaffolded\
+    \ login project, which built only after both\n    honest_about: decision:server-sql-support-tier\
+    \ translates nothing between dialects, so a project with hand-written SQL rewrites\
+    \ it\n    cheapest_moment: before the first migration runs anywhere, which is\
+    \ worth saying where a reader can still act on it\n    presentation: requirement:engine-parameterized-docs\
+    \ tabs, since every step above differs by engine\n  session_backend:\n    from:\
+    \ the redis the website-login preset gives\n    to: rdb or cookie\n    steps:\
+    \ session.backend, the api:session-backend-plugin blank import, the framework-owned\
+    \ migration for a backend that has one, and the Valkey package the preset added\n\
+    \    honest_about: every backend reads the same in a handler, so this is a deployment\
+    \ change and not an application one\n  adding_a_login:\n    from: either simple\
+    \ website preset\n    command: pw add auth\n    honest_about: it takes the database\
+    \ with it, because plugin/auth keeps its ceremony records and its allowlist in\
+    \ SQL\n  the_router:\n    from: either simple website preset to the other\n  \
+    \  command: pw add registered or pw add discovered, which install the router the\
+    \ project lacks rather than replace the one it has\n    honest_about: decision:dual-router-coexistence\
+    \ means a project ends up with both trees, and removing the first one is a manual\
+    \ deletion\n  finishing_the_api_server:\n    from: the api-server preset, which\
+    \ requirement:api-server-scaffold points at a development issuer nobody runs\n\
+    \    steps: replace auth.jwt.issuer and auth.jwt.audience, turn allow_loopback_http\
+    \ back off, choose the policy:bearer-admission mode the deployment wants, and\
+    \ drop the config.dev.toml relaxation once a real authorization server exists\n\
+    \    also: enabling policy:token-revocation, which is pw add database plus the\
+    \ popcornweb_revoked_token migration and the revocation keys\n    honest_about:\
+    \ the project runs immediately and deploys nowhere, and the reader does not have\
+    \ to remember to remove the relaxation because a non-development build and a non-development\
+    \ environment each refuse it\n    token_shape: the hand-written token needs iss\
+    \ as well as sub, because the account is derived from the pair\n    names_the_mode:\
+    \ this is where requirement:jwt-only-api-authentication is documented, per decision:jwt-only-mode-not-scaffolded\
+    \ putting it in the API-server reference and not in the tutorial\n  the_package_kind:\n\
+    \    from: nothing; a package project and an application project are not convertible\
+    \ in either direction\n    says: the tracked generated Go of decision:committed-package-artifacts,\
+    \ the missing entry point, and the missing environment configuration are the project\
+    \ kind rather than answers\n    instead: create the other kind and move the sources,\
+    \ which is cheaper than converting either way\nwhat_cannot_be_changed:\n  toolchain:\
+    \ the TinyGo answer, which api:cli-add cannot revisit; the api:cli-init page already\
+    \ carries this and the guide links it\n  form: one short section naming the answer\
+    \ and its existing page, not a repeat of it\nwhen_not_to_use:\n  rule: the guide\
+    \ says when reaching for it is the wrong move\n  case: a project that wants three\
+    \ of the four changes above was created from the wrong preset, and creating a\
+    \ second project is cheaper than converting the first\nlocalization: English and\
+    \ Japanese, both carrying the same cases in the same order\nacceptance:\n  - every\
+    \ preset in requirement:init-presets appears on the api:cli-init page with the\
+    \ project it is for\n  - the engine case names every file that changes, in each\
+    \ of the three dialects\n  - a reader following the engine case reaches a project\
+    \ that runs its migrations and serves its queries\n  - the guide links rather\
+    \ than restates the storage, session, and authentication pages\n  - a preset absent\
+    \ from the list is absent from the documentation, and none is absent today\nnon_goals:\n\
+    \  - a section per answer, which is the option table again\n  - a migration tool\
+    \ that performs any of these changes\n  - documenting a change into a shape api:cli-init\
+    \ cannot produce\n```"
+  audience: actor:application-developer
+  house_style: the documentation skill of this repository owns voice, structure, and
+    the link and parity checks
+  pages:
+    preset_reference:
+      where: the api:cli-init page, pw/project/init
+      holds:
+      - the preset list, each with the project it is for and the answers that distinguish
+        it
+      - what every preset answers the same way, so a reader knows what the choice
+        is not about
+      - the --preset flag and its conflict with the capability flags
+      - that Manual is the decision:navigable-answer-hub, and that a preset's review
+        is that same hub
+      replaces: nothing; the per-option table stays, because it documents the questions
+        a preset answers
+    customization_guide:
+      where: a page of its own beside the api:cli-init page, pw/project/presets
+      opens_with: a preset is ten answers with a name, and every answer is still an
+        answer
+      holds:
+      - which changes are one api:cli-add away, per requirement:incremental-project-capabilities
+      - which changes are an edit, and what the edit is
+      - which changes are neither, and what to do instead of trying
+      depth_rule: the guide names the change and links the page that owns it, rather
+        than restating that page
+  worked_cases:
+    rule: two or three cases in full, not one per answer
+    rdb_engine:
+      why_first: the reader who asked for this guide asked about this case, and it
+        is the answer that touches the most files
+      from: the sqlite the website-login preset gives
+      to: postgres or mysql, per requirement:database-engine-selection
+      steps: the project.database key, the rdb DSN of rule:rdb-dsn-resolution, the
+        driver blank import, the dialect of the migration and the .pw.sql sources,
+        and the development server
+      two_more_with_a_login:
+        framework_migrations: the rule:framework-owned-tables files are in the old
+          dialect and no command re-emits them, so the guide gives the procedure that
+          works — scaffold a throwaway project on the target engine with the same
+          answers and copy its files across
+        auth_state_import: authstate is one package per engine, so the blank import
+          changes with the DSN
+        found_by: performing the switch on a scaffolded login project, which built
+          only after both
+      honest_about: decision:server-sql-support-tier translates nothing between dialects,
+        so a project with hand-written SQL rewrites it
+      cheapest_moment: before the first migration runs anywhere, which is worth saying
+        where a reader can still act on it
+      presentation: requirement:engine-parameterized-docs tabs, since every step above
+        differs by engine
+    session_backend:
+      from: the redis the website-login preset gives
+      to: rdb or cookie
+      steps: session.backend, the api:session-backend-plugin blank import, the framework-owned
+        migration for a backend that has one, and the Valkey package the preset added
+      honest_about: every backend reads the same in a handler, so this is a deployment
+        change and not an application one
+    adding_a_login:
+      from: either simple website preset
+      command: pw add auth
+      honest_about: it takes the database with it, because plugin/auth keeps its ceremony
+        records and its allowlist in SQL
+    the_router:
+      from: either simple website preset to the other
+      command: pw add registered or pw add discovered, which install the router the
+        project lacks rather than replace the one it has
+      honest_about: decision:dual-router-coexistence means a project ends up with
+        both trees, and removing the first one is a manual deletion
+    finishing_the_api_server:
+      from: the api-server preset, which requirement:api-server-scaffold points at
+        a development issuer nobody runs
+      steps: replace auth.jwt.issuer and auth.jwt.audience, turn allow_loopback_http
+        back off, choose the policy:bearer-admission mode the deployment wants, and
+        drop the config.dev.toml relaxation once a real authorization server exists
+      also: enabling policy:token-revocation, which is pw add database plus the popcornweb_revoked_token
+        migration and the revocation keys
+      honest_about: the project runs immediately and deploys nowhere, and the reader
+        does not have to remember to remove the relaxation because a non-development
+        build and a non-development environment each refuse it
+      token_shape: the hand-written token needs iss as well as sub, because the account
+        is derived from the pair
+      names_the_mode: this is where requirement:jwt-only-api-authentication is documented,
+        per decision:jwt-only-mode-not-scaffolded putting it in the API-server reference
+        and not in the tutorial
+    the_package_kind:
+      from: nothing; a package project and an application project are not convertible
+        in either direction
+      says: the tracked generated Go of decision:committed-package-artifacts, the
+        missing entry point, and the missing environment configuration are the project
+        kind rather than answers
+      instead: create the other kind and move the sources, which is cheaper than converting
+        either way
+  what_cannot_be_changed:
+    toolchain: the TinyGo answer, which api:cli-add cannot revisit; the api:cli-init
+      page already carries this and the guide links it
+    form: one short section naming the answer and its existing page, not a repeat
+      of it
+  when_not_to_use:
+    rule: the guide says when reaching for it is the wrong move
+    case: a project that wants three of the four changes above was created from the
+      wrong preset, and creating a second project is cheaper than converting the first
+  localization: English and Japanese, both carrying the same cases in the same order
+  acceptance:
+  - every preset in requirement:init-presets appears on the api:cli-init page with
+    the project it is for
+  - the engine case names every file that changes, in each of the three dialects
+  - a reader following the engine case reaches a project that runs its migrations
+    and serves its queries
+  - the guide links rather than restates the storage, session, and authentication
+    pages
+  - a preset absent from the list is absent from the documentation, and none is absent
+    today
+  non_goals:
+  - a section per answer, which is the option table again
+  - a migration tool that performs any of these changes
+  - documenting a change into a shape api:cli-init cannot produce
+acceptance:
+  item-182494d07ac0d624:
+    text: every preset in requirement:init-presets appears on the api:cli-init page
+      with the project it is for
+  item-b542599eeaa6e323:
+    text: the engine case names every file that changes, in each of the three dialects
+  item-cfc07bd9c0aad802:
+    text: a reader following the engine case reaches a project that runs its migrations
+      and serves its queries
+  item-972ba94eec62e317:
+    text: the guide links rather than restates the storage, session, and authentication
+      pages
+  item-a5d9124eb653acbe:
+    text: a preset absent from the list is absent from the documentation, and none
+      is absent today
+relations:
+- relation: mentions
+  to: actor:application-developer
+  resolution: resolved
+- relation: mentions
+  to: api:cli-add
+  resolution: resolved
+- relation: mentions
+  to: api:cli-init
+  resolution: resolved
+- relation: mentions
+  to: api:session-backend-plugin
+  resolution: resolved
+- relation: mentions
+  to: decision:committed-package-artifacts
+  resolution: resolved
+- relation: mentions
+  to: decision:dual-router-coexistence
+  resolution: resolved
+- relation: mentions
+  to: decision:jwt-only-mode-not-scaffolded
+  resolution: resolved
+- relation: mentions
+  to: decision:navigable-answer-hub
+  resolution: resolved
+- relation: mentions
+  to: decision:server-sql-support-tier
+  resolution: resolved
+- relation: mentions
+  to: policy:bearer-admission
+  resolution: resolved
+- relation: mentions
+  to: policy:token-revocation
+  resolution: resolved
+- relation: mentions
+  to: requirement:api-server-scaffold
+  resolution: resolved
+- relation: mentions
+  to: requirement:database-engine-selection
+  resolution: resolved
+- relation: mentions
+  to: requirement:engine-parameterized-docs
+  resolution: resolved
+- relation: mentions
+  to: requirement:incremental-project-capabilities
+  resolution: resolved
+- relation: mentions
+  to: requirement:init-presets
+  resolution: resolved
+- relation: mentions
+  to: requirement:jwt-only-api-authentication
+  resolution: resolved
+- relation: mentions
+  to: rule:framework-owned-tables
+  resolution: resolved
+- relation: mentions
+  to: rule:rdb-dsn-resolution
+  resolution: resolved

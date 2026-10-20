@@ -1,0 +1,168 @@
+id: requirement:read-write-splitting
+type: requirement
+title: Read-Write Split Connections
+summary: An application deployed against a reader-writer cluster reads from replicas
+  by default and writes to the writer, by configuring connections rather than by wiring
+  pools in code.
+facts:
+  legacy_body: "An application deployed against a reader-writer cluster reads from\
+    \ replicas by default and writes to the writer, by configuring connections rather\
+    \ than by wiring pools in code.\n\n```yaml\naudience: actor:application-developer\n\
+    capabilities:\n  grouped_connections: name several pools and address them as one\
+    \ group\n  default_read: unpinned SQL uses default_group, balanced round robin\
+    \ across its connections\n  explicit_selection: api:database-selection pins a\
+    \ group for one call or one handler\n  scoped_transaction: api:transaction-runner\
+    \ keeps the whole callback on the group its context selects\n  readonly_marking:\
+    \ a readonly connection rejects a write statement instead of forwarding it\nconfiguration:\
+    \ data:database-connection-set\ndecision: decision:grouped-database-connections\n\
+    selection: policy:connection-group-selection\nlifecycle: api:rdb-middleware\n\
+    acceptance:\n  - one connections element naming no group is the single-database\
+    \ project, and it needs no group pointer\n  - an enabled rdb with no connections\
+    \ element fails startup, naming the removed middleware.rdb.dsn form and the element\
+    \ that replaces it\n  - two connections sharing one group alternate across successive\
+    \ requests\n  - one request that reads twice from a group uses one connection\
+    \ for both statements\n  - unpinned SQL resolves default_group; SelectDB with\
+    \ a group name resolves that group\n  - unpinned SQL inside a writer transaction\
+    \ runs on the writer, not on default_group\n  - Transaction on a SelectDB context\
+    \ commits on that group, and a nested call on the same group opens a savepoint\n\
+    \  - a nested Transaction naming a different group fails and leaves the outer\
+    \ transaction usable\n  - SelectDB to a readonly group inside a transaction reads\
+    \ outside it; to a writable group it fails\n  - a write against a readonly connection\
+    \ fails as a framework error once the sqlbind resolver contract carries a statement\
+    \ access mode, per decision:grouped-database-connections\n  - a readonly connection\
+    \ configured as write_group, session group, or migration group fails startup\n\
+    \  - migration, seeding, and the session store write to their resolved group,\
+    \ never to a replica\n  - api:test-run maps every group name onto its single test\
+    \ pool, so a SelectDB call needs no test-only branch\n  - a single-connection\
+    \ deployment answers every group name too, so one sqlite file runs the same code\
+    \ as a cluster\n  - a partly opened set is closed rather than served when one\
+    \ connection fails to open\n  - the startup summary lists every connection with\
+    \ its group, readonly flag, pool bounds, and redacted DSN\n  - a failed ping on\
+    \ any connection stops startup and names the connection label\nnon_goals:\n  -\
+    \ health checking, ejection, or failover among replicas\n  - replica-lag awareness\
+    \ or read-your-writes routing\n  - weighted or latency-aware balancing\n  - transactions\
+    \ spanning two groups\n  - sharding or per-tenant connection routing\n```"
+  audience: actor:application-developer
+  capabilities:
+    grouped_connections: name several pools and address them as one group
+    default_read: unpinned SQL uses default_group, balanced round robin across its
+      connections
+    explicit_selection: api:database-selection pins a group for one call or one handler
+    scoped_transaction: api:transaction-runner keeps the whole callback on the group
+      its context selects
+    readonly_marking: a readonly connection rejects a write statement instead of forwarding
+      it
+  configuration: data:database-connection-set
+  decision: decision:grouped-database-connections
+  selection: policy:connection-group-selection
+  lifecycle: api:rdb-middleware
+  acceptance:
+  - one connections element naming no group is the single-database project, and it
+    needs no group pointer
+  - an enabled rdb with no connections element fails startup, naming the removed middleware.rdb.dsn
+    form and the element that replaces it
+  - two connections sharing one group alternate across successive requests
+  - one request that reads twice from a group uses one connection for both statements
+  - unpinned SQL resolves default_group; SelectDB with a group name resolves that
+    group
+  - unpinned SQL inside a writer transaction runs on the writer, not on default_group
+  - Transaction on a SelectDB context commits on that group, and a nested call on
+    the same group opens a savepoint
+  - a nested Transaction naming a different group fails and leaves the outer transaction
+    usable
+  - SelectDB to a readonly group inside a transaction reads outside it; to a writable
+    group it fails
+  - a write against a readonly connection fails as a framework error once the sqlbind
+    resolver contract carries a statement access mode, per decision:grouped-database-connections
+  - a readonly connection configured as write_group, session group, or migration group
+    fails startup
+  - migration, seeding, and the session store write to their resolved group, never
+    to a replica
+  - api:test-run maps every group name onto its single test pool, so a SelectDB call
+    needs no test-only branch
+  - a single-connection deployment answers every group name too, so one sqlite file
+    runs the same code as a cluster
+  - a partly opened set is closed rather than served when one connection fails to
+    open
+  - the startup summary lists every connection with its group, readonly flag, pool
+    bounds, and redacted DSN
+  - a failed ping on any connection stops startup and names the connection label
+  non_goals:
+  - health checking, ejection, or failover among replicas
+  - replica-lag awareness or read-your-writes routing
+  - weighted or latency-aware balancing
+  - transactions spanning two groups
+  - sharding or per-tenant connection routing
+acceptance:
+  item-9635b1b906777047:
+    text: one connections element naming no group is the single-database project,
+      and it needs no group pointer
+  item-ac0c76b9cfd35fda:
+    text: an enabled rdb with no connections element fails startup, naming the removed
+      middleware.rdb.dsn form and the element that replaces it
+  item-e27978bca977f327:
+    text: two connections sharing one group alternate across successive requests
+  item-def463ed092a0c11:
+    text: one request that reads twice from a group uses one connection for both statements
+  item-4273eb4ce645f3e8:
+    text: unpinned SQL resolves default_group; SelectDB with a group name resolves
+      that group
+  item-6eb25633cfd6ac2a:
+    text: unpinned SQL inside a writer transaction runs on the writer, not on default_group
+  item-6562f9ccc0d2d30e:
+    text: Transaction on a SelectDB context commits on that group, and a nested call
+      on the same group opens a savepoint
+  item-4416bbcca0c9afaa:
+    text: a nested Transaction naming a different group fails and leaves the outer
+      transaction usable
+  item-b1bc8a4d2457324b:
+    text: SelectDB to a readonly group inside a transaction reads outside it; to a
+      writable group it fails
+  item-042bd02d3a61fcb5:
+    text: a write against a readonly connection fails as a framework error once the
+      sqlbind resolver contract carries a statement access mode, per decision:grouped-database-connections
+  item-2a390e67174118fb:
+    text: a readonly connection configured as write_group, session group, or migration
+      group fails startup
+  item-d6ce4565b7475f5a:
+    text: migration, seeding, and the session store write to their resolved group,
+      never to a replica
+  item-6f3cea00b395cc90:
+    text: api:test-run maps every group name onto its single test pool, so a SelectDB
+      call needs no test-only branch
+  item-010f9b01914d944d:
+    text: a single-connection deployment answers every group name too, so one sqlite
+      file runs the same code as a cluster
+  item-33587db4d4f66df0:
+    text: a partly opened set is closed rather than served when one connection fails
+      to open
+  item-c9a7e2718dedea6d:
+    text: the startup summary lists every connection with its group, readonly flag,
+      pool bounds, and redacted DSN
+  item-3c0d613302ae661f:
+    text: a failed ping on any connection stops startup and names the connection label
+relations:
+- relation: mentions
+  to: actor:application-developer
+  resolution: resolved
+- relation: mentions
+  to: api:database-selection
+  resolution: resolved
+- relation: mentions
+  to: api:rdb-middleware
+  resolution: resolved
+- relation: mentions
+  to: api:test-run
+  resolution: resolved
+- relation: mentions
+  to: api:transaction-runner
+  resolution: resolved
+- relation: mentions
+  to: data:database-connection-set
+  resolution: resolved
+- relation: mentions
+  to: decision:grouped-database-connections
+  resolution: resolved
+- relation: mentions
+  to: policy:connection-group-selection
+  resolution: resolved

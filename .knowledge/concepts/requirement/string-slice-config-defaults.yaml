@@ -1,0 +1,261 @@
+id: requirement:string-slice-config-defaults
+type: requirement
+title: String Slice Configuration Defaults
+summary: Configuration defaults for string slices must produce the intended elements, including a working CSRF include
+  default and an empty-list spelling.
+authority: authored
+lifecycle: accepted
+review_state: confirmed
+facts:
+  origin:
+    request: concept:bdf-printmanager-integration
+    source: source:bdf-printmanager-request
+    section: Smaller notes from the same integration
+  requester_priority: nonblocking integration note; includes a reported CSRF startup bug
+  implementation_status: Implemented and verified in this repository; no BDF deployment is claimed.
+  reported_versions:
+    popcornweb: v0.5.11
+    tinybind-go: v0.5.33
+  reported_behavior:
+    empty_default: default:"[]" reaches Overlay.GetMulti as a scalar and becomes the one-element list containing
+      "[]".
+    csrf_default: CSRFConfig.Include default:"[\"/**\"]" becomes one literal JSON-looking string rather than the
+      path pattern /**.
+    startup: SECURITY_CSRF_ENABLED=true without an explicit include fails with a pattern-must-start-with-slash error.
+    security: The failure is closed; the request does not ask to weaken CSRF validation.
+  allowed_remedies:
+  - Teach GetMulti to parse bracketed defaults as lists.
+  - Reject unsupported bracketed defaults during generation and use a supported scalar spelling such as /**.
+  documentation: Define supported []string default syntax and empty-list behavior in ja/reference/configuration-declaration.md.
+  implementation_report: docs/requests/bdf-printmanager-implementation.md
+relations:
+- relation: requested_by
+  to: concept:bdf-printmanager-integration
+  resolution: resolved
+  evidence:
+    source_id: source:bdf-printmanager-request
+    path: bdf-printmanager-public-assets.md
+    heading: Smaller notes from the same integration
+    input_hash: a2df65a9a5a065a50b78c3559e0f9b0c559e18ff5d7c22f9a08352ad4674a426
+- relation: affects
+  to: api:runtime-configuration
+  resolution: resolved
+  evidence:
+    source_id: source:bdf-printmanager-request
+    path: bdf-printmanager-public-assets.md
+    heading: Smaller notes from the same integration
+    input_hash: a2df65a9a5a065a50b78c3559e0f9b0c559e18ff5d7c22f9a08352ad4674a426
+- relation: affects
+  to: data:security-runtime-config
+  resolution: resolved
+  evidence:
+    source_id: source:bdf-printmanager-request
+    path: bdf-printmanager-public-assets.md
+    heading: Smaller notes from the same integration
+    input_hash: a2df65a9a5a065a50b78c3559e0f9b0c559e18ff5d7c22f9a08352ad4674a426
+- relation: constrained_by
+  to: policy:csrf-protection
+  resolution: resolved
+  evidence:
+    source_id: source:bdf-printmanager-request
+    path: bdf-printmanager-public-assets.md
+    heading: Smaller notes from the same integration
+    input_hash: a2df65a9a5a065a50b78c3559e0f9b0c559e18ff5d7c22f9a08352ad4674a426
+- relation: affects
+  to: system:tinybind
+  resolution: resolved
+  evidence:
+    source_id: source:bdf-printmanager-request
+    path: bdf-printmanager-public-assets.md
+    heading: Smaller notes from the same integration
+    input_hash: a2df65a9a5a065a50b78c3559e0f9b0c559e18ff5d7c22f9a08352ad4674a426
+acceptance:
+  csrf-default:
+    text: Enabling CSRF with no explicit include yields the intended /** path and does not fail startup because
+      of the default encoding.
+    authority: authored
+    evidence:
+      source_id: source:bdf-printmanager-request
+      path: bdf-printmanager-public-assets.md
+      heading: Smaller notes from the same integration
+      input_hash: a2df65a9a5a065a50b78c3559e0f9b0c559e18ff5d7c22f9a08352ad4674a426
+    verified_by:
+    - csrf-default
+  empty-slice:
+    text: The supported empty string-slice default produces zero elements; an unsupported spelling fails clearly
+      during generation rather than silently producing a literal [] element.
+    authority: authored
+    evidence:
+      source_id: source:bdf-printmanager-request
+      path: bdf-printmanager-public-assets.md
+      heading: Smaller notes from the same integration
+      input_hash: a2df65a9a5a065a50b78c3559e0f9b0c559e18ff5d7c22f9a08352ad4674a426
+    verified_by:
+    - empty-slice
+  default-contract:
+    text: Generator output and runtime parsing agree on single and multiple string-slice elements and document the
+      supported syntax.
+    authority: authored
+    evidence:
+      source_id: source:bdf-printmanager-request
+      path: bdf-printmanager-public-assets.md
+      heading: Smaller notes from the same integration
+      input_hash: a2df65a9a5a065a50b78c3559e0f9b0c559e18ff5d7c22f9a08352ad4674a426
+    verified_by:
+    - default-contract
+  slice-docs:
+    text: ja/reference/configuration-declaration.md explains string-slice defaults and the empty-list case.
+    authority: authored
+    evidence:
+      source_id: source:bdf-printmanager-request
+      path: bdf-printmanager-public-assets.md
+      heading: Smaller notes from the same integration
+      input_hash: a2df65a9a5a065a50b78c3559e0f9b0c559e18ff5d7c22f9a08352ad4674a426
+    verified_by:
+    - slice-docs
+verification:
+  csrf-default:
+    state: passed
+    method: integration
+    test: TestSecuritySliceDefaultsLoadUsablePatterns
+    authority: observed
+    evidence:
+      path: pwconfig/slicedefaults_test.go
+      locator: TestSecuritySliceDefaultsLoadUsablePatterns
+    basis:
+    - path: go.mod
+      input_hash: 6395d43e84ea0b7fc07ade55b2846879f49afc2a2484ece5121ed4444ce5ed6f
+    - path: pwruntime/csrfconfig.go
+      input_hash: d3509cf19e68810df302a492c19cab6113b7afd0dd8dab8eb145db24397175dc
+    - path: pwruntime/cors.go
+      input_hash: 7f14339f487682d207d4e7bb9df32ad894260763c7882e3a6e54de31c663fd81
+    - path: pwconfig/configbind_gen.go
+      input_hash: 9777314577e954f1c5f90b28012bd711849f5fd5296383dfbb7f7c82ea9503eb
+    - path: internal/pwgen/configdefaults.go
+      input_hash: 8f0d85a4ce8cd26392d722f884b18a0663ba00e5d52b1ec0a6b4754a9bece2fe
+    - path: internal/pwcli/generate.go
+      input_hash: 5c9f11dbb235809dabf97b98d5323bfee71365f547569d27d3db2e8a67571931
+    - path: pwconfig/slicedefaults_test.go
+      input_hash: 590b87a68bda10f421c1c1af771986688be31cfb8160db43659f4f950877a526
+    - path: internal/pwgen/configdefaults_test.go
+      input_hash: d8eb961a574aae2896d076121af25b9c34aef66fde0689bc57de8b5cc1947a0b
+  empty-slice:
+    state: passed
+    method: unit
+    test: TestSecuritySliceDefaultsLoadUsablePatterns; TestStringSliceDefaultsRejectArraySyntax
+    authority: observed
+    evidence:
+      path: pwconfig/slicedefaults_test.go
+      locator: TestSecuritySliceDefaultsLoadUsablePatterns; TestStringSliceDefaultsRejectArraySyntax
+    basis:
+    - path: go.mod
+      input_hash: 6395d43e84ea0b7fc07ade55b2846879f49afc2a2484ece5121ed4444ce5ed6f
+    - path: pwruntime/csrfconfig.go
+      input_hash: d3509cf19e68810df302a492c19cab6113b7afd0dd8dab8eb145db24397175dc
+    - path: pwruntime/cors.go
+      input_hash: 7f14339f487682d207d4e7bb9df32ad894260763c7882e3a6e54de31c663fd81
+    - path: pwconfig/configbind_gen.go
+      input_hash: 9777314577e954f1c5f90b28012bd711849f5fd5296383dfbb7f7c82ea9503eb
+    - path: internal/pwgen/configdefaults.go
+      input_hash: 8f0d85a4ce8cd26392d722f884b18a0663ba00e5d52b1ec0a6b4754a9bece2fe
+    - path: internal/pwcli/generate.go
+      input_hash: 5c9f11dbb235809dabf97b98d5323bfee71365f547569d27d3db2e8a67571931
+    - path: pwconfig/slicedefaults_test.go
+      input_hash: 590b87a68bda10f421c1c1af771986688be31cfb8160db43659f4f950877a526
+    - path: internal/pwgen/configdefaults_test.go
+      input_hash: d8eb961a574aae2896d076121af25b9c34aef66fde0689bc57de8b5cc1947a0b
+  default-contract:
+    state: passed
+    method: integration
+    test: TestConfigDefaultValidationReadsRegisteredTypes; TestStringSliceDefaultsRejectArraySyntax; TestSecuritySliceDefaultsLoadUsablePatterns
+    authority: observed
+    evidence:
+      path: internal/pwgen/configdefaults_test.go
+      locator: TestConfigDefaultValidationReadsRegisteredTypes; TestStringSliceDefaultsRejectArraySyntax; TestSecuritySliceDefaultsLoadUsablePatterns
+    basis:
+    - path: go.mod
+      input_hash: 6395d43e84ea0b7fc07ade55b2846879f49afc2a2484ece5121ed4444ce5ed6f
+    - path: pwruntime/csrfconfig.go
+      input_hash: d3509cf19e68810df302a492c19cab6113b7afd0dd8dab8eb145db24397175dc
+    - path: pwruntime/cors.go
+      input_hash: 7f14339f487682d207d4e7bb9df32ad894260763c7882e3a6e54de31c663fd81
+    - path: pwconfig/configbind_gen.go
+      input_hash: 9777314577e954f1c5f90b28012bd711849f5fd5296383dfbb7f7c82ea9503eb
+    - path: internal/pwgen/configdefaults.go
+      input_hash: 8f0d85a4ce8cd26392d722f884b18a0663ba00e5d52b1ec0a6b4754a9bece2fe
+    - path: internal/pwcli/generate.go
+      input_hash: 5c9f11dbb235809dabf97b98d5323bfee71365f547569d27d3db2e8a67571931
+    - path: pwconfig/slicedefaults_test.go
+      input_hash: 590b87a68bda10f421c1c1af771986688be31cfb8160db43659f4f950877a526
+    - path: internal/pwgen/configdefaults_test.go
+      input_hash: d8eb961a574aae2896d076121af25b9c34aef66fde0689bc57de8b5cc1947a0b
+  slice-docs:
+    state: passed
+    method: static
+    test: 'Astro build: English/Japanese []string default documentation'
+    authority: observed
+    evidence:
+      path: website/src/content/docs/ja/reference/configuration-declaration.md
+      locator: 'Astro build: English/Japanese []string default documentation'
+    basis:
+    - path: go.mod
+      input_hash: 6395d43e84ea0b7fc07ade55b2846879f49afc2a2484ece5121ed4444ce5ed6f
+    - path: pwruntime/csrfconfig.go
+      input_hash: d3509cf19e68810df302a492c19cab6113b7afd0dd8dab8eb145db24397175dc
+    - path: pwruntime/cors.go
+      input_hash: 7f14339f487682d207d4e7bb9df32ad894260763c7882e3a6e54de31c663fd81
+    - path: pwconfig/configbind_gen.go
+      input_hash: 9777314577e954f1c5f90b28012bd711849f5fd5296383dfbb7f7c82ea9503eb
+    - path: internal/pwgen/configdefaults.go
+      input_hash: 8f0d85a4ce8cd26392d722f884b18a0663ba00e5d52b1ec0a6b4754a9bece2fe
+    - path: internal/pwcli/generate.go
+      input_hash: 5c9f11dbb235809dabf97b98d5323bfee71365f547569d27d3db2e8a67571931
+    - path: pwconfig/slicedefaults_test.go
+      input_hash: 590b87a68bda10f421c1c1af771986688be31cfb8160db43659f4f950877a526
+    - path: internal/pwgen/configdefaults_test.go
+      input_hash: d8eb961a574aae2896d076121af25b9c34aef66fde0689bc57de8b5cc1947a0b
+    - path: website/src/content/docs/ja/reference/configuration-declaration.md
+      input_hash: 9e134c5c8a29e8344122c001144a50aba9c1e206f233bce354e7db7f10562df5
+constraints:
+- Preserve fail-closed validation of invalid CSRF patterns.
+open_questions:
+  default-parser-ownership:
+    text: Fix bracket-list parsing upstream in tinybind-go or reject unsupported syntax and change framework defaults?
+    state: answered
+    resolution: Keep upstream GetMulti scalar CSV semantics. Correct framework CSRF/CORS defaults to CSV and reject
+      array-looking []string defaults in pw generate, including registered nested/defined slice types. Empty defaults
+      use no tag or an empty default.
+capabilities:
+  requested-behavior:
+    state: implemented
+    authority: observed
+    verified_by:
+    - csrf-default
+    - empty-slice
+    - default-contract
+    - slice-docs
+    basis:
+    - path: go.mod
+      input_hash: 6395d43e84ea0b7fc07ade55b2846879f49afc2a2484ece5121ed4444ce5ed6f
+    - path: pwruntime/csrfconfig.go
+      input_hash: d3509cf19e68810df302a492c19cab6113b7afd0dd8dab8eb145db24397175dc
+    - path: pwruntime/cors.go
+      input_hash: 7f14339f487682d207d4e7bb9df32ad894260763c7882e3a6e54de31c663fd81
+    - path: pwconfig/configbind_gen.go
+      input_hash: 9777314577e954f1c5f90b28012bd711849f5fd5296383dfbb7f7c82ea9503eb
+    - path: internal/pwgen/configdefaults.go
+      input_hash: 8f0d85a4ce8cd26392d722f884b18a0663ba00e5d52b1ec0a6b4754a9bece2fe
+    - path: internal/pwcli/generate.go
+      input_hash: 5c9f11dbb235809dabf97b98d5323bfee71365f547569d27d3db2e8a67571931
+    - path: pwconfig/slicedefaults_test.go
+      input_hash: 590b87a68bda10f421c1c1af771986688be31cfb8160db43659f4f950877a526
+    - path: internal/pwgen/configdefaults_test.go
+      input_hash: d8eb961a574aae2896d076121af25b9c34aef66fde0689bc57de8b5cc1947a0b
+    evidence:
+      path: docs/requests/bdf-printmanager-implementation.md
+history:
+  implementation:
+    summary: Implemented the requested behavior and documentation; acceptance verification records refer to local
+      fixtures and saved input hashes.
+    evidence:
+      path: docs/requests/bdf-printmanager-implementation.md

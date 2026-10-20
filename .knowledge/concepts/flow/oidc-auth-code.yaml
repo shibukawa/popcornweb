@@ -1,0 +1,55 @@
+id: flow:oidc-auth-code
+type: flow
+title: OIDC Authorization Code Flow
+summary: The OIDC client correlates browser authorization with state, nonce, and PKCE
+  before accepting an ID Token.
+facts:
+  legacy_body: "The OIDC client correlates browser authorization with state, nonce,\
+    \ and PKCE before accepting an ID Token.\n\n```yaml\nflow:\n  trigger: application\
+    \ starts login through requirement:contrib-oidc over requirement:contrib-oauth\n\
+    \  steps:\n    - id: prepare\n      action: generate state, nonce, code verifier,\
+    \ and S256 challenge\n    - id: store\n      action: persist expiring single-use\
+    \ correlation data through requirement:contrib-auth-state\n    - id: authorize\n\
+    \      action: redirect to discovered authorization endpoint\n    - id: callback\n\
+    \      action: require matching state and atomically consume correlation data\
+    \ before exchange\n    - id: exchange\n      action: exchange code and verifier\
+    \ at token endpoint\n    - id: verify\n      action: verify ID Token with policy:jwt-security\
+    \ and policy:oidc-security\n    - id: return\n      output: verified subject,\
+    \ claims, token metadata, and optional access token\n  failure:\n    default:\
+    \ return typed error without tokens or secrets\n```"
+  flow:
+    trigger: application starts login through requirement:contrib-oidc over requirement:contrib-oauth
+    steps:
+    - id: prepare
+      action: generate state, nonce, code verifier, and S256 challenge
+    - id: store
+      action: persist expiring single-use correlation data through requirement:contrib-auth-state
+    - id: authorize
+      action: redirect to discovered authorization endpoint
+    - id: callback
+      action: require matching state and atomically consume correlation data before
+        exchange
+    - id: exchange
+      action: exchange code and verifier at token endpoint
+    - id: verify
+      action: verify ID Token with policy:jwt-security and policy:oidc-security
+    - id: return
+      output: verified subject, claims, token metadata, and optional access token
+    failure:
+      default: return typed error without tokens or secrets
+relations:
+- relation: mentions
+  to: policy:jwt-security
+  resolution: resolved
+- relation: mentions
+  to: policy:oidc-security
+  resolution: resolved
+- relation: mentions
+  to: requirement:contrib-auth-state
+  resolution: resolved
+- relation: mentions
+  to: requirement:contrib-oauth
+  resolution: resolved
+- relation: mentions
+  to: requirement:contrib-oidc
+  resolution: resolved

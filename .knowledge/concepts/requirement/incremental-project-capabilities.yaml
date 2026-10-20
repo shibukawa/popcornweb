@@ -1,0 +1,268 @@
+id: requirement:incremental-project-capabilities
+type: requirement
+title: Incremental Project Capabilities
+summary: Every scaffold decision made at api:cli-init stays reversible afterwards,
+  so a project grows a capability or a route through a reviewed command instead of
+  hand-copied starter files.
+facts:
+  legacy_body: "Every scaffold decision made at api:cli-init stays reversible afterwards,\
+    \ so a project grows a capability or a route through a reviewed command instead\
+    \ of hand-copied starter files.\n\n```yaml\nmotivation:\n  - a bootstrap answer\
+    \ is given before the project is understood, so declining a capability must not\
+    \ be permanent\n  - copying auth, database, Valkey, or Tailwind wiring by hand\
+    \ drifts from the version the framework expects\n  - a handler needs a mux registration,\
+    \ a literal route pattern, and an optional template that must agree with each\
+    \ other\nscope:\n  capabilities: api:cli-add over the same catalog api:cli-init\
+    \ offers\n  artifacts: api:cli-new over the concept:project-layout sources a project\
+    \ adds repeatedly\n  interaction: decision:post-init-scaffold-wizard\ncapability_catalog:\n\
+    \  shared: api:cli-init questions and api:cli-add capabilities are one list, so\
+    \ an option costs one entry rather than one per command\n  members:\n    - devbox\n\
+    \    - database\n    - redis-valkey\n    - auth\n    - tailwind\n    - dynamo\n\
+    \    - registered\n    - discovered\n  router_pair: registered and discovered\
+    \ are the two routers the one api:cli-init router question selects between, per\
+    \ decision:page-router-scaffold-choice, so either can be installed into a project\
+    \ that started with only the other; they are named after the router rather than\
+    \ after the directory it reads\n  dependencies:\n    auth: database, because its\
+    \ session store is the rdb backend of data:session-runtime-config\n    redis-valkey:\
+    \ devbox, because the answer writes nothing but a package in that environment\n\
+    \    dynamo: nothing, per requirement:dynamodb-store; it is a second kind of store\
+    \ rather than an alternative to the first\n  parameterized:\n    database: carries\
+    \ the requirement:database-engine-selection engine, so the capability is one entry\
+    \ with an answer rather than three entries\n  excluded:\n    jwt_only: requirement:jwt-only-api-authentication\
+    \ is not a catalog member and auth never means it, per decision:jwt-only-mode-not-scaffolded;\
+    \ a mode whose whole installation is a configuration section is not a capability\
+    \ a command installs\ndetection:\n  source: the project files that carry the capability\n\
+    \  reason: a separate manifest in data:project-config would disagree with a hand-edited\
+    \ project\n  consumers: api:cli-add offers what the project lacks, and api:cli-doctor\
+    \ reports it\n  probes:\n    devbox: the devbox.json file\n    database: middleware.rdb\
+    \ in the data:middleware-runtime-config section of the environment configuration\n\
+    \    redis-valkey: the Valkey package in devbox.json\n    auth: the rule:framework-owned-tables\
+    \ migration name stem, at any version\n    tailwind: assets.tailwind.enabled in\
+    \ data:project-config\n    dynamo: middleware.dynamo in the environment configuration,\
+    \ and the generate.dynamo entries\n    discovered: the generate.pages entries,\
+    \ whatever directory they name\n    registered: the generate.handlers entries,\
+    \ whatever directory they name\nentry_point_edits:\n  rule: api:cli-add edits\
+    \ concept:application-entry-point rather than describing the edit, so a capability\
+    \ installed later reaches the file state one installed at bootstrap already has\n\
+    \  covers: the blank imports a store needs and the account seam call a login needs\n\
+    \  why_it_outranks_application_ownership: storage is opt-in by blank import, so\
+    \ configuration that names a backend does nothing until the binary links it; printing\
+    \ that step left api:cli-init and api:cli-add producing different projects from\
+    \ the same answers, and the difference surfaced as a startup error rather than\
+    \ as a missing file\n  what_makes_it_safe:\n    reviewed: the edit is planned,\
+    \ named on the decision:post-init-scaffold-wizard review screen with its path,\
+    \ and applied only after that screen is accepted\n    spliced: the insertion point\
+    \ comes from the parser and the rest of the file is copied byte for byte, so comments,\
+    \ grouping, and hand formatting survive\n    idempotent: an import or a call already\
+    \ present is not added again, so running a capability twice stacks nothing\n \
+    \   accumulating: two capabilities in one run build on each other's planned edit\
+    \ rather than each starting from what is on disk\n  fallback: a file this cannot\
+    \ edit — an unparenthesized import block, no func main, a package that does not\
+    \ parse — goes back to printing the step, so the operator still learns what is\
+    \ missing\n  still_printed: an edit that is not an import or a call in main, such\
+    \ as the page tree registration on a mux the command cannot name\nbehavior:\n\
+    \  - both commands run inside an existing project and fail without data:project-config\n\
+    \  - both ask their questions in a terminal wizard and write only after the review\
+    \ screen is accepted\n  - both compute the full file set first and write nothing\
+    \ when any step would fail\n  - neither overwrites an application-owned file;\
+    \ the conflict is reported and the command stops\n  - a step the framework cannot\
+    \ perform safely becomes a printed follow-up command\nacceptance:\n  - a project\
+    \ initialized without a capability reaches the same file state through api:cli-add\
+    \ as one initialized with it\n  - adding a capability the project already carries\
+    \ fails with the path that proves it is present\n  - a canceled wizard leaves\
+    \ the project byte-identical\n  - api:cli-new handler produces a route that api:cli-generate\
+    \ accepts under rule:static-route-discovery\n  - api:cli-new page produces a route\
+    \ directory that api:cli-generate serves without any registration\n  - a project\
+    \ initialized with one router tree reaches the same file state as one initialized\
+    \ with both after adding the other\n  - a failed write leaves no partially installed\
+    \ capability and no orphan handler source\nnon_goals:\n  - removing a capability\
+    \ from a project\n  - changing the database engine of a project that already has\
+    \ one\n  - upgrading a capability already installed at an older shape\n  - remembering\
+    \ answers between runs\n  - full flag parity with api:cli-init, per decision:post-init-scaffold-wizard\n\
+    ```"
+  motivation:
+  - a bootstrap answer is given before the project is understood, so declining a capability
+    must not be permanent
+  - copying auth, database, Valkey, or Tailwind wiring by hand drifts from the version
+    the framework expects
+  - a handler needs a mux registration, a literal route pattern, and an optional template
+    that must agree with each other
+  scope:
+    capabilities: api:cli-add over the same catalog api:cli-init offers
+    artifacts: api:cli-new over the concept:project-layout sources a project adds
+      repeatedly
+    interaction: decision:post-init-scaffold-wizard
+  capability_catalog:
+    shared: api:cli-init questions and api:cli-add capabilities are one list, so an
+      option costs one entry rather than one per command
+    members:
+    - devbox
+    - database
+    - redis-valkey
+    - auth
+    - tailwind
+    - dynamo
+    - registered
+    - discovered
+    router_pair: registered and discovered are the two routers the one api:cli-init
+      router question selects between, per decision:page-router-scaffold-choice, so
+      either can be installed into a project that started with only the other; they
+      are named after the router rather than after the directory it reads
+    dependencies:
+      auth: database, because its session store is the rdb backend of data:session-runtime-config
+      redis-valkey: devbox, because the answer writes nothing but a package in that
+        environment
+      dynamo: nothing, per requirement:dynamodb-store; it is a second kind of store
+        rather than an alternative to the first
+    parameterized:
+      database: carries the requirement:database-engine-selection engine, so the capability
+        is one entry with an answer rather than three entries
+    excluded:
+      jwt_only: requirement:jwt-only-api-authentication is not a catalog member and
+        auth never means it, per decision:jwt-only-mode-not-scaffolded; a mode whose
+        whole installation is a configuration section is not a capability a command
+        installs
+  detection:
+    source: the project files that carry the capability
+    reason: a separate manifest in data:project-config would disagree with a hand-edited
+      project
+    consumers: api:cli-add offers what the project lacks, and api:cli-doctor reports
+      it
+    probes:
+      devbox: the devbox.json file
+      database: middleware.rdb in the data:middleware-runtime-config section of the
+        environment configuration
+      redis-valkey: the Valkey package in devbox.json
+      auth: the rule:framework-owned-tables migration name stem, at any version
+      tailwind: assets.tailwind.enabled in data:project-config
+      dynamo: middleware.dynamo in the environment configuration, and the generate.dynamo
+        entries
+      discovered: the generate.pages entries, whatever directory they name
+      registered: the generate.handlers entries, whatever directory they name
+  entry_point_edits:
+    rule: api:cli-add edits concept:application-entry-point rather than describing
+      the edit, so a capability installed later reaches the file state one installed
+      at bootstrap already has
+    covers: the blank imports a store needs and the account seam call a login needs
+    why_it_outranks_application_ownership: storage is opt-in by blank import, so configuration
+      that names a backend does nothing until the binary links it; printing that step
+      left api:cli-init and api:cli-add producing different projects from the same
+      answers, and the difference surfaced as a startup error rather than as a missing
+      file
+    what_makes_it_safe:
+      reviewed: the edit is planned, named on the decision:post-init-scaffold-wizard
+        review screen with its path, and applied only after that screen is accepted
+      spliced: the insertion point comes from the parser and the rest of the file
+        is copied byte for byte, so comments, grouping, and hand formatting survive
+      idempotent: an import or a call already present is not added again, so running
+        a capability twice stacks nothing
+      accumulating: two capabilities in one run build on each other's planned edit
+        rather than each starting from what is on disk
+    fallback: a file this cannot edit — an unparenthesized import block, no func main,
+      a package that does not parse — goes back to printing the step, so the operator
+      still learns what is missing
+    still_printed: an edit that is not an import or a call in main, such as the page
+      tree registration on a mux the command cannot name
+  behavior:
+  - both commands run inside an existing project and fail without data:project-config
+  - both ask their questions in a terminal wizard and write only after the review
+    screen is accepted
+  - both compute the full file set first and write nothing when any step would fail
+  - neither overwrites an application-owned file; the conflict is reported and the
+    command stops
+  - a step the framework cannot perform safely becomes a printed follow-up command
+  acceptance:
+  - a project initialized without a capability reaches the same file state through
+    api:cli-add as one initialized with it
+  - adding a capability the project already carries fails with the path that proves
+    it is present
+  - a canceled wizard leaves the project byte-identical
+  - api:cli-new handler produces a route that api:cli-generate accepts under rule:static-route-discovery
+  - api:cli-new page produces a route directory that api:cli-generate serves without
+    any registration
+  - a project initialized with one router tree reaches the same file state as one
+    initialized with both after adding the other
+  - a failed write leaves no partially installed capability and no orphan handler
+    source
+  non_goals:
+  - removing a capability from a project
+  - changing the database engine of a project that already has one
+  - upgrading a capability already installed at an older shape
+  - remembering answers between runs
+  - full flag parity with api:cli-init, per decision:post-init-scaffold-wizard
+acceptance:
+  item-611804b04d2c4fb0:
+    text: a project initialized without a capability reaches the same file state through
+      api:cli-add as one initialized with it
+  item-86da871b77b2d3ed:
+    text: adding a capability the project already carries fails with the path that
+      proves it is present
+  item-41934c23c9ba7f03:
+    text: a canceled wizard leaves the project byte-identical
+  item-590a31b9af49a5e1:
+    text: api:cli-new handler produces a route that api:cli-generate accepts under
+      rule:static-route-discovery
+  item-877f8dc7bcc8604b:
+    text: api:cli-new page produces a route directory that api:cli-generate serves
+      without any registration
+  item-11987718eb97893d:
+    text: a project initialized with one router tree reaches the same file state as
+      one initialized with both after adding the other
+  item-a9d9a14d87a45e9e:
+    text: a failed write leaves no partially installed capability and no orphan handler
+      source
+relations:
+- relation: mentions
+  to: api:cli-add
+  resolution: resolved
+- relation: mentions
+  to: api:cli-doctor
+  resolution: resolved
+- relation: mentions
+  to: api:cli-generate
+  resolution: resolved
+- relation: mentions
+  to: api:cli-init
+  resolution: resolved
+- relation: mentions
+  to: api:cli-new
+  resolution: resolved
+- relation: mentions
+  to: concept:application-entry-point
+  resolution: resolved
+- relation: mentions
+  to: concept:project-layout
+  resolution: resolved
+- relation: mentions
+  to: data:middleware-runtime-config
+  resolution: resolved
+- relation: mentions
+  to: data:project-config
+  resolution: resolved
+- relation: mentions
+  to: data:session-runtime-config
+  resolution: resolved
+- relation: mentions
+  to: decision:jwt-only-mode-not-scaffolded
+  resolution: resolved
+- relation: mentions
+  to: decision:page-router-scaffold-choice
+  resolution: resolved
+- relation: mentions
+  to: decision:post-init-scaffold-wizard
+  resolution: resolved
+- relation: mentions
+  to: requirement:database-engine-selection
+  resolution: resolved
+- relation: mentions
+  to: requirement:dynamodb-store
+  resolution: resolved
+- relation: mentions
+  to: requirement:jwt-only-api-authentication
+  resolution: resolved
+- relation: mentions
+  to: rule:framework-owned-tables
+  resolution: resolved
+- relation: mentions
+  to: rule:static-route-discovery
+  resolution: resolved

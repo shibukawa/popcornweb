@@ -1,0 +1,30 @@
+id: decision:tinygo-042-baseline
+type: decision
+title: TinyGo 0.42 Baseline
+summary: Popcorn Web targets TinyGo 0.42 or later and obtains reusable networking
+  compatibility from system:tinygodriver instead of carrying local copies.
+facts:
+  legacy_body: "Popcorn Web targets TinyGo 0.42 or later and obtains reusable networking\
+    \ compatibility from system:tinygodriver instead of carrying local copies.\n\n\
+    ```yaml\nstatus: accepted\nminimum_tinygo: \"0.42\"\nstdlib_http:\n  router: github.com/shibukawa/tinygodriver/httpmux\n\
+    \  required_semantics: \"Go 1.22+ method and path patterns\"\nnetwork_driver:\
+    \ github.com/shibukawa/tinygodriver/netdev\nverification:\n  - TinyGo build and\
+    \ package target tests reject unsupported versions\n  - examples/httpserver builds\
+    \ with TinyGo 0.42\n  - ServeMux method, wildcard, PathValue, 405, and Allow fixtures\
+    \ pass\nsource: https://github.com/shibukawa/tinygodriver\n```"
+  status: accepted
+  minimum_tinygo: '0.42'
+  stdlib_http:
+    router: github.com/shibukawa/tinygodriver/httpmux
+    required_semantics: Go 1.22+ method and path patterns
+  network_driver: github.com/shibukawa/tinygodriver/netdev
+  verification:
+  - TinyGo build and package target tests reject unsupported versions
+  - examples/httpserver builds with TinyGo 0.42
+  - ServeMux method, wildcard, PathValue, 405, and Allow fixtures pass
+  source: https://github.com/shibukawa/tinygodriver
+lifecycle: accepted
+relations:
+- relation: mentions
+  to: system:tinygodriver
+  resolution: resolved

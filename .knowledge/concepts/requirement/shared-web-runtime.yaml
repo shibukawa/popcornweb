@@ -1,0 +1,55 @@
+id: requirement:shared-web-runtime
+type: requirement
+title: Shared Web Runtime
+summary: Both application styles use one lifecycle and HTTP foundation.
+facts:
+  legacy_body: "Both application styles use one lifecycle and HTTP foundation.\n\n\
+    ```yaml\ncapabilities:\n  - api:application-lifecycle\n  - data:loaded-configuration\n\
+    \  - decision:independent-runtime-config-bindings\n  - policy:context-value-storage\n\
+    \  - api:request-context-accessors\n  - requirement:typed-http-contract\n  - policy:web-middleware\n\
+    \  - flow:request-lifecycle\n  - policy:operational-endpoints\nconstraints:\n\
+    \  - startup validation precedes request acceptance\n  - generated user code depends\
+    \ on Popcorn Web runtime, never the reverse\n  - advanced features are application-level\
+    \ opt-ins\n```"
+  capabilities:
+  - api:application-lifecycle
+  - data:loaded-configuration
+  - decision:independent-runtime-config-bindings
+  - policy:context-value-storage
+  - api:request-context-accessors
+  - requirement:typed-http-contract
+  - policy:web-middleware
+  - flow:request-lifecycle
+  - policy:operational-endpoints
+  constraints:
+  - startup validation precedes request acceptance
+  - generated user code depends on Popcorn Web runtime, never the reverse
+  - advanced features are application-level opt-ins
+relations:
+- relation: mentions
+  to: api:application-lifecycle
+  resolution: resolved
+- relation: mentions
+  to: api:request-context-accessors
+  resolution: resolved
+- relation: mentions
+  to: data:loaded-configuration
+  resolution: resolved
+- relation: mentions
+  to: decision:independent-runtime-config-bindings
+  resolution: resolved
+- relation: mentions
+  to: flow:request-lifecycle
+  resolution: resolved
+- relation: mentions
+  to: policy:context-value-storage
+  resolution: resolved
+- relation: mentions
+  to: policy:operational-endpoints
+  resolution: resolved
+- relation: mentions
+  to: policy:web-middleware
+  resolution: resolved
+- relation: mentions
+  to: requirement:typed-http-contract
+  resolution: resolved

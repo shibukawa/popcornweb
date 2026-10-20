@@ -1,0 +1,141 @@
+id: data:route-table
+type: data
+title: Route Table
+summary: 'The exported result of route analysis: every pattern the application registers,
+  every page that produced one, and every path the framework mounts, in one artifact
+  tooling can read.'
+facts:
+  legacy_body: "The exported result of route analysis: every pattern the application\
+    \ registers, every page that produced one, and every path the framework mounts,\
+    \ in one artifact tooling can read.\n\n```yaml\norigin: the exported analysis\
+    \ result requirement:httpbinder-extensible-route-analysis lists as a followup,\
+    \ promoted because rule:route-and-template-checks is its first consumer\nstatus:\
+    \ produced by api:cli-generate at dist/routes.json, from the analysis system:tinybind\
+    \ v0.5.20 returns beside the artifacts; api:cli-doctor and requirement:editor-route-explorer\
+    \ both read it\nproducer: api:cli-generate, from the same analysis that emits\
+    \ binders and OpenAPI fragments\ngenerated_page_entries: their material is the\
+    \ concept:page-tree walk rather than a registration site, and data:page-route-table\
+    \ is what that walk publishes into the application itself\nentry:\n  pattern:\
+    \ the literal method-and-path form as registered\n  source: the registration site,\
+    \ as file and position\n  handler: the handler identity, when the analysis resolves\
+    \ it\n  origin: application registration, generated page, or framework mount\n\
+    \  page: the .pw.html source behind a generated page entry\nframework_mounts:\n\
+    \  members: the policy:operational-endpoints health, readiness, and OpenAPI paths,\
+    \ and the requirement:public-asset-delivery mount\n  condition: each carries the\
+    \ configuration key that enables it, because a mount that is off collides with\
+    \ nothing\n  extensibility: a later framework-owned path joins this list rather\
+    \ than a hard-coded set inside a check\n  not_in_the_written_table: >\n    their\
+    \ paths come from data:server-runtime-config rather than from\n    data:project-config,\
+    \ so the set differs by environment while a generation is\n    environment-agnostic.\
+    \ The consumer that knows which environment it is\n    diagnosing adds them, which\
+    \ is api:cli-doctor; the table on disk holds only\n    what a generation can know\n\
+    unresolved:\n  content: registration calls the analysis could not resolve to a\
+    \ literal pattern, per rule:static-route-discovery\n  purpose: a consumer says\
+    \ so instead of reporting a clean table it cannot back up\n  how: api:cli-doctor\
+    \ ranks it a note rather than folding it into a limit, so the site and the reason\
+    \ reach the reader at the line they would fix; requirement:editor-route-explorer\
+    \ states it as what the view does not cover, having no findings list to put it\
+    \ in\nlocation: dist/routes.json, beside the data:public-asset-manifest JSON copy\
+    \ and on the same terms — a build product nothing reads at runtime, ignored by\
+    \ the scaffolded .gitignore\nrules:\n  - the table is generated, never hand-written,\
+    \ and stale content is drift like any other generated artifact\n  - the table\
+    \ holds what was analyzed, not what will run; a dynamically built pattern is unresolved\
+    \ rather than absent\n  - patterns are recorded verbatim so a consumer compares\
+    \ what net/http will compare\nconsumers:\n  - rule:route-and-template-checks\n\
+    \  - the generated OpenAPI document, which already derives from the same analysis\n\
+    ```"
+  origin: the exported analysis result requirement:httpbinder-extensible-route-analysis
+    lists as a followup, promoted because rule:route-and-template-checks is its first
+    consumer
+  status: produced by api:cli-generate at dist/routes.json, from the analysis system:tinybind
+    v0.5.20 returns beside the artifacts; api:cli-doctor and requirement:editor-route-explorer
+    both read it
+  producer: api:cli-generate, from the same analysis that emits binders and OpenAPI
+    fragments
+  generated_page_entries: their material is the concept:page-tree walk rather than
+    a registration site, and data:page-route-table is what that walk publishes into
+    the application itself
+  entry:
+    pattern: the literal method-and-path form as registered
+    source: the registration site, as file and position
+    handler: the handler identity, when the analysis resolves it
+    origin: application registration, generated page, or framework mount
+    page: the .pw.html source behind a generated page entry
+  framework_mounts:
+    members: the policy:operational-endpoints health, readiness, and OpenAPI paths,
+      and the requirement:public-asset-delivery mount
+    condition: each carries the configuration key that enables it, because a mount
+      that is off collides with nothing
+    extensibility: a later framework-owned path joins this list rather than a hard-coded
+      set inside a check
+    not_in_the_written_table: 'their paths come from data:server-runtime-config rather
+      than from data:project-config, so the set differs by environment while a generation
+      is environment-agnostic. The consumer that knows which environment it is diagnosing
+      adds them, which is api:cli-doctor; the table on disk holds only what a generation
+      can know
+
+      '
+  unresolved:
+    content: registration calls the analysis could not resolve to a literal pattern,
+      per rule:static-route-discovery
+    purpose: a consumer says so instead of reporting a clean table it cannot back
+      up
+    how: api:cli-doctor ranks it a note rather than folding it into a limit, so the
+      site and the reason reach the reader at the line they would fix; requirement:editor-route-explorer
+      states it as what the view does not cover, having no findings list to put it
+      in
+  location: dist/routes.json, beside the data:public-asset-manifest JSON copy and
+    on the same terms — a build product nothing reads at runtime, ignored by the scaffolded
+    .gitignore
+  rules:
+  - the table is generated, never hand-written, and stale content is drift like any
+    other generated artifact
+  - the table holds what was analyzed, not what will run; a dynamically built pattern
+    is unresolved rather than absent
+  - patterns are recorded verbatim so a consumer compares what net/http will compare
+  consumers:
+  - rule:route-and-template-checks
+  - the generated OpenAPI document, which already derives from the same analysis
+relations:
+- relation: mentions
+  to: api:cli-doctor
+  resolution: resolved
+- relation: mentions
+  to: api:cli-generate
+  resolution: resolved
+- relation: mentions
+  to: concept:page-tree
+  resolution: resolved
+- relation: mentions
+  to: data:page-route-table
+  resolution: resolved
+- relation: mentions
+  to: data:project-config
+  resolution: resolved
+- relation: mentions
+  to: data:public-asset-manifest
+  resolution: resolved
+- relation: mentions
+  to: data:server-runtime-config
+  resolution: resolved
+- relation: mentions
+  to: policy:operational-endpoints
+  resolution: resolved
+- relation: mentions
+  to: requirement:editor-route-explorer
+  resolution: resolved
+- relation: mentions
+  to: requirement:httpbinder-extensible-route-analysis
+  resolution: resolved
+- relation: mentions
+  to: requirement:public-asset-delivery
+  resolution: resolved
+- relation: mentions
+  to: rule:route-and-template-checks
+  resolution: resolved
+- relation: mentions
+  to: rule:static-route-discovery
+  resolution: resolved
+- relation: mentions
+  to: system:tinybind
+  resolution: resolved

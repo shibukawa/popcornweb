@@ -1,0 +1,45 @@
+id: data:runtime-config-registry
+type: data
+title: Runtime Config Registry
+summary: The private registry retains every loaded configbind snapshot and field provenance
+  for request-time typed lookup.
+facts:
+  legacy_body: "The private registry retains every loaded configbind snapshot and\
+    \ field provenance for request-time typed lookup.\n\n```yaml\nentry:\n  identity:\n\
+    \    - binding prefix\n    - generated Go type identity\n  value: immutable loaded\
+    \ value\n  provenance: source per stable field key\nlifecycle:\n  - pw.RegisterConfig[T](prefix)\
+    \ registers generated configbind targets before startup load\n  - imported plugins\
+    \ may register generated targets before startup load\n  - api:runtime-configuration\
+    \ ParseConfig merges defaults, TOML, environment, and CLI for all targets\n  -\
+    \ startup validation completes before request dispatch\n  - the finalized registry\
+    \ is shared read-only by request capsules\nrules:\n  - reject duplicate binding\
+    \ identity\n  - reject missing generated configbind metadata\n  - do not expose\
+    \ registry iteration or mutation to handlers\n  - redact secret values while retaining\
+    \ safe source provenance\n  - user-defined bindings require no framework schema\
+    \ change\n  - plugin-specific fields are unknown unless the owning plugin is imported\n\
+    ```"
+  entry:
+    identity:
+    - binding prefix
+    - generated Go type identity
+    value: immutable loaded value
+    provenance: source per stable field key
+  lifecycle:
+  - pw.RegisterConfig[T](prefix) registers generated configbind targets before startup
+    load
+  - imported plugins may register generated targets before startup load
+  - api:runtime-configuration ParseConfig merges defaults, TOML, environment, and
+    CLI for all targets
+  - startup validation completes before request dispatch
+  - the finalized registry is shared read-only by request capsules
+  rules:
+  - reject duplicate binding identity
+  - reject missing generated configbind metadata
+  - do not expose registry iteration or mutation to handlers
+  - redact secret values while retaining safe source provenance
+  - user-defined bindings require no framework schema change
+  - plugin-specific fields are unknown unless the owning plugin is imported
+relations:
+- relation: mentions
+  to: api:runtime-configuration
+  resolution: resolved

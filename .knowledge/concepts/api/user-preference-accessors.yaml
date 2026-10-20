@@ -1,0 +1,142 @@
+id: api:user-preference-accessors
+type: api
+title: User Preference Accessors
+summary: A handler reads a resolved presentation preference through one accessor per
+  preference, each reporting absence explicitly and each recording the Vary its read
+  implies.
+facts:
+  legacy_body: "A handler reads a resolved presentation preference through one accessor\
+    \ per preference, each reporting absence explicitly and each recording the Vary\
+    \ its read implies.\n\n```yaml\nsurface:\n  - pw.ColorScheme(context.Context)\
+    \ (pw.ColorSchemePref, bool)\n  - pw.ReducedMotion(context.Context) (bool, bool)\n\
+    \  - pw.ViewportWidth(context.Context) (int, bool)\nplacement: pw, beside the\
+    \ other accessors of api:request-context-accessors\nshape: the second return reports\
+    \ presence, so an application distinguishes absent from a preference that happens\
+    \ to equal the default\nshape_direction: policy:request-scoped-accessor-shape\
+    \ renames these with a Context suffix and adds a request-handle form when it is\
+    \ applied to the accessor surface as a whole\nvalues:\n  ColorSchemePref: light\
+    \ or dark\n  ReducedMotion: true when the client asked for reduced motion\n  ViewportWidth:\
+    \ CSS pixels, ceiling-rounded by the client\nresolution: decision:preference-signal-precedence,\
+    \ evaluated per accessor, so a cookie carrying only a color scheme leaves motion\
+    \ resolving from its own hint\nabsent_is_not_a_default:\n  rule: no accessor substitutes\
+    \ light, false, or a width when nothing arrived\n  why: policy:absent-rather-than-stubbed;\
+    \ a substituted value is indistinguishable from a real one and silently becomes\
+    \ the guess that repaints\n  what_the_application_does: leave the attribute unset\
+    \ and let CSS answer it, which is the correct first paint anyway per decision:preference-signal-precedence\n\
+    vary_is_a_side_effect_of_reading:\n  fact: an accessor that resolved from a cookie\
+    \ or a hint records that signal on the request\n  effect: api:html-response emits\
+    \ the Vary for exactly the signals that were read, per policy:preference-vary-correctness\n\
+    \  why_not_declared: a handler that must remember to declare a Vary forgets it,\
+    \ and the failure is a shared cache serving one reader's theme to another\n  why_not_global:\
+    \ a page that reads nothing keeps an unvaried cacheable response, matching the\
+    \ scoping decision:bot-client-classification already made for User-Agent\n  viewport_exception:\
+    \ pw.ViewportWidth records nothing, because policy:preference-vary-correctness\
+    \ forbids varying on it\nnot_exposed:\n  to_templates: no generated parameter\
+    \ or template accessor carries a preference\n  why: a template reaching it turns\
+    \ a presentation default into a content decision, which requirement:user-preference-rendering\
+    \ forbids for the reason decision:bot-client-classification gives\n  how_it_reaches_markup:\
+    \ the handler resolves it and passes it as an ordinary typed parameter, so the\
+    \ value is visible in the page signature\nno_middleware:\n  choice: a pure function\
+    \ over the request and its cookie, evaluated where the answer is needed\n  why:\
+    \ nothing must run before it, matching api:client-classification, so no route\
+    \ can miss it and no ordering requirement appears\n  cost: repeated calls repeat\
+    \ the parse, which is bounded and allocation-free when the header and cookie are\
+    \ absent\nconfiguration: data:preference-hint-config; preference_hints disabled\
+    \ leaves every accessor reporting absent, so an application keeps its CSS behavior\
+    \ with no code change\nembedding: no configuration binding present reports absent\
+    \ rather than panicking, matching the accessor rules of api:request-context-accessors\n\
+    testing:\n  absent: no cookie and no header, which is the default in every test\n\
+    \  hint: a Sec-CH-Prefers-Color-Scheme header, which needs no Accept-CH round\
+    \ trip in a test\n  override: the preference cookie, which outranks a contradicting\
+    \ header and is the case worth asserting\n  determinism: no clock, network, or\
+    \ shared state\n```"
+  surface:
+  - pw.ColorScheme(context.Context) (pw.ColorSchemePref, bool)
+  - pw.ReducedMotion(context.Context) (bool, bool)
+  - pw.ViewportWidth(context.Context) (int, bool)
+  placement: pw, beside the other accessors of api:request-context-accessors
+  shape: the second return reports presence, so an application distinguishes absent
+    from a preference that happens to equal the default
+  shape_direction: policy:request-scoped-accessor-shape renames these with a Context
+    suffix and adds a request-handle form when it is applied to the accessor surface
+    as a whole
+  values:
+    ColorSchemePref: light or dark
+    ReducedMotion: true when the client asked for reduced motion
+    ViewportWidth: CSS pixels, ceiling-rounded by the client
+  resolution: decision:preference-signal-precedence, evaluated per accessor, so a
+    cookie carrying only a color scheme leaves motion resolving from its own hint
+  absent_is_not_a_default:
+    rule: no accessor substitutes light, false, or a width when nothing arrived
+    why: policy:absent-rather-than-stubbed; a substituted value is indistinguishable
+      from a real one and silently becomes the guess that repaints
+    what_the_application_does: leave the attribute unset and let CSS answer it, which
+      is the correct first paint anyway per decision:preference-signal-precedence
+  vary_is_a_side_effect_of_reading:
+    fact: an accessor that resolved from a cookie or a hint records that signal on
+      the request
+    effect: api:html-response emits the Vary for exactly the signals that were read,
+      per policy:preference-vary-correctness
+    why_not_declared: a handler that must remember to declare a Vary forgets it, and
+      the failure is a shared cache serving one reader's theme to another
+    why_not_global: a page that reads nothing keeps an unvaried cacheable response,
+      matching the scoping decision:bot-client-classification already made for User-Agent
+    viewport_exception: pw.ViewportWidth records nothing, because policy:preference-vary-correctness
+      forbids varying on it
+  not_exposed:
+    to_templates: no generated parameter or template accessor carries a preference
+    why: a template reaching it turns a presentation default into a content decision,
+      which requirement:user-preference-rendering forbids for the reason decision:bot-client-classification
+      gives
+    how_it_reaches_markup: the handler resolves it and passes it as an ordinary typed
+      parameter, so the value is visible in the page signature
+  no_middleware:
+    choice: a pure function over the request and its cookie, evaluated where the answer
+      is needed
+    why: nothing must run before it, matching api:client-classification, so no route
+      can miss it and no ordering requirement appears
+    cost: repeated calls repeat the parse, which is bounded and allocation-free when
+      the header and cookie are absent
+  configuration: data:preference-hint-config; preference_hints disabled leaves every
+    accessor reporting absent, so an application keeps its CSS behavior with no code
+    change
+  embedding: no configuration binding present reports absent rather than panicking,
+    matching the accessor rules of api:request-context-accessors
+  testing:
+    absent: no cookie and no header, which is the default in every test
+    hint: a Sec-CH-Prefers-Color-Scheme header, which needs no Accept-CH round trip
+      in a test
+    override: the preference cookie, which outranks a contradicting header and is
+      the case worth asserting
+    determinism: no clock, network, or shared state
+relations:
+- relation: mentions
+  to: api:client-classification
+  resolution: resolved
+- relation: mentions
+  to: api:html-response
+  resolution: resolved
+- relation: mentions
+  to: api:request-context-accessors
+  resolution: resolved
+- relation: mentions
+  to: data:preference-hint-config
+  resolution: resolved
+- relation: mentions
+  to: decision:bot-client-classification
+  resolution: resolved
+- relation: mentions
+  to: decision:preference-signal-precedence
+  resolution: resolved
+- relation: mentions
+  to: policy:absent-rather-than-stubbed
+  resolution: resolved
+- relation: mentions
+  to: policy:preference-vary-correctness
+  resolution: resolved
+- relation: mentions
+  to: policy:request-scoped-accessor-shape
+  resolution: resolved
+- relation: mentions
+  to: requirement:user-preference-rendering
+  resolution: resolved

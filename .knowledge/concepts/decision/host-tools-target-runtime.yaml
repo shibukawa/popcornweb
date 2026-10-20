@@ -1,0 +1,58 @@
+id: decision:host-tools-target-runtime
+type: decision
+title: Host Tools and Target Runtime Split
+summary: Code analysis and generation run with standard host Go before application
+  code is compiled with TinyGo.
+facts:
+  legacy_body: "Code analysis and generation run with standard host Go before application\
+    \ code is compiled with TinyGo.\n\n```yaml\nstatus: accepted\nhost_phase:\n  tools:\n\
+    \    - system:pw-cli\n    - system:tinybind generator\n    - optional decision:tailwind-host-toolchain\n\
+    \  capabilities:\n    - Go AST analysis\n    - source generation\n    - OpenAPI\
+    \ generation\n    - optional static CSS generation\n    - flow:public-asset-build\
+    \ precompression\ntarget_phase:\n  compiler: TinyGo\n  inputs:\n    - application\
+    \ source\n    - generated binder source\n    - generated OpenAPI source when enabled\n\
+    \    - optional generated CSS embedded or served by application code\n    - api:cli-init\
+    \ scaffolded public.go and public asset representations\n  runtime_rule: rule:tinygo-runtime-compatibility\n\
+    reason: httpbind-go generator is host-side only\n```"
+  status: accepted
+  host_phase:
+    tools:
+    - system:pw-cli
+    - system:tinybind generator
+    - optional decision:tailwind-host-toolchain
+    capabilities:
+    - Go AST analysis
+    - source generation
+    - OpenAPI generation
+    - optional static CSS generation
+    - flow:public-asset-build precompression
+  target_phase:
+    compiler: TinyGo
+    inputs:
+    - application source
+    - generated binder source
+    - generated OpenAPI source when enabled
+    - optional generated CSS embedded or served by application code
+    - api:cli-init scaffolded public.go and public asset representations
+    runtime_rule: rule:tinygo-runtime-compatibility
+  reason: httpbind-go generator is host-side only
+lifecycle: accepted
+relations:
+- relation: mentions
+  to: api:cli-init
+  resolution: resolved
+- relation: mentions
+  to: decision:tailwind-host-toolchain
+  resolution: resolved
+- relation: mentions
+  to: flow:public-asset-build
+  resolution: resolved
+- relation: mentions
+  to: rule:tinygo-runtime-compatibility
+  resolution: resolved
+- relation: mentions
+  to: system:pw-cli
+  resolution: resolved
+- relation: mentions
+  to: system:tinybind
+  resolution: resolved

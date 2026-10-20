@@ -1,0 +1,247 @@
+id: api:passkey-endpoints
+type: api
+title: Passkey Endpoints
+summary: The runtime mounts passkey login, enrollment, and bootstrap endpoints for
+  the modes that select them, so an application registers no ceremony route and writes
+  no WebAuthn code.
+facts:
+  legacy_body: "The runtime mounts passkey login, enrollment, and bootstrap endpoints\
+    \ for the modes that select them, so an application registers no ceremony route\
+    \ and writes no WebAuthn code.\n\n```yaml\npackage: github.com/shibukawa/popcornweb/plugin/auth\n\
+    relying_party: requirement:contrib-passkey, configured from the passkey fields\
+    \ of data:authentication-runtime-config\nimplemented:\n  modes: every mode serves;\
+    \ oidc_only mounts nothing here, oidc_passkey mounts four endpoints, passkey_only\
+    \ mounts five\n  transport: POST only, application/json required, same-origin\
+    \ checked, no-store on every response\n  state: authstate/sqlite under its own\
+    \ namespace, keyed by a strict same-site cookie scoped to the base path\n  counter_policy:\
+    \ a counter that does not advance refuses the login rather than only warning,\
+    \ because an authenticator that keeps no counter reports zero on both sides and\
+    \ never reaches that branch\n  account: a passkey assertion resolves an account\
+    \ ID, so auth.SetAccountLookup supplies the display data an OIDC login gets from\
+    \ claims\n  enrollment_ticket:\n    form: an opaque key in a strict same-site\
+    \ cookie over an expiring authstate record, deliberately not a session\n    reason:\
+    \ an account that proved only a temporary secret is not logged in, so pw.Authenticated\
+    \ stays false and no handler can mistake the ticket for authority\n    rotation:\
+    \ begin reissues the ticket under a new key, because the store offers only a consuming\
+    \ read, which also kills whatever key the browser held\n    single_use: finish\
+    \ spends it, so an abandoned enrollment cannot be resumed\n  issuance: auth.IssueBootstrapCredential\
+    \ returns the raw secret once; who may call it and how the secret travels stay\
+    \ with the application\n  activation: auth.SetAccountActivator runs inside the\
+    \ transaction that persists the first credential\n  evidence: plugin/auth/passkeye2e\
+    \ and plugin/auth/passkeyonlye2e drive both stories over real HTTP with requirement:contrib-passkey-test\n\
+    activation:\n  oidc_only: no passkey endpoint is mounted\n  oidc_passkey: login\
+    \ and enrollment mount beside the api:authentication-endpoints OIDC endpoints\n\
+    \  passkey_only: login, enrollment, and bootstrap mount, and no OIDC endpoint\
+    \ exists\nbase_path:\n  field: auth.passkey.path, default /auth/passkey\n  reason:\
+    \ five paths must stay mutually consistent and every one must remain reachable\
+    \ past policy:authenticated-path-protection, so one key is safer to configure\
+    \ than five\n  suffixes:\n    - POST {base}/login/begin\n    - POST {base}/login/finish\n\
+    \    - POST {base}/register/begin\n    - POST {base}/register/finish\n    - POST\
+    \ {base}/bootstrap\ntransport:\n  method: POST only, for the reason api:authentication-endpoints\
+    \ gives for logout\n  body: JSON in the requirement:contrib-passkey wire shapes,\
+    \ so a browser posts what the WebAuthn API returned\n  content_type: application/json\
+    \ is required, which a simple cross-origin form cannot send\n  origin: same-origin\
+    \ checked until policy:csrf-protection lands, then the token replaces the check\n\
+    \  cache: no-store on every response\nlogin:\n  begin: start authentication in\
+    \ the configured discoverable mode, store ceremony state, return request options\n\
+    \  finish: verify the assertion, resolve data:passkey-credential through api:auth-credential-store,\
+    \ run flow:passkey-login, rotate the session\n  anonymous: both are reachable\
+    \ without a session and are excluded from the guard by default\n  enumeration:\
+    \ an unknown credential, an inactive account, and a bad signature produce one\
+    \ identical response\nregister:\n  begin: require an authenticated session whose\
+    \ authenticated_at is within auth.recent_auth_max_age, then start registration\n\
+    \  begin_remediation: the refusal is a bare 403 today, which is honest only while\
+    \ no remedy exists; api:assurance-guard replaces the inline check, gives it flow:step-up-reauthentication,\
+    \ and makes 401 the correct code\n  finish: run flow:passkey-enrollment and persist\
+    \ through api:auth-credential-store\n  exclude: the existing credential IDs of\
+    \ the account become excludeCredentials\n  session: rotate when the deployment\
+    \ treats enrollment as an authentication-strength change\nbootstrap:\n  mode:\
+    \ passkey_only only; the endpoint is absent elsewhere\n  request: login ID and\
+    \ one-time secret from data:account-bootstrap-credential\n  effect: open the restricted\
+    \ enrollment session of flow:passkey-only-registration and never a normal session\n\
+    \  next: the client continues with register/begin and register/finish, which consume\
+    \ the credential on success\n  limits: auth.bootstrap.max_attempts, auth.bootstrap.issue_ttl,\
+    \ and auth.bootstrap.enrollment_ttl\n  security: policy:bootstrap-credential-security\n\
+    ceremony_state:\n  store: authstate through api:auth-state-codec, the same store\
+    \ the OIDC transaction already uses\n  engine: the dialect the DSN resolved to,\
+    \ so a ceremony record follows the database the deployment already runs\n  independent_of_session:\
+    \ a challenge stays server-side whatever session.backend is, including cookie,\
+    \ because a client that chose its own challenge could replay a response against\
+    \ it\n  evidence: examples/passkeylogin proves the whole ceremony on a cookie-backed\
+    \ session, with no session row written and every ceremony record consumed\n  correlation:\
+    \ an opaque key in a short-lived cookie scoped to the base path, matching the\
+    \ OIDC transaction cookie\n  reason: the challenge never leaves the server, so\
+    \ a captured response cannot be replayed against another ceremony\nsession:\n\
+    \  method: data:request-authentication records method passkey\n  record: the session\
+    \ stores the authenticating method and authenticated_at, which recent_auth_max_age\
+    \ reads\nrules:\n  - an endpoint absent from the selected mode returns 404, so\
+    \ the mode is not discoverable by probing\n  - a rejected ceremony never reveals\
+    \ whether the account, the credential, or the signature failed\n  - responses\
+    \ follow the policy:passkey-security privacy rules, so no challenge, credential\
+    \ ID, or user handle is logged\n  - the framework mounts these paths; an application\
+    \ that needs a different shape writes its own handlers against requirement:contrib-passkey\
+    \ instead\n```"
+  package: github.com/shibukawa/popcornweb/plugin/auth
+  relying_party: requirement:contrib-passkey, configured from the passkey fields of
+    data:authentication-runtime-config
+  implemented:
+    modes: every mode serves; oidc_only mounts nothing here, oidc_passkey mounts four
+      endpoints, passkey_only mounts five
+    transport: POST only, application/json required, same-origin checked, no-store
+      on every response
+    state: authstate/sqlite under its own namespace, keyed by a strict same-site cookie
+      scoped to the base path
+    counter_policy: a counter that does not advance refuses the login rather than
+      only warning, because an authenticator that keeps no counter reports zero on
+      both sides and never reaches that branch
+    account: a passkey assertion resolves an account ID, so auth.SetAccountLookup
+      supplies the display data an OIDC login gets from claims
+    enrollment_ticket:
+      form: an opaque key in a strict same-site cookie over an expiring authstate
+        record, deliberately not a session
+      reason: an account that proved only a temporary secret is not logged in, so
+        pw.Authenticated stays false and no handler can mistake the ticket for authority
+      rotation: begin reissues the ticket under a new key, because the store offers
+        only a consuming read, which also kills whatever key the browser held
+      single_use: finish spends it, so an abandoned enrollment cannot be resumed
+    issuance: auth.IssueBootstrapCredential returns the raw secret once; who may call
+      it and how the secret travels stay with the application
+    activation: auth.SetAccountActivator runs inside the transaction that persists
+      the first credential
+    evidence: plugin/auth/passkeye2e and plugin/auth/passkeyonlye2e drive both stories
+      over real HTTP with requirement:contrib-passkey-test
+  activation:
+    oidc_only: no passkey endpoint is mounted
+    oidc_passkey: login and enrollment mount beside the api:authentication-endpoints
+      OIDC endpoints
+    passkey_only: login, enrollment, and bootstrap mount, and no OIDC endpoint exists
+  base_path:
+    field: auth.passkey.path, default /auth/passkey
+    reason: five paths must stay mutually consistent and every one must remain reachable
+      past policy:authenticated-path-protection, so one key is safer to configure
+      than five
+    suffixes:
+    - POST {base}/login/begin
+    - POST {base}/login/finish
+    - POST {base}/register/begin
+    - POST {base}/register/finish
+    - POST {base}/bootstrap
+  transport:
+    method: POST only, for the reason api:authentication-endpoints gives for logout
+    body: JSON in the requirement:contrib-passkey wire shapes, so a browser posts
+      what the WebAuthn API returned
+    content_type: application/json is required, which a simple cross-origin form cannot
+      send
+    origin: same-origin checked until policy:csrf-protection lands, then the token
+      replaces the check
+    cache: no-store on every response
+  login:
+    begin: start authentication in the configured discoverable mode, store ceremony
+      state, return request options
+    finish: verify the assertion, resolve data:passkey-credential through api:auth-credential-store,
+      run flow:passkey-login, rotate the session
+    anonymous: both are reachable without a session and are excluded from the guard
+      by default
+    enumeration: an unknown credential, an inactive account, and a bad signature produce
+      one identical response
+  register:
+    begin: require an authenticated session whose authenticated_at is within auth.recent_auth_max_age,
+      then start registration
+    begin_remediation: the refusal is a bare 403 today, which is honest only while
+      no remedy exists; api:assurance-guard replaces the inline check, gives it flow:step-up-reauthentication,
+      and makes 401 the correct code
+    finish: run flow:passkey-enrollment and persist through api:auth-credential-store
+    exclude: the existing credential IDs of the account become excludeCredentials
+    session: rotate when the deployment treats enrollment as an authentication-strength
+      change
+  bootstrap:
+    mode: passkey_only only; the endpoint is absent elsewhere
+    request: login ID and one-time secret from data:account-bootstrap-credential
+    effect: open the restricted enrollment session of flow:passkey-only-registration
+      and never a normal session
+    next: the client continues with register/begin and register/finish, which consume
+      the credential on success
+    limits: auth.bootstrap.max_attempts, auth.bootstrap.issue_ttl, and auth.bootstrap.enrollment_ttl
+    security: policy:bootstrap-credential-security
+  ceremony_state:
+    store: authstate through api:auth-state-codec, the same store the OIDC transaction
+      already uses
+    engine: the dialect the DSN resolved to, so a ceremony record follows the database
+      the deployment already runs
+    independent_of_session: a challenge stays server-side whatever session.backend
+      is, including cookie, because a client that chose its own challenge could replay
+      a response against it
+    evidence: examples/passkeylogin proves the whole ceremony on a cookie-backed session,
+      with no session row written and every ceremony record consumed
+    correlation: an opaque key in a short-lived cookie scoped to the base path, matching
+      the OIDC transaction cookie
+    reason: the challenge never leaves the server, so a captured response cannot be
+      replayed against another ceremony
+  session:
+    method: data:request-authentication records method passkey
+    record: the session stores the authenticating method and authenticated_at, which
+      recent_auth_max_age reads
+  rules:
+  - an endpoint absent from the selected mode returns 404, so the mode is not discoverable
+    by probing
+  - a rejected ceremony never reveals whether the account, the credential, or the
+    signature failed
+  - responses follow the policy:passkey-security privacy rules, so no challenge, credential
+    ID, or user handle is logged
+  - the framework mounts these paths; an application that needs a different shape
+    writes its own handlers against requirement:contrib-passkey instead
+relations:
+- relation: mentions
+  to: api:assurance-guard
+  resolution: resolved
+- relation: mentions
+  to: api:auth-credential-store
+  resolution: resolved
+- relation: mentions
+  to: api:auth-state-codec
+  resolution: resolved
+- relation: mentions
+  to: api:authentication-endpoints
+  resolution: resolved
+- relation: mentions
+  to: data:account-bootstrap-credential
+  resolution: resolved
+- relation: mentions
+  to: data:authentication-runtime-config
+  resolution: resolved
+- relation: mentions
+  to: data:passkey-credential
+  resolution: resolved
+- relation: mentions
+  to: data:request-authentication
+  resolution: resolved
+- relation: mentions
+  to: flow:passkey-enrollment
+  resolution: resolved
+- relation: mentions
+  to: flow:passkey-login
+  resolution: resolved
+- relation: mentions
+  to: flow:passkey-only-registration
+  resolution: resolved
+- relation: mentions
+  to: flow:step-up-reauthentication
+  resolution: resolved
+- relation: mentions
+  to: policy:authenticated-path-protection
+  resolution: resolved
+- relation: mentions
+  to: policy:bootstrap-credential-security
+  resolution: resolved
+- relation: mentions
+  to: policy:csrf-protection
+  resolution: resolved
+- relation: mentions
+  to: policy:passkey-security
+  resolution: resolved
+- relation: mentions
+  to: requirement:contrib-passkey
+  resolution: resolved
+- relation: mentions
+  to: requirement:contrib-passkey-test
+  resolution: resolved

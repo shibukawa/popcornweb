@@ -1,0 +1,25 @@
+id: data:database-driver-contract
+type: data
+title: Database Driver Contract
+summary: The contrib database contract is the minimal database/sql/driver surface
+  required for useful TinyGo web services.
+facts:
+  legacy_body: "The contrib database contract is the minimal database/sql/driver surface\
+    \ required for useful TinyGo web services.\n\n```yaml\nrequired_interfaces:\n\
+    \  - driver.DriverContext\n  - driver.Connector\n  - driver.Conn\n  - driver.ConnPrepareContext\n\
+    \  - driver.ExecerContext\n  - driver.QueryerContext\n  - driver.ConnBeginTx\n\
+    \  - driver.Pinger\n  - driver.Rows\n  - driver.Stmt\n  - driver.Tx\nvalue_types:\n\
+    \  - nil\n  - int64\n  - float64\n  - bool\n  - string\n  - []byte\n  - time.Time\n\
+    behavior:\n  - context deadline cancels or closes blocked operations\n  - rows\
+    \ and statements are idempotently closable\n  - protocol errors poison unusable\
+    \ connections\n  - server errors retain stable code and safe message\n  - placeholders\
+    \ follow each database native convention\ntests:\n  - database/sql integration\
+    \ suite\n  - leak and cancellation tests\n  - live server interoperability matrix\n\
+    ```"
+  legacy_parse_issues:
+  - kind: legacy_parse_error
+    block: 0
+    message: "while parsing a block collection\n  in \"<unicode string>\", line 14,\
+      \ column 3:\n      - nil\n      ^\nexpected <block end>, but found '<scalar>'\n\
+      \  in \"<unicode string>\", line 19, column 7:\n      - []byte\n          ^"
+relations: []
