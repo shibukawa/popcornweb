@@ -1,0 +1,92 @@
+id: requirement:rate-limit-problem-responses
+type: requirement
+title: Rate Limit Problem Responses
+summary: api:problem-response represents an enforceable request limit as one safe
+  HTTP 429 response for API and browser clients.
+facts:
+  legacy_body: "api:problem-response represents an enforceable request limit as one\
+    \ safe HTTP 429 response for API and browser clients.\n\n```yaml\nstandards:\n\
+    \  status: RFC 6585 HTTP 429 Too Many Requests\n  retry_after: RFC 9110 Retry-After\n\
+    \  compatibility_headers: X-RateLimit-* are de facto fields, not IETF standards\n\
+    surface:\n  - TooManyRequests(...) Problem\n  - RateLimit value carrying limit,\
+    \ remaining, reset, and retryAfter\n  - RateLimited(RateLimit, ...) Problem\n\
+    metadata:\n  Retry-After: non-negative delay seconds or HTTP-date; omit when the\
+    \ server cannot recommend a retry time\n  X-RateLimit-Limit: non-negative request\
+    \ quota for the described window\n  X-RateLimit-Remaining: non-negative requests\
+    \ remaining, normally 0 on the rejecting response\n  X-RateLimit-Reset: Unix seconds\
+    \ when the quota window resets\nresponse:\n  api: application/problem+json with\
+    \ stable code rate_limit_exceeded\n  html: api:error-renderer resolves templates/429.pw.html\n\
+    \  cache: Cache-Control no-store; 429 responses must not be stored\nrules:\n \
+    \ - WriteProblem owns header serialization so every representation carries identical\
+    \ retry metadata\n  - validate non-negative values, remaining not above limit,\
+    \ reset format, and header safety\n  - expose no limiter key, account identifier,\
+    \ internal counter, or policy implementation\n  - omission of compatibility metadata\
+    \ remains valid when only a 429 problem is known\n  - invalid compatibility metadata\
+    \ is omitted while the safe 429 and no-store policy remain\n  - this response\
+    \ contract does not choose client identity, counting scope, storage, or limiting\
+    \ algorithm; requirement:rate-limit-enforcement is where those four are chosen,\
+    \ and the Remaining and Reset fields above already narrow the last one to a window\
+    \ counter\ndocumentation: requirement:web-standards-overview\nacceptance:\n  -\
+    \ JSON and HTML negotiation both preserve status and headers\n  - templates/429.pw.html\
+    \ is generated and used like the existing api:problem-response status templates\n\
+    \  - tests cover full metadata, bare 429, HTML negotiation, and invalid metadata\n\
+    ```"
+  standards:
+    status: RFC 6585 HTTP 429 Too Many Requests
+    retry_after: RFC 9110 Retry-After
+    compatibility_headers: X-RateLimit-* are de facto fields, not IETF standards
+  surface:
+  - TooManyRequests(...) Problem
+  - RateLimit value carrying limit, remaining, reset, and retryAfter
+  - RateLimited(RateLimit, ...) Problem
+  metadata:
+    Retry-After: non-negative delay seconds or HTTP-date; omit when the server cannot
+      recommend a retry time
+    X-RateLimit-Limit: non-negative request quota for the described window
+    X-RateLimit-Remaining: non-negative requests remaining, normally 0 on the rejecting
+      response
+    X-RateLimit-Reset: Unix seconds when the quota window resets
+  response:
+    api: application/problem+json with stable code rate_limit_exceeded
+    html: api:error-renderer resolves templates/429.pw.html
+    cache: Cache-Control no-store; 429 responses must not be stored
+  rules:
+  - WriteProblem owns header serialization so every representation carries identical
+    retry metadata
+  - validate non-negative values, remaining not above limit, reset format, and header
+    safety
+  - expose no limiter key, account identifier, internal counter, or policy implementation
+  - omission of compatibility metadata remains valid when only a 429 problem is known
+  - invalid compatibility metadata is omitted while the safe 429 and no-store policy
+    remain
+  - this response contract does not choose client identity, counting scope, storage,
+    or limiting algorithm; requirement:rate-limit-enforcement is where those four
+    are chosen, and the Remaining and Reset fields above already narrow the last one
+    to a window counter
+  documentation: requirement:web-standards-overview
+  acceptance:
+  - JSON and HTML negotiation both preserve status and headers
+  - templates/429.pw.html is generated and used like the existing api:problem-response
+    status templates
+  - tests cover full metadata, bare 429, HTML negotiation, and invalid metadata
+acceptance:
+  item-f7666a5d9d554952:
+    text: JSON and HTML negotiation both preserve status and headers
+  item-0bfba6a8d5c4ab44:
+    text: templates/429.pw.html is generated and used like the existing api:problem-response
+      status templates
+  item-d885f42d0fb012b7:
+    text: tests cover full metadata, bare 429, HTML negotiation, and invalid metadata
+relations:
+- relation: mentions
+  to: api:error-renderer
+  resolution: resolved
+- relation: mentions
+  to: api:problem-response
+  resolution: resolved
+- relation: mentions
+  to: requirement:rate-limit-enforcement
+  resolution: resolved
+- relation: mentions
+  to: requirement:web-standards-overview
+  resolution: resolved

@@ -1,0 +1,85 @@
+id: flow:capability-addition
+type: flow
+title: Capability Addition Flow
+summary: Capability addition turns a capability an existing project lacks into configuration,
+  migrations, and development tooling, with the review screen as the only approval
+  point.
+facts:
+  legacy_body: "Capability addition turns a capability an existing project lacks into\
+    \ configuration, migrations, and development tooling, with the review screen as\
+    \ the only approval point.\n\n```yaml\nflow:\n  trigger: actor:application-developer\
+    \ invokes api:cli-add\n  steps:\n    - id: locate\n      actor: system:pw-cli\n\
+    \      action: resolve the data:project-config project root and fail outside one\n\
+    \    - id: probe\n      action: detect installed capabilities from project files\
+    \ per requirement:incremental-project-capabilities\n    - id: choose\n      actor:\
+    \ actor:application-developer\n      action: answer the decision:post-init-scaffold-wizard\
+    \ steps, offered only the capabilities the project lacks\n    - id: resolve-dependency\n\
+    \      action: add a required missing capability to the plan, or stop when it\
+    \ is declined\n    - id: plan\n      action: compute every file to create, every\
+    \ configuration section to append, and the next free migration version\n    -\
+    \ id: review\n      actor: actor:application-developer\n      action: accept or\
+    \ cancel the planned changes\n    - id: write\n      action: create files and\
+    \ append sections atomically, refusing any application-owned overwrite\n    -\
+    \ id: generate\n      action: invoke api:cli-generate when the capability added\
+    \ generated sources\n    - id: summarize\n      output: the follow-up commands,\
+    \ starting with api:migration-runner and any devbox shell the new packages need\n\
+    \  failure:\n    conflict: name the file that proves the conflict and write nothing\n\
+    \    canceled_wizard: write nothing and exit successfully\n    partial_write:\
+    \ forbidden; a failing step leaves the project as it was\n```"
+  flow:
+    trigger: actor:application-developer invokes api:cli-add
+    steps:
+    - id: locate
+      actor: system:pw-cli
+      action: resolve the data:project-config project root and fail outside one
+    - id: probe
+      action: detect installed capabilities from project files per requirement:incremental-project-capabilities
+    - id: choose
+      actor: actor:application-developer
+      action: answer the decision:post-init-scaffold-wizard steps, offered only the
+        capabilities the project lacks
+    - id: resolve-dependency
+      action: add a required missing capability to the plan, or stop when it is declined
+    - id: plan
+      action: compute every file to create, every configuration section to append,
+        and the next free migration version
+    - id: review
+      actor: actor:application-developer
+      action: accept or cancel the planned changes
+    - id: write
+      action: create files and append sections atomically, refusing any application-owned
+        overwrite
+    - id: generate
+      action: invoke api:cli-generate when the capability added generated sources
+    - id: summarize
+      output: the follow-up commands, starting with api:migration-runner and any devbox
+        shell the new packages need
+    failure:
+      conflict: name the file that proves the conflict and write nothing
+      canceled_wizard: write nothing and exit successfully
+      partial_write: forbidden; a failing step leaves the project as it was
+relations:
+- relation: mentions
+  to: actor:application-developer
+  resolution: resolved
+- relation: mentions
+  to: api:cli-add
+  resolution: resolved
+- relation: mentions
+  to: api:cli-generate
+  resolution: resolved
+- relation: mentions
+  to: api:migration-runner
+  resolution: resolved
+- relation: mentions
+  to: data:project-config
+  resolution: resolved
+- relation: mentions
+  to: decision:post-init-scaffold-wizard
+  resolution: resolved
+- relation: mentions
+  to: requirement:incremental-project-capabilities
+  resolution: resolved
+- relation: mentions
+  to: system:pw-cli
+  resolution: resolved

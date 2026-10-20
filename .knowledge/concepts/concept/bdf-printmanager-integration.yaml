@@ -1,0 +1,118 @@
+id: concept:bdf-printmanager-integration
+type: concept
+title: BDF Print Manager Integration Request
+summary: A stakeholder request to support a Popcorn Web application below a shared module root, plus related configuration
+  and documentation gaps.
+authority: authored
+lifecycle: active
+facts:
+  origin:
+    source: source:bdf-printmanager-request
+    document: docs/requests/bdf-printmanager-public-assets.md
+    requester: github.com/shibukawa/bdf, cmd/printmanager
+    date: '2026-10-21'
+    against: github.com/shibukawa/popcornweb v0.5.11
+    status_in_original: open
+  evidence_boundary: Original statements remain stakeholder reports against v0.5.11. Current behavior is separately
+    verified in repository fixtures; no BDF checkout or cloud deployment was exercised.
+  reported_layout:
+    root_package: bdf
+    application: cmd/printmanager
+    module: one shared go.mod at the root
+    tool_config: popcornweb.toml at the root
+  reported_workarounds:
+  - pw generate --code-only with committed generated Go and CI drift checks.
+  - Application-owned /static/ handler in cmd/printmanager/handlers/static.go; the same embedded tree is also supplied
+    to pw.WithPublicFS.
+  - Standalone tailwindcss through go generate.
+  - Handwritten Lambda Dockerfile under cmd/printmanager/deploy/lambda.
+  requests:
+    requirement:configurable-public-asset-locations: primary; Ask 1 is the integration blocker
+    requirement:development-public-asset-fallback: secondary; requester prefers fallback plus a diagnostic
+    requirement:optional-production-config-packaging: lower than Ask 1 and Ask 2
+    requirement:string-slice-config-defaults: nonblocking integration note; includes a reported CSRF startup bug
+    requirement:early-framework-action-dispatch: nonblocking documentation note
+    requirement:empty-query-scope-documentation: nonblocking documentation note
+  intake_status: All six requests implemented with 24 acceptance checks recorded as passed; original stakeholder
+    report remains unchanged.
+  intake_validation:
+    original_preservation: byte-identical
+    searchable_requirement_proposals: 6
+    acceptance_conditions: 24
+    catalog_compile: passed
+    catalog_doctor: valid, no unresolved references
+    application_verification: 24 acceptance checks passed; see the six requirement verification profiles.
+  implementation_report: docs/requests/bdf-printmanager-implementation.md
+relations:
+- relation: reported_by
+  to: source:bdf-printmanager-request
+  resolution: resolved
+  evidence:
+    source_id: source:bdf-printmanager-request
+    path: bdf-printmanager-public-assets.md
+    heading: Summary of the asks
+    input_hash: a2df65a9a5a065a50b78c3559e0f9b0c559e18ff5d7c22f9a08352ad4674a426
+- relation: requests
+  to: requirement:configurable-public-asset-locations
+  resolution: resolved
+  evidence:
+    source_id: source:bdf-printmanager-request
+    path: bdf-printmanager-public-assets.md
+    heading: Summary of the asks
+    input_hash: a2df65a9a5a065a50b78c3559e0f9b0c559e18ff5d7c22f9a08352ad4674a426
+- relation: requests
+  to: requirement:development-public-asset-fallback
+  resolution: resolved
+  evidence:
+    source_id: source:bdf-printmanager-request
+    path: bdf-printmanager-public-assets.md
+    heading: Summary of the asks
+    input_hash: a2df65a9a5a065a50b78c3559e0f9b0c559e18ff5d7c22f9a08352ad4674a426
+- relation: requests
+  to: requirement:optional-production-config-packaging
+  resolution: resolved
+  evidence:
+    source_id: source:bdf-printmanager-request
+    path: bdf-printmanager-public-assets.md
+    heading: Summary of the asks
+    input_hash: a2df65a9a5a065a50b78c3559e0f9b0c559e18ff5d7c22f9a08352ad4674a426
+- relation: requests
+  to: requirement:string-slice-config-defaults
+  resolution: resolved
+  evidence:
+    source_id: source:bdf-printmanager-request
+    path: bdf-printmanager-public-assets.md
+    heading: Summary of the asks
+    input_hash: a2df65a9a5a065a50b78c3559e0f9b0c559e18ff5d7c22f9a08352ad4674a426
+- relation: requests
+  to: requirement:early-framework-action-dispatch
+  resolution: resolved
+  evidence:
+    source_id: source:bdf-printmanager-request
+    path: bdf-printmanager-public-assets.md
+    heading: Summary of the asks
+    input_hash: a2df65a9a5a065a50b78c3559e0f9b0c559e18ff5d7c22f9a08352ad4674a426
+- relation: requests
+  to: requirement:empty-query-scope-documentation
+  resolution: resolved
+  evidence:
+    source_id: source:bdf-printmanager-request
+    path: bdf-printmanager-public-assets.md
+    heading: Summary of the asks
+    input_hash: a2df65a9a5a065a50b78c3559e0f9b0c559e18ff5d7c22f9a08352ad4674a426
+assertions:
+- key: reported-integration
+  predicate: stakeholder_report
+  value:
+    against: v0.5.11
+    primary_blocker: requirement:configurable-public-asset-locations
+    independently_reproduced: false
+  authority: authored
+  evidence:
+    source_id: source:bdf-printmanager-request
+    path: bdf-printmanager-public-assets.md
+    heading: The situation
+    input_hash: a2df65a9a5a065a50b78c3559e0f9b0c559e18ff5d7c22f9a08352ad4674a426
+  basis:
+  - path: docs/requests/bdf-printmanager-public-assets.md
+    input_hash: a2df65a9a5a065a50b78c3559e0f9b0c559e18ff5d7c22f9a08352ad4674a426

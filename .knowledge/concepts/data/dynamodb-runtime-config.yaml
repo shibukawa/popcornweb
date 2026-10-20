@@ -1,0 +1,93 @@
+id: data:dynamodb-runtime-config
+type: data
+title: DynamoDB Runtime Configuration
+summary: The middleware.dynamo section of data:middleware-runtime-config, registered
+  by importing api:dynamo-package and independent of middleware.rdb.
+facts:
+  legacy_body: "The middleware.dynamo section of data:middleware-runtime-config, registered\
+    \ by importing api:dynamo-package and independent of middleware.rdb.\n\n```yaml\n\
+    owner: api:dynamo-package\nregistration: an independent binding, per decision:independent-runtime-config-bindings\n\
+    fields:\n  enabled: bool, default false\n  region: required unless the environment\
+    \ supplies it; empty with no environment value is a startup error\n  endpoint:\
+    \ optional; empty selects the regional host, and a value selects a local or compatible\
+    \ server\n  access_key_id: optional, expanded from ${NAME}; empty selects the\
+    \ driver's environment credentials\n  secret_access_key: optional, expanded from\
+    \ ${NAME}; redacted everywhere\n  session_token: optional, expanded from ${NAME};\
+    \ redacted everywhere\n  table_prefix: string, default empty, prepended to a declared\
+    \ name, per rule:dynamodb-table-naming\n  table_names: an array of tables, each\
+    \ a declared and a deployed name, for a deployed name no prefix produces\n  table_names_shape:\n\
+    \    not_a_map: system:tinybind configbind binds no map type, found on implementation\
+    \ 2026-08-01\n    form: \"[[middleware.dynamo.table_names]] with declared and\
+    \ deployed keys, the same repeated-element shape middleware.rdb.connections already\
+    \ uses\"\n  timeout: duration, default 10s, the driver default restated so it\
+    \ is configurable\n  max_idle_conns: non-negative int, default 4; guidance is\
+    \ to set it to the expected concurrency\n  verify_schema: bool, default true;\
+    \ reads every registered table once at startup and refuses to serve on a mismatch\n\
+    \  auto_migrate: bool, default false, development only, governed by policy:dynamodb-migration-safety\n\
+    no_billing_or_capacity_keys:\n  removed: 2026-08-01\n  reason: requirement:dynamodb-migration\
+    \ creates a table only in development and test, and a local emulator ignores billing\
+    \ mode and capacity entirely\n  production: deployment tooling sets them, per\
+    \ decision:dynamodb-operational-configuration\n  effect: a created table takes\
+    \ the driver default of on-demand billing, and no key here can say otherwise\n\
+    validation:\n  - enabled true requires a resolvable region, from this section\
+    \ or the environment\n  - a static access_key_id requires a static secret_access_key,\
+    \ and neither alone is accepted\n  - every resolved name satisfies the DynamoDB\
+    \ name rule, checked at startup over the whole decision:dynamodb-table-registry\
+    \ set rather than at the first request\n  - a table_names entry naming an undeclared\
+    \ table is an error, since it would silently do nothing\n  - two entries declaring\
+    \ one table is an error, because one declared name cannot resolve to two deployed\
+    \ ones\n  - the two keys compose into the one resolver function rule:dynamodb-table-naming\
+    \ installs, and neither is read anywhere else\n  - timeout is positive and max_idle_conns\
+    \ is not negative\n  - an unreachable endpoint is a startup error naming the endpoint\
+    \ with credentials redacted\n  - auto_migrate set outside development is a configuration\
+    \ error, because a production table comes from deployment tooling\n  - verify_schema\
+    \ false is accepted and warned about, since it removes the one check deployment\
+    \ tooling cannot make\nsecrets:\n  mechanism: ${NAME} expansion in TOML string\
+    \ values, the same file-layer mechanism data:database-connection-set uses\n  rule:\
+    \ an undefined name is a load error rather than an empty expansion\n  redaction:\
+    \ the three credential keys are redacted after expansion, so an expanded secret\
+    \ never reaches policy:startup-summary or an error\nscaffolded_development:\n\
+    \  endpoint: http://127.0.0.1:8000, the amazon/dynamodb-local address\n  credentials:\
+    \ any non-empty pair, because the local server does not verify the signature\n\
+    \  region: a placeholder value the local server accepts\n  rule: development-only\
+    \ values live in config.dev.toml and are never a deployment default\nrelation_to_rdb:\
+    \ none; middleware.rdb absent and middleware.dynamo enabled is a valid configuration,\
+    \ and so is the reverse\n```"
+  legacy_parse_issues:
+  - kind: legacy_parse_error
+    block: 0
+    message: Object of type date is not JSON serializable
+relations:
+- relation: mentions
+  to: api:dynamo-package
+  resolution: resolved
+- relation: mentions
+  to: data:database-connection-set
+  resolution: resolved
+- relation: mentions
+  to: data:middleware-runtime-config
+  resolution: resolved
+- relation: mentions
+  to: decision:dynamodb-operational-configuration
+  resolution: resolved
+- relation: mentions
+  to: decision:dynamodb-table-registry
+  resolution: resolved
+- relation: mentions
+  to: decision:independent-runtime-config-bindings
+  resolution: resolved
+- relation: mentions
+  to: policy:dynamodb-migration-safety
+  resolution: resolved
+- relation: mentions
+  to: policy:startup-summary
+  resolution: resolved
+- relation: mentions
+  to: requirement:dynamodb-migration
+  resolution: resolved
+- relation: mentions
+  to: rule:dynamodb-table-naming
+  resolution: resolved
+- relation: mentions
+  to: system:tinybind
+  resolution: resolved

@@ -1,0 +1,175 @@
+id: decision:contrib-delivery-order
+type: decision
+title: Contrib Delivery Order
+summary: Contrib packages ship in dependency and feasibility order rather than as
+  one release-sized feature.
+facts:
+  legacy_body: "Contrib packages ship in dependency and feasibility order rather than\
+    \ as one release-sized feature.\n\n```yaml\nstatus: proposed\nprerequisite: requirement:tinygodriver-adoption\n\
+    phases:\n  - phase: 1\n    packages:\n      - requirement:contrib-auth-common\n\
+    \      - requirement:contrib-auth-state\n      - requirement:contrib-auth-state-memory\n\
+    \      - requirement:contrib-jwt\n      - requirement:contrib-otel\n  - phase:\
+    \ 2\n    packages:\n      - requirement:contrib-passkey\n      - requirement:contrib-passkey-test\n\
+    \      - requirement:contrib-oauth\n      - requirement:contrib-oidc\n      -\
+    \ requirement:contrib-devidp\n      - requirement:contrib-html-template\n    \
+    \  - requirement:contrib-auth-state-redis\n  - phase: supplied-by-tinygodriver\n\
+    \    packages:\n      - requirement:contrib-cbor\n      - requirement:contrib-sqlite\n\
+    \      - requirement:contrib-postgresql\n      - requirement:contrib-mysql\n \
+    \   note: these ship with system:tinygodriver, so the work here is consumption\
+    \ and acceptance rather than implementation; cbor shipped in phase 1 first and\
+    \ was upstreamed in v1.2.6\n  - phase: feasibility-gated\n    packages:\n    \
+    \  - requirement:contrib-auth-state-sqlite\nrationale:\n  - decision:stdlib-servemux\
+    \ uses system:tinygodriver rather than a contrib router\n  - requirement:contrib-passkey\
+    \ follows requirement:contrib-cbor and decision:passkey-first-authentication\n\
+    \  - requirement:contrib-oauth depends on shared authentication state and security\
+    \ primitives\n  - requirement:contrib-auth-state-memory is the process-local reference\
+    \ adapter for the base store contract\n  - requirement:contrib-oidc extends requirement:contrib-oauth\
+    \ and depends on JWT\n  - requirement:contrib-devidp follows requirement:contrib-oidc\
+    \ because it exists to exercise the relying party, and it ships with api:testutil-idp\n\
+    \  - requirement:contrib-passkey-test follows requirement:contrib-passkey for\
+    \ the same reason and ships with api:testutil-passkey, because decision:passkey-test-authenticator\
+    \ makes it the only way to exercise a ceremony in CI\n  - requirement:contrib-html-template\
+    \ remains phase 2 because frontend JSON writers require generated encoding work\n\
+    \  - database wire protocols require larger interoperability matrices, which is\
+    \ why they are consumed rather than written here\n  - requirement:contrib-auth-state-redis\
+    \ follows the base store and tested requirement:contrib-redis-valkey dependency\n\
+    \  - requirement:contrib-auth-state-sqlite follows the portable SQLite facade\n\
+    \  - SQLite and Zstandard implementations are supplied by system:tinygodriver\n\
+    \  - decision:server-sql-support-tier makes the three SQL engines first-class\
+    \ together, so none of them gates the others\n  - SQLite depends on target-specific\
+    \ C integration or a separately proven alternative\n```"
+  status: proposed
+  prerequisite: requirement:tinygodriver-adoption
+  phases:
+  - phase: 1
+    packages:
+    - requirement:contrib-auth-common
+    - requirement:contrib-auth-state
+    - requirement:contrib-auth-state-memory
+    - requirement:contrib-jwt
+    - requirement:contrib-otel
+  - phase: 2
+    packages:
+    - requirement:contrib-passkey
+    - requirement:contrib-passkey-test
+    - requirement:contrib-oauth
+    - requirement:contrib-oidc
+    - requirement:contrib-devidp
+    - requirement:contrib-html-template
+    - requirement:contrib-auth-state-redis
+  - phase: supplied-by-tinygodriver
+    packages:
+    - requirement:contrib-cbor
+    - requirement:contrib-sqlite
+    - requirement:contrib-postgresql
+    - requirement:contrib-mysql
+    note: these ship with system:tinygodriver, so the work here is consumption and
+      acceptance rather than implementation; cbor shipped in phase 1 first and was
+      upstreamed in v1.2.6
+  - phase: feasibility-gated
+    packages:
+    - requirement:contrib-auth-state-sqlite
+  rationale:
+  - decision:stdlib-servemux uses system:tinygodriver rather than a contrib router
+  - requirement:contrib-passkey follows requirement:contrib-cbor and decision:passkey-first-authentication
+  - requirement:contrib-oauth depends on shared authentication state and security
+    primitives
+  - requirement:contrib-auth-state-memory is the process-local reference adapter for
+    the base store contract
+  - requirement:contrib-oidc extends requirement:contrib-oauth and depends on JWT
+  - requirement:contrib-devidp follows requirement:contrib-oidc because it exists
+    to exercise the relying party, and it ships with api:testutil-idp
+  - requirement:contrib-passkey-test follows requirement:contrib-passkey for the same
+    reason and ships with api:testutil-passkey, because decision:passkey-test-authenticator
+    makes it the only way to exercise a ceremony in CI
+  - requirement:contrib-html-template remains phase 2 because frontend JSON writers
+    require generated encoding work
+  - database wire protocols require larger interoperability matrices, which is why
+    they are consumed rather than written here
+  - requirement:contrib-auth-state-redis follows the base store and tested requirement:contrib-redis-valkey
+    dependency
+  - requirement:contrib-auth-state-sqlite follows the portable SQLite facade
+  - SQLite and Zstandard implementations are supplied by system:tinygodriver
+  - decision:server-sql-support-tier makes the three SQL engines first-class together,
+    so none of them gates the others
+  - SQLite depends on target-specific C integration or a separately proven alternative
+lifecycle: proposed
+relations:
+- relation: mentions
+  to: api:testutil-idp
+  resolution: resolved
+- relation: mentions
+  to: api:testutil-passkey
+  resolution: resolved
+- relation: mentions
+  to: decision:passkey-first-authentication
+  resolution: resolved
+- relation: mentions
+  to: decision:passkey-test-authenticator
+  resolution: resolved
+- relation: mentions
+  to: decision:server-sql-support-tier
+  resolution: resolved
+- relation: mentions
+  to: decision:stdlib-servemux
+  resolution: resolved
+- relation: mentions
+  to: requirement:contrib-auth-common
+  resolution: resolved
+- relation: mentions
+  to: requirement:contrib-auth-state
+  resolution: resolved
+- relation: mentions
+  to: requirement:contrib-auth-state-memory
+  resolution: resolved
+- relation: mentions
+  to: requirement:contrib-auth-state-redis
+  resolution: resolved
+- relation: mentions
+  to: requirement:contrib-auth-state-sqlite
+  resolution: resolved
+- relation: mentions
+  to: requirement:contrib-cbor
+  resolution: resolved
+- relation: mentions
+  to: requirement:contrib-devidp
+  resolution: resolved
+- relation: mentions
+  to: requirement:contrib-html-template
+  resolution: resolved
+- relation: mentions
+  to: requirement:contrib-jwt
+  resolution: resolved
+- relation: mentions
+  to: requirement:contrib-mysql
+  resolution: resolved
+- relation: mentions
+  to: requirement:contrib-oauth
+  resolution: resolved
+- relation: mentions
+  to: requirement:contrib-oidc
+  resolution: resolved
+- relation: mentions
+  to: requirement:contrib-otel
+  resolution: resolved
+- relation: mentions
+  to: requirement:contrib-passkey
+  resolution: resolved
+- relation: mentions
+  to: requirement:contrib-passkey-test
+  resolution: resolved
+- relation: mentions
+  to: requirement:contrib-postgresql
+  resolution: resolved
+- relation: mentions
+  to: requirement:contrib-redis-valkey
+  resolution: resolved
+- relation: mentions
+  to: requirement:contrib-sqlite
+  resolution: resolved
+- relation: mentions
+  to: requirement:tinygodriver-adoption
+  resolution: resolved
+- relation: mentions
+  to: system:tinygodriver
+  resolution: resolved

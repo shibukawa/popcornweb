@@ -1,0 +1,124 @@
+id: data:dev-launcher-mark
+type: data
+title: Development Launcher Mark
+summary: The single popcorn kernel requirement:dev-console-launcher wears, cut from
+  the documentation site logo so the control the developer clicks is the same character
+  the project introduces itself with.
+facts:
+  legacy_body: "The single popcorn kernel requirement:dev-console-launcher wears,\
+    \ cut from the documentation site logo so the control the developer clicks is\
+    \ the same character the project introduces itself with.\n\n```yaml\nsource:\n\
+    \  file: website/src/assets/logo.png, the documentation site logo\n  subject:\
+    \ the foremost kernel, lower left of the illustration, front facing with both\
+    \ eyes and an open smile\n  why_one_kernel: the whole illustration is a wide spilled\
+    \ box, and a wide illustration reduced to a 28px square reads as a smear. One\
+    \ kernel is a face, and a face is what stays recognisable at that size\n  why_that_kernel:\
+    \ it is the largest, the only one facing the viewer squarely, and the only one\
+    \ whose eyes both carry highlights; every other kernel is turned, partly occluded,\
+    \ or drawn at a size that was never meant to survive reduction\nextraction:\n\
+    \  crop: 396x396 at +20+448 of the 1448x1086 source\n  isolate: threshold at 62%\
+    \ grey so the kernel's dark outline is the only closed figure, flood fill inward\
+    \ from all four corners to mark background, keep components above 5000px so the\
+    \ loose kernels drop out, and take the result as the alpha channel\n  edge: closed\
+    \ over a two pixel disk and blurred by half a pixel, because a hard threshold\
+    \ leaves the painted outline aliased against nothing\n  why_not_a_rectangle: the\
+    \ kernel overlaps a motion trail and several loose kernels that a rectangular\
+    \ crop cannot exclude and that read as dirt once the mark is small\n  trim: to\
+    \ content, then padded to a square so the mark is centred without the consumer\
+    \ measuring anything\n  result: 352x352 with an alpha channel and no background\n\
+    \  reproducible: the recipe is recorded so a redrawn logo can be re-cut rather\
+    \ than re-traced by eye\nformat:\n  chosen: raster, served at 96px, which covers\
+    \ three times the largest size the control displays it at\n  why_not_svg: the\
+    \ illustration is painted — gradient shading, a varying outline weight, and specular\
+    \ highlights — and a hand-drawn vector of it would be a different drawing wearing\
+    \ the same shape, which costs the recognition the mark exists for\n  encoding:\
+    \ WebP, 3782 bytes against 15445 for the equivalent PNG; the mark is served only\
+    \ to a developer running api:cli-dev, so there is no browser worth carrying the\
+    \ larger file for\n  committed: the encoded bytes, not the encoder; nothing in\
+    \ the build reads an image library, and data:release-artifact stays the pure-Go\
+    \ cross-compile it was\ndelivery:\n  as: its own entry in the pwdev script set,\
+    \ served from the framework prefix under the same revision segment as the module\
+    \ that references it\n  why_not_a_data_uri: an inlined image is subject to the\
+    \ application's own img-src, so a project that tightened its policy to default-src\
+    \ 'self' would lose the mark; served from the application's origin it is covered\
+    \ by 'self' like every other framework asset\n  consequence: the asset set is\
+    \ no longer only JavaScript, so the framework asset handler picks a content type\
+    \ by extension rather than sending one for everything\n  revision: the bytes join\
+    \ the digest that already spans the set, so the mark cannot be served stale under\
+    \ a URL cached as immutable\nrules:\n  - embedded under the pwdev build constraint\
+    \ only, so api:cli-build has no bytes to ship and no name to serve them under\n\
+    \  - the mark is decoration and carries no state; it never varies by request,\
+    \ by application, or by project\n  - it is not the project's logo and no application\
+    \ is asked to adopt it; requirement:dev-console-launcher is its only consumer\n\
+    consumers:\n  - requirement:dev-console-launcher\n```"
+  source:
+    file: website/src/assets/logo.png, the documentation site logo
+    subject: the foremost kernel, lower left of the illustration, front facing with
+      both eyes and an open smile
+    why_one_kernel: the whole illustration is a wide spilled box, and a wide illustration
+      reduced to a 28px square reads as a smear. One kernel is a face, and a face
+      is what stays recognisable at that size
+    why_that_kernel: it is the largest, the only one facing the viewer squarely, and
+      the only one whose eyes both carry highlights; every other kernel is turned,
+      partly occluded, or drawn at a size that was never meant to survive reduction
+  extraction:
+    crop: 396x396 at +20+448 of the 1448x1086 source
+    isolate: threshold at 62% grey so the kernel's dark outline is the only closed
+      figure, flood fill inward from all four corners to mark background, keep components
+      above 5000px so the loose kernels drop out, and take the result as the alpha
+      channel
+    edge: closed over a two pixel disk and blurred by half a pixel, because a hard
+      threshold leaves the painted outline aliased against nothing
+    why_not_a_rectangle: the kernel overlaps a motion trail and several loose kernels
+      that a rectangular crop cannot exclude and that read as dirt once the mark is
+      small
+    trim: to content, then padded to a square so the mark is centred without the consumer
+      measuring anything
+    result: 352x352 with an alpha channel and no background
+    reproducible: the recipe is recorded so a redrawn logo can be re-cut rather than
+      re-traced by eye
+  format:
+    chosen: raster, served at 96px, which covers three times the largest size the
+      control displays it at
+    why_not_svg: the illustration is painted — gradient shading, a varying outline
+      weight, and specular highlights — and a hand-drawn vector of it would be a different
+      drawing wearing the same shape, which costs the recognition the mark exists
+      for
+    encoding: WebP, 3782 bytes against 15445 for the equivalent PNG; the mark is served
+      only to a developer running api:cli-dev, so there is no browser worth carrying
+      the larger file for
+    committed: the encoded bytes, not the encoder; nothing in the build reads an image
+      library, and data:release-artifact stays the pure-Go cross-compile it was
+  delivery:
+    as: its own entry in the pwdev script set, served from the framework prefix under
+      the same revision segment as the module that references it
+    why_not_a_data_uri: an inlined image is subject to the application's own img-src,
+      so a project that tightened its policy to default-src 'self' would lose the
+      mark; served from the application's origin it is covered by 'self' like every
+      other framework asset
+    consequence: the asset set is no longer only JavaScript, so the framework asset
+      handler picks a content type by extension rather than sending one for everything
+    revision: the bytes join the digest that already spans the set, so the mark cannot
+      be served stale under a URL cached as immutable
+  rules:
+  - embedded under the pwdev build constraint only, so api:cli-build has no bytes
+    to ship and no name to serve them under
+  - the mark is decoration and carries no state; it never varies by request, by application,
+    or by project
+  - it is not the project's logo and no application is asked to adopt it; requirement:dev-console-launcher
+    is its only consumer
+  consumers:
+  - requirement:dev-console-launcher
+relations:
+- relation: mentions
+  to: api:cli-build
+  resolution: resolved
+- relation: mentions
+  to: api:cli-dev
+  resolution: resolved
+- relation: mentions
+  to: data:release-artifact
+  resolution: resolved
+- relation: mentions
+  to: requirement:dev-console-launcher
+  resolution: resolved

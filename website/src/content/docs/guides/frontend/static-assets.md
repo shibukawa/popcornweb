@@ -5,7 +5,7 @@ sidebar:
   order: 7
 ---
 
-A project serves static files from the `public/` directory at its root. The
+By default, a project uses the root `public/` directory as its static-file input. The
 files are embedded in the binary, so the executable and its assets are deployed
 together.
 
@@ -29,6 +29,23 @@ that build tree. With no transformations the copy is byte-for-byte identical;
 when a transformation renames a file, the build tree holds the result and the
 reference rewrite follows it. Serve assets elsewhere when a CDN or object store
 needs to manage them independently from application releases.
+
+## Applications below the module root
+
+Keep a shared `go.mod` and an application in `cmd/app`, and select its asset
+locations in the root `popcornweb.toml`:
+
+```toml
+[assets]
+public = "cmd/app/public"
+derived = "cmd/app/dist/public"
+embed = "cmd/app/public.go"
+```
+
+`cmd/app/public.go` can use `package main`. Its directive is relative to that
+file: `//go:embed all:dist/public`. The generated Go manifest uses the same
+package. See [build configuration](/reference/build-configuration/#assets) for
+defaults, auxiliary outputs, and path restrictions.
 
 ## What ships
 
@@ -408,6 +425,13 @@ absolute:
 
 ## During development
 
+`pw dev` passes the configured derived-tree path to the application. An ordinary
+file miss falls back to the FS passed with `pw.WithPublicFS`, or the registered
+embedded FS. A missing derived tree produces one startup warning that embedded
+bytes may be stale. If neither tree exists, the diagnostic explicitly says
+public assets will return 404. Symlink and unsafe-path rejections do not fall
+through. Failure of the initial asset build makes `pw dev` report the error and exit.
+
 [`pw dev`](/pw/project/dev/) runs the same conversions and serves `dist/public`
 from disk. Edit an asset and reload: the tree is rebuilt, and no Go rebuild
 happens for a file the binary does not compile. There is no manifest, so
@@ -437,6 +461,7 @@ onto the embedded tree.
 | --- | --- | --- |
 | `server.public.enabled` | `true` | serve the assets at all |
 | `server.public.mount` | `"/public"` | where they are mounted |
+| `server.public.local_root` | `"dist/public"` | Built tree on disk, relative to the working directory |
 | `server.public.read_local` | `false` | prefer the built tree on disk over the embedded one |
 | `server.public.svg_sandbox` | `true` | add `Content-Security-Policy: sandbox` to every `image/svg+xml` response |
 

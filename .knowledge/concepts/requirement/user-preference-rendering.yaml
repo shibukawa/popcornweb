@@ -1,0 +1,147 @@
+id: requirement:user-preference-rendering
+type: requirement
+title: User Preference Rendering
+summary: The first painted frame already matches the reader's color scheme, motion,
+  and contrast preference, with no script pass and no repaint.
+facts:
+  legacy_body: "The first painted frame already matches the reader's color scheme,\
+    \ motion, and contrast preference, with no script pass and no repaint.\n\n```yaml\n\
+    problem:\n  flash:\n    what: a reader who prefers dark sees a light frame before\
+    \ the theme applies\n    cause: the deciding value is readable only by script,\
+    \ and script runs after the parser has painted\n    real_scope: an explicit site\
+    \ override only\n    why_narrower_than_it_looks: an unoverridden operating-system\
+    \ preference never flashes, because prefers-color-scheme answers it in CSS before\
+    \ first paint, in every browser, with no server involvement\n    consequence:\
+    \ the case worth server work is the one CSS cannot see, not the one it already\
+    \ handles\n  layout:\n    what: a document that branches markup on viewport width\
+    \ must guess the width\n    why_it_stays_a_guess: width changes on rotation and\
+    \ resize with no new navigation, so a server decision is stale while the reader\
+    \ is still on the page\n    consequence: width informs asset selection, never\
+    \ markup structure; see decision:preference-signal-precedence\nsignals: decision:preference-signal-precedence\n\
+    framework_owns:\n  - reading whichever signal arrived, reporting absence rather\
+    \ than substituting a default, per api:user-preference-accessors\n  - the Vary\
+    \ that each read implies, per policy:preference-vary-correctness\n  - the Accept-CH\
+    \ and Critical-CH declaration when configured, per data:preference-hint-config\n\
+    application_owns:\n  - the CSS that answers the unoverridden case with no server\
+    \ involvement\n  - the markup that consumes a resolved preference, such as the\
+    \ data-theme attribute of requirement:daisyui-integration\n  - the api:server-action\
+    \ that records an explicit override, and the control that offers it\nplacement:\
+    \ an explicit override is persistent_mutation under policy:ui-state-placement,\
+    \ so it is a cookie written by a server action rather than client state\ndelivery_note:\
+    \ the resolved preference reaches the document through the head channel of decision:runtime-tag-injection\
+    \ only when the framework itself needs it; the theme attribute stays in the application\
+    \ shell\nnon_goals:\n  - different text, data, or markup structure per preference;\
+    \ presentation defaults only, mirroring the no_cloaking rule of decision:bot-client-classification\n\
+    \  - a preference as an input to routing, authorization, or rate limiting, for\
+    \ the same unauthenticated-signal reason that rule gives\n  - server-side responsive\
+    \ layout selection, which decision:preference-signal-precedence rejects outright\n\
+    \  - a framework-owned theme catalog, toggle component, or CSS; requirement:tailwind-css-integration\
+    \ and requirement:daisyui-integration stay application-owned\n  - inferring a\
+    \ preference from anything not listed in decision:preference-signal-precedence\n\
+    criteria:\n  - a reader with no override and no hint receives a document whose\
+    \ first paint is correct, because CSS decided it, and the response carries no\
+    \ preference Vary\n  - a reader with a recorded override receives that override\
+    \ applied in the first painted frame, in every browser, with no repaint\n  - a\
+    \ Chromium client that sent a hint and has no override receives the hint applied,\
+    \ and the response varies on that hint\n  - a Firefox or Safari client is never\
+    \ worse than the CSS-only result, and never blocked on a signal it cannot send\n\
+    \  - a response that read no preference carries no preference Vary, so a page\
+    \ with one representation stays cacheable\n  - no response ever varies on viewport\
+    \ width, per policy:preference-vary-correctness\n  - preference_hints disabled\
+    \ emits no Accept-CH, sends no Critical-CH, and leaves every accessor reporting\
+    \ absent\n  - a classified bot under requirement:bot-synchronous-render receives\
+    \ the same text content as a browser, since only presentation defaults differ\n\
+    ```"
+  problem:
+    flash:
+      what: a reader who prefers dark sees a light frame before the theme applies
+      cause: the deciding value is readable only by script, and script runs after
+        the parser has painted
+      real_scope: an explicit site override only
+      why_narrower_than_it_looks: an unoverridden operating-system preference never
+        flashes, because prefers-color-scheme answers it in CSS before first paint,
+        in every browser, with no server involvement
+      consequence: the case worth server work is the one CSS cannot see, not the one
+        it already handles
+    layout:
+      what: a document that branches markup on viewport width must guess the width
+      why_it_stays_a_guess: width changes on rotation and resize with no new navigation,
+        so a server decision is stale while the reader is still on the page
+      consequence: width informs asset selection, never markup structure; see decision:preference-signal-precedence
+  signals: decision:preference-signal-precedence
+  framework_owns:
+  - reading whichever signal arrived, reporting absence rather than substituting a
+    default, per api:user-preference-accessors
+  - the Vary that each read implies, per policy:preference-vary-correctness
+  - the Accept-CH and Critical-CH declaration when configured, per data:preference-hint-config
+  application_owns:
+  - the CSS that answers the unoverridden case with no server involvement
+  - the markup that consumes a resolved preference, such as the data-theme attribute
+    of requirement:daisyui-integration
+  - the api:server-action that records an explicit override, and the control that
+    offers it
+  placement: an explicit override is persistent_mutation under policy:ui-state-placement,
+    so it is a cookie written by a server action rather than client state
+  delivery_note: the resolved preference reaches the document through the head channel
+    of decision:runtime-tag-injection only when the framework itself needs it; the
+    theme attribute stays in the application shell
+  non_goals:
+  - different text, data, or markup structure per preference; presentation defaults
+    only, mirroring the no_cloaking rule of decision:bot-client-classification
+  - a preference as an input to routing, authorization, or rate limiting, for the
+    same unauthenticated-signal reason that rule gives
+  - server-side responsive layout selection, which decision:preference-signal-precedence
+    rejects outright
+  - a framework-owned theme catalog, toggle component, or CSS; requirement:tailwind-css-integration
+    and requirement:daisyui-integration stay application-owned
+  - inferring a preference from anything not listed in decision:preference-signal-precedence
+  criteria:
+  - a reader with no override and no hint receives a document whose first paint is
+    correct, because CSS decided it, and the response carries no preference Vary
+  - a reader with a recorded override receives that override applied in the first
+    painted frame, in every browser, with no repaint
+  - a Chromium client that sent a hint and has no override receives the hint applied,
+    and the response varies on that hint
+  - a Firefox or Safari client is never worse than the CSS-only result, and never
+    blocked on a signal it cannot send
+  - a response that read no preference carries no preference Vary, so a page with
+    one representation stays cacheable
+  - no response ever varies on viewport width, per policy:preference-vary-correctness
+  - preference_hints disabled emits no Accept-CH, sends no Critical-CH, and leaves
+    every accessor reporting absent
+  - a classified bot under requirement:bot-synchronous-render receives the same text
+    content as a browser, since only presentation defaults differ
+relations:
+- relation: mentions
+  to: api:server-action
+  resolution: resolved
+- relation: mentions
+  to: api:user-preference-accessors
+  resolution: resolved
+- relation: mentions
+  to: data:preference-hint-config
+  resolution: resolved
+- relation: mentions
+  to: decision:bot-client-classification
+  resolution: resolved
+- relation: mentions
+  to: decision:preference-signal-precedence
+  resolution: resolved
+- relation: mentions
+  to: decision:runtime-tag-injection
+  resolution: resolved
+- relation: mentions
+  to: policy:preference-vary-correctness
+  resolution: resolved
+- relation: mentions
+  to: policy:ui-state-placement
+  resolution: resolved
+- relation: mentions
+  to: requirement:bot-synchronous-render
+  resolution: resolved
+- relation: mentions
+  to: requirement:daisyui-integration
+  resolution: resolved
+- relation: mentions
+  to: requirement:tailwind-css-integration
+  resolution: resolved

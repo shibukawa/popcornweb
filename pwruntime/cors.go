@@ -32,7 +32,7 @@ type CORSConfig struct {
 	// side-effect-free GET the update runtime issues, and the live stream —
 	// not the API the deployment meant to open. That is why AllowCredentials
 	// refuses the default include rather than quietly inheriting it.
-	Include []string `default:"[\"/**\"]" dependon:".enabled"`
+	Include []string `default:"/**" dependon:".enabled"`
 	Exclude []string `env:"-" dependon:".enabled"`
 	// AllowedOrigins are exact scheme://host[:port] values, or the single
 	// literal "*".
@@ -53,18 +53,18 @@ type CORSConfig struct {
 	// AllowedMethods are the methods a preflight admits. The default stops at
 	// the three a browser can already send without one, so admitting a write is
 	// something a deployment states rather than inherits.
-	AllowedMethods []string `default:"[\"GET\",\"HEAD\",\"POST\"]" dependon:".enabled"`
+	AllowedMethods []string `default:"GET,HEAD,POST" dependon:".enabled"`
 	// AllowedHeaders are the request headers a preflight admits. The configured
 	// CSRF header is added to this set on its own while credentials are on,
 	// because a header that has to be remembered is the one that is forgotten.
-	AllowedHeaders []string `default:"[\"Content-Type\",\"Authorization\"]" dependon:".enabled"`
+	AllowedHeaders []string `default:"Content-Type,Authorization" dependon:".enabled"`
 	// ExposedHeaders are the response headers script may read.
 	//
 	// The default is the set framework frames write and no browser exposes on
 	// its own: the correlation identifier, and the four fields a 429 carries to
 	// say when to come back. Without them a cross-origin client cannot be told
 	// to back off, and keeps retrying at the rate that limited it.
-	ExposedHeaders []string `default:"[\"X-Request-ID\",\"Retry-After\",\"X-RateLimit-Limit\",\"X-RateLimit-Remaining\",\"X-RateLimit-Reset\"]" dependon:".enabled"`
+	ExposedHeaders []string `default:"X-Request-ID,Retry-After,X-RateLimit-Limit,X-RateLimit-Remaining,X-RateLimit-Reset" dependon:".enabled"`
 	// MaxAge bounds how long a browser may cache one preflight. Browsers cap it
 	// themselves — Safari at ten minutes, Chrome at two hours — so a larger
 	// value is reduced rather than honoured, and the default is the smallest

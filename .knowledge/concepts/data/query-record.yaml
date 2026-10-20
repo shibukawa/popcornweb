@@ -1,0 +1,88 @@
+id: data:query-record
+type: data
+title: Query Record
+summary: One executed statement produces one log record whose attributes follow the
+  data:log-attribute scalar contract.
+facts:
+  legacy_body: "One executed statement produces one log record whose attributes follow\
+    \ the data:log-attribute scalar contract.\n\n```yaml\nmessage: sql executed\n\
+    always:\n  sql: statement text, truncated to max_sql_length\n  duration: observed\
+    \ wall time of the executor call\n  outcome: ok or error\n  operation: exec or\
+    \ query\nconditional:\n  driver: resolved runtime driver name, when known\n  connection:\
+    \ data:database-connection-set connection label, present once more than one connection\
+    \ is configured\n  tx_depth: data:transaction-scope savepoint depth, present only\
+    \ inside a transaction\n  args: positional bind values, present only while bind_values\
+    \ is on\n  rows_affected: affected count of an exec, absent when the driver cannot\
+    \ report it\n  error: safe message when outcome is error\n  slow: true when duration\
+    \ reaches slow_threshold\n  explain: captured plan when rule:explain-dialect-support\
+    \ supports the driver and the plan has rows\n  explain_error: safe message when\
+    \ the plan could not be captured\n  reproduction: snippet built by rule:query-reproduction-format\n\
+    \  sql_truncated: true when the statement text hit its bound\n  args_truncated:\
+    \ true when any value hit its bound\ncorrelation: request and trace fields come\
+    \ from the api:logger context, not from this record\nrules:\n  - one record per\
+    \ execution, never per row\n  - a query reports no row count, because api:instrumented-sql-executor\
+    \ returns the concrete rows value the caller iterates\n  - duration covers the\
+    \ executor call, so for a query it excludes the caller's row scanning, and it\
+    \ always excludes EXPLAIN and formatting\n  - args serialize as data:log-attribute\
+    \ scalars; non-scalar values render as a type marker, not a dump\n  - user attributes\
+    \ cannot collide with reserved record fields\n  - severity is level, or slow_level\
+    \ once slow is true\n  - truncated sql and args are marked as truncated so a reader\
+    \ does not treat them as complete\n```"
+  message: sql executed
+  always:
+    sql: statement text, truncated to max_sql_length
+    duration: observed wall time of the executor call
+    outcome: ok or error
+    operation: exec or query
+  conditional:
+    driver: resolved runtime driver name, when known
+    connection: data:database-connection-set connection label, present once more than
+      one connection is configured
+    tx_depth: data:transaction-scope savepoint depth, present only inside a transaction
+    args: positional bind values, present only while bind_values is on
+    rows_affected: affected count of an exec, absent when the driver cannot report
+      it
+    error: safe message when outcome is error
+    slow: true when duration reaches slow_threshold
+    explain: captured plan when rule:explain-dialect-support supports the driver and
+      the plan has rows
+    explain_error: safe message when the plan could not be captured
+    reproduction: snippet built by rule:query-reproduction-format
+    sql_truncated: true when the statement text hit its bound
+    args_truncated: true when any value hit its bound
+  correlation: request and trace fields come from the api:logger context, not from
+    this record
+  rules:
+  - one record per execution, never per row
+  - a query reports no row count, because api:instrumented-sql-executor returns the
+    concrete rows value the caller iterates
+  - duration covers the executor call, so for a query it excludes the caller's row
+    scanning, and it always excludes EXPLAIN and formatting
+  - args serialize as data:log-attribute scalars; non-scalar values render as a type
+    marker, not a dump
+  - user attributes cannot collide with reserved record fields
+  - severity is level, or slow_level once slow is true
+  - truncated sql and args are marked as truncated so a reader does not treat them
+    as complete
+relations:
+- relation: mentions
+  to: api:instrumented-sql-executor
+  resolution: resolved
+- relation: mentions
+  to: api:logger
+  resolution: resolved
+- relation: mentions
+  to: data:database-connection-set
+  resolution: resolved
+- relation: mentions
+  to: data:log-attribute
+  resolution: resolved
+- relation: mentions
+  to: data:transaction-scope
+  resolution: resolved
+- relation: mentions
+  to: rule:explain-dialect-support
+  resolution: resolved
+- relation: mentions
+  to: rule:query-reproduction-format
+  resolution: resolved

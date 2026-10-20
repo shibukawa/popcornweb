@@ -17,3 +17,7 @@ func parseFrameworkAction(args []string) ([]string, error) {
 func refusePendingFrameworkAction() error { return pwconfig.RefusePendingFrameworkAction() }
 
 func runFrameworkAction() (bool, error) { return pwconfig.RunFrameworkAction() }
+
+// RunFrameworkAction handles config generation and probes after ParseConfig.
+// Call it before opening application resources; return when handled is true.
+func RunFrameworkAction() (handled bool, err error) { return pwconfig.RunFrameworkAction() }

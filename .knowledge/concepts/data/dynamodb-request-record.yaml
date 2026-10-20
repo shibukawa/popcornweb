@@ -1,0 +1,110 @@
+id: data:dynamodb-request-record
+type: data
+title: DynamoDB Request Record
+summary: One DynamoDB request produces one diagnostic record, shaped like data:query-record
+  so one viewer reads both stores, and carrying what only the wire can report.
+facts:
+  legacy_body: "One DynamoDB request produces one diagnostic record, shaped like data:query-record\
+    \ so one viewer reads both stores, and carrying what only the wire can report.\n\
+    \n```yaml\nmessage: dynamo request\nseam: decision:dynamodb-observability-seam,\
+    \ so the record is built from the HTTP exchange rather than from a call site\n\
+    always:\n  operation: the DynamoDB operation, read from the request target header\n\
+    \  table: the deployed table name, as sent\n  duration: observed wall time of\
+    \ the exchange\n  outcome: ok or error\nconditional:\n  declared_table: the name\
+    \ before rule:dynamodb-table-naming resolved it, present when the two differ\n\
+    \  statement: the requirement:dynamodb-typed-queries declaration name, present\
+    \ when a generated function issued the request\n  request_id: the service request\
+    \ identifier, which is what an AWS support case needs\n  consumed_capacity: present\
+    \ only when the request asked for it, since the service does not volunteer it\n\
+    \  scanned_count: present on a query or scan, and the number that makes a filter-heavy\
+    \ read visible\n  item_count: items returned by a query or scan\n  has_more: true\
+    \ when the reply carried a last evaluated key\n  retries: attempts the driver\
+    \ made, which no call site can otherwise see\n  error: safe message and the driver\
+    \ sentinel it maps to\n  slow: true when duration reaches the configured threshold\n\
+    \  body: the request payload, present only while bind values are on, per policy:query-log-safety\n\
+    \  reproduction: snippet built by rule:dynamodb-reproduction-format\n  truncated:\
+    \ true when the body hit its bound\nabsent_by_design:\n  - anything for a rule:framework-owned-tables\
+    \ table, which produces no record at all\n  - the endpoint, the region, and every\
+    \ credential\n  - the reply body, since a record is about the request and its\
+    \ outcome, not its results\nwhy_the_extra_fields:\n  retries: the driver retries\
+    \ internally and documents that a write can be delivered twice, so a caller that\
+    \ sees one call may have caused two\n  scanned_count: the only signal separating\
+    \ a query that reads what it returns from one that reads a hundred times more\n\
+    \  request_id: the one value that lets a support conversation start\nrules:\n\
+    \  - one record per HTTP exchange, so a paged iterator produces one per page and\
+    \ states how many that was\n  - a record is emitted whether the operation succeeded\
+    \ or failed, because a failed write is the interesting one\n  - correlation fields\
+    \ come from the api:logger context, matching data:query-record\n  - the record\
+    \ carries no attribute value outside the request body, and the body is gated\n\
+    ```"
+  message: dynamo request
+  seam: decision:dynamodb-observability-seam, so the record is built from the HTTP
+    exchange rather than from a call site
+  always:
+    operation: the DynamoDB operation, read from the request target header
+    table: the deployed table name, as sent
+    duration: observed wall time of the exchange
+    outcome: ok or error
+  conditional:
+    declared_table: the name before rule:dynamodb-table-naming resolved it, present
+      when the two differ
+    statement: the requirement:dynamodb-typed-queries declaration name, present when
+      a generated function issued the request
+    request_id: the service request identifier, which is what an AWS support case
+      needs
+    consumed_capacity: present only when the request asked for it, since the service
+      does not volunteer it
+    scanned_count: present on a query or scan, and the number that makes a filter-heavy
+      read visible
+    item_count: items returned by a query or scan
+    has_more: true when the reply carried a last evaluated key
+    retries: attempts the driver made, which no call site can otherwise see
+    error: safe message and the driver sentinel it maps to
+    slow: true when duration reaches the configured threshold
+    body: the request payload, present only while bind values are on, per policy:query-log-safety
+    reproduction: snippet built by rule:dynamodb-reproduction-format
+    truncated: true when the body hit its bound
+  absent_by_design:
+  - anything for a rule:framework-owned-tables table, which produces no record at
+    all
+  - the endpoint, the region, and every credential
+  - the reply body, since a record is about the request and its outcome, not its results
+  why_the_extra_fields:
+    retries: the driver retries internally and documents that a write can be delivered
+      twice, so a caller that sees one call may have caused two
+    scanned_count: the only signal separating a query that reads what it returns from
+      one that reads a hundred times more
+    request_id: the one value that lets a support conversation start
+  rules:
+  - one record per HTTP exchange, so a paged iterator produces one per page and states
+    how many that was
+  - a record is emitted whether the operation succeeded or failed, because a failed
+    write is the interesting one
+  - correlation fields come from the api:logger context, matching data:query-record
+  - the record carries no attribute value outside the request body, and the body is
+    gated
+relations:
+- relation: mentions
+  to: api:logger
+  resolution: resolved
+- relation: mentions
+  to: data:query-record
+  resolution: resolved
+- relation: mentions
+  to: decision:dynamodb-observability-seam
+  resolution: resolved
+- relation: mentions
+  to: policy:query-log-safety
+  resolution: resolved
+- relation: mentions
+  to: requirement:dynamodb-typed-queries
+  resolution: resolved
+- relation: mentions
+  to: rule:dynamodb-reproduction-format
+  resolution: resolved
+- relation: mentions
+  to: rule:dynamodb-table-naming
+  resolution: resolved
+- relation: mentions
+  to: rule:framework-owned-tables
+  resolution: resolved

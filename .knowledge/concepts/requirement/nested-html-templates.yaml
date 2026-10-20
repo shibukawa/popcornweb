@@ -1,0 +1,81 @@
+id: requirement:nested-html-templates
+type: requirement
+title: Nested HTML Templates
+summary: Classic pages share one generated document shell by composing nested TinyBind
+  templates at response time.
+facts:
+  legacy_body: "Classic pages share one generated document shell by composing nested\
+    \ TinyBind templates at response time.\n\n```yaml\ndependency: system:tinybind\
+    \ v0.1.15 or later\ndocument:\n  source: templates/document.pw.html\n  role: outermost\
+    \ wrapper\n  contains:\n    - doctype\n    - html element\n    - head element\n\
+    \    - body element\n    - unnamed <slot /> inside body\npage:\n  source: each\
+    \ page .pw.html\n  role: innermost leaf\nclassic_render:\n  api: api:render-html-chain\n\
+    \  document: decision:implicit-document-shell\n  leaf: generated page Fragment\n\
+    \  extension: insert generated layout wrappers between document and page without\
+    \ changing either template\ncompatibility:\n  breaking_change: TinyBind v0.1.15\
+    \ generated HTML code is not source-compatible with earlier direct-writer output\n\
+    \  migration:\n    - regenerate every .pw.html artifact with the pinned TinyBind\
+    \ version\n    - update classic handler rendering call sites to Fragment, Wrapper,\
+    \ and api:render-html-chain\nacceptance:\n  - api:cli-init creates templates/document.pw.html\n\
+    \  - handlers call only api:html-response WriteHTML with the page fragment\n \
+    \ - the framework renders the registered document and page through one chain\n\
+    \  - page templates contain page content without duplicating the document shell\n\
+    \  - another wrapper can be inserted between document and page\n```"
+  dependency: system:tinybind v0.1.15 or later
+  document:
+    source: templates/document.pw.html
+    role: outermost wrapper
+    contains:
+    - doctype
+    - html element
+    - head element
+    - body element
+    - unnamed <slot /> inside body
+  page:
+    source: each page .pw.html
+    role: innermost leaf
+  classic_render:
+    api: api:render-html-chain
+    document: decision:implicit-document-shell
+    leaf: generated page Fragment
+    extension: insert generated layout wrappers between document and page without
+      changing either template
+  compatibility:
+    breaking_change: TinyBind v0.1.15 generated HTML code is not source-compatible
+      with earlier direct-writer output
+    migration:
+    - regenerate every .pw.html artifact with the pinned TinyBind version
+    - update classic handler rendering call sites to Fragment, Wrapper, and api:render-html-chain
+  acceptance:
+  - api:cli-init creates templates/document.pw.html
+  - handlers call only api:html-response WriteHTML with the page fragment
+  - the framework renders the registered document and page through one chain
+  - page templates contain page content without duplicating the document shell
+  - another wrapper can be inserted between document and page
+acceptance:
+  item-d001fd6ea9939894:
+    text: api:cli-init creates templates/document.pw.html
+  item-5200f94f3547d493:
+    text: handlers call only api:html-response WriteHTML with the page fragment
+  item-702a25cd3432557e:
+    text: the framework renders the registered document and page through one chain
+  item-0fc94d6ab96e7017:
+    text: page templates contain page content without duplicating the document shell
+  item-57e46cc27489e3e9:
+    text: another wrapper can be inserted between document and page
+relations:
+- relation: mentions
+  to: api:cli-init
+  resolution: resolved
+- relation: mentions
+  to: api:html-response
+  resolution: resolved
+- relation: mentions
+  to: api:render-html-chain
+  resolution: resolved
+- relation: mentions
+  to: decision:implicit-document-shell
+  resolution: resolved
+- relation: mentions
+  to: system:tinybind
+  resolution: resolved

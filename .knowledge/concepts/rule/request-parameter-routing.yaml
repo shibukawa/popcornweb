@@ -1,0 +1,65 @@
+id: rule:request-parameter-routing
+type: rule
+title: Request Parameter Routing
+summary: A -d pair given to api:cli-request goes where the matched data:operation-catalog
+  entry reads it from, and goes where curl would send it when no entry matched, so
+  a curl line pasted in still works and a named parameter needs no knowledge of the
+  handler.
+facts:
+  legacy_body: "A -d pair given to api:cli-request goes where the matched data:operation-catalog\
+    \ entry reads it from, and goes where curl would send it when no entry matched,\
+    \ so a curl line pasted in still works and a named parameter needs no knowledge\
+    \ of the handler.\n\n```yaml\nproposed_by: requirement:cli-request\ninputs:\n\
+    \  pair: -d key=value, a name and a string\n  raw: -d with no equals sign, an\
+    \ @file, or a leading { or [, taken as a whole body\n  form: -F key=value or key=@file,\
+    \ always a multipart field\nwith_operation:\n  path: a pair naming a {segment}\
+    \ of the template fills it; a missing required segment is a usage error, because\
+    \ a request to /api/users/{id} literally is never what was meant\n  query: a pair\
+    \ naming a query parameter is appended to the query string, repeated when given\
+    \ twice, per requirement:repeated-query-parameter\n  header: a pair naming a header\
+    \ parameter becomes a header\n  cookie: a pair naming a cookie parameter joins\
+    \ the Cookie header\n  body:\n    json: the remaining pairs become one object\
+    \ under the declared media type when it is application/json, each value coerced\
+    \ by the schema type: integers and numbers parsed, booleans parsed, strings kept,\
+    \ arrays split on repeated pairs; a value that fails coercion is sent as a string\
+    \ and reported\n    form: the remaining pairs are urlencoded when the media type\
+    \ is a form\n    multipart: -F fields are sent as multipart whatever the operation\
+    \ declares, and a -d pair beside -F is a usage error, as in curl\n    raw: a raw\
+    \ body is sent as given with the declared media type unless -H names one\n  unknown_pair:\
+    \ a pair naming nothing in the entry is sent in the body position and reported;\
+    \ --strict turns it into a usage error, which is what an agent wants\n  explicit_header_wins:\
+    \ a -H Content-Type overrides the declared media type, so a caller testing a wrong\
+    \ content type can\nwithout_operation:\n  semantics: exactly curl; -d pairs are\
+    \ urlencoded into a form body and the method becomes POST, -G moves them to the\
+    \ query, --json sends them as a JSON object\n  reported: the report says no operation\
+    \ matched and why, so the fallback is never silent\n  reasons: catalog unavailable,\
+    \ path not in the catalog, --no-catalog given\nwhy_the_split:\n  - curl flags\
+    \ keep curl meaning, so a line copied from a shell history or a tutorial sends\
+    \ the same bytes\n  - the catalog adds knowledge, and knowledge should only ever\
+    \ move a value to where the handler reads it; it never changes what a flag means\
+    \ when the knowledge is absent\n  - the report makes the routing visible, because\
+    \ a value that went to the query when the caller meant the body is a wrong test\
+    \ that looks like a failing handler\nrejected:\n  positional_pairs: httpie-style\
+    \ key=value words without -d, which read well but make a bare word ambiguous with\
+    \ the path and the operationId\n  location_prefixes: spellings like path:id=7\
+    \ or query:verbose=true; the catalog already knows the location, and a caller\
+    \ who has to say it gains nothing over curl\n```"
+  legacy_parse_issues:
+  - kind: legacy_parse_error
+    block: 0
+    message: "mapping values are not allowed here\n  in \"<unicode string>\", line\
+      \ 12, column 145:\n     ... value coerced by the schema type: integers and numbers\
+      \ parsed, b ... \n                                         ^"
+relations:
+- relation: mentions
+  to: api:cli-request
+  resolution: resolved
+- relation: mentions
+  to: data:operation-catalog
+  resolution: resolved
+- relation: mentions
+  to: requirement:cli-request
+  resolution: resolved
+- relation: mentions
+  to: requirement:repeated-query-parameter
+  resolution: resolved

@@ -1,0 +1,89 @@
+id: requirement:editor-inlay-hints
+type: requirement
+title: Template Inlay Hints
+summary: The types the generator resolved are shown in the template that produced
+  them, because a .pw.* source names almost none of them and the developer otherwise
+  reads the generated Go to learn what a binding holds.
+facts:
+  legacy_body: "The types the generator resolved are shown in the template that produced\
+    \ them, because a .pw.* source names almost none of them and the developer otherwise\
+    \ reads the generated Go to learn what a binding holds.\n\n```yaml\nstatus: implemented\
+    \ at internal/pwlsp for the val, loop, and await families; a binding whose expression\
+    \ is not a call of a declaration has no resolved type and gets no hint\nstage:\
+    \ 3 of vision:editor-support\nserver: requirement:pw-language-server\nhints:\n\
+    \  binding: the resolved type of a val binding, which the source never writes\n\
+    \  loop_variable: the element type a loop binds, and the collection it came from\n\
+    \  sql_result: the column types a statement returns, shown against the result\
+    \ contract the header declares\n  dynamo_attribute: the stored type and key role\
+    \ of an attribute a key clause names, from the dynamo-tagged struct field\n  component_argument:\
+    \ the parameter name at a call site passing positionally\n  async_state: the type\
+    \ a fallback renders with, per requirement:async-html-rendering, since it differs\
+    \ from the resolved state\n  external_binding: the Go signature an external declaration\
+    \ binds to\nrules:\n  resolution_required: a hint appears only where the project\
+    \ model resolved the type; an unresolved position shows nothing rather than a\
+    \ guess\n  no_project: no hints at all, matching the degraded answer requirement:pw-language-server\
+    \ gives elsewhere\n  never_in_generated: a *_pw_gen.go gets none, because gopls\
+    \ already shows Go types there\n  truncation: a long type is shortened with the\
+    \ full text on hover, so a hint never reflows the line\nsettings:\n  granularity:\
+    \ each hint family above is separately switchable, because a developer who knows\
+    \ the SQL schema wants different noise from one learning it\n  default: bindings,\
+    \ loop variables, and sql results on; argument names off, which is the VS Code\
+    \ convention for positional hints\nacceptance:\n  - a val binding of a statement\
+    \ call shows the statement's result type\n  - a key clause attribute shows the\
+    \ struct field type that stores it\n  - a document opened outside a project shows\
+    \ no hint\n  - a hint family switched off produces no request work, not merely\
+    \ no display\n```"
+  status: implemented at internal/pwlsp for the val, loop, and await families; a binding
+    whose expression is not a call of a declaration has no resolved type and gets
+    no hint
+  stage: 3 of vision:editor-support
+  server: requirement:pw-language-server
+  hints:
+    binding: the resolved type of a val binding, which the source never writes
+    loop_variable: the element type a loop binds, and the collection it came from
+    sql_result: the column types a statement returns, shown against the result contract
+      the header declares
+    dynamo_attribute: the stored type and key role of an attribute a key clause names,
+      from the dynamo-tagged struct field
+    component_argument: the parameter name at a call site passing positionally
+    async_state: the type a fallback renders with, per requirement:async-html-rendering,
+      since it differs from the resolved state
+    external_binding: the Go signature an external declaration binds to
+  rules:
+    resolution_required: a hint appears only where the project model resolved the
+      type; an unresolved position shows nothing rather than a guess
+    no_project: no hints at all, matching the degraded answer requirement:pw-language-server
+      gives elsewhere
+    never_in_generated: a *_pw_gen.go gets none, because gopls already shows Go types
+      there
+    truncation: a long type is shortened with the full text on hover, so a hint never
+      reflows the line
+  settings:
+    granularity: each hint family above is separately switchable, because a developer
+      who knows the SQL schema wants different noise from one learning it
+    default: bindings, loop variables, and sql results on; argument names off, which
+      is the VS Code convention for positional hints
+  acceptance:
+  - a val binding of a statement call shows the statement's result type
+  - a key clause attribute shows the struct field type that stores it
+  - a document opened outside a project shows no hint
+  - a hint family switched off produces no request work, not merely no display
+acceptance:
+  item-0e5782c0d814cdb5:
+    text: a val binding of a statement call shows the statement's result type
+  item-c7c581f6d59a64ec:
+    text: a key clause attribute shows the struct field type that stores it
+  item-48fceaf04568415c:
+    text: a document opened outside a project shows no hint
+  item-8841a4b24d5b5fec:
+    text: a hint family switched off produces no request work, not merely no display
+relations:
+- relation: mentions
+  to: requirement:async-html-rendering
+  resolution: resolved
+- relation: mentions
+  to: requirement:pw-language-server
+  resolution: resolved
+- relation: mentions
+  to: vision:editor-support
+  resolution: resolved

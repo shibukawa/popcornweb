@@ -1,0 +1,118 @@
+id: requirement:httpbinder-extensible-route-analysis
+type: requirement
+title: Extensible httpbind-go Route Analysis
+summary: httpbind-go route analysis must recognize compatible routers and middleware
+  through versioned declarative adapters instead of hard-coded package identifiers
+  or selector-name guesses.
+facts:
+  legacy_body: "httpbind-go route analysis must recognize compatible routers and middleware\
+    \ through versioned declarative adapters instead of hard-coded package identifiers\
+    \ or selector-name guesses.\n\n```yaml\nowner: system:tinybind\ndefaults:\n  -\
+    \ net/http package-level Handle and HandleFunc\n  - net/http.ServeMux Handle and\
+    \ HandleFunc\nadapter_schema:\n  identity:\n    - canonical Go import path\n \
+    \   - optional receiver type\n    - function or method name\n  route_registration:\n\
+    \    - pattern argument index\n    - handler argument index\n    - pattern grammar\
+    \ identifier\n  transparent_wrapper:\n    - handler argument index\n  semantic_wrapper:\n\
+    \    - handler argument index\n    - supported static metadata fields\nresolution:\n\
+    \  - use go/types package and method identity, not source import alias or local\
+    \ variable name\n  - accept renamed imports automatically\n  - require literal\
+    \ or deterministically constant-folded route patterns\n  - keep handler-body analysis\
+    \ in the application package\nconfiguration:\n  library_api: parser and generator\
+    \ options accept adapters programmatically\n  cli: generator accepts a versioned\
+    \ analysis configuration file\n  popcorn_web: api:cli-generate supplies the system:tinygodriver\
+    \ httpmux adapter\ndiagnostics:\n  - report unsupported registration calls with\
+    \ source position and suggested adapter fields\n  - reject invalid argument indexes,\
+    \ unknown grammars, and duplicate adapter identities\n  - report routes whose\
+    \ handler body or Bind and Write calls cannot be resolved\nsecurity:\n  - adapters\
+    \ are data and never execute user plugins or target code\n  - package matching\
+    \ uses canonical import paths\n  - configuration cannot load arbitrary host executables\n\
+    compatibility:\n  - zero configuration preserves net/http behavior\n  - generated\
+    \ output remains deterministic for identical sources and adapters\n  - adapter\
+    \ schema changes require an explicit version\ncandidate_followups:\n  - explicit\
+    \ route annotation as a checked fallback when a registration API cannot be modeled\n\
+    \  - configurable aliases for Bind, Write, NewStream, and error constructor APIs\n\
+    \  - exported analysis result IR for framework tooling and diagnostics, promoted\
+    \ as data:route-table for rule:route-and-template-checks\nacceptance:\n  - aliased\
+    \ net/http imports resolve correctly\n  - system:tinygodriver httpmux routes generate\
+    \ the same operations as net/http.ServeMux routes\n  - unrelated methods named\
+    \ Handle or HandleFunc are ignored\n  - malformed adapters fail before artifact\
+    \ generation\n```"
+  owner: system:tinybind
+  defaults:
+  - net/http package-level Handle and HandleFunc
+  - net/http.ServeMux Handle and HandleFunc
+  adapter_schema:
+    identity:
+    - canonical Go import path
+    - optional receiver type
+    - function or method name
+    route_registration:
+    - pattern argument index
+    - handler argument index
+    - pattern grammar identifier
+    transparent_wrapper:
+    - handler argument index
+    semantic_wrapper:
+    - handler argument index
+    - supported static metadata fields
+  resolution:
+  - use go/types package and method identity, not source import alias or local variable
+    name
+  - accept renamed imports automatically
+  - require literal or deterministically constant-folded route patterns
+  - keep handler-body analysis in the application package
+  configuration:
+    library_api: parser and generator options accept adapters programmatically
+    cli: generator accepts a versioned analysis configuration file
+    popcorn_web: api:cli-generate supplies the system:tinygodriver httpmux adapter
+  diagnostics:
+  - report unsupported registration calls with source position and suggested adapter
+    fields
+  - reject invalid argument indexes, unknown grammars, and duplicate adapter identities
+  - report routes whose handler body or Bind and Write calls cannot be resolved
+  security:
+  - adapters are data and never execute user plugins or target code
+  - package matching uses canonical import paths
+  - configuration cannot load arbitrary host executables
+  compatibility:
+  - zero configuration preserves net/http behavior
+  - generated output remains deterministic for identical sources and adapters
+  - adapter schema changes require an explicit version
+  candidate_followups:
+  - explicit route annotation as a checked fallback when a registration API cannot
+    be modeled
+  - configurable aliases for Bind, Write, NewStream, and error constructor APIs
+  - exported analysis result IR for framework tooling and diagnostics, promoted as
+    data:route-table for rule:route-and-template-checks
+  acceptance:
+  - aliased net/http imports resolve correctly
+  - system:tinygodriver httpmux routes generate the same operations as net/http.ServeMux
+    routes
+  - unrelated methods named Handle or HandleFunc are ignored
+  - malformed adapters fail before artifact generation
+acceptance:
+  item-5aa65f8641327a86:
+    text: aliased net/http imports resolve correctly
+  item-a001e3f5309732c3:
+    text: system:tinygodriver httpmux routes generate the same operations as net/http.ServeMux
+      routes
+  item-f171a5c0122ab985:
+    text: unrelated methods named Handle or HandleFunc are ignored
+  item-913feb349b69195c:
+    text: malformed adapters fail before artifact generation
+relations:
+- relation: mentions
+  to: api:cli-generate
+  resolution: resolved
+- relation: mentions
+  to: data:route-table
+  resolution: resolved
+- relation: mentions
+  to: rule:route-and-template-checks
+  resolution: resolved
+- relation: mentions
+  to: system:tinybind
+  resolution: resolved
+- relation: mentions
+  to: system:tinygodriver
+  resolution: resolved

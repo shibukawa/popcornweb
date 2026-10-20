@@ -29,6 +29,7 @@ func loadLSPProject(start string) (*pwlsp.Project, error) {
 
 	project := &pwlsp.Project{
 		Root:             root,
+		RouteTable:       config.Assets.locations().routes,
 		ConfigPath:       filepath.Join(root, "popcornweb.toml"),
 		Name:             config.Name,
 		ConsolePort:      config.Console.Port,

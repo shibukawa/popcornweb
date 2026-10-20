@@ -1,0 +1,425 @@
+id: requirement:reloadable-component-endpoint
+type: requirement
+title: Reloadable Component Endpoint
+summary: A component declared reloadable can be re-rendered on its own by naming its
+  instance and supplying its inputs, answered at the page URL it sits on with no page
+  execution and no manifest.
+facts:
+  legacy_body: "A component declared reloadable can be re-rendered on its own by naming\
+    \ its instance and supplying its inputs, answered at the page URL it sits on with\
+    \ no page execution and no manifest.\n\n```yaml\nsource: decision:update-runtime-convergence\n\
+    different_question: requirement:navigation-delta-rendering answers what changed\
+    \ on this page; this answers render this one region again with these values\n\
+    declaration:\n  syntax: a reloadable modifier after export on the component declaration\
+    \ in a .pw.html source\n  generated: a typed query decoder, a kind identity, and\
+    \ a registration value\n  id_parameter: a required string id the author writes\
+    \ at the call site, filled from the instance header on a redraw\n  diagnostics_are_errors:\n\
+    \    - the component must be exported, single rooted, and not the document shell\n\
+    \    - every parameter other than id must be a type a query string carries deterministically,\
+    \ so a record, a slice, and html are refused\n    - unlike an automatic boundary\
+    \ these fail generation, because the author asked for the endpoint\nkind:\n  value:\
+    \ the component name plus a hash of its parameters and compiled markup\n  purpose:\
+    \ version, so editing the template changes the kind and a page loaded before a\
+    \ deploy gets a 404 and reloads rather than rendering under changed semantics\n\
+    \  does_not_cover: the package, so two templates identical in name, parameters,\
+    \ and markup collide\n  guard: registering one kind twice fails at startup rather\
+    \ than overwriting, since identical plan text still resolves its external calls\
+    \ per package; it returns an error rather than panicking, so a generated registry\
+    \ reports it as a startup diagnostic\n  on_the_element: every render writes the\
+    \ kind beside the instance id, so a region stays redrawable after a redraw replaced\
+    \ it\nregistration:\n  explicit: being exported and single rooted is not enough,\
+    \ because answering for a component must be a deliberate act\n  where: the generated\
+    \ api:page-registry Register, which is already the one symbol an application touches\
+    \ to install a page tree\n  application_visible: the registration value exists\
+    \ in Go, so a reviewer reads the published set from source rather than from templates\n\
+    \  outside_a_page_tree: a registered-router project installs the value itself,\
+    \ since it owns its own mux\nno_longer_an_endpoint:\n  since: system:tinybind\
+    \ v0.3.5, which answered docs/tinybind-go-client-ownership-request.md in full\n\
+    \  what_changed: redraw became a negotiated request mode carried on the shared\
+    \ render header, with the component named by kind and instance headers rather\
+    \ than by a URL path\n  so: a redraw is answered at the page's own URL by the\
+    \ handler that renders it, and the reserved-prefix route is gone\n  why_it_had_to:\
+    \ path protection is configured by path pattern, so a redraw on a reserved path\
+    \ needed a second pattern kept in step with the one protecting the page the component\
+    \ sits on, and nothing forced the two to agree\n  what_it_inherits_now: the page's\
+    \ middleware, and for a handler that owns its own body, that handler's authorization\
+    \ as well\n  addressing_was_the_module_s: the browser half built the URL, so this\
+    \ framework could not move an endpoint it served; that is the coupling the request\
+    \ named and the release removed\n  stale_build: no longer refused, because at\
+    \ a page URL the right answer to a stale redraw is the page the caller was about\
+    \ to render anyway\nas_built:\n  what_was_missing: system:tinybind emits the registration\
+    \ value, and pw exported the call that consumes it, but nothing joined them, so\
+    \ every project published an empty registry and every redraw answered 404\n  two_entries:\n\
+    \    explicit: pw Redraw takes the components this handler answers for, placed\
+    \ after that handler's own authorization; the named set is what bounds the surface,\
+    \ so a page cannot be asked to render a component it never shows\n    page_tree:\
+    \ the render entry answers from the process-wide published set, because a generated\
+    \ route handler has no seam of its own; it runs after Load, so the page's authorization\
+    \ has already run and already returned its own error\n    cost_of_the_page_tree_half:\
+    \ the data fetch the redraw did not need, and a set bounded by the deployment\
+    \ rather than by the page; a handler that owns its body takes the explicit entry\
+    \ instead\n  mechanism: pw generate derives an init beside each compiled template\
+    \ from the registration value in that template's own generated source, exactly\
+    \ as requirement:dynamodb-migration derives its table registration\n  derived_not_re_read:\
+    \ the marker is the emitted 'var NameReloadable = htmlupdate.Reloadable{', so\
+    \ what publishes an endpoint is what the annotation produced and nothing re-decides\
+    \ it; a component with no annotation regenerates byte for byte\n  declaration:\
+    \ the '@reloadable' annotation above 'export component' in a .pw.html source,\
+    \ which is the deliberate act; the generated init decides nothing\n  not_the_page_registry:\n\
+    \    planned: registration inside the generated Register of api:page-registry\n\
+    \    why_not: a reloadable component is an ordinary component compiled by the\
+    \ flat generator run, and a page tree's registry is written before that run has\
+    \ read one; every generated import of a tree points down the tree, so a registry\
+    \ naming a components package outside it would be the one import direction that\
+    \ placement rule forbids\n    what_replaces_it: the component's own package registers\
+    \ itself, which is the same shape decision:implicit-document-shell already uses\
+    \ for the document\n    unchanged: a registered-router project still installs\
+    \ the value itself, and the exported call is the same one\n  linkage_is_the_condition:\
+    \ an init runs because a build linked its package, which is the right rule rather\
+    \ than a gap; a reloadable component is reached from the page or handler that\
+    \ renders it, and one nothing links is one no rendered element carries the kind\
+    \ of, so nothing could address it\n  startup_diagnostic: RegisterReloadable keeps\
+    \ its first failure as well as returning it, and api:application-lifecycle answers\
+    \ it before the port is bound, because the generated init has nowhere to return\
+    \ one to and a panic there would end the process before any logging exists to\
+    \ name the collision\n  reported_whatever_updates_say: a collision is a defect\
+    \ in what generation produced rather than a deployment choice, so it is refused\
+    \ even with html.update.enabled false, where a duplicate would otherwise wait\
+    \ silently for the first deployment that turns updates on\n  shell_head_not_wired:\n\
+    \    what: the registry reports RequiredHead and RequiredAssets and nothing here\
+    \ reads them, so a first appearance is covered by the response header alone\n\
+    \    judged_acceptable: 2026-08-04, and the reason is that the flash this would\
+    \ prevent cannot happen in this project's configuration\n    why_not: requirement:component-asset-extraction\
+    \ is unasked for, so a component's style and script reach the head inline rather\
+    \ than as a link; installing an inline tag before the swap is synchronous and\
+    \ there is nothing to fetch mid-swap\n    also: a project styles from one shell\
+    \ stylesheet under requirement:tailwind-css-integration or requirement:public-asset-delivery,\
+    \ where no component brings a tag the document never had\n    the_real_residual:\
+    \ registration refuses a component whose transitive head passes the module's two-kilobyte\
+    \ header bound, and the remedy that error names is exactly this shell set, so\
+    \ what is unbuilt costs a large inline style block rather than an unstyled region\n\
+    \    revisit_when: component asset extraction is enabled, which turns every contribution\
+    \ into a link and makes the mid-swap fetch real\n  still_open:\n    doctor: rule:route-and-template-checks\
+    \ does not yet report the published set, so the review point the authorization\
+    \ rule names has no diagnostic behind it\nrequest:\n  shape: 'GET <the page url>?<declared\
+    \ parameters>, with the redraw mode on the render header and the kind and instance\
+    \ on headers of their own'\n  build_check: a request from another build is left\
+    \ to the page rather than refused, because a kind is stable across builds and\
+    \ cannot say whether the page asking is current; the page is what the caller was\
+    \ about to render\n  bounds: a configured maximum query length, since a GET carries\
+    \ every argument\n  decoding: a missing, undecodable, or repeated parameter is\
+    \ an error, never a zero value\nresponse:\n  body: that component's subtree as\
+    \ one root element carrying the same id\n  headers: private and no-cache, the\
+    \ served mode echoed on the render header, and a keyed ETag over the rendered\
+    \ bytes\n  conditional: an unchanged region costs a 304, which is what makes a\
+    \ polled redraw cheap without a manifest; the ETag is keyed for the same reason\
+    \ the validators are\n  privacy: private rather than public, because the URL alone\
+    \ identifies a usually per-user response\n  failure: an unknown kind is 404, an\
+    \ oversized query is 414, a bad argument is 400, and each falls back to a complete\
+    \ page load on the client; a stale build is no longer a refusal\n  failure_visibility:\
+    \ every refusal reaches this framework through the hook of api:html-update-options,\
+    \ so it is logged and rendered like any other failure rather than written as plain\
+    \ text by the module\n  head: from system:tinybind v0.3.3 both halves are covered\
+    \ without changing the body, which stays a bare subtree so what curl sees is unchanged\n\
+    \  guarantee_side: the registry reports the head and assets of every published\
+    \ component, so the document shell installs them once at startup and covers every\
+    \ redraw of that deployment\n  report_side: a redraw of a component that contributes\
+    \ head announces those tags on a response header, and the runtime installs what\
+    \ is missing before replacing the region\n  bound: the head one component may\
+    \ carry is checked when it is registered rather than per request, because a component's\
+    \ head is a static declaration and an oversized one is a startup fact\nauthorization:\n\
+    \  new_surface: yes, and it is the whole cost of this capability\n  rule: a registered\
+    \ component receives whatever the caller sends, where a component argument used\
+    \ to be a value the page had already authenticated and authorized\n  safe: a component\
+    \ that only formats values handed to it\n  unsafe_without_a_check: one that loads\
+    \ a record by identifier, which must verify ownership or visibility itself exactly\
+    \ as a handler does\n  review_point: registration; rule:route-and-template-checks\
+    \ reports the published set so a project can review it, and api:cli-doctor names\
+    \ it\n  path_protection: policy:authenticated-path-protection patterns apply to\
+    \ the prefix like any other path\n  csrf: a redraw is a side-effect-free GET,\
+    \ so policy:csrf-protection does not gate it; origin defence still applies to\
+    \ a credentialed read\nidempotence:\n  rule: a redraw must be repeatable with\
+    \ no observable effect, because it is retried on supersession and may be answered\
+    \ from a cache\n  privacy: per-user output is private, since the URL alone identifies\
+    \ the response\nguidance:\n  prefer_navigation: state that can live in the URL\
+    \ belongs there, where requirement:navigation-delta-rendering already handles\
+    \ it and the user gets a shareable, bookmarkable page\n  earns_its_keep: widget-local\
+    \ state that should not appear in a shareable URL, or a region whose inputs the\
+    \ browser genuinely owns\n  no_third_mode: re-running the handler with one patched\
+    \ parameter cannot reach the data fetch that produced the component's other inputs,\
+    \ so a patched sort order never reaches the query\nacceptance:\n  - a registered\
+    \ component renders from a URL with no page execution\n  - an unregistered component\
+    \ has no endpoint, even when it is exported and single rooted\n  - a template\
+    \ edit changes the endpoint URL and a page loaded before the deploy falls back\
+    \ to a full load\n  - a second redraw of the same region succeeds, because the\
+    \ replacement carries the kind again\n  - a component loading a record by identifier\
+    \ is reported by rule:route-and-template-checks as a registration to review\n\
+    \  - registering two components that hash to one kind fails startup validation\
+    \ with a diagnostic naming both, rather than aborting the process\n  - a redraw\
+    \ whose region did not change answers 304\n  - a refused redraw appears in the\
+    \ request log with its cause, and version skew is distinguishable from a decoding\
+    \ failure\n```"
+  source: decision:update-runtime-convergence
+  different_question: requirement:navigation-delta-rendering answers what changed
+    on this page; this answers render this one region again with these values
+  declaration:
+    syntax: a reloadable modifier after export on the component declaration in a .pw.html
+      source
+    generated: a typed query decoder, a kind identity, and a registration value
+    id_parameter: a required string id the author writes at the call site, filled
+      from the instance header on a redraw
+    diagnostics_are_errors:
+    - the component must be exported, single rooted, and not the document shell
+    - every parameter other than id must be a type a query string carries deterministically,
+      so a record, a slice, and html are refused
+    - unlike an automatic boundary these fail generation, because the author asked
+      for the endpoint
+  kind:
+    value: the component name plus a hash of its parameters and compiled markup
+    purpose: version, so editing the template changes the kind and a page loaded before
+      a deploy gets a 404 and reloads rather than rendering under changed semantics
+    does_not_cover: the package, so two templates identical in name, parameters, and
+      markup collide
+    guard: registering one kind twice fails at startup rather than overwriting, since
+      identical plan text still resolves its external calls per package; it returns
+      an error rather than panicking, so a generated registry reports it as a startup
+      diagnostic
+    on_the_element: every render writes the kind beside the instance id, so a region
+      stays redrawable after a redraw replaced it
+  registration:
+    explicit: being exported and single rooted is not enough, because answering for
+      a component must be a deliberate act
+    where: the generated api:page-registry Register, which is already the one symbol
+      an application touches to install a page tree
+    application_visible: the registration value exists in Go, so a reviewer reads
+      the published set from source rather than from templates
+    outside_a_page_tree: a registered-router project installs the value itself, since
+      it owns its own mux
+  no_longer_an_endpoint:
+    since: system:tinybind v0.3.5, which answered docs/tinybind-go-client-ownership-request.md
+      in full
+    what_changed: redraw became a negotiated request mode carried on the shared render
+      header, with the component named by kind and instance headers rather than by
+      a URL path
+    so: a redraw is answered at the page's own URL by the handler that renders it,
+      and the reserved-prefix route is gone
+    why_it_had_to: path protection is configured by path pattern, so a redraw on a
+      reserved path needed a second pattern kept in step with the one protecting the
+      page the component sits on, and nothing forced the two to agree
+    what_it_inherits_now: the page's middleware, and for a handler that owns its own
+      body, that handler's authorization as well
+    addressing_was_the_module_s: the browser half built the URL, so this framework
+      could not move an endpoint it served; that is the coupling the request named
+      and the release removed
+    stale_build: no longer refused, because at a page URL the right answer to a stale
+      redraw is the page the caller was about to render anyway
+  as_built:
+    what_was_missing: system:tinybind emits the registration value, and pw exported
+      the call that consumes it, but nothing joined them, so every project published
+      an empty registry and every redraw answered 404
+    two_entries:
+      explicit: pw Redraw takes the components this handler answers for, placed after
+        that handler's own authorization; the named set is what bounds the surface,
+        so a page cannot be asked to render a component it never shows
+      page_tree: the render entry answers from the process-wide published set, because
+        a generated route handler has no seam of its own; it runs after Load, so the
+        page's authorization has already run and already returned its own error
+      cost_of_the_page_tree_half: the data fetch the redraw did not need, and a set
+        bounded by the deployment rather than by the page; a handler that owns its
+        body takes the explicit entry instead
+    mechanism: pw generate derives an init beside each compiled template from the
+      registration value in that template's own generated source, exactly as requirement:dynamodb-migration
+      derives its table registration
+    derived_not_re_read: the marker is the emitted 'var NameReloadable = htmlupdate.Reloadable{',
+      so what publishes an endpoint is what the annotation produced and nothing re-decides
+      it; a component with no annotation regenerates byte for byte
+    declaration: the '@reloadable' annotation above 'export component' in a .pw.html
+      source, which is the deliberate act; the generated init decides nothing
+    not_the_page_registry:
+      planned: registration inside the generated Register of api:page-registry
+      why_not: a reloadable component is an ordinary component compiled by the flat
+        generator run, and a page tree's registry is written before that run has read
+        one; every generated import of a tree points down the tree, so a registry
+        naming a components package outside it would be the one import direction that
+        placement rule forbids
+      what_replaces_it: the component's own package registers itself, which is the
+        same shape decision:implicit-document-shell already uses for the document
+      unchanged: a registered-router project still installs the value itself, and
+        the exported call is the same one
+    linkage_is_the_condition: an init runs because a build linked its package, which
+      is the right rule rather than a gap; a reloadable component is reached from
+      the page or handler that renders it, and one nothing links is one no rendered
+      element carries the kind of, so nothing could address it
+    startup_diagnostic: RegisterReloadable keeps its first failure as well as returning
+      it, and api:application-lifecycle answers it before the port is bound, because
+      the generated init has nowhere to return one to and a panic there would end
+      the process before any logging exists to name the collision
+    reported_whatever_updates_say: a collision is a defect in what generation produced
+      rather than a deployment choice, so it is refused even with html.update.enabled
+      false, where a duplicate would otherwise wait silently for the first deployment
+      that turns updates on
+    shell_head_not_wired:
+      what: the registry reports RequiredHead and RequiredAssets and nothing here
+        reads them, so a first appearance is covered by the response header alone
+      judged_acceptable: 2026-08-04, and the reason is that the flash this would prevent
+        cannot happen in this project's configuration
+      why_not: requirement:component-asset-extraction is unasked for, so a component's
+        style and script reach the head inline rather than as a link; installing an
+        inline tag before the swap is synchronous and there is nothing to fetch mid-swap
+      also: a project styles from one shell stylesheet under requirement:tailwind-css-integration
+        or requirement:public-asset-delivery, where no component brings a tag the
+        document never had
+      the_real_residual: registration refuses a component whose transitive head passes
+        the module's two-kilobyte header bound, and the remedy that error names is
+        exactly this shell set, so what is unbuilt costs a large inline style block
+        rather than an unstyled region
+      revisit_when: component asset extraction is enabled, which turns every contribution
+        into a link and makes the mid-swap fetch real
+    still_open:
+      doctor: rule:route-and-template-checks does not yet report the published set,
+        so the review point the authorization rule names has no diagnostic behind
+        it
+  request:
+    shape: GET <the page url>?<declared parameters>, with the redraw mode on the render
+      header and the kind and instance on headers of their own
+    build_check: a request from another build is left to the page rather than refused,
+      because a kind is stable across builds and cannot say whether the page asking
+      is current; the page is what the caller was about to render
+    bounds: a configured maximum query length, since a GET carries every argument
+    decoding: a missing, undecodable, or repeated parameter is an error, never a zero
+      value
+  response:
+    body: that component's subtree as one root element carrying the same id
+    headers: private and no-cache, the served mode echoed on the render header, and
+      a keyed ETag over the rendered bytes
+    conditional: an unchanged region costs a 304, which is what makes a polled redraw
+      cheap without a manifest; the ETag is keyed for the same reason the validators
+      are
+    privacy: private rather than public, because the URL alone identifies a usually
+      per-user response
+    failure: an unknown kind is 404, an oversized query is 414, a bad argument is
+      400, and each falls back to a complete page load on the client; a stale build
+      is no longer a refusal
+    failure_visibility: every refusal reaches this framework through the hook of api:html-update-options,
+      so it is logged and rendered like any other failure rather than written as plain
+      text by the module
+    head: from system:tinybind v0.3.3 both halves are covered without changing the
+      body, which stays a bare subtree so what curl sees is unchanged
+    guarantee_side: the registry reports the head and assets of every published component,
+      so the document shell installs them once at startup and covers every redraw
+      of that deployment
+    report_side: a redraw of a component that contributes head announces those tags
+      on a response header, and the runtime installs what is missing before replacing
+      the region
+    bound: the head one component may carry is checked when it is registered rather
+      than per request, because a component's head is a static declaration and an
+      oversized one is a startup fact
+  authorization:
+    new_surface: yes, and it is the whole cost of this capability
+    rule: a registered component receives whatever the caller sends, where a component
+      argument used to be a value the page had already authenticated and authorized
+    safe: a component that only formats values handed to it
+    unsafe_without_a_check: one that loads a record by identifier, which must verify
+      ownership or visibility itself exactly as a handler does
+    review_point: registration; rule:route-and-template-checks reports the published
+      set so a project can review it, and api:cli-doctor names it
+    path_protection: policy:authenticated-path-protection patterns apply to the prefix
+      like any other path
+    csrf: a redraw is a side-effect-free GET, so policy:csrf-protection does not gate
+      it; origin defence still applies to a credentialed read
+  idempotence:
+    rule: a redraw must be repeatable with no observable effect, because it is retried
+      on supersession and may be answered from a cache
+    privacy: per-user output is private, since the URL alone identifies the response
+  guidance:
+    prefer_navigation: state that can live in the URL belongs there, where requirement:navigation-delta-rendering
+      already handles it and the user gets a shareable, bookmarkable page
+    earns_its_keep: widget-local state that should not appear in a shareable URL,
+      or a region whose inputs the browser genuinely owns
+    no_third_mode: re-running the handler with one patched parameter cannot reach
+      the data fetch that produced the component's other inputs, so a patched sort
+      order never reaches the query
+  acceptance:
+  - a registered component renders from a URL with no page execution
+  - an unregistered component has no endpoint, even when it is exported and single
+    rooted
+  - a template edit changes the endpoint URL and a page loaded before the deploy falls
+    back to a full load
+  - a second redraw of the same region succeeds, because the replacement carries the
+    kind again
+  - a component loading a record by identifier is reported by rule:route-and-template-checks
+    as a registration to review
+  - registering two components that hash to one kind fails startup validation with
+    a diagnostic naming both, rather than aborting the process
+  - a redraw whose region did not change answers 304
+  - a refused redraw appears in the request log with its cause, and version skew is
+    distinguishable from a decoding failure
+acceptance:
+  item-abc968b49db1a1c1:
+    text: a registered component renders from a URL with no page execution
+  item-d6bcad6936480c90:
+    text: an unregistered component has no endpoint, even when it is exported and
+      single rooted
+  item-a8766eee1664c18a:
+    text: a template edit changes the endpoint URL and a page loaded before the deploy
+      falls back to a full load
+  item-4f4793955ce56708:
+    text: a second redraw of the same region succeeds, because the replacement carries
+      the kind again
+  item-8ef4f7c13c52b836:
+    text: a component loading a record by identifier is reported by rule:route-and-template-checks
+      as a registration to review
+  item-34ada332f8c58e02:
+    text: registering two components that hash to one kind fails startup validation
+      with a diagnostic naming both, rather than aborting the process
+  item-c2cd8010fb2478d1:
+    text: a redraw whose region did not change answers 304
+  item-8660a7caaf2f1eea:
+    text: a refused redraw appears in the request log with its cause, and version
+      skew is distinguishable from a decoding failure
+relations:
+- relation: mentions
+  to: api:application-lifecycle
+  resolution: resolved
+- relation: mentions
+  to: api:cli-doctor
+  resolution: resolved
+- relation: mentions
+  to: api:html-update-options
+  resolution: resolved
+- relation: mentions
+  to: api:page-registry
+  resolution: resolved
+- relation: mentions
+  to: decision:implicit-document-shell
+  resolution: resolved
+- relation: mentions
+  to: decision:update-runtime-convergence
+  resolution: resolved
+- relation: mentions
+  to: policy:authenticated-path-protection
+  resolution: resolved
+- relation: mentions
+  to: policy:csrf-protection
+  resolution: resolved
+- relation: mentions
+  to: requirement:component-asset-extraction
+  resolution: resolved
+- relation: mentions
+  to: requirement:dynamodb-migration
+  resolution: resolved
+- relation: mentions
+  to: requirement:navigation-delta-rendering
+  resolution: resolved
+- relation: mentions
+  to: requirement:public-asset-delivery
+  resolution: resolved
+- relation: mentions
+  to: requirement:tailwind-css-integration
+  resolution: resolved
+- relation: mentions
+  to: rule:route-and-template-checks
+  resolution: resolved
+- relation: mentions
+  to: system:tinybind
+  resolution: resolved

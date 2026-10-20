@@ -272,3 +272,27 @@ env 形式は変数の完全な一覧で、`pw init` が書くテンプレート
 出ます。各エントリはその値がどこから来たのかを示し、`secret` タグが表示・マスク・
 非表示のどれになるかを決めます。形式は `observability.boot_log` が選びます。
 [設定サマリ](/ja/productivity/startup-summary/)を参照してください。
+
+## アプリケーションのリソースを開く前に
+
+`pw.Run` より前にストアなどを開くアプリでは、設定の解析とフレームワークアクションを
+先に処理します。
+
+```go
+func run() error {
+    // アプリの設定登録は解析より前に行います。
+    if err := pw.ParseConfig(); err != nil {
+        return err
+    }
+    if handled, err := pw.RunFrameworkAction(); handled || err != nil {
+        return err
+    }
+    // アプリのリソースはここで開きます。
+    return pw.Run(context.Background(), handlers.Handlers())
+}
+```
+
+これで `--generate-config` と `healthcheck` はリソースを開かずに終了できます。
+`ParseConfig` は冪等で、後続の `pw.Run` は解析結果を再利用します。
+fasthttpには同じ処理順で使える `pwfast.RunFrameworkAction` があり、共有の初期化コードでは
+引き続き `pwconfig.RunFrameworkAction` も使えます。

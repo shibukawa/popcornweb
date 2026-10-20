@@ -1,0 +1,161 @@
+id: decision:data-cache-entry-identity
+type: decision
+title: A Data Entry Is Identified By Its Key Type
+summary: The identity part of a data cache key is the key type's qualified name alone,
+  emitted into the method decision:cache-key-interface requires, joined with the build
+  identity by the store.
+facts:
+  legacy_body: "The identity part of a data cache key is the key type's qualified\
+    \ name alone, emitted into the method decision:cache-key-interface requires, joined\
+    \ with the build identity by the store.\n\n```yaml\nstatus: accepted and built\
+    \ 2026-08-13; revised twice — from a caller-declared name to the key type, then\
+    \ the version dropped entirely when system:tinybind v0.5.9 refused it\nowner:\
+    \ requirement:data-result-cache\nwhat_the_component_cache_does: its identity is\
+    \ the component's package, file, and name joined with a digest of the instruction\
+    \ list generated for it, so edited markup cannot read entries the previous build\
+    \ wrote\nwhy_that_does_not_carry: the digest exists because a template compiles\
+    \ to a plan; a hand-written fetch compiles to nothing the framework reads, so\
+    \ an edited function body is invisible and would keep answering from entries written\
+    \ by the code it replaced\nidentity:\n  type_name: the key type's package path\
+    \ and name, which is unique by construction; emitted by cachekeybind and never\
+    \ restated by an author\n  build: the pwruntime UpdateBuildID that api:html-update-options\
+    \ already carries, which is the vcs revision, joined by the store rather than\
+    \ by the method\n  where_it_lives: the type name inside the generated method,\
+    \ the scope and the build in front of it, so nothing at the call site restates\
+    \ any part\nno_version:\n  was: an author-declared version beside the type name,\
+    \ to cover a meaning change that leaves the key alone\n  removed_by: system:tinybind\
+    \ v0.5.9, whose own decision is that a version relocates a failure rather than\
+    \ closing one — it is a number an author must remember to raise, and forgetting\
+    \ it is silent\n  the_argument_that_lands_here: the upstream module states that\
+    \ its cache runtime never enumerates or invalidates entries, so a version is an\
+    \ invalidation lever declared in a library for a policy the deployment owns\n\
+    \  why_this_framework_loses_little: the build identity above already invalidates\
+    \ on any code change, which is the common case; the residual is a meaning change\
+    \ with no code change\n  residual_answers: namespace a store per release, delete\
+    \ the scope prefix as a range, or wait out the TTL\n  accepted: the earlier framing\
+    \ here, that a hand-written body needs a declared equivalent of the plan fingerprint,\
+    \ is withdrawn\nwhy_the_type_and_not_a_declared_name:\n  the_collision_it_prevents:\
+    \ a store is addressed by name at the call site, so two Memo calls sharing a store\
+    \ would key on their arguments alone; a user key holding 1 and an order key holding\
+    \ 1 would reach one entry\n  cannot_be_forgotten: a caller-declared name is a\
+    \ string an author picks per call site, which is both forgettable and duplicable,\
+    \ and the failure is a wrong answer rather than a build error\n  cannot_be_duplicated:\
+    \ a package path plus a type name is unique in a build, so two key types cannot\
+    \ collide however they are named\n  cost: caching two different results under\
+    \ one key type now requires two key types, which is the honest reading of two\
+    \ different dependency sets\nwhy_both_remaining_parts:\n  build_alone: partitions\
+    \ on deploy, which covers an edited fetch for free on any real rollout, and says\
+    \ nothing about which call site an entry belongs to\n  type_alone: separates call\
+    \ sites and says nothing about time\n  together: the deploy invalidates code changes\
+    \ and the type keeps two call sites apart, and neither is a number anyone has\
+    \ to remember\nunstamped_binary:\n  fact: UpdateBuildID is empty when the binary\
+    \ carries no vcs revision, which is the go run and buildvcs=false case\n  consequence:\
+    \ the build part contributes nothing, so entries written before a rebuild are\
+    \ readable after it\n  acceptable_for_memory: the process restarts when the binary\
+    \ is rebuilt, so the entries are gone before the question arises\n  not_acceptable_for_a_remote_backend:\
+    \ a development binary would read a previous build's entries out of a store that\
+    \ never restarted, so data:cache-store-set must answer this before a second backend\
+    \ ships\n  not_fixed_by_a_process_identity: a per-process value would partition\
+    \ every restart and never match a second replica, which is a cache that answers\
+    \ nothing in production to fix a development case\nschema_version: policy:layered-cache\
+    \ names one on the data layer; it is answered by the build identity and the type\
+    \ name together rather than by anything an author declares, per no_version above\n\
+    rejected:\n  hash_the_function: Go offers no stable digest of a function body\
+    \ at run time, and one taken at build time would need a generator over hand-written\
+    \ code\n  hash_the_result_type: it moves on a field rename that changes no meaning\
+    \ and holds still on a semantic change that renames nothing\n  identity_from_the_call_site:\
+    \ file and line move on every edit above them, so unrelated changes would evict\n\
+    ```"
+  status: accepted and built 2026-08-13; revised twice — from a caller-declared name
+    to the key type, then the version dropped entirely when system:tinybind v0.5.9
+    refused it
+  owner: requirement:data-result-cache
+  what_the_component_cache_does: its identity is the component's package, file, and
+    name joined with a digest of the instruction list generated for it, so edited
+    markup cannot read entries the previous build wrote
+  why_that_does_not_carry: the digest exists because a template compiles to a plan;
+    a hand-written fetch compiles to nothing the framework reads, so an edited function
+    body is invisible and would keep answering from entries written by the code it
+    replaced
+  identity:
+    type_name: the key type's package path and name, which is unique by construction;
+      emitted by cachekeybind and never restated by an author
+    build: the pwruntime UpdateBuildID that api:html-update-options already carries,
+      which is the vcs revision, joined by the store rather than by the method
+    where_it_lives: the type name inside the generated method, the scope and the build
+      in front of it, so nothing at the call site restates any part
+  no_version:
+    was: an author-declared version beside the type name, to cover a meaning change
+      that leaves the key alone
+    removed_by: system:tinybind v0.5.9, whose own decision is that a version relocates
+      a failure rather than closing one — it is a number an author must remember to
+      raise, and forgetting it is silent
+    the_argument_that_lands_here: the upstream module states that its cache runtime
+      never enumerates or invalidates entries, so a version is an invalidation lever
+      declared in a library for a policy the deployment owns
+    why_this_framework_loses_little: the build identity above already invalidates
+      on any code change, which is the common case; the residual is a meaning change
+      with no code change
+    residual_answers: namespace a store per release, delete the scope prefix as a
+      range, or wait out the TTL
+    accepted: the earlier framing here, that a hand-written body needs a declared
+      equivalent of the plan fingerprint, is withdrawn
+  why_the_type_and_not_a_declared_name:
+    the_collision_it_prevents: a store is addressed by name at the call site, so two
+      Memo calls sharing a store would key on their arguments alone; a user key holding
+      1 and an order key holding 1 would reach one entry
+    cannot_be_forgotten: a caller-declared name is a string an author picks per call
+      site, which is both forgettable and duplicable, and the failure is a wrong answer
+      rather than a build error
+    cannot_be_duplicated: a package path plus a type name is unique in a build, so
+      two key types cannot collide however they are named
+    cost: caching two different results under one key type now requires two key types,
+      which is the honest reading of two different dependency sets
+  why_both_remaining_parts:
+    build_alone: partitions on deploy, which covers an edited fetch for free on any
+      real rollout, and says nothing about which call site an entry belongs to
+    type_alone: separates call sites and says nothing about time
+    together: the deploy invalidates code changes and the type keeps two call sites
+      apart, and neither is a number anyone has to remember
+  unstamped_binary:
+    fact: UpdateBuildID is empty when the binary carries no vcs revision, which is
+      the go run and buildvcs=false case
+    consequence: the build part contributes nothing, so entries written before a rebuild
+      are readable after it
+    acceptable_for_memory: the process restarts when the binary is rebuilt, so the
+      entries are gone before the question arises
+    not_acceptable_for_a_remote_backend: a development binary would read a previous
+      build's entries out of a store that never restarted, so data:cache-store-set
+      must answer this before a second backend ships
+    not_fixed_by_a_process_identity: a per-process value would partition every restart
+      and never match a second replica, which is a cache that answers nothing in production
+      to fix a development case
+  schema_version: policy:layered-cache names one on the data layer; it is answered
+    by the build identity and the type name together rather than by anything an author
+    declares, per no_version above
+  rejected:
+    hash_the_function: Go offers no stable digest of a function body at run time,
+      and one taken at build time would need a generator over hand-written code
+    hash_the_result_type: it moves on a field rename that changes no meaning and holds
+      still on a semantic change that renames nothing
+    identity_from_the_call_site: file and line move on every edit above them, so unrelated
+      changes would evict
+relations:
+- relation: mentions
+  to: api:html-update-options
+  resolution: resolved
+- relation: mentions
+  to: data:cache-store-set
+  resolution: resolved
+- relation: mentions
+  to: decision:cache-key-interface
+  resolution: resolved
+- relation: mentions
+  to: policy:layered-cache
+  resolution: resolved
+- relation: mentions
+  to: requirement:data-result-cache
+  resolution: resolved
+- relation: mentions
+  to: system:tinybind
+  resolution: resolved

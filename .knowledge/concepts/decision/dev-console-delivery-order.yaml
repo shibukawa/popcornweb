@@ -1,0 +1,205 @@
+id: decision:dev-console-delivery-order
+type: decision
+title: Development Console Delivery Order
+summary: Deliver the requirement:dev-console listener and the panes needing no new
+  mechanism before the two panes that introduce a process and a protocol.
+facts:
+  legacy_body: "Deliver the requirement:dev-console listener and the panes needing\
+    \ no new mechanism before the two panes that introduce a process and a protocol.\n\
+    \n```yaml\nstatus: accepted\nprinciple: each step ends with something usable,\
+    \ and no step is written against a mount point or a convention the next step moves\n\
+    settled_first:\n  reason: these are public surface or an outside dependency, and\
+    \ changing either after a project has adopted it costs a migration rather than\
+    \ an edit\n  decided:\n    console_port: dev.console.port defaults to 18081 and\
+    \ api:cli-init scaffolds it, beside the 18080 dev.idp.port already takes\n   \
+    \ otel_port: dev.otel.port narrows to the OTLP receiver alone, changing what an\
+    \ existing value means without changing its spelling, which the first release\
+    \ note has to say plainly\n  closed:\n    api_renderer: no renderer is taken and\
+    \ no license has to be verified, because requirement:dev-api-reference became\
+    \ a link to the endpoint the application already serves\norder:\n  - step: console\
+    \ listener, dev.console configuration, and index\n    delivers: one bookmarkable\
+    \ URL\n    includes: moving the requirement:dev-telemetry-viewer UI onto it per\
+    \ decision:dev-console-consolidation, before any pane is written against the old\
+    \ mount\n  - step: data:dev-loop-state published by api:cli-dev and shown on the\
+    \ index\n    delivers: the loop's current failure readable outside the terminal\n\
+    \    why_here: it is the whole overlay protocol with no browser code in it, so\
+    \ flow:dev-overlay-delivery is proven before decision:dev-browser-runtime-scope\
+    \ is exercised\n  - step: requirement:dev-asset-inspector\n    delivers: the first\
+    \ pane\n    why_here: static analysis only, so the pane conventions of index entry,\
+    \ disabled reporting, and undetermined-value reporting are settled where a mistake\
+    \ is cheap\n  - step: requirement:dev-error-overlay browser half\n    delivers:\
+    \ the failure over the page\n    depends_on: the pwdev script set of requirement:framework-script-assets\n\
+    \  - step: requirement:dev-api-reference\n    delivers: the generated OpenAPI\
+    \ document, readable while the application is down\n    independent: needs no\
+    \ mechanism the earlier steps built, so it may land beside any of them\n  - step:\
+    \ requirement:template-storybook\n    delivers: templates rendered in isolation\n\
+    \    introduces: decision:dev-harness-process, and the generated pwdev registry\
+    \ that makes an unexported symbol enumerable from inside its own package\n  -\
+    \ step: requirement:dev-data-pane and requirement:dev-query-runner\n    delivers:\
+    \ the development database browsable, editable, and queryable from the console\n\
+    \    introduces: decision:dev-application-attachment\n    order_within: the attachment\
+    \ and browsing first, because they exercise the transport before anything can\
+    \ write; the editor and both query halves land on a proven one\n    scope_grew:\
+    \ the pane was specified read-only with no statement console, and became a database\
+    \ tool rather than a viewer; decision:dev-console-self-sufficiency records why\
+    \ that is the console's job at all\n    why_last: it reuses the registry technique\
+    \ the storybook step builds, and it is the step whose conventions benefit most\
+    \ from a settled console\nspikes:\n  reason: each proves an assumption a whole\
+    \ step rests on, and each is cheaper than the step it guards\n  items:\n    -\
+    \ the requirement:framework-script-assets core dynamically importing a dev module\
+    \ under pwdev, with the revision digest separating the two URLs, which requirement:dev-error-overlay\
+    \ assumes\n    - pw building and running a generated main inside the project module,\
+    \ which decision:dev-harness-process assumes\n    - an application dialing out\
+    \ and holding an attachment across its own restart, which decision:dev-application-attachment\
+    \ assumes\nconfiguration_growth:\n  rule: a dev.console pane key is accepted only\
+    \ from the step that delivers its pane, because data:project-config treats an\
+    \ unknown key as an error\n  effect: the schema there is the target; a key for\
+    \ a pane not yet delivered is rejected by name, which is a clearer answer than\
+    \ accepting a setting that does nothing\napi_reference_supersession:\n  finding:\
+    \ the application already serves a Scalar or Swagger UI through data:server-runtime-config\
+    \ api_doc, scaffolded into the development configuration by api:cli-init\n  resolved:\
+    \ link it rather than duplicate it, which is what requirement:dev-api-reference\
+    \ now specifies\n  effect: the step shrank from embedding a renderer to resolving\
+    \ api_doc_path and putting a link on the index, and it no longer carries a third-party\
+    \ bundle\nacceptance: each requirement carries its own acceptance list, which\
+    \ is the step's test plan rather than a separate artifact\n```"
+  status: accepted
+  principle: each step ends with something usable, and no step is written against
+    a mount point or a convention the next step moves
+  settled_first:
+    reason: these are public surface or an outside dependency, and changing either
+      after a project has adopted it costs a migration rather than an edit
+    decided:
+      console_port: dev.console.port defaults to 18081 and api:cli-init scaffolds
+        it, beside the 18080 dev.idp.port already takes
+      otel_port: dev.otel.port narrows to the OTLP receiver alone, changing what an
+        existing value means without changing its spelling, which the first release
+        note has to say plainly
+    closed:
+      api_renderer: no renderer is taken and no license has to be verified, because
+        requirement:dev-api-reference became a link to the endpoint the application
+        already serves
+  order:
+  - step: console listener, dev.console configuration, and index
+    delivers: one bookmarkable URL
+    includes: moving the requirement:dev-telemetry-viewer UI onto it per decision:dev-console-consolidation,
+      before any pane is written against the old mount
+  - step: data:dev-loop-state published by api:cli-dev and shown on the index
+    delivers: the loop's current failure readable outside the terminal
+    why_here: it is the whole overlay protocol with no browser code in it, so flow:dev-overlay-delivery
+      is proven before decision:dev-browser-runtime-scope is exercised
+  - step: requirement:dev-asset-inspector
+    delivers: the first pane
+    why_here: static analysis only, so the pane conventions of index entry, disabled
+      reporting, and undetermined-value reporting are settled where a mistake is cheap
+  - step: requirement:dev-error-overlay browser half
+    delivers: the failure over the page
+    depends_on: the pwdev script set of requirement:framework-script-assets
+  - step: requirement:dev-api-reference
+    delivers: the generated OpenAPI document, readable while the application is down
+    independent: needs no mechanism the earlier steps built, so it may land beside
+      any of them
+  - step: requirement:template-storybook
+    delivers: templates rendered in isolation
+    introduces: decision:dev-harness-process, and the generated pwdev registry that
+      makes an unexported symbol enumerable from inside its own package
+  - step: requirement:dev-data-pane and requirement:dev-query-runner
+    delivers: the development database browsable, editable, and queryable from the
+      console
+    introduces: decision:dev-application-attachment
+    order_within: the attachment and browsing first, because they exercise the transport
+      before anything can write; the editor and both query halves land on a proven
+      one
+    scope_grew: the pane was specified read-only with no statement console, and became
+      a database tool rather than a viewer; decision:dev-console-self-sufficiency
+      records why that is the console's job at all
+    why_last: it reuses the registry technique the storybook step builds, and it is
+      the step whose conventions benefit most from a settled console
+  spikes:
+    reason: each proves an assumption a whole step rests on, and each is cheaper than
+      the step it guards
+    items:
+    - the requirement:framework-script-assets core dynamically importing a dev module
+      under pwdev, with the revision digest separating the two URLs, which requirement:dev-error-overlay
+      assumes
+    - pw building and running a generated main inside the project module, which decision:dev-harness-process
+      assumes
+    - an application dialing out and holding an attachment across its own restart,
+      which decision:dev-application-attachment assumes
+  configuration_growth:
+    rule: a dev.console pane key is accepted only from the step that delivers its
+      pane, because data:project-config treats an unknown key as an error
+    effect: the schema there is the target; a key for a pane not yet delivered is
+      rejected by name, which is a clearer answer than accepting a setting that does
+      nothing
+  api_reference_supersession:
+    finding: the application already serves a Scalar or Swagger UI through data:server-runtime-config
+      api_doc, scaffolded into the development configuration by api:cli-init
+    resolved: link it rather than duplicate it, which is what requirement:dev-api-reference
+      now specifies
+    effect: the step shrank from embedding a renderer to resolving api_doc_path and
+      putting a link on the index, and it no longer carries a third-party bundle
+  acceptance: each requirement carries its own acceptance list, which is the step's
+    test plan rather than a separate artifact
+lifecycle: accepted
+relations:
+- relation: mentions
+  to: api:cli-dev
+  resolution: resolved
+- relation: mentions
+  to: api:cli-init
+  resolution: resolved
+- relation: mentions
+  to: data:dev-loop-state
+  resolution: resolved
+- relation: mentions
+  to: data:project-config
+  resolution: resolved
+- relation: mentions
+  to: data:server-runtime-config
+  resolution: resolved
+- relation: mentions
+  to: decision:dev-application-attachment
+  resolution: resolved
+- relation: mentions
+  to: decision:dev-browser-runtime-scope
+  resolution: resolved
+- relation: mentions
+  to: decision:dev-console-consolidation
+  resolution: resolved
+- relation: mentions
+  to: decision:dev-console-self-sufficiency
+  resolution: resolved
+- relation: mentions
+  to: decision:dev-harness-process
+  resolution: resolved
+- relation: mentions
+  to: flow:dev-overlay-delivery
+  resolution: resolved
+- relation: mentions
+  to: requirement:dev-api-reference
+  resolution: resolved
+- relation: mentions
+  to: requirement:dev-asset-inspector
+  resolution: resolved
+- relation: mentions
+  to: requirement:dev-console
+  resolution: resolved
+- relation: mentions
+  to: requirement:dev-data-pane
+  resolution: resolved
+- relation: mentions
+  to: requirement:dev-error-overlay
+  resolution: resolved
+- relation: mentions
+  to: requirement:dev-query-runner
+  resolution: resolved
+- relation: mentions
+  to: requirement:dev-telemetry-viewer
+  resolution: resolved
+- relation: mentions
+  to: requirement:framework-script-assets
+  resolution: resolved
+- relation: mentions
+  to: requirement:template-storybook
+  resolution: resolved

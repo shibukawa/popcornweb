@@ -1,0 +1,331 @@
+id: requirement:dynamodb-auth-stores
+type: requirement
+title: DynamoDB Account-Side Authentication Stores
+summary: authstore/dynamo implements the allowlist, credential, and bootstrap stores
+  of plugin/auth over requirement:dynamodb-store; the fourth store, ceremony state,
+  is requirement:contrib-auth-state-dynamo.
+facts:
+  legacy_body: "authstore/dynamo implements the allowlist, credential, and bootstrap\
+    \ stores of plugin/auth over requirement:dynamodb-store; the fourth store, ceremony\
+    \ state, is requirement:contrib-auth-state-dynamo.\n\n```yaml\npackage: authstore/dynamo\n\
+    family: authstore, a fourth entry in rule:storage-package-layout, named by user\
+    \ 2026-08-01\nimplemented: 2026-08-05, all three stores with the account index,\
+    \ the conditional sign-count update, and the single-request attempt spend\nwhy_a_new_family:\
+    \ these are the framework-owned account tables of plugin/auth, and they are neither\
+    \ a connection, a session record, nor a single-use ceremony record\nwhy_one_package:\
+    \ decision:dynamodb-auth-compensating-registration orders three writes across\
+    \ two of these stores, so they ship and are verified together\nselected_by: decision:auth-backend-selection\n\
+    client:\n  source: the request context, installed by the api:dynamo-package middleware\n\
+    \  no_constructor_argument: matching requirement:contrib-auth-state-dynamo, since\
+    \ system:tinybind carries the client in the context\n  missing: the driver's no-client\
+    \ error, surfaced as the contract error of each store\ntables:\n  declared_names:\
+    \ popcornweb_auth_allowlist, popcornweb_passkey_credential, and popcornweb_auth_bootstrap,\
+    \ unchanged from rule:framework-owned-tables\n  definitions: handwritten, not\
+    \ generated, for the reason requirement:dynamodb-session-store gives; this package\
+    \ is the only reader and writer of these items\n  registration: decision:dynamodb-table-registry,\
+    \ from init, so requirement:dynamodb-migration creates all three\n  conditional_verification:\
+    \ rule:framework-owned-tables applies unchanged; a table is verified only when\
+    \ the selected mode reads it and no application store is installed\nallowlist:\n\
+    \  contract: api:auth-allowlist-store\n  key: one partition key holding the issuer,\
+    \ the claim name, and the value joined; no sort key\n  why_joined:\n    rejected:\
+    \ issuer as the partition key and claim#value as the sort key\n    reason: a deployment\
+    \ usually has one issuer, so that shape puts every login's admission read on one\
+    \ partition\n    lost: an issuer-scoped listing, answered instead by a Scan, which\
+    \ is acceptable because the table is bounded by how many identities an operator\
+    \ registered and listing is administrative rather than per-request\n  lookup:\
+    \ one BatchGetItem over the candidate keys; any returned item is a match\n  partial_batch:\
+    \ the driver reports unprocessed keys, and an incomplete answer is an error rather\
+    \ than a non-match, per api:auth-allowlist-store\n  writes: none; provisioning\
+    \ is administrator tooling\ncredential:\n  contract: api:auth-credential-store\
+    \ CredentialStore\n  key: the credential ID as the partition key; no sort key\n\
+    \  find: GetItem, consistent read, because a credential enrolled moments ago must\
+    \ be findable on the next login\n  list_by_account:\n    operation: Query on a\
+    \ global secondary index keyed by account_id\n    index: declared in the handwritten\
+    \ TableDefinition, which system:tinygodriver-dynamodb supports at creation\n \
+    \   bound: no UpdateTable, so this index cannot be added to a table that already\
+    \ exists; a deployment that created the table before the index existed recreates\
+    \ it\n    scope_note: the \"no secondary index\" bound of requirement:dynamodb-store\
+    \ is about the deferred system:tinybind gsi tag, and does not reach a handwritten\
+    \ definition\n    projection: the credential ID, the transports, and the user\
+    \ handle\n    why_the_handle: an enrollment reuses the handle the account already\
+    \ has, and a listing that could not see it would mint a second one for the same\
+    \ account\n  save: PutItem conditioned on the credential ID being absent, then\
+    \ the activation callback, per decision:dynamodb-auth-compensating-registration\n\
+    \  update_on_assertion:\n    operation: UpdateItem conditioned on the stored sign\
+    \ count being lower than the accepted one\n    why_conditioned: a counter that\
+    \ moves backward is a replayed or cloned authenticator, and the condition makes\
+    \ the store refuse it rather than the caller\n    failure: a conditional-check\
+    \ failure fails the ceremony closed and is never downgraded to a warning\n  delete:\
+    \ DeleteItem, idempotent by construction\nbootstrap:\n  contract: api:auth-credential-store\
+    \ BootstrapStore\n  key: the login ID as the partition key; no sort key\n  issue:\
+    \ PutItem conditioned on the login ID being absent\n  find: GetItem, then the\
+    \ unconsumed, unexpired, and attempts-remaining checks\n  record_attempt:\n  \
+    \  operation: one UpdateItem adding minus one, conditioned on attempts_remaining\
+    \ being positive and the record unconsumed, with ALL_NEW returned\n    why_one_request:\
+    \ the contract requires that two parallel guesses cannot both spend the last attempt,\
+    \ and a read followed by a write cannot promise it\n    exhausted: a conditional-check\
+    \ failure, reported as the contract's unknown-bootstrap error\n  consume: UpdateItem\
+    \ conditioned on consumed_at being absent, which is step one of decision:dynamodb-auth-compensating-registration\n\
+    \  enumeration: an exhausted budget, a consumed credential, and an unknown login\
+    \ ID all return the same error, unchanged from the contract\nstored_attributes:\n\
+    \  timestamps: epoch-second numeric attributes, since DynamoDB has no time type\n\
+    \  binary: credential IDs, user handles, COSE blobs, curve points, and secret\
+    \ digests are binary attributes\n  expires_at: the bootstrap record carries one,\
+    \ and it is the attribute a deployment points TTL at\n  expiry_authority: the\
+    \ stored deadline checked on read, per decision:dynamodb-session-expiry, which\
+    \ applies here for the same reason\n  ttl_is_not_ours: nothing in the framework\
+    \ enables or verifies it, per decision:dynamodb-operational-configuration; the\
+    \ credential and allowlist tables have no expiry at all\nbounds:\n  item_size:\
+    \ a record over the DynamoDB item limit is refused before the request with the\
+    \ limit named, matching requirement:dynamodb-session-store\n  transports_and_label:\
+    \ bounded before encoding, since an unbounded label is the only credential field\
+    \ an application controls\nsecurity:\n  - no request this package issues produces\
+    \ a query-diagnostics record, per policy:query-log-safety\n  - errors carry no\
+    \ credential ID, user handle, login ID, secret, or claim value, per policy:passkey-security\
+    \ and policy:oidc-security\n  - the raw bootstrap secret is never stored or logged,\
+    \ per data:account-bootstrap-credential\nacceptance:\n  - a passkey login and\
+    \ a passkey enrollment onto an active account complete with no relational database\
+    \ configured\n  - oidc.admission registered admits a pre-registered identity and\
+    \ denies an unregistered one, and an unprocessed batch key is an error\n  - a\
+    \ second Issue for a live login ID fails without overwriting\n  - N parallel RecordAttempt\
+    \ calls against a budget of one leave exactly one caller with an attempt\n  -\
+    \ an assertion carrying a sign count at or below the stored one is refused by\
+    \ the store\n  - a passkey-only registration interrupted after step one leaves\
+    \ no credential, and one interrupted after step two leaves a provisional account\
+    \ that cannot create a session\n  - all three tables are created by the same pw\
+    \ migrate run that creates application tables\n  - two parallel test servers with\
+    \ different prefixes never observe each other's credentials, per requirement:dynamodb-test-isolation\n\
+    non_goals:\n  - a sweep of expired bootstrap records\n  - storing data:user-account\
+    \ or data:external-identity, which stay application-owned\n  - sharing one table\
+    \ with requirement:contrib-auth-state-dynamo or requirement:dynamodb-session-store\n\
+    \  - a second index on the allowlist or the bootstrap table\nrelated:\n  - requirement:dynamodb-auth-backend\n\
+    \  - requirement:contrib-auth-state-dynamo\n  - api:dynamo-package\n```"
+  package: authstore/dynamo
+  family: authstore, a fourth entry in rule:storage-package-layout, named by user
+    2026-08-01
+  implemented: 2026-08-05, all three stores with the account index, the conditional
+    sign-count update, and the single-request attempt spend
+  why_a_new_family: these are the framework-owned account tables of plugin/auth, and
+    they are neither a connection, a session record, nor a single-use ceremony record
+  why_one_package: decision:dynamodb-auth-compensating-registration orders three writes
+    across two of these stores, so they ship and are verified together
+  selected_by: decision:auth-backend-selection
+  client:
+    source: the request context, installed by the api:dynamo-package middleware
+    no_constructor_argument: matching requirement:contrib-auth-state-dynamo, since
+      system:tinybind carries the client in the context
+    missing: the driver's no-client error, surfaced as the contract error of each
+      store
+  tables:
+    declared_names: popcornweb_auth_allowlist, popcornweb_passkey_credential, and
+      popcornweb_auth_bootstrap, unchanged from rule:framework-owned-tables
+    definitions: handwritten, not generated, for the reason requirement:dynamodb-session-store
+      gives; this package is the only reader and writer of these items
+    registration: decision:dynamodb-table-registry, from init, so requirement:dynamodb-migration
+      creates all three
+    conditional_verification: rule:framework-owned-tables applies unchanged; a table
+      is verified only when the selected mode reads it and no application store is
+      installed
+  allowlist:
+    contract: api:auth-allowlist-store
+    key: one partition key holding the issuer, the claim name, and the value joined;
+      no sort key
+    why_joined:
+      rejected: issuer as the partition key and claim#value as the sort key
+      reason: a deployment usually has one issuer, so that shape puts every login's
+        admission read on one partition
+      lost: an issuer-scoped listing, answered instead by a Scan, which is acceptable
+        because the table is bounded by how many identities an operator registered
+        and listing is administrative rather than per-request
+    lookup: one BatchGetItem over the candidate keys; any returned item is a match
+    partial_batch: the driver reports unprocessed keys, and an incomplete answer is
+      an error rather than a non-match, per api:auth-allowlist-store
+    writes: none; provisioning is administrator tooling
+  credential:
+    contract: api:auth-credential-store CredentialStore
+    key: the credential ID as the partition key; no sort key
+    find: GetItem, consistent read, because a credential enrolled moments ago must
+      be findable on the next login
+    list_by_account:
+      operation: Query on a global secondary index keyed by account_id
+      index: declared in the handwritten TableDefinition, which system:tinygodriver-dynamodb
+        supports at creation
+      bound: no UpdateTable, so this index cannot be added to a table that already
+        exists; a deployment that created the table before the index existed recreates
+        it
+      scope_note: the "no secondary index" bound of requirement:dynamodb-store is
+        about the deferred system:tinybind gsi tag, and does not reach a handwritten
+        definition
+      projection: the credential ID, the transports, and the user handle
+      why_the_handle: an enrollment reuses the handle the account already has, and
+        a listing that could not see it would mint a second one for the same account
+    save: PutItem conditioned on the credential ID being absent, then the activation
+      callback, per decision:dynamodb-auth-compensating-registration
+    update_on_assertion:
+      operation: UpdateItem conditioned on the stored sign count being lower than
+        the accepted one
+      why_conditioned: a counter that moves backward is a replayed or cloned authenticator,
+        and the condition makes the store refuse it rather than the caller
+      failure: a conditional-check failure fails the ceremony closed and is never
+        downgraded to a warning
+    delete: DeleteItem, idempotent by construction
+  bootstrap:
+    contract: api:auth-credential-store BootstrapStore
+    key: the login ID as the partition key; no sort key
+    issue: PutItem conditioned on the login ID being absent
+    find: GetItem, then the unconsumed, unexpired, and attempts-remaining checks
+    record_attempt:
+      operation: one UpdateItem adding minus one, conditioned on attempts_remaining
+        being positive and the record unconsumed, with ALL_NEW returned
+      why_one_request: the contract requires that two parallel guesses cannot both
+        spend the last attempt, and a read followed by a write cannot promise it
+      exhausted: a conditional-check failure, reported as the contract's unknown-bootstrap
+        error
+    consume: UpdateItem conditioned on consumed_at being absent, which is step one
+      of decision:dynamodb-auth-compensating-registration
+    enumeration: an exhausted budget, a consumed credential, and an unknown login
+      ID all return the same error, unchanged from the contract
+  stored_attributes:
+    timestamps: epoch-second numeric attributes, since DynamoDB has no time type
+    binary: credential IDs, user handles, COSE blobs, curve points, and secret digests
+      are binary attributes
+    expires_at: the bootstrap record carries one, and it is the attribute a deployment
+      points TTL at
+    expiry_authority: the stored deadline checked on read, per decision:dynamodb-session-expiry,
+      which applies here for the same reason
+    ttl_is_not_ours: nothing in the framework enables or verifies it, per decision:dynamodb-operational-configuration;
+      the credential and allowlist tables have no expiry at all
+  bounds:
+    item_size: a record over the DynamoDB item limit is refused before the request
+      with the limit named, matching requirement:dynamodb-session-store
+    transports_and_label: bounded before encoding, since an unbounded label is the
+      only credential field an application controls
+  security:
+  - no request this package issues produces a query-diagnostics record, per policy:query-log-safety
+  - errors carry no credential ID, user handle, login ID, secret, or claim value,
+    per policy:passkey-security and policy:oidc-security
+  - the raw bootstrap secret is never stored or logged, per data:account-bootstrap-credential
+  acceptance:
+  - a passkey login and a passkey enrollment onto an active account complete with
+    no relational database configured
+  - oidc.admission registered admits a pre-registered identity and denies an unregistered
+    one, and an unprocessed batch key is an error
+  - a second Issue for a live login ID fails without overwriting
+  - N parallel RecordAttempt calls against a budget of one leave exactly one caller
+    with an attempt
+  - an assertion carrying a sign count at or below the stored one is refused by the
+    store
+  - a passkey-only registration interrupted after step one leaves no credential, and
+    one interrupted after step two leaves a provisional account that cannot create
+    a session
+  - all three tables are created by the same pw migrate run that creates application
+    tables
+  - two parallel test servers with different prefixes never observe each other's credentials,
+    per requirement:dynamodb-test-isolation
+  non_goals:
+  - a sweep of expired bootstrap records
+  - storing data:user-account or data:external-identity, which stay application-owned
+  - sharing one table with requirement:contrib-auth-state-dynamo or requirement:dynamodb-session-store
+  - a second index on the allowlist or the bootstrap table
+  related:
+  - requirement:dynamodb-auth-backend
+  - requirement:contrib-auth-state-dynamo
+  - api:dynamo-package
+acceptance:
+  item-1faf93e5631a2765:
+    text: a passkey login and a passkey enrollment onto an active account complete
+      with no relational database configured
+  item-6b302309f5ee7dbf:
+    text: oidc.admission registered admits a pre-registered identity and denies an
+      unregistered one, and an unprocessed batch key is an error
+  item-fa0100f8f07a6c2c:
+    text: a second Issue for a live login ID fails without overwriting
+  item-989a61bf4f51e791:
+    text: N parallel RecordAttempt calls against a budget of one leave exactly one
+      caller with an attempt
+  item-17f99cc2673fc9aa:
+    text: an assertion carrying a sign count at or below the stored one is refused
+      by the store
+  item-d6f88ab91bcb0f32:
+    text: a passkey-only registration interrupted after step one leaves no credential,
+      and one interrupted after step two leaves a provisional account that cannot
+      create a session
+  item-652d5adfc6e6c9dc:
+    text: all three tables are created by the same pw migrate run that creates application
+      tables
+  item-286d533eae2f318e:
+    text: two parallel test servers with different prefixes never observe each other's
+      credentials, per requirement:dynamodb-test-isolation
+relations:
+- relation: mentions
+  to: api:auth-allowlist-store
+  resolution: resolved
+- relation: mentions
+  to: api:auth-credential-store
+  resolution: resolved
+- relation: mentions
+  to: api:dynamo-package
+  resolution: resolved
+- relation: mentions
+  to: data:account-bootstrap-credential
+  resolution: resolved
+- relation: mentions
+  to: data:external-identity
+  resolution: resolved
+- relation: mentions
+  to: data:user-account
+  resolution: resolved
+- relation: mentions
+  to: decision:auth-backend-selection
+  resolution: resolved
+- relation: mentions
+  to: decision:dynamodb-auth-compensating-registration
+  resolution: resolved
+- relation: mentions
+  to: decision:dynamodb-operational-configuration
+  resolution: resolved
+- relation: mentions
+  to: decision:dynamodb-session-expiry
+  resolution: resolved
+- relation: mentions
+  to: decision:dynamodb-table-registry
+  resolution: resolved
+- relation: mentions
+  to: policy:oidc-security
+  resolution: resolved
+- relation: mentions
+  to: policy:passkey-security
+  resolution: resolved
+- relation: mentions
+  to: policy:query-log-safety
+  resolution: resolved
+- relation: mentions
+  to: requirement:contrib-auth-state-dynamo
+  resolution: resolved
+- relation: mentions
+  to: requirement:dynamodb-auth-backend
+  resolution: resolved
+- relation: mentions
+  to: requirement:dynamodb-migration
+  resolution: resolved
+- relation: mentions
+  to: requirement:dynamodb-session-store
+  resolution: resolved
+- relation: mentions
+  to: requirement:dynamodb-store
+  resolution: resolved
+- relation: mentions
+  to: requirement:dynamodb-test-isolation
+  resolution: resolved
+- relation: mentions
+  to: rule:framework-owned-tables
+  resolution: resolved
+- relation: mentions
+  to: rule:storage-package-layout
+  resolution: resolved
+- relation: mentions
+  to: system:tinybind
+  resolution: resolved
+- relation: mentions
+  to: system:tinygodriver-dynamodb
+  resolution: resolved

@@ -1,0 +1,319 @@
+id: policy:csrf-protection
+type: policy
+title: CSRF Protection
+summary: CSRF middleware validates a session-bound synchronizer token and request
+  origin on configured unsafe browser requests.
+facts:
+  legacy_body: "CSRF middleware validates a session-bound synchronizer token and request\
+    \ origin on configured unsafe browser requests.\n\n```yaml\nscope:\n  unsafe_methods:\
+    \ every method except GET, HEAD, and OPTIONS\n  protected: canonical path matches\
+    \ security.csrf.include and no security.csrf.exclude\n  page_actions:\n    requirement:\
+    \ the api:page-action-endpoint prefix must be covered, because those are POST\
+    \ endpoints reachable with ambient credentials and system:tinybind wires no protection\
+    \ around them\n    covered: the middleware exists and api:cli-init writes the\
+    \ prefix into the include list of a page-tree project\n  ordering:\n    where:\
+    \ a framework extension below the session slot, so the secret it compares against\
+    \ has been resolved, and below the authentication slot, so a plugin's own login\
+    \ and callback endpoints answer above it rather than needing a configured exclusion\n\
+    \    why_not_the_outer_stack: the framework middleware stack wraps the extension\
+    \ chain from outside, where no session has been resolved and every unsafe request\
+    \ would be refused\n  pattern_grammar: one shared implementation with policy:authenticated-path-protection\
+    \ rather than a second one that can drift\n  patterns: same segment grammar and\
+    \ exclude precedence as policy:authenticated-path-protection\n  form_insertion:\
+    \ system:tinybind writes the hidden field into every unsafe form itself from v0.3.3,\
+    \ so coverage no longer depends on an author remembering one; requirement:module-native-csrf\
+    \ carries what that changed\n  cache_exclusion: a component holding an unsafe\
+    \ form cannot be output-cached, enforced at generation, because a stored body\
+    \ would hand one session's token to the next visitor; requirement:component-output-cache\
+    \ lists it beside the other refusals\n  update_endpoints:\n    action_response:\
+    \ requirement:action-response-update mutates and carries ambient credentials,\
+    \ so it is protected like any other unsafe request; the transport is the header,\
+    \ because the runtime issues the fetch\n    navigation_and_redraw: requirement:navigation-delta-rendering\
+    \ and requirement:reloadable-component-endpoint are GETs that must stay side-effect\
+    \ free, so no token gates them; origin defence still applies to a credentialed\
+    \ read\n    live: the delivery stream of api:live-delivery-protocol is a GET carrying\
+    \ a custom header, which a cross-origin form or link cannot set\n  cross_origin_grant:\
+    \ requirement:cors-middleware with allow_credentials on admits that header in\
+    \ preflight and permits a credentialed cross-origin read, so the live line above\
+    \ and every side-effect-free GET beside it hold only while the calling origin\
+    \ is outside the CORS allowlist; the write path stays closed because the token\
+    \ cookie is readable by same-origin script alone\ntoken:\n  secret: one registered\
+    \ session.Private slot for every visitor signed in or not, per decision:csrf-secret-as-a-session-slot,\
+    \ riding a sealed cookie while the session is anonymous and moving onto the configured\
+    \ backend at login; minted and destroyed with the session per requirement:csrf-token-lifecycle\n\
+    \  request_value: a per-response value derived from the secret with a fresh pad,\
+    \ so a compression oracle sees different bytes every time\n  masking_retained:\
+    \ an earlier revision dropped it, reasoning that the module compares by equality\
+    \ with no unmasking step; that was wrong, because the compared value is this framework's\
+    \ to compute and is recomputed from the incoming token's own pad, per requirement:csrf-token-lifecycle\n\
+    \  sources:\n    - configured form field, written into every unsafe form by system:tinybind\
+    \ itself per requirement:module-native-csrf, so no author has to remember it\n\
+    \    - configured HTTP header, attached by requirement:unified-update-runtime\
+    \ to every mutating update request\n  transport_to_the_browser: a cookie the session\
+    \ manager writes beside the session cookie and the runtime reads when it issues\
+    \ a request, so a rotation reaches an already-open page; never inline script and\
+    \ never a generated JavaScript literal\n  cookie_is_the_one_readable_by_script:\
+    \ policy:cookie-value-protection keeps every other cookie away from script, and\
+    \ this is the documented exception, because a runtime that cannot read the token\
+    \ cannot send it\n  why_not_the_script_tag: the module's default puts the token\
+    \ in the runtime configuration written once at render, which cannot be refreshed;\
+    \ requirement:unified-update-runtime is this framework's own asset and deviates\n\
+    \  cookie_is_not_the_counterpart: verification compares against the session's\
+    \ own secret, so the cookie is transport and the forbidden naive double-submit\
+    \ shape is not what this is\n  three_channels_one_secret: the cookie, the header,\
+    \ and the hidden field carry different derived bytes that all unmask to one secret,\
+    \ so one verification path covers every channel\n  forbidden:\n    - URL query\n\
+    \    - request logs\n    - error details\n    - Web Storage, since a token there\
+    \ outlives the session that bound it\nvalidation:\n  - require a secret on a protected\
+    \ unsafe request; it is issued to an anonymous visitor as readily as to a signed-in\
+    \ one, so this is a requirement on the session mechanism being enabled rather\
+    \ than on the visitor having authenticated\n  - require constant-time token validation\
+    \ against a value recomputed from the incoming token, never against the stored\
+    \ secret directly\n  - require same-origin Origin or trusted exact origin; use\
+    \ strict Referer fallback only when Origin is absent\n  - compare a whole origin,\
+    \ scheme included, through the one implementation named under origin_check\n \
+    \ - reject missing, multiple, malformed, expired-session, or mismatched tokens\n\
+    \  - refuse a request whose path cannot be matched unambiguously, since it could\
+    \ select a different routed target than the one the check decided about\n  - the\
+    \ response never says which check failed; the reason reaches the log only, because\
+    \ naming it tells a caller which half to work on\n  - return HTTP 403 through\
+    \ api:error-renderer without calling the application handler\norigin_check:\n\
+    \  owner: the middlewares CSRF implementation, which reconstructs this request's\
+    \ origin as scheme and host, refuses a null Origin, requires a scheme on the Referer\
+    \ fallback, and consults the configured trusted origins\n  forwarded_headers:\n\
+    \    for_this_comparison: still not trusted; a deployment behind a scheme-rewriting\
+    \ proxy names its origin in TrustedOrigins rather than having the check accept\
+    \ a value a caller can assert, because a declared origin is an answer the deployment\
+    \ already owed\n    for_the_self_origin: decision:forwarded-header-trust governs\
+    \ the scheme this request reconstructs for itself, which is a different question\
+    \ and has no declared answer; requirement:proxied-request-identity is why the\
+    \ two are now stated apart\n  single_implementation: internal/requestorigin, shared\
+    \ with the plugin/auth login, logout, passkey, and presence endpoints; the same\
+    \ reason pattern_grammar gives, applied to origin comparison, because a second\
+    \ copy is a second set of rules that drifts from this one\n  auth_trusted_origins:\
+    \ the passkey origin allowlist and the origin of the OIDC redirect URL, both of\
+    \ which the deployment already had to declare for another reason, so a TLS-terminating\
+    \ proxy needs no new setting and no header is inferred\nlifecycle:\n  - create\
+    \ secret with the session, which for the shipped authentication mode means at\
+    \ login\n  - rotate with session creation, login rotation, and privilege changes,\
+    \ writing the new cookie on the same response\n  - remove with session revocation,\
+    \ clearing the cookie on the same response\n  - detail: requirement:csrf-token-lifecycle\n\
+    \  - anonymous_is_covered: decision:csrf-secret-as-a-session-slot issues the secret\
+    \ to every visitor through one session.Private slot, which rides a sealed cookie\
+    \ while the session is anonymous, so a public page's unsafe form carries a token\
+    \ and no server row is written for a crawler that merely loaded it\n  - corrected:\
+    \ 2026-08-12; an earlier line here called this unresolved and said issuing a session\
+    \ on demand was a capability this framework did not have, which the slot model\
+    \ had already answered\n  - what_is_actually_required: the session mechanism being\
+    \ enabled, not a visitor being signed in; pwsession.Setup returns no manager when\
+    \ session.enabled is false, and without one there is no slot to hold a secret\n\
+    rules:\n  - SameSite cookies supplement but do not replace token validation\n\
+    \  - login, OIDC callback, bootstrap, webhook, and non-browser API exclusions\
+    \ are explicit configuration decisions\n  - bearer-only requests without cookie\
+    \ authority remain application policy\n  - the token is supplied to a render as\
+    \ an option read from api:request-context-accessors, never as a component parameter\
+    \ and never through template scope\n  - a render with no session states that explicitly,\
+    \ so a forgotten token is distinguishable from a deliberate absence\n  - an unsafe\
+    \ form with no token supplied fails the render rather than emitting an empty field\n\
+    \  - a token never enters a cached component body or a reusable layout frame,\
+    \ since a validator computed over that output would freeze it\n```"
+  scope:
+    unsafe_methods: every method except GET, HEAD, and OPTIONS
+    protected: canonical path matches security.csrf.include and no security.csrf.exclude
+    page_actions:
+      requirement: the api:page-action-endpoint prefix must be covered, because those
+        are POST endpoints reachable with ambient credentials and system:tinybind
+        wires no protection around them
+      covered: the middleware exists and api:cli-init writes the prefix into the include
+        list of a page-tree project
+    ordering:
+      where: a framework extension below the session slot, so the secret it compares
+        against has been resolved, and below the authentication slot, so a plugin's
+        own login and callback endpoints answer above it rather than needing a configured
+        exclusion
+      why_not_the_outer_stack: the framework middleware stack wraps the extension
+        chain from outside, where no session has been resolved and every unsafe request
+        would be refused
+    pattern_grammar: one shared implementation with policy:authenticated-path-protection
+      rather than a second one that can drift
+    patterns: same segment grammar and exclude precedence as policy:authenticated-path-protection
+    form_insertion: system:tinybind writes the hidden field into every unsafe form
+      itself from v0.3.3, so coverage no longer depends on an author remembering one;
+      requirement:module-native-csrf carries what that changed
+    cache_exclusion: a component holding an unsafe form cannot be output-cached, enforced
+      at generation, because a stored body would hand one session's token to the next
+      visitor; requirement:component-output-cache lists it beside the other refusals
+    update_endpoints:
+      action_response: requirement:action-response-update mutates and carries ambient
+        credentials, so it is protected like any other unsafe request; the transport
+        is the header, because the runtime issues the fetch
+      navigation_and_redraw: requirement:navigation-delta-rendering and requirement:reloadable-component-endpoint
+        are GETs that must stay side-effect free, so no token gates them; origin defence
+        still applies to a credentialed read
+      live: the delivery stream of api:live-delivery-protocol is a GET carrying a
+        custom header, which a cross-origin form or link cannot set
+    cross_origin_grant: requirement:cors-middleware with allow_credentials on admits
+      that header in preflight and permits a credentialed cross-origin read, so the
+      live line above and every side-effect-free GET beside it hold only while the
+      calling origin is outside the CORS allowlist; the write path stays closed because
+      the token cookie is readable by same-origin script alone
+  token:
+    secret: one registered session.Private slot for every visitor signed in or not,
+      per decision:csrf-secret-as-a-session-slot, riding a sealed cookie while the
+      session is anonymous and moving onto the configured backend at login; minted
+      and destroyed with the session per requirement:csrf-token-lifecycle
+    request_value: a per-response value derived from the secret with a fresh pad,
+      so a compression oracle sees different bytes every time
+    masking_retained: an earlier revision dropped it, reasoning that the module compares
+      by equality with no unmasking step; that was wrong, because the compared value
+      is this framework's to compute and is recomputed from the incoming token's own
+      pad, per requirement:csrf-token-lifecycle
+    sources:
+    - configured form field, written into every unsafe form by system:tinybind itself
+      per requirement:module-native-csrf, so no author has to remember it
+    - configured HTTP header, attached by requirement:unified-update-runtime to every
+      mutating update request
+    transport_to_the_browser: a cookie the session manager writes beside the session
+      cookie and the runtime reads when it issues a request, so a rotation reaches
+      an already-open page; never inline script and never a generated JavaScript literal
+    cookie_is_the_one_readable_by_script: policy:cookie-value-protection keeps every
+      other cookie away from script, and this is the documented exception, because
+      a runtime that cannot read the token cannot send it
+    why_not_the_script_tag: the module's default puts the token in the runtime configuration
+      written once at render, which cannot be refreshed; requirement:unified-update-runtime
+      is this framework's own asset and deviates
+    cookie_is_not_the_counterpart: verification compares against the session's own
+      secret, so the cookie is transport and the forbidden naive double-submit shape
+      is not what this is
+    three_channels_one_secret: the cookie, the header, and the hidden field carry
+      different derived bytes that all unmask to one secret, so one verification path
+      covers every channel
+    forbidden:
+    - URL query
+    - request logs
+    - error details
+    - Web Storage, since a token there outlives the session that bound it
+  validation:
+  - require a secret on a protected unsafe request; it is issued to an anonymous visitor
+    as readily as to a signed-in one, so this is a requirement on the session mechanism
+    being enabled rather than on the visitor having authenticated
+  - require constant-time token validation against a value recomputed from the incoming
+    token, never against the stored secret directly
+  - require same-origin Origin or trusted exact origin; use strict Referer fallback
+    only when Origin is absent
+  - compare a whole origin, scheme included, through the one implementation named
+    under origin_check
+  - reject missing, multiple, malformed, expired-session, or mismatched tokens
+  - refuse a request whose path cannot be matched unambiguously, since it could select
+    a different routed target than the one the check decided about
+  - the response never says which check failed; the reason reaches the log only, because
+    naming it tells a caller which half to work on
+  - return HTTP 403 through api:error-renderer without calling the application handler
+  origin_check:
+    owner: the middlewares CSRF implementation, which reconstructs this request's
+      origin as scheme and host, refuses a null Origin, requires a scheme on the Referer
+      fallback, and consults the configured trusted origins
+    forwarded_headers:
+      for_this_comparison: still not trusted; a deployment behind a scheme-rewriting
+        proxy names its origin in TrustedOrigins rather than having the check accept
+        a value a caller can assert, because a declared origin is an answer the deployment
+        already owed
+      for_the_self_origin: decision:forwarded-header-trust governs the scheme this
+        request reconstructs for itself, which is a different question and has no
+        declared answer; requirement:proxied-request-identity is why the two are now
+        stated apart
+    single_implementation: internal/requestorigin, shared with the plugin/auth login,
+      logout, passkey, and presence endpoints; the same reason pattern_grammar gives,
+      applied to origin comparison, because a second copy is a second set of rules
+      that drifts from this one
+    auth_trusted_origins: the passkey origin allowlist and the origin of the OIDC
+      redirect URL, both of which the deployment already had to declare for another
+      reason, so a TLS-terminating proxy needs no new setting and no header is inferred
+  lifecycle:
+  - create secret with the session, which for the shipped authentication mode means
+    at login
+  - rotate with session creation, login rotation, and privilege changes, writing the
+    new cookie on the same response
+  - remove with session revocation, clearing the cookie on the same response
+  - detail: requirement:csrf-token-lifecycle
+  - anonymous_is_covered: decision:csrf-secret-as-a-session-slot issues the secret
+      to every visitor through one session.Private slot, which rides a sealed cookie
+      while the session is anonymous, so a public page's unsafe form carries a token
+      and no server row is written for a crawler that merely loaded it
+  - corrected: 2026-08-12; an earlier line here called this unresolved and said issuing
+      a session on demand was a capability this framework did not have, which the
+      slot model had already answered
+  - what_is_actually_required: the session mechanism being enabled, not a visitor
+      being signed in; pwsession.Setup returns no manager when session.enabled is
+      false, and without one there is no slot to hold a secret
+  rules:
+  - SameSite cookies supplement but do not replace token validation
+  - login, OIDC callback, bootstrap, webhook, and non-browser API exclusions are explicit
+    configuration decisions
+  - bearer-only requests without cookie authority remain application policy
+  - the token is supplied to a render as an option read from api:request-context-accessors,
+    never as a component parameter and never through template scope
+  - a render with no session states that explicitly, so a forgotten token is distinguishable
+    from a deliberate absence
+  - an unsafe form with no token supplied fails the render rather than emitting an
+    empty field
+  - a token never enters a cached component body or a reusable layout frame, since
+    a validator computed over that output would freeze it
+relations:
+- relation: mentions
+  to: api:cli-init
+  resolution: resolved
+- relation: mentions
+  to: api:error-renderer
+  resolution: resolved
+- relation: mentions
+  to: api:live-delivery-protocol
+  resolution: resolved
+- relation: mentions
+  to: api:page-action-endpoint
+  resolution: resolved
+- relation: mentions
+  to: api:request-context-accessors
+  resolution: resolved
+- relation: mentions
+  to: decision:csrf-secret-as-a-session-slot
+  resolution: resolved
+- relation: mentions
+  to: decision:forwarded-header-trust
+  resolution: resolved
+- relation: mentions
+  to: policy:authenticated-path-protection
+  resolution: resolved
+- relation: mentions
+  to: policy:cookie-value-protection
+  resolution: resolved
+- relation: mentions
+  to: requirement:action-response-update
+  resolution: resolved
+- relation: mentions
+  to: requirement:component-output-cache
+  resolution: resolved
+- relation: mentions
+  to: requirement:cors-middleware
+  resolution: resolved
+- relation: mentions
+  to: requirement:csrf-token-lifecycle
+  resolution: resolved
+- relation: mentions
+  to: requirement:module-native-csrf
+  resolution: resolved
+- relation: mentions
+  to: requirement:navigation-delta-rendering
+  resolution: resolved
+- relation: mentions
+  to: requirement:proxied-request-identity
+  resolution: resolved
+- relation: mentions
+  to: requirement:reloadable-component-endpoint
+  resolution: resolved
+- relation: mentions
+  to: requirement:unified-update-runtime
+  resolution: resolved
+- relation: mentions
+  to: system:tinybind
+  resolution: resolved

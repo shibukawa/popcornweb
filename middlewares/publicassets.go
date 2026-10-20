@@ -54,15 +54,13 @@ func NormalizePublicMount(value string) (string, error) {
 // registered with RegisterPublicFS. Outside the pwdev build mode, serving
 // without either is a startup error.
 func PublicAssets(config PublicAssetConfig, embedded fs.FS) (Middleware, error) {
-	mount, err := NormalizePublicMount(config.Mount)
+	config, embedded, err := PreparePublicAssets(config, embedded)
 	if err != nil {
 		return nil, err
 	}
-	if embedded == nil {
-		embedded = registeredPublicFS()
-	}
-	if embedded == nil && !publicDevelopment {
-		return nil, fmt.Errorf("popcornweb: server.public.enabled requires a registered public filesystem")
+	mount, err := NormalizePublicMount(config.Mount)
+	if err != nil {
+		return nil, err
 	}
 	// The embedded tree is immutable, so a name resolves to the same bytes,
 	// media type, and validator on every request. The local tree can change
@@ -493,11 +491,11 @@ func reportPublicMismatch(ctx context.Context, name, reason string) {
 
 func resolvePublicAsset(name string, config PublicAssetConfig, embedded fs.FS) (publicAsset, bool) {
 	if publicDevelopment || config.ReadLocal {
-		asset, found, rejected := readLocalPublicAsset(name)
+		asset, found, rejected := readLocalPublicAsset(name, config.LocalRoot)
 		if found {
 			return asset, true
 		}
-		if publicDevelopment || rejected {
+		if rejected {
 			return publicAsset{}, false
 		}
 	}
@@ -544,11 +542,18 @@ func safeLocalPath(root, name string) (resolved string, answered string, found b
 	return current, name, true, false
 }
 
-func readLocalPublicAsset(name string) (publicAsset, bool, bool) {
+func readLocalPublicAsset(name string, roots ...string) (publicAsset, bool, bool) {
 	// The built tree is what is served in every mode. The authored tree is an
 	// input: a development loop that read it would answer 404 for every
 	// reference a conversion moved, since the page names the derived file.
-	current, answered, found, rejected := safeLocalPath(filepath.FromSlash(localPublicRoot), name)
+	root := localPublicRoot
+	if len(roots) > 0 && roots[0] != "" {
+		root = roots[0]
+	}
+	if err := validatePublicLocalRoot(root, true); err != nil {
+		return publicAsset{}, false, true
+	}
+	current, answered, found, rejected := safeLocalPath(filepath.FromSlash(root), name)
 	if !found {
 		return publicAsset{}, false, rejected
 	}

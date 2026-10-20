@@ -1,0 +1,165 @@
+id: requirement:editor-diagnostics
+type: requirement
+title: In-Editor Diagnostics
+summary: A problem the developer would otherwise find at api:cli-generate or api:cli-dev
+  appears in the editor at the position that causes it, with the same identifier and
+  the same wording.
+facts:
+  legacy_body: "A problem the developer would otherwise find at api:cli-generate or\
+    \ api:cli-dev appears in the editor at the position that causes it, with the same\
+    \ identifier and the same wording.\n\n```yaml\nstatus: the syntax source and the\
+    \ project source are implemented; the generation source reaches the editor through\
+    \ the save-time api:cli-check task of requirement:editor-tasks rather than from\
+    \ the server, which is the opt-in fallback decision:language-server-in-pw-cli\
+    \ named\nstage: 2 of vision:editor-support\nserver: requirement:pw-language-server\n\
+    one_message_rule: decision:shared-check-catalog, extended to a third runner\n\
+    sources:\n  syntax:\n    from: the concept:template-source-dialects parsers\n\
+    \    when: on every change, without saving\n    examples: an unterminated body,\
+    \ an unknown root declaration, a malformed annotation, an unbalanced control form\n\
+    \  generation:\n    from: the same checks api:cli-generate stops on\n    when:\
+    \ on save\n    examples: an unknown external function, an output type the root\
+    \ keyword does not allow, an SQL result contract the statement cannot satisfy,\
+    \ a dynamo attribute absent from the type's tags\n  project:\n    from: the decision:shared-check-catalog\
+    \ entries whose inputs are project files, and the placement rule api:cli-generate\
+    \ applies to a source no purpose compiles\n    examples: a source outside its\
+    \ generate purpose, a generate entry naming a missing directory, an unknown popcornweb.toml\
+    \ key, a dynamo declaration naming a table decision:dynamodb-table-registry does\
+    \ not know\n    position: the popcornweb.toml line for a configuration finding,\
+    \ the file for a placement finding\n    delivered:\n      placement: served by\
+    \ requirement:pw-language-server from the project model, in the words pwgen states\
+    \ once for both readers; a page tree applies the stricter rule that only the names\
+    \ it reserves are compiled\n      catalog: reached through the api:cli-doctor\
+    \ --format=json command of requirement:editor-tasks, whose findings are placed\
+    \ on the file or the configuration line their evidence names\n      why_two_paths:\
+    \ a catalog run resolves the import graph and merges every environment's configuration,\
+    \ which is a command a developer invokes rather than something a keystroke may\
+    \ start\nseverity:\n  error: what would stop api:cli-generate\n  warning: what\
+    \ api:cli-generate warns about, such as a source outside its purpose\n  hint:\
+    \ an api:cli-doctor advisory, reported only when its inputs exist\nskipped:\n\
+    \  behavior: a check whose inputs the editor cannot build is not run and not reported\
+    \ as passing\n  visibility: listed on request rather than as a diagnostic, because\
+    \ a silent skip reads as a clean file\nstaleness:\n  rule: a diagnostic from a\
+    \ save-time source is cleared when its document changes and republished after\
+    \ the next analysis, so a fixed error does not linger\nnon_goals:\n  - a diagnostic\
+    \ the CLI cannot also produce\n  - running api:cli-generate to obtain a diagnostic,\
+    \ which would write output; the fallback shell-out of decision:language-server-in-pw-cli\
+    \ uses api:cli-check and is opt-in\n  - Go diagnostics, which gopls owns, including\
+    \ those in a generated *_pw_gen.go\nacceptance:\n  - an unterminated component\
+    \ body is reported before the file is saved\n  - a renamed dynamo tag makes its\
+    \ .pw.dynamo declaration report the same error api:cli-generate reports, at the\
+    \ attribute\n  - a .pw.sql moved outside every generate.queries entry reports\
+    \ the warning api:cli-generate warns with, naming the key\n  - the identifier\
+    \ shown in the editor is the identifier api:cli-doctor prints for the same condition\n\
+    \  - closing and reopening a file reproduces the same diagnostic set\n```"
+  status: the syntax source and the project source are implemented; the generation
+    source reaches the editor through the save-time api:cli-check task of requirement:editor-tasks
+    rather than from the server, which is the opt-in fallback decision:language-server-in-pw-cli
+    named
+  stage: 2 of vision:editor-support
+  server: requirement:pw-language-server
+  one_message_rule: decision:shared-check-catalog, extended to a third runner
+  sources:
+    syntax:
+      from: the concept:template-source-dialects parsers
+      when: on every change, without saving
+      examples: an unterminated body, an unknown root declaration, a malformed annotation,
+        an unbalanced control form
+    generation:
+      from: the same checks api:cli-generate stops on
+      when: on save
+      examples: an unknown external function, an output type the root keyword does
+        not allow, an SQL result contract the statement cannot satisfy, a dynamo attribute
+        absent from the type's tags
+    project:
+      from: the decision:shared-check-catalog entries whose inputs are project files,
+        and the placement rule api:cli-generate applies to a source no purpose compiles
+      examples: a source outside its generate purpose, a generate entry naming a missing
+        directory, an unknown popcornweb.toml key, a dynamo declaration naming a table
+        decision:dynamodb-table-registry does not know
+      position: the popcornweb.toml line for a configuration finding, the file for
+        a placement finding
+      delivered:
+        placement: served by requirement:pw-language-server from the project model,
+          in the words pwgen states once for both readers; a page tree applies the
+          stricter rule that only the names it reserves are compiled
+        catalog: reached through the api:cli-doctor --format=json command of requirement:editor-tasks,
+          whose findings are placed on the file or the configuration line their evidence
+          names
+        why_two_paths: a catalog run resolves the import graph and merges every environment's
+          configuration, which is a command a developer invokes rather than something
+          a keystroke may start
+  severity:
+    error: what would stop api:cli-generate
+    warning: what api:cli-generate warns about, such as a source outside its purpose
+    hint: an api:cli-doctor advisory, reported only when its inputs exist
+  skipped:
+    behavior: a check whose inputs the editor cannot build is not run and not reported
+      as passing
+    visibility: listed on request rather than as a diagnostic, because a silent skip
+      reads as a clean file
+  staleness:
+    rule: a diagnostic from a save-time source is cleared when its document changes
+      and republished after the next analysis, so a fixed error does not linger
+  non_goals:
+  - a diagnostic the CLI cannot also produce
+  - running api:cli-generate to obtain a diagnostic, which would write output; the
+    fallback shell-out of decision:language-server-in-pw-cli uses api:cli-check and
+    is opt-in
+  - Go diagnostics, which gopls owns, including those in a generated *_pw_gen.go
+  acceptance:
+  - an unterminated component body is reported before the file is saved
+  - a renamed dynamo tag makes its .pw.dynamo declaration report the same error api:cli-generate
+    reports, at the attribute
+  - a .pw.sql moved outside every generate.queries entry reports the warning api:cli-generate
+    warns with, naming the key
+  - the identifier shown in the editor is the identifier api:cli-doctor prints for
+    the same condition
+  - closing and reopening a file reproduces the same diagnostic set
+acceptance:
+  item-006a56641c38e9c6:
+    text: an unterminated component body is reported before the file is saved
+  item-25b5340e7799362c:
+    text: a renamed dynamo tag makes its .pw.dynamo declaration report the same error
+      api:cli-generate reports, at the attribute
+  item-12f46badb9e615d5:
+    text: a .pw.sql moved outside every generate.queries entry reports the warning
+      api:cli-generate warns with, naming the key
+  item-3d76c83fcf262733:
+    text: the identifier shown in the editor is the identifier api:cli-doctor prints
+      for the same condition
+  item-fbcb821339fec0a2:
+    text: closing and reopening a file reproduces the same diagnostic set
+relations:
+- relation: mentions
+  to: api:cli-check
+  resolution: resolved
+- relation: mentions
+  to: api:cli-dev
+  resolution: resolved
+- relation: mentions
+  to: api:cli-doctor
+  resolution: resolved
+- relation: mentions
+  to: api:cli-generate
+  resolution: resolved
+- relation: mentions
+  to: concept:template-source-dialects
+  resolution: resolved
+- relation: mentions
+  to: decision:dynamodb-table-registry
+  resolution: resolved
+- relation: mentions
+  to: decision:language-server-in-pw-cli
+  resolution: resolved
+- relation: mentions
+  to: decision:shared-check-catalog
+  resolution: resolved
+- relation: mentions
+  to: requirement:editor-tasks
+  resolution: resolved
+- relation: mentions
+  to: requirement:pw-language-server
+  resolution: resolved
+- relation: mentions
+  to: vision:editor-support
+  resolution: resolved

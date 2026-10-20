@@ -1,0 +1,77 @@
+id: decision:executor-seam-instrumentation
+type: decision
+title: Executor Seam Instrumentation
+summary: Query diagnostics attach at the framework executor resolver that every generated
+  SQL function already calls, not at the driver and not in the generator.
+facts:
+  legacy_body: "Query diagnostics attach at the framework executor resolver that every\
+    \ generated SQL function already calls, not at the driver and not in the generator.\n\
+    \n```yaml\nstatus: accepted\nseam: api:instrumented-sql-executor\nrejected:\n\
+    \  driver_wrapper:\n    - a registered wrapping driver loses the request context,\
+    \ so records could not correlate with api:logger or transaction depth\n    - it\
+    \ would also capture framework-internal SQL, widening the surface beyond a development\
+    \ aid\n    - it forces every requirement:contrib-database driver to stay wrapper-compatible\n\
+    \  codegen_change:\n    - statement names would become available, but every project\
+    \ would have to regenerate to gain diagnostics\n    - the change lands in system:tinybind\
+    \ rather than in the framework\nconsequences:\n  - coverage equals generated SQL,\
+    \ so requirement:query-diagnostics states its unobserved set explicitly\n  - data:query-record\
+    \ carries no statement name or source location, because the executor sees only\
+    \ SQL text and arguments\n  - api:transaction-runner scope adoption must unwrap\
+    \ before asserting a concrete transaction type\n  - accessors that expose a raw\
+    \ transaction handle return the unwrapped executor\n  - no change is required\
+    \ in flow:sql-generation output or in decision:tinybind-sql-runtime\n  - a later\
+    \ statement-name field stays possible without moving the seam, once the generator\
+    \ passes one through\n```"
+  status: accepted
+  seam: api:instrumented-sql-executor
+  rejected:
+    driver_wrapper:
+    - a registered wrapping driver loses the request context, so records could not
+      correlate with api:logger or transaction depth
+    - it would also capture framework-internal SQL, widening the surface beyond a
+      development aid
+    - it forces every requirement:contrib-database driver to stay wrapper-compatible
+    codegen_change:
+    - statement names would become available, but every project would have to regenerate
+      to gain diagnostics
+    - the change lands in system:tinybind rather than in the framework
+  consequences:
+  - coverage equals generated SQL, so requirement:query-diagnostics states its unobserved
+    set explicitly
+  - data:query-record carries no statement name or source location, because the executor
+    sees only SQL text and arguments
+  - api:transaction-runner scope adoption must unwrap before asserting a concrete
+    transaction type
+  - accessors that expose a raw transaction handle return the unwrapped executor
+  - no change is required in flow:sql-generation output or in decision:tinybind-sql-runtime
+  - a later statement-name field stays possible without moving the seam, once the
+    generator passes one through
+lifecycle: accepted
+relations:
+- relation: mentions
+  to: api:instrumented-sql-executor
+  resolution: resolved
+- relation: mentions
+  to: api:logger
+  resolution: resolved
+- relation: mentions
+  to: api:transaction-runner
+  resolution: resolved
+- relation: mentions
+  to: data:query-record
+  resolution: resolved
+- relation: mentions
+  to: decision:tinybind-sql-runtime
+  resolution: resolved
+- relation: mentions
+  to: flow:sql-generation
+  resolution: resolved
+- relation: mentions
+  to: requirement:contrib-database
+  resolution: resolved
+- relation: mentions
+  to: requirement:query-diagnostics
+  resolution: resolved
+- relation: mentions
+  to: system:tinybind
+  resolution: resolved

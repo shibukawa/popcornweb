@@ -1,0 +1,119 @@
+id: data:migration-source
+type: data
+title: Migration Source Tree
+summary: Migrations are version-control-owned SQL files in one project directory,
+  addressed as an fs.FS so on-disk and embedded trees behave identically.
+facts:
+  legacy_body: "Migrations are version-control-owned SQL files in one project directory,\
+    \ addressed as an fs.FS so on-disk and embedded trees behave identically.\n\n\
+    ```yaml\ndefault_directory: migrations\nconfiguration: data:project-config migration.dir\n\
+    file_name: \"{version}_{name}.sql\"\nversion: zero-padded numeric prefix ordered\
+    \ lexically and numerically\ncontent:\n  format: goose annotated SQL\n  markers:\n\
+    \    - \"-- +goose Up\"\n    - \"-- +goose Down\"\n    - \"-- +goose StatementBegin\
+    \ / StatementEnd for multi-statement bodies\"\n    - \"-- +goose NO TRANSACTION\
+    \ for dialects or statements that reject transactional DDL\"\n  rule: every migration\
+    \ declares a Down section because api:cli-migrate publishes down and down-to\n\
+    scaffolded_version_1:\n  body: comments only, in the dialect of the selected engine\n\
+    \  shows: the goose markers, the dialect the project will write in, and a commented-out\
+    \ table and its Down, ready to uncomment\n  creates: nothing\n  defect_this_fixes:\
+    \ the starter migration created a users table that no scaffolded handler, page,\
+    \ or query the reader keeps ever reads, so selecting a database silently added\
+    \ a schema the operator did not ask for and has to delete before writing their\
+    \ own version 1\n  paired_query: the queries/users.pw.sql example is commented\
+    \ out with it, since a live statement against a table that no longer exists is\
+    \ worse than no example\n  cost: a fresh project no longer demonstrates typed\
+    \ SQL until two files are uncommented, which the files themselves say\n  still_applied:\
+    \ api:cli-migrate applies it and records version 1, so the version sequence a\
+    \ later migration continues from is unchanged\nstate:\n  table: goose_db_version\n\
+    \  owner: system:goose\n  rules:\n    - the version table is engine-owned and\
+    \ never referenced by application SQL\n    - flow:sql-generation excludes the\
+    \ version table and the migration directory\naccess:\n  disk: system:pw-cli and\
+    \ the development loop read the directory\n  embedded: an application may supply\
+    \ an embed.FS of the same tree\n  requirement: both forms resolve to identical\
+    \ version ordering and content\nrules:\n  - files are handwritten and committed\n\
+    \  - an applied file is immutable; corrections ship as a new version\n  - Go function\
+    \ migrations are rejected under decision:goose-migration-engine\n  - the directory\
+    \ is watched by api:cli-dev and excluded from Go rebuild inputs\n  - this directory\
+    \ is the only framework-owned schema source convention\n  - a file here carries\
+    \ schema and not sample rows, per policy:migration-safety content_boundary\nreplaces:\n\
+    \  removed_convention: the dbschema directory of unversioned lexical initialization\
+    \ SQL\n  reason: requirement:database-migration owns initial schema as version\
+    \ 1\n```"
+  default_directory: migrations
+  configuration: data:project-config migration.dir
+  file_name: '{version}_{name}.sql'
+  version: zero-padded numeric prefix ordered lexically and numerically
+  content:
+    format: goose annotated SQL
+    markers:
+    - -- +goose Up
+    - -- +goose Down
+    - -- +goose StatementBegin / StatementEnd for multi-statement bodies
+    - -- +goose NO TRANSACTION for dialects or statements that reject transactional
+      DDL
+    rule: every migration declares a Down section because api:cli-migrate publishes
+      down and down-to
+  scaffolded_version_1:
+    body: comments only, in the dialect of the selected engine
+    shows: the goose markers, the dialect the project will write in, and a commented-out
+      table and its Down, ready to uncomment
+    creates: nothing
+    defect_this_fixes: the starter migration created a users table that no scaffolded
+      handler, page, or query the reader keeps ever reads, so selecting a database
+      silently added a schema the operator did not ask for and has to delete before
+      writing their own version 1
+    paired_query: the queries/users.pw.sql example is commented out with it, since
+      a live statement against a table that no longer exists is worse than no example
+    cost: a fresh project no longer demonstrates typed SQL until two files are uncommented,
+      which the files themselves say
+    still_applied: api:cli-migrate applies it and records version 1, so the version
+      sequence a later migration continues from is unchanged
+  state:
+    table: goose_db_version
+    owner: system:goose
+    rules:
+    - the version table is engine-owned and never referenced by application SQL
+    - flow:sql-generation excludes the version table and the migration directory
+  access:
+    disk: system:pw-cli and the development loop read the directory
+    embedded: an application may supply an embed.FS of the same tree
+    requirement: both forms resolve to identical version ordering and content
+  rules:
+  - files are handwritten and committed
+  - an applied file is immutable; corrections ship as a new version
+  - Go function migrations are rejected under decision:goose-migration-engine
+  - the directory is watched by api:cli-dev and excluded from Go rebuild inputs
+  - this directory is the only framework-owned schema source convention
+  - a file here carries schema and not sample rows, per policy:migration-safety content_boundary
+  replaces:
+    removed_convention: the dbschema directory of unversioned lexical initialization
+      SQL
+    reason: requirement:database-migration owns initial schema as version 1
+relations:
+- relation: mentions
+  to: api:cli-dev
+  resolution: resolved
+- relation: mentions
+  to: api:cli-migrate
+  resolution: resolved
+- relation: mentions
+  to: data:project-config
+  resolution: resolved
+- relation: mentions
+  to: decision:goose-migration-engine
+  resolution: resolved
+- relation: mentions
+  to: flow:sql-generation
+  resolution: resolved
+- relation: mentions
+  to: policy:migration-safety
+  resolution: resolved
+- relation: mentions
+  to: requirement:database-migration
+  resolution: resolved
+- relation: mentions
+  to: system:goose
+  resolution: resolved
+- relation: mentions
+  to: system:pw-cli
+  resolution: resolved

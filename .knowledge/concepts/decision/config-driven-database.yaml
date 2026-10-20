@@ -1,0 +1,70 @@
+id: decision:config-driven-database
+type: decision
+title: Config-driven Database Lifecycle
+summary: The framework opens and owns the application database from validated runtime
+  TOML configuration.
+facts:
+  legacy_body: "The framework opens and owns the application database from validated\
+    \ runtime TOML configuration.\n\n```yaml\nstatus: accepted\nconfiguration: data:middleware-runtime-config\
+    \ rdb fields\nstartup:\n  owner: api:rdb-middleware\n  steps:\n    - resolve driver\
+    \ and DSN for every configured connection\n    - open and validate each pool\n\
+    \    - install the data:database-connection-set in data:request-context-capsule\n\
+    shutdown: api:application-lifecycle closes every pool\nschema: requirement:database-migration\
+    \ uses the same effective configuration and the migration group of policy:connection-group-selection\n\
+    topology: decision:grouped-database-connections extends this from one pool to\
+    \ named groups\napplication_code:\n  forbidden:\n    - pw.SetDatabase\n    - explicit\
+    \ sqlite.Open for framework-managed requests\n    - manual pool injection before\
+    \ Run\n  allowed: api:request-context-accessors, api:database-selection, and generated\
+    \ SQL\n```"
+  status: accepted
+  configuration: data:middleware-runtime-config rdb fields
+  startup:
+    owner: api:rdb-middleware
+    steps:
+    - resolve driver and DSN for every configured connection
+    - open and validate each pool
+    - install the data:database-connection-set in data:request-context-capsule
+  shutdown: api:application-lifecycle closes every pool
+  schema: requirement:database-migration uses the same effective configuration and
+    the migration group of policy:connection-group-selection
+  topology: decision:grouped-database-connections extends this from one pool to named
+    groups
+  application_code:
+    forbidden:
+    - pw.SetDatabase
+    - explicit sqlite.Open for framework-managed requests
+    - manual pool injection before Run
+    allowed: api:request-context-accessors, api:database-selection, and generated
+      SQL
+lifecycle: accepted
+relations:
+- relation: mentions
+  to: api:application-lifecycle
+  resolution: resolved
+- relation: mentions
+  to: api:database-selection
+  resolution: resolved
+- relation: mentions
+  to: api:rdb-middleware
+  resolution: resolved
+- relation: mentions
+  to: api:request-context-accessors
+  resolution: resolved
+- relation: mentions
+  to: data:database-connection-set
+  resolution: resolved
+- relation: mentions
+  to: data:middleware-runtime-config
+  resolution: resolved
+- relation: mentions
+  to: data:request-context-capsule
+  resolution: resolved
+- relation: mentions
+  to: decision:grouped-database-connections
+  resolution: resolved
+- relation: mentions
+  to: policy:connection-group-selection
+  resolution: resolved
+- relation: mentions
+  to: requirement:database-migration
+  resolution: resolved

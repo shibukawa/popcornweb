@@ -1,0 +1,86 @@
+id: requirement:environment-switching
+type: requirement
+title: Environment Switching
+summary: One application build must run against development, staging, and production
+  configuration selected by an environment variable, without rebuild or file editing.
+facts:
+  legacy_body: "One application build must run against development, staging, and production\
+    \ configuration selected by an environment variable, without rebuild or file editing.\n\
+    \n```yaml\nmotivation:\n  - the same artifact is promoted across environments\n\
+    \  - deployment-specific values are committed as separate files instead of edited\
+    \ in place\nscope:\n  environment_token: data:runtime-environment\n  file_selection:\
+    \ policy:config-file-resolution\n  exposure: api:runtime-configuration\nbehavior:\n\
+    \  - resolve the environment token before any configuration source is read\n \
+    \ - select the project-local TOML candidate by that token\n  - keep user and system\
+    \ configuration files environment-neutral\n  - keep existing precedence of defaults,\
+    \ TOML, environment variables, and CLI arguments\n  - expose the resolved token\
+    \ to application code\ntooling:\n  - api:cli-dev defaults the environment to dev\
+    \ and watches config.*.toml\n  - api:cli-doctor names the environment to inspect\
+    \ with an option, which selects files to read and never reaches an application\
+    \ process\n  - api:cli-init scaffolds config.dev.toml and config.prod.toml in\
+    \ the project root\n  - requirement:dotenv-files gives the secrets the production\
+    \ file names a per-environment home, selected by the same token\nscaffolded_production_file:\n\
+    \  why_two_and_not_one: the promoted artifact reads a file named for its environment,\
+    \ so a project with only the development file has nothing for any environment\
+    \ it is deployed to, and the first deployment invents the file under time pressure\n\
+    \  contents: the structure of the development file with the values a deployment\
+    \ differs on, chiefly data:observability-runtime-config stdout_format json against\
+    \ the plaintext development default\n  secrets: none; a value that must not be\
+    \ in version control is a named environment variable in a comment, per policy:container-runtime-image\n\
+    \  endpoints: the server.health and server.readiness paths are set, because requirement:healthcheck-subcommand\
+    \ exits 1 on an unset key and a container probes with it\n  not_a_promise_of_completeness:\
+    \ a real deployment edits this file; the scaffold makes it exist and be correct\
+    \ about what it does say\n  - requirement:built-in-config-generation writes the\
+    \ scaffold for the active environment\nacceptance:\n  - APP_ENV=stg loads ./config.stg.toml\
+    \ when present\n  - APP_ENV=stg loads ./config/config.stg.toml when the working-directory\
+    \ file is absent\n  - unset APP_ENV behaves exactly as APP_ENV=dev\n  - a present\
+    \ ./config.toml is ignored for every environment\n  - --config-path overrides\
+    \ the environment-derived candidates and fails loudly when unreadable\n  - an\
+    \ environment token containing a dot or path separator fails at startup\n  - no\
+    \ readable candidate leaves defaults, environment variables, and CLI arguments\
+    \ effective\nnon_goals:\n  - merging multiple configuration files into one layered\
+    \ result\n  - per-environment code paths or build tags\n  - a CLI flag that overrides\
+    \ APP_ENV for the application process\nmigration:\n  - existing projects rename\
+    \ config.toml to config.dev.toml or move it under config/\n  - user and system\
+    \ configuration files require no change\n```"
+  legacy_parse_issues:
+  - kind: legacy_parse_error
+    block: 0
+    message: "while parsing a block mapping\n  in \"<unicode string>\", line 20, column\
+      \ 3:\n      why_two_and_not_one: the promote ... \n      ^\nexpected <block\
+      \ end>, but found '-'\n  in \"<unicode string>\", line 25, column 3:\n     \
+      \ - requirement:built-in-config-ge ... \n      ^"
+relations:
+- relation: mentions
+  to: api:cli-dev
+  resolution: resolved
+- relation: mentions
+  to: api:cli-doctor
+  resolution: resolved
+- relation: mentions
+  to: api:cli-init
+  resolution: resolved
+- relation: mentions
+  to: api:runtime-configuration
+  resolution: resolved
+- relation: mentions
+  to: data:observability-runtime-config
+  resolution: resolved
+- relation: mentions
+  to: data:runtime-environment
+  resolution: resolved
+- relation: mentions
+  to: policy:config-file-resolution
+  resolution: resolved
+- relation: mentions
+  to: policy:container-runtime-image
+  resolution: resolved
+- relation: mentions
+  to: requirement:built-in-config-generation
+  resolution: resolved
+- relation: mentions
+  to: requirement:dotenv-files
+  resolution: resolved
+- relation: mentions
+  to: requirement:healthcheck-subcommand
+  resolution: resolved

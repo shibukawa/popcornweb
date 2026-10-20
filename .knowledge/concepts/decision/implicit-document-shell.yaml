@@ -1,0 +1,78 @@
+id: decision:implicit-document-shell
+type: decision
+title: Implicit Document Shell
+summary: Classic handlers render only a page fragment; the framework supplies the
+  registered document wrapper.
+facts:
+  legacy_body: "Classic handlers render only a page fragment; the framework supplies\
+    \ the registered document wrapper.\n\n```yaml\nstatus: accepted\nhandwritten_surface:\
+    \ \"pw.WriteHTML(w, r, Page(PageParams{...}))\"\nhidden:\n  - templates/document.pw.html\
+    \ import and generated binder\n  - pw.HTMLWrapper values\n  - api:render-html-chain\
+    \ invocation\nshell_content: the scaffolded shell declares the requirement:external-boundary-runtime\
+    \ module reference, so no framework code injects into the head\nregistration:\n\
+    \  source: templates/document.pw.html generated artifact\n  lifecycle: package\
+    \ initialization registers one application document wrapper\n  bootstrap: api:cli-init\
+    \ ensures the registration package is linked without handler references\nruntime:\n\
+    \  - api:html-response resolves the registered document\n  - call api:render-html-chain\
+    \ with document outermost and page as leaf\nvalidation:\n  - missing or duplicate\
+    \ default document registration is a startup error\n  - handler code never selects\
+    \ or constructs the default document\nlayouts:\n  classic: future explicit layout\
+    \ selection may extend the registered chain without exposing the document shell\n\
+    \  page_tree: a concept:page-tree layout is already such an extension, inserted\
+    \ between the document and the page by decision:page-render-binding, and the page\
+    \ tree's own document.pw.html is not applied\nbypass: api:html-fragment-response\
+    \ resolves no document, because requirement:html-fragment-rendering answers a\
+    \ request whose document already exists\n```"
+  status: accepted
+  handwritten_surface: pw.WriteHTML(w, r, Page(PageParams{...}))
+  hidden:
+  - templates/document.pw.html import and generated binder
+  - pw.HTMLWrapper values
+  - api:render-html-chain invocation
+  shell_content: the scaffolded shell declares the requirement:external-boundary-runtime
+    module reference, so no framework code injects into the head
+  registration:
+    source: templates/document.pw.html generated artifact
+    lifecycle: package initialization registers one application document wrapper
+    bootstrap: api:cli-init ensures the registration package is linked without handler
+      references
+  runtime:
+  - api:html-response resolves the registered document
+  - call api:render-html-chain with document outermost and page as leaf
+  validation:
+  - missing or duplicate default document registration is a startup error
+  - handler code never selects or constructs the default document
+  layouts:
+    classic: future explicit layout selection may extend the registered chain without
+      exposing the document shell
+    page_tree: a concept:page-tree layout is already such an extension, inserted between
+      the document and the page by decision:page-render-binding, and the page tree's
+      own document.pw.html is not applied
+  bypass: api:html-fragment-response resolves no document, because requirement:html-fragment-rendering
+    answers a request whose document already exists
+lifecycle: accepted
+relations:
+- relation: mentions
+  to: api:cli-init
+  resolution: resolved
+- relation: mentions
+  to: api:html-fragment-response
+  resolution: resolved
+- relation: mentions
+  to: api:html-response
+  resolution: resolved
+- relation: mentions
+  to: api:render-html-chain
+  resolution: resolved
+- relation: mentions
+  to: concept:page-tree
+  resolution: resolved
+- relation: mentions
+  to: decision:page-render-binding
+  resolution: resolved
+- relation: mentions
+  to: requirement:external-boundary-runtime
+  resolution: resolved
+- relation: mentions
+  to: requirement:html-fragment-rendering
+  resolution: resolved

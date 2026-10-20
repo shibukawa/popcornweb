@@ -1,0 +1,121 @@
+id: requirement:contrib-html-template
+type: requirement
+title: Generated HTML Templates
+summary: contrib/htmltemplate compiles a Popcorn Web-specific typed template language
+  and Go data models into reflection-free HTML and JSON writer functions.
+facts:
+  legacy_body: "contrib/htmltemplate compiles a Popcorn Web-specific typed template\
+    \ language and Go data models into reflection-free HTML and JSON writer functions.\n\
+    \n```yaml\nruntime_package: contrib/htmltemplate\ngenerator: system:pw-cli\nflow:\
+    \ flow:template-generation\ngeneration_entrypoints:\n  - api:cli-generate\n  -\
+    \ package-local go:generate directive invoking Popcorn Web CLI\ninput:\n  templates:\
+    \ configured HTML template source files\n  binding: template name plus same-package\
+    \ Go data type in data:project-config\n  error_template: optional fixed-model\
+    \ source from data:project-config\ngenerated_api:\n  - \"<Name>(<Name>Params)\
+    \ htmlbind.Fragment\"\n  - \"Bind<Name>(<Name>Params) htmlbind.Wrapper when the\
+    \ component declares an unnamed slot\"\n  - api:render-html-chain for document,\
+    \ layout, and page composition\n  - configured api:error-renderer function for\
+    \ an error template\nsyntax_required:\n  - statically typed nested struct field\
+    \ interpolation\n  - if and else\n  - optional pointer and value scopes\n  - loops\
+    \ over arrays and slices with typed index and element variables\n  - loops over\
+    \ maps with typed key and value variables and deterministic key ordering\n  -\
+    \ named template inclusion with statically known names\n  - unnamed <slot /> insertion\
+    \ for requirement:nested-html-templates\n  - typed comparisons and boolean operators\n\
+    \  - generator-registered typed helper functions\n  - JSON expression for frontend\
+    \ state embedded in a safe application/json script context\ntype_analysis:\n \
+    \ - use go/types during generation\n  - reject unknown or unexported field access\
+    \ with template source position\n  - infer loop element, map key, map value, pointer,\
+    \ and nested field types\n  - reject unsupported operations before Go compilation\n\
+    json_codegen:\n  - emit direct writers for reachable structs, pointers, arrays,\
+    \ slices, and string-keyed maps\n  - honor json field names, omission, ignored\
+    \ fields, and supported scalar types\n  - encode map keys deterministically\n\
+    \  - reject any, interfaces, functions, channels, complex values, and recursive\
+    \ object graphs in the first release\n  - share generated primitive escaping helpers\
+    \ with system:tinybind when a stable API exists\nsecurity: policy:template-escaping\n\
+    priority: deferred until generated JSON encoding scope is implemented and verified\n\
+    compatibility: system:tinybind v0.1.15 Fragment and Wrapper output replaces the\
+    \ earlier direct-writer generated API\nnon_goals:\n  - runtime parsing\n  - runtime\
+    \ reflection\n  - dynamic template names\n  - arbitrary method invocation\n  -\
+    \ syntax or output compatibility with standard html/template\n  - arbitrary json.Marshaler\
+    \ execution in the first release\n```"
+  runtime_package: contrib/htmltemplate
+  generator: system:pw-cli
+  flow: flow:template-generation
+  generation_entrypoints:
+  - api:cli-generate
+  - package-local go:generate directive invoking Popcorn Web CLI
+  input:
+    templates: configured HTML template source files
+    binding: template name plus same-package Go data type in data:project-config
+    error_template: optional fixed-model source from data:project-config
+  generated_api:
+  - <Name>(<Name>Params) htmlbind.Fragment
+  - Bind<Name>(<Name>Params) htmlbind.Wrapper when the component declares an unnamed
+    slot
+  - api:render-html-chain for document, layout, and page composition
+  - configured api:error-renderer function for an error template
+  syntax_required:
+  - statically typed nested struct field interpolation
+  - if and else
+  - optional pointer and value scopes
+  - loops over arrays and slices with typed index and element variables
+  - loops over maps with typed key and value variables and deterministic key ordering
+  - named template inclusion with statically known names
+  - unnamed <slot /> insertion for requirement:nested-html-templates
+  - typed comparisons and boolean operators
+  - generator-registered typed helper functions
+  - JSON expression for frontend state embedded in a safe application/json script
+    context
+  type_analysis:
+  - use go/types during generation
+  - reject unknown or unexported field access with template source position
+  - infer loop element, map key, map value, pointer, and nested field types
+  - reject unsupported operations before Go compilation
+  json_codegen:
+  - emit direct writers for reachable structs, pointers, arrays, slices, and string-keyed
+    maps
+  - honor json field names, omission, ignored fields, and supported scalar types
+  - encode map keys deterministically
+  - reject any, interfaces, functions, channels, complex values, and recursive object
+    graphs in the first release
+  - share generated primitive escaping helpers with system:tinybind when a stable
+    API exists
+  security: policy:template-escaping
+  priority: deferred until generated JSON encoding scope is implemented and verified
+  compatibility: system:tinybind v0.1.15 Fragment and Wrapper output replaces the
+    earlier direct-writer generated API
+  non_goals:
+  - runtime parsing
+  - runtime reflection
+  - dynamic template names
+  - arbitrary method invocation
+  - syntax or output compatibility with standard html/template
+  - arbitrary json.Marshaler execution in the first release
+relations:
+- relation: mentions
+  to: api:cli-generate
+  resolution: resolved
+- relation: mentions
+  to: api:error-renderer
+  resolution: resolved
+- relation: mentions
+  to: api:render-html-chain
+  resolution: resolved
+- relation: mentions
+  to: data:project-config
+  resolution: resolved
+- relation: mentions
+  to: flow:template-generation
+  resolution: resolved
+- relation: mentions
+  to: policy:template-escaping
+  resolution: resolved
+- relation: mentions
+  to: requirement:nested-html-templates
+  resolution: resolved
+- relation: mentions
+  to: system:pw-cli
+  resolution: resolved
+- relation: mentions
+  to: system:tinybind
+  resolution: resolved

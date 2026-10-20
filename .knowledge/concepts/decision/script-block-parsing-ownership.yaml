@@ -1,0 +1,169 @@
+id: decision:script-block-parsing-ownership
+type: decision
+title: Script Block Parsing Ownership
+summary: Parse the component script block in this framework rather than in system:tinybind,
+  and hand the result back as a compile option, so the module keeps its position that
+  it reads no JavaScript and the upstream ask stops being an agreement.
+facts:
+  legacy_body: "Parse the component script block in this framework rather than in\
+    \ system:tinybind, and hand the result back as a compile option, so the module\
+    \ keeps its position that it reads no JavaScript and the upstream ask stops being\
+    \ an agreement.\n\n```yaml\nsource: decision:component-handler-namespace, requirement:component-script-event-binding,\
+    \ and the user's ownership question 2026-08-11\nreview_gate: accepted upstream\
+    \ 2026-08-12\nshipped: system:tinybind v0.5.8 built the seam as asked; ComponentScripts\
+    \ reports the block, its position, the names the markup referenced and the declared\
+    \ parameters, and routetree takes a ScriptResolver answering both maps\nwhat_the_module_kept:\
+    \ its position that it reads no JavaScript, stated in the reporting type's own\
+    \ documentation as the reason the seam exists\nwhat_the_parse_produces:\n  handler_names:\
+    \ the keys of the object setup returns, which is what a name in an on-attribute\
+    \ resolves against\n  prop_names: the parameter pattern setup destructures, which\
+    \ is what decides the values emitted onto the component root\nwhy_it_looked_like_an_upstream_change:\
+    \ both answers are consumed by emission, and only system:tinybind emits component\
+    \ markup, so the natural reading was that the parser had to live where the emitter\
+    \ does\nthe_seam_already_exists:\n  precedent: the server-action dataflow of system:tinybind,\
+    \ where the compiler reports referenced names in one pass, the caller resolves\
+    \ them against its own knowledge, and the resolved map returns as a compile option\
+    \ to be lowered into markup\n  second_precedent: the external action resolution\
+    \ that lets a framework supply an address for a name the route tree does not hold\n\
+    \  third_precedent: the reference hook, which is a caller-supplied Go func called\
+    \ inside the generator process\n  therefore: a caller answering a question the\
+    \ compiler asks mid-generation is an established shape here rather than a new\
+    \ one\nchosen:\n  parse_here: this framework reads the block and computes both\
+    \ sets\n  upstream_asks_and_lowers: the compiler reports the block and the referenced\
+    \ names, takes the resolved sets as an option, and emits accordingly\n  what_it_removes:\
+    \ the reversal of the module's standing position that it reads no JavaScript,\
+    \ which was the one item on the list needing agreement rather than work\nwhy_this_is_the_right_side_of_the_line:\n\
+    \  the_browser_story_is_already_ours: system:tinybind put the browser script with\
+    \ the caller, and the block is authored browser code, so reading it is on the\
+    \ same side of a line that already exists\n  dependency_weight: a JavaScript tokenizer\
+    \ in the module would be carried by every consumer of its config, sql, dynamo\
+    \ and firestore halves, none of which have a browser; here it is carried by the\
+    \ framework whose feature it is\n  iteration: the parser will be wrong about real\
+    \ code at first, and fixing it here needs no upstream release\n  ownership_of_the_conventions:\
+    \ setup, its argument and the teardown convention are already stated upstream\
+    \ to be the caller's, so the names this parser looks for are ours to change\n\
+    diagnostics_stay_positioned:\n  problem: an error must name the template position\
+    \ of the attribute and the block it failed against, and positions belong to the\
+    \ compiler\n  answer: the resolved map carries an unresolved marker rather than\
+    \ an omission, so the compiler reports with the position it holds and this framework\
+    \ supplies the reason\n  precedent: the dynamic-value report of the reference\
+    \ hook already reports from the compiler about something the caller decided\n\
+    reading_the_block_without_being_told:\n  possible: the block is delimited in the\
+    \ template source and this framework already reads project sources for route discovery\n\
+    \  rejected: duplicating the raw-text boundary rules is a drift risk, and the\
+    \ extracted asset exists only after the compile that needed the answer\n  therefore:\
+    \ the compiler reporting the block text in the first pass is the cheaper half\
+    \ of the ask\nwhat_stays_upstream_regardless:\n  attribute_reservation: only the\
+    \ grammar can reserve a name and lower it away, which is true of on-attributes\
+    \ exactly as it is of server-action\n  markup_emission: the props attribute and\
+    \ the lowered event attribute are markup, and the module writes markup\n  the_form_lowering:\
+    \ emitting a real action and method beside the runtime attribute is a lowering-set\
+    \ question, per decision:action-entry-point-selection\nconstraints:\n  - the parser\
+    \ never rewrites the block, so the content-hashed single file of requirement:component-asset-extraction\
+    \ is unaffected\n  - a project declaring no script block runs no parser and regenerates\
+    \ identically\n  - the parse is generation-time only, so TinyGo targets are untouched\
+    \ on either side\nthe_request_is_written: docs/tinybind-go-actions-and-handlers-request.md,\
+    \ which states the four asks, their inputs and outputs, and the non-asks in the\
+    \ terms this decision sets\nopen_questions:\n  - whether a second framework building\
+    \ on system:tinybind would then have to write its own parser, and whether that\
+    \ argues for the module absorbing this once a second one exists\n```"
+  source: decision:component-handler-namespace, requirement:component-script-event-binding,
+    and the user's ownership question 2026-08-11
+  review_gate: accepted upstream 2026-08-12
+  shipped: system:tinybind v0.5.8 built the seam as asked; ComponentScripts reports
+    the block, its position, the names the markup referenced and the declared parameters,
+    and routetree takes a ScriptResolver answering both maps
+  what_the_module_kept: its position that it reads no JavaScript, stated in the reporting
+    type's own documentation as the reason the seam exists
+  what_the_parse_produces:
+    handler_names: the keys of the object setup returns, which is what a name in an
+      on-attribute resolves against
+    prop_names: the parameter pattern setup destructures, which is what decides the
+      values emitted onto the component root
+  why_it_looked_like_an_upstream_change: both answers are consumed by emission, and
+    only system:tinybind emits component markup, so the natural reading was that the
+    parser had to live where the emitter does
+  the_seam_already_exists:
+    precedent: the server-action dataflow of system:tinybind, where the compiler reports
+      referenced names in one pass, the caller resolves them against its own knowledge,
+      and the resolved map returns as a compile option to be lowered into markup
+    second_precedent: the external action resolution that lets a framework supply
+      an address for a name the route tree does not hold
+    third_precedent: the reference hook, which is a caller-supplied Go func called
+      inside the generator process
+    therefore: a caller answering a question the compiler asks mid-generation is an
+      established shape here rather than a new one
+  chosen:
+    parse_here: this framework reads the block and computes both sets
+    upstream_asks_and_lowers: the compiler reports the block and the referenced names,
+      takes the resolved sets as an option, and emits accordingly
+    what_it_removes: the reversal of the module's standing position that it reads
+      no JavaScript, which was the one item on the list needing agreement rather than
+      work
+  why_this_is_the_right_side_of_the_line:
+    the_browser_story_is_already_ours: system:tinybind put the browser script with
+      the caller, and the block is authored browser code, so reading it is on the
+      same side of a line that already exists
+    dependency_weight: a JavaScript tokenizer in the module would be carried by every
+      consumer of its config, sql, dynamo and firestore halves, none of which have
+      a browser; here it is carried by the framework whose feature it is
+    iteration: the parser will be wrong about real code at first, and fixing it here
+      needs no upstream release
+    ownership_of_the_conventions: setup, its argument and the teardown convention
+      are already stated upstream to be the caller's, so the names this parser looks
+      for are ours to change
+  diagnostics_stay_positioned:
+    problem: an error must name the template position of the attribute and the block
+      it failed against, and positions belong to the compiler
+    answer: the resolved map carries an unresolved marker rather than an omission,
+      so the compiler reports with the position it holds and this framework supplies
+      the reason
+    precedent: the dynamic-value report of the reference hook already reports from
+      the compiler about something the caller decided
+  reading_the_block_without_being_told:
+    possible: the block is delimited in the template source and this framework already
+      reads project sources for route discovery
+    rejected: duplicating the raw-text boundary rules is a drift risk, and the extracted
+      asset exists only after the compile that needed the answer
+    therefore: the compiler reporting the block text in the first pass is the cheaper
+      half of the ask
+  what_stays_upstream_regardless:
+    attribute_reservation: only the grammar can reserve a name and lower it away,
+      which is true of on-attributes exactly as it is of server-action
+    markup_emission: the props attribute and the lowered event attribute are markup,
+      and the module writes markup
+    the_form_lowering: emitting a real action and method beside the runtime attribute
+      is a lowering-set question, per decision:action-entry-point-selection
+  constraints:
+  - the parser never rewrites the block, so the content-hashed single file of requirement:component-asset-extraction
+    is unaffected
+  - a project declaring no script block runs no parser and regenerates identically
+  - the parse is generation-time only, so TinyGo targets are untouched on either side
+  the_request_is_written: docs/tinybind-go-actions-and-handlers-request.md, which
+    states the four asks, their inputs and outputs, and the non-asks in the terms
+    this decision sets
+  open_questions:
+  - whether a second framework building on system:tinybind would then have to write
+    its own parser, and whether that argues for the module absorbing this once a second
+    one exists
+open_questions:
+  item-206873112ac8d651:
+    text: whether a second framework building on system:tinybind would then have to
+      write its own parser, and whether that argues for the module absorbing this
+      once a second one exists
+relations:
+- relation: mentions
+  to: decision:action-entry-point-selection
+  resolution: resolved
+- relation: mentions
+  to: decision:component-handler-namespace
+  resolution: resolved
+- relation: mentions
+  to: requirement:component-asset-extraction
+  resolution: resolved
+- relation: mentions
+  to: requirement:component-script-event-binding
+  resolution: resolved
+- relation: mentions
+  to: system:tinybind
+  resolution: resolved

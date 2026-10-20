@@ -1,0 +1,64 @@
+id: policy:context-value-storage
+type: policy
+title: Context Value Storage Policy
+summary: Minimize context.WithValue chain depth while preserving values whose nesting
+  and shadowing carry semantics.
+facts:
+  legacy_body: "Minimize context.WithValue chain depth while preserving values whose\
+    \ nesting and shadowing carry semantics.\n\n```yaml\nbundled_in: data:request-context-capsule\n\
+    bundled:\n  - database pool\n  - active data:transaction-scope\n  - data:runtime-config-registry\
+    \ with all configbind values and provenance\n  - request root span\n  - api:logger\
+    \ backend and stable request logging attributes\n  - verified data:request-authentication,\
+    \ finalized at SlotAuthentication rather than by session middleware\nnot_bundled:\n\
+    \  session_slots: api:session-registry keeps its own request value, because a\
+    \ slot is read by type rather than from a flat capsule field\n  - masked CSRF\
+    \ request token; never the stored session secret\n  - future stable request resources\
+    \ approved by this contract\nindividual_values:\n  - active OpenTelemetry span\
+    \ context created by each nested Tracer.Start\n  - values whose parent-child shadowing\
+    \ is their required behavior\n  - each such stored value carries a pointer to\
+    \ its parent value, so ancestors are reached by pointer chase after one lookup,\
+    \ per requirement:context-lookup-performance\nunchanged_context_mechanisms:\n\
+    \  - cancellation\n  - deadline\nrules:\n  - one capsule context value replaces\
+    \ one value per flat framework resource\n  - do not bundle nested active span\
+    \ state\n  - do not expose the capsule as an application dependency container\n\
+    \  - add a field and api:request-context-accessors entry together\n  - api:transaction-runner\
+    \ may derive one scoped child capsule for an explicit transaction\n  - generated\
+    \ code reads framework resources through configured resolver functions doing one\
+    \ capsule lookup; no library-owned context node, per requirement:context-lookup-performance\n\
+    rationale: context.Value lookup traverses the context chain, so independent flat\
+    \ values add cumulative lookup depth\n```"
+  legacy_parse_issues:
+  - kind: legacy_parse_error
+    block: 0
+    message: "while parsing a block mapping\n  in \"<unicode string>\", line 10, column\
+      \ 3:\n      session_slots: api:session-regis ... \n      ^\nexpected <block\
+      \ end>, but found '-'\n  in \"<unicode string>\", line 11, column 3:\n     \
+      \ - masked CSRF request token; nev ... \n      ^"
+relations:
+- relation: mentions
+  to: api:logger
+  resolution: resolved
+- relation: mentions
+  to: api:request-context-accessors
+  resolution: resolved
+- relation: mentions
+  to: api:session-registry
+  resolution: resolved
+- relation: mentions
+  to: api:transaction-runner
+  resolution: resolved
+- relation: mentions
+  to: data:request-authentication
+  resolution: resolved
+- relation: mentions
+  to: data:request-context-capsule
+  resolution: resolved
+- relation: mentions
+  to: data:runtime-config-registry
+  resolution: resolved
+- relation: mentions
+  to: data:transaction-scope
+  resolution: resolved
+- relation: mentions
+  to: requirement:context-lookup-performance
+  resolution: resolved

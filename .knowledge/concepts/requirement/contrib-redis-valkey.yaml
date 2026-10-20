@@ -1,0 +1,42 @@
+id: requirement:contrib-redis-valkey
+type: requirement
+title: TinyGo Redis and Valkey Compatibility
+summary: Popcorn Web supports Redis and Valkey through a tested external Go client
+  and does not maintain a general Redis protocol package.
+facts:
+  legacy_body: "Popcorn Web supports Redis and Valkey through a tested external Go\
+    \ client and does not maintain a general Redis protocol package.\n\n```yaml\n\
+    integration: external dependency\nclient: github.com/redis/go-redis/v9 v9.17.3\n\
+    support_tier: first_class_through_local_proxy\ntransport: policy:outbound-transport-security\n\
+    protocol: RESP2\nconsumer: requirement:contrib-auth-state-redis\nservers:\n  -\
+    \ Redis\n  - Valkey\nuse_cases:\n  - expiring session records\n  - replay and\
+    \ one-time token state\n  - counters and rate-limit state\n  - small shared key-value\
+    \ records\nrequired_commands:\n  - PING\n  - GET\n  - SET with expiry and NX or\
+    \ XX\n  - DEL and GETDEL\n  - EXPIRE and TTL\n  - INCR\n  - bounded EVAL for compare-and-delete\n\
+    topologies:\n  first_class:\n    - standalone server\n    - Sentinel-selected\
+    \ writable endpoint exposed through the local proxy\n    - managed cluster hidden\
+    \ behind a stable proxy endpoint\n  unsupported:\n    - direct Redis Cluster MOVED\
+    \ or ASK redirection through a single TCP TLS tunnel\nclient_evidence:\n  verified:\
+    \ 2026-07-17\n  tinygo: 0.41.1\n  passing:\n    - bounded direct RESP2 interoperability\
+    \ with Redis 8.4.4 and Valkey 9.1.0\n    - go-redis v9.17.3 compiled and passed\
+    \ session operations against both servers\n  incompatible_unchanged:\n    - go-redis\
+    \ v9.21.0 requires unavailable net.DefaultResolver behavior\n    - valkey-go v1.0.76\
+    \ requires unavailable TLS and TCP APIs\nboundaries:\n  - no contrib/redis protocol\
+    \ client or general key-value facade\n  - no Pub/Sub, Streams, modules, administration,\
+    \ or arbitrary unbounded replies in the initial subset\n  - direct TinyGo TLS\
+    \ remains experimental under decision:local-tls-proxy-boundary\n  - credentials\
+    \ and session values never enter logs or stable error text\n```"
+  legacy_parse_issues:
+  - kind: legacy_parse_error
+    block: 0
+    message: Object of type date is not JSON serializable
+relations:
+- relation: mentions
+  to: decision:local-tls-proxy-boundary
+  resolution: resolved
+- relation: mentions
+  to: policy:outbound-transport-security
+  resolution: resolved
+- relation: mentions
+  to: requirement:contrib-auth-state-redis
+  resolution: resolved

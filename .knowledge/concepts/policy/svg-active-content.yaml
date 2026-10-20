@@ -1,0 +1,163 @@
+id: policy:svg-active-content
+type: policy
+title: SVG Active Content
+summary: A served SVG is neutralised by the response header rather than by understanding
+  it, and the build scan on top only names the obvious cases so an author hears about
+  them.
+facts:
+  legacy_body: "A served SVG is neutralised by the response header rather than by\
+    \ understanding it, and the build scan on top only names the obvious cases so\
+    \ an author hears about them.\n\n```yaml\nwhy_svg_is_the_exception:\n  every_other_image:\
+    \ a png or a webp is decoded by an image decoder and has no script surface at\
+    \ all\n  svg: is xml with a script element, event handlers, and its own animation\
+    \ language, so image/svg+xml from the application origin executes in that origin\
+    \ on direct navigation\n  not_covered_by_the_sibling: the file is honest, so policy:asset-content-signature\
+    \ has nothing to report; the extension and the bytes agree and the content is\
+    \ still active\n  where_it_bites: direct navigation to the asset URL, and object,\
+    \ embed, or iframe; an img never runs script and was never the exposure\nboundary_is_the_header:\n\
+    \  header: api:public-asset-middleware sends Content-Security-Policy sandbox on\
+    \ a response whose media type is image/svg+xml\n  why_this_is_the_primary: it\
+    \ needs no parse, no table, and no judgment about content, so it holds for every\
+    \ svg including the ones no build ever read\n  covers: an svg under server.public.read_local,\
+    \ one the allow list exempted, one committed after the last build, and one the\
+    \ scan below simply missed\n  effect: unique origin and no script, so an svg that\
+    \ does execute cannot reach the application origin\n  invisible_to_img: an img\
+    \ neither ran script nor needed the origin, so nothing that already worked changes\n\
+    \  breaks: an svg deliberately served interactive through object, embed, or direct\
+    \ navigation, which is why it is a switch and not a constant\n  lighter_alternative:\
+    \ script-src none, which blocks execution without the unique origin; sandbox is\
+    \ the default because the origin is the part worth taking away\n  composition:\n\
+    \    with_the_application_policy: policy:security-response-headers owns the configured\
+    \ application CSP, so this header is added beside it rather than replacing it\n\
+    \    semantics: two CSP headers are both enforced and the effective policy is\
+    \ their intersection, so the sandbox can only tighten what the application declared\n\
+    \    implementation: Add, never Set, since Set on the same field would drop the\
+    \ application policy on every asset response\nbuild_scan:\n  status: best effort,\
+    \ deliberately, and not a security boundary; the header above is the boundary\
+    \ and this is how an author finds out before shipping\n  method: a case-insensitive\
+    \ literal scan of the bytes the tree walk already holds\n  looks_for:\n    script_element:\
+    \ the literal \"<script\"\n    event_handler: an attribute name matching on followed\
+    \ by letters and an equals sign\n    script_url: the literal \"javascript:\"\n\
+    \  severity: error, so the file is refused rather than merely mentioned, with\
+    \ the allow list of policy:asset-content-signature as the way to keep one on purpose\n\
+    \  false_positive: an svg with those characters in ordinary text, such as a diagram\
+    \ labelling javascript:, which the allow list resolves in one line\nnot_detected:\n\
+    \  by_design: everything needing a parse, which is where the cost stops being\
+    \ worth it\n  examples:\n    - a smil set or animate assigning a script url through\
+    \ attributeName, which carries no literal handler\n    - a handler or url arriving\
+    \ entity-encoded, through cdata, or under a namespace prefix\n    - foreignObject\
+    \ holding html, and an external entity in a doctype\n    - an off-origin image,\
+    \ use, or feImage reference, which discloses a viewer rather than executing\n\
+    \  why_that_is_acceptable: each of these is answered by the sandbox header whether\
+    \ or not the build recognised it, so the missing half of the scan costs a warning\
+    \ and not an exposure\n  reconsider_when: the header has to be switched off for\
+    \ a project, which is the one configuration where the scan would be carrying the\
+    \ weight alone\nsanitisation_refused:\n  what_was_rejected: stripping the active\
+    \ constructs at build time and shipping the remainder\n  reasons:\n    - it makes\
+    \ this project own an svg sanitiser, a security-critical surface that is never\
+    \ finished and is wrong quietly\n    - it rewrites bytes the author wrote, which\
+    \ is the invariant requirement:derived-asset-pipeline holds everywhere else\n\
+    \    - a stripped file still looks like the file the author committed, so the\
+    \ next edit puts the construct back and nothing says so\n  instead: refuse, name\
+    \ the literal that matched and its offset, and let the author decide\nseparate_origin_refused:\n\
+    \  what_was_rejected: serving svg from its own hostname, which is the complete\
+    \ answer\n  reason: the mount of data:server-runtime-config is a path prefix,\
+    \ so a second origin is a deployment the framework cannot provision or verify\n\
+    \  note: an operator who does have one loses nothing here; the sandbox header\
+    \ is redundant then rather than wrong\n```"
+  why_svg_is_the_exception:
+    every_other_image: a png or a webp is decoded by an image decoder and has no script
+      surface at all
+    svg: is xml with a script element, event handlers, and its own animation language,
+      so image/svg+xml from the application origin executes in that origin on direct
+      navigation
+    not_covered_by_the_sibling: the file is honest, so policy:asset-content-signature
+      has nothing to report; the extension and the bytes agree and the content is
+      still active
+    where_it_bites: direct navigation to the asset URL, and object, embed, or iframe;
+      an img never runs script and was never the exposure
+  boundary_is_the_header:
+    header: api:public-asset-middleware sends Content-Security-Policy sandbox on a
+      response whose media type is image/svg+xml
+    why_this_is_the_primary: it needs no parse, no table, and no judgment about content,
+      so it holds for every svg including the ones no build ever read
+    covers: an svg under server.public.read_local, one the allow list exempted, one
+      committed after the last build, and one the scan below simply missed
+    effect: unique origin and no script, so an svg that does execute cannot reach
+      the application origin
+    invisible_to_img: an img neither ran script nor needed the origin, so nothing
+      that already worked changes
+    breaks: an svg deliberately served interactive through object, embed, or direct
+      navigation, which is why it is a switch and not a constant
+    lighter_alternative: script-src none, which blocks execution without the unique
+      origin; sandbox is the default because the origin is the part worth taking away
+    composition:
+      with_the_application_policy: policy:security-response-headers owns the configured
+        application CSP, so this header is added beside it rather than replacing it
+      semantics: two CSP headers are both enforced and the effective policy is their
+        intersection, so the sandbox can only tighten what the application declared
+      implementation: Add, never Set, since Set on the same field would drop the application
+        policy on every asset response
+  build_scan:
+    status: best effort, deliberately, and not a security boundary; the header above
+      is the boundary and this is how an author finds out before shipping
+    method: a case-insensitive literal scan of the bytes the tree walk already holds
+    looks_for:
+      script_element: the literal "<script"
+      event_handler: an attribute name matching on followed by letters and an equals
+        sign
+      script_url: the literal "javascript:"
+    severity: error, so the file is refused rather than merely mentioned, with the
+      allow list of policy:asset-content-signature as the way to keep one on purpose
+    false_positive: an svg with those characters in ordinary text, such as a diagram
+      labelling javascript:, which the allow list resolves in one line
+  not_detected:
+    by_design: everything needing a parse, which is where the cost stops being worth
+      it
+    examples:
+    - a smil set or animate assigning a script url through attributeName, which carries
+      no literal handler
+    - a handler or url arriving entity-encoded, through cdata, or under a namespace
+      prefix
+    - foreignObject holding html, and an external entity in a doctype
+    - an off-origin image, use, or feImage reference, which discloses a viewer rather
+      than executing
+    why_that_is_acceptable: each of these is answered by the sandbox header whether
+      or not the build recognised it, so the missing half of the scan costs a warning
+      and not an exposure
+    reconsider_when: the header has to be switched off for a project, which is the
+      one configuration where the scan would be carrying the weight alone
+  sanitisation_refused:
+    what_was_rejected: stripping the active constructs at build time and shipping
+      the remainder
+    reasons:
+    - it makes this project own an svg sanitiser, a security-critical surface that
+      is never finished and is wrong quietly
+    - it rewrites bytes the author wrote, which is the invariant requirement:derived-asset-pipeline
+      holds everywhere else
+    - a stripped file still looks like the file the author committed, so the next
+      edit puts the construct back and nothing says so
+    instead: refuse, name the literal that matched and its offset, and let the author
+      decide
+  separate_origin_refused:
+    what_was_rejected: serving svg from its own hostname, which is the complete answer
+    reason: the mount of data:server-runtime-config is a path prefix, so a second
+      origin is a deployment the framework cannot provision or verify
+    note: an operator who does have one loses nothing here; the sandbox header is
+      redundant then rather than wrong
+relations:
+- relation: mentions
+  to: api:public-asset-middleware
+  resolution: resolved
+- relation: mentions
+  to: data:server-runtime-config
+  resolution: resolved
+- relation: mentions
+  to: policy:asset-content-signature
+  resolution: resolved
+- relation: mentions
+  to: policy:security-response-headers
+  resolution: resolved
+- relation: mentions
+  to: requirement:derived-asset-pipeline
+  resolution: resolved

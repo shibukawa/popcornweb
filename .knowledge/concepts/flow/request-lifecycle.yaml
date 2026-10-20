@@ -1,0 +1,60 @@
+id: flow:request-lifecycle
+type: flow
+title: Typed Request Lifecycle
+summary: A Popcorn Web request remains a standard net/http exchange enriched with
+  initialized framework resources and compact pw binding and response calls.
+facts:
+  legacy_body: "A Popcorn Web request remains a standard net/http exchange enriched\
+    \ with initialized framework resources and compact pw binding and response calls.\n\
+    \n```yaml\nflow:\n  trigger: ServeMux-compatible router dispatches a route from\
+    \ decision:stdlib-servemux\n  steps:\n    - id: context\n      action: framework\
+    \ middleware attaches config, logger, database, session, tracing, and security\
+    \ resources\n    - id: bind\n      actor: api:request-binding\n      action: pw.Parse\
+    \ maps request sources into the typed input\n      failure: write policy:validation-errors\
+    \ through api:problem-response and stop\n    - id: validate\n      action: application\
+    \ evaluates business constraints using policy:validation-errors\n      failure:\
+    \ negotiate api:problem-response output and stop\n    - id: execute\n      action:\
+    \ application runs business logic\n    - id: write\n      action: api:html-response,\
+    \ api:api-response, or api:typed-stream writes the response\n      failure: write\
+    \ a safe internal problem when headers are not committed\n```"
+  flow:
+    trigger: ServeMux-compatible router dispatches a route from decision:stdlib-servemux
+    steps:
+    - id: context
+      action: framework middleware attaches config, logger, database, session, tracing,
+        and security resources
+    - id: bind
+      actor: api:request-binding
+      action: pw.Parse maps request sources into the typed input
+      failure: write policy:validation-errors through api:problem-response and stop
+    - id: validate
+      action: application evaluates business constraints using policy:validation-errors
+      failure: negotiate api:problem-response output and stop
+    - id: execute
+      action: application runs business logic
+    - id: write
+      action: api:html-response, api:api-response, or api:typed-stream writes the
+        response
+      failure: write a safe internal problem when headers are not committed
+relations:
+- relation: mentions
+  to: api:api-response
+  resolution: resolved
+- relation: mentions
+  to: api:html-response
+  resolution: resolved
+- relation: mentions
+  to: api:problem-response
+  resolution: resolved
+- relation: mentions
+  to: api:request-binding
+  resolution: resolved
+- relation: mentions
+  to: api:typed-stream
+  resolution: resolved
+- relation: mentions
+  to: decision:stdlib-servemux
+  resolution: resolved
+- relation: mentions
+  to: policy:validation-errors
+  resolution: resolved

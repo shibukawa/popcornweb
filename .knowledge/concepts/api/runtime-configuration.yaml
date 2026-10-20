@@ -1,0 +1,118 @@
+id: api:runtime-configuration
+type: api
+title: Runtime Configuration API
+summary: The pw package registers every framework and application configuration type, parses all sources once, and
+  exposes immutable typed values from request context.
+facts:
+  legacy_body: "The pw package registers every framework and application configuration type, parses all sources\
+    \ once, and exposes immutable typed values from request context.\n\n```yaml\nsurface:\n  - RegisterConfig[T](\"\
+    prefix\")\n  - ParseConfig() error\n  - Config[T](context.Context) T\n  - Env() string returns the resolved\
+    \ data:runtime-environment token\nregistration:\n  application: RegisterConfig records a generated configbind\
+    \ definition without parsing\n  ordering:\n    - the generated definition registers during package init\n  \
+    \  - RegisterConfig must run after all package init functions, so call it from main\n    - calling RegisterConfig\
+    \ from an init function in the owning package panics\n  built_in:\n    - data:server-runtime-config\n    - data:security-runtime-config\n\
+    \    - data:session-runtime-config\n    - data:observability-runtime-config\n    - data:middleware-runtime-config\n\
+    parse:\n  environment:\n    - resolve data:runtime-environment before reading any source\n    - select the TOML\
+    \ candidate through policy:config-file-resolution\n    - read the policy:dotenv-resolution files and lay the\
+    \ process environment over them, unless the caller supplied Environ\n  scope:\n    - all registered framework\
+    \ configuration\n    - all registered application configuration\n    - CLI configuration\n    - registered subcommand\
+    \ input\n  called_by:\n    - api:application-lifecycle Run when not already parsed\n    - api:application-lifecycle\
+    \ Middlewares when not already parsed\n  failure: return before request acceptance\nobservability:\n  - log\
+    \ the active environment, the resolved config file path, and the dotenv files read\n  - log each effective field\
+    \ and its source\n  - mask secret values\nsource_engine: system:tinybind configbind generation and registry\n\
+    scaffold: requirement:built-in-config-generation is invoked through api:application-lifecycle\n```"
+  surface:
+  - RegisterConfig[T]("prefix")
+  - ParseConfig() error
+  - Config[T](context.Context) T
+  - Env() string returns the resolved data:runtime-environment token
+  registration:
+    application: RegisterConfig records a generated configbind definition without parsing
+    ordering:
+    - the generated definition registers during package init
+    - RegisterConfig must run after all package init functions, so call it from main
+    - calling RegisterConfig from an init function in the owning package panics
+    built_in:
+    - data:server-runtime-config
+    - data:security-runtime-config
+    - data:session-runtime-config
+    - data:observability-runtime-config
+    - data:middleware-runtime-config
+  parse:
+    environment:
+    - resolve data:runtime-environment before reading any source
+    - select the TOML candidate through policy:config-file-resolution
+    - read the policy:dotenv-resolution files and lay the process environment over them, unless the caller supplied
+      Environ
+    scope:
+    - all registered framework configuration
+    - all registered application configuration
+    - CLI configuration
+    - registered subcommand input
+    called_by:
+    - api:application-lifecycle Run when not already parsed
+    - api:application-lifecycle Middlewares when not already parsed
+    failure: return before request acceptance
+  observability:
+  - log the active environment, the resolved config file path, and the dotenv files read
+  - log each effective field and its source
+  - mask secret values
+  source_engine: system:tinybind configbind generation and registry
+  scaffold: requirement:built-in-config-generation is invoked through api:application-lifecycle
+  resolved_change_requests:
+    bdf-printmanager:
+      request: concept:bdf-printmanager-integration
+      proposals:
+      - requirement:string-slice-config-defaults
+      - requirement:early-framework-action-dispatch
+      standing: Implemented and verified; see linked requirement profiles and the implementation report.
+relations:
+- relation: mentions
+  to: api:application-lifecycle
+  resolution: resolved
+- relation: mentions
+  to: data:middleware-runtime-config
+  resolution: resolved
+- relation: mentions
+  to: data:observability-runtime-config
+  resolution: resolved
+- relation: mentions
+  to: data:runtime-environment
+  resolution: resolved
+- relation: mentions
+  to: data:security-runtime-config
+  resolution: resolved
+- relation: mentions
+  to: data:server-runtime-config
+  resolution: resolved
+- relation: mentions
+  to: data:session-runtime-config
+  resolution: resolved
+- relation: mentions
+  to: policy:config-file-resolution
+  resolution: resolved
+- relation: mentions
+  to: policy:dotenv-resolution
+  resolution: resolved
+- relation: mentions
+  to: requirement:built-in-config-generation
+  resolution: resolved
+- relation: mentions
+  to: system:tinybind
+  resolution: resolved
+- relation: implemented_followup
+  to: requirement:string-slice-config-defaults
+  resolution: resolved
+  evidence:
+    source_id: source:bdf-printmanager-request
+    path: bdf-printmanager-public-assets.md
+    heading: Smaller notes from the same integration
+    input_hash: a2df65a9a5a065a50b78c3559e0f9b0c559e18ff5d7c22f9a08352ad4674a426
+- relation: implemented_followup
+  to: requirement:early-framework-action-dispatch
+  resolution: resolved
+  evidence:
+    source_id: source:bdf-printmanager-request
+    path: bdf-printmanager-public-assets.md
+    heading: Smaller notes from the same integration
+    input_hash: a2df65a9a5a065a50b78c3559e0f9b0c559e18ff5d7c22f9a08352ad4674a426

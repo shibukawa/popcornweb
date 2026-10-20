@@ -1,0 +1,154 @@
+id: requirement:application-user-experience
+type: requirement
+title: Popcorn Web Application User Experience
+summary: This is the authoritative application-facing specification; when an older
+  catalog decision conflicts, this requirement and its referenced concepts take precedence.
+facts:
+  legacy_body: "This is the authoritative application-facing specification; when an\
+    \ older catalog decision conflicts, this requirement and its referenced concepts\
+    \ take precedence.\n\n```yaml\nproduct:\n  vision: vision:popcorn-web\n  package_boundary:\
+    \ concept:public-package-boundaries\n  entry_point: concept:application-entry-point\n\
+    cli:\n  system: system:pw-cli\n  commands:\n    - api:cli-init\n    - api:cli-generate\n\
+    \    - api:cli-build\n    - api:cli-dev\n  test_command: use go test ./...; no\
+    \ initial pw test\nproject:\n  layout: concept:project-layout\n  tooling_config:\
+    \ data:project-config\nhttp:\n  mux: api:serve-mux\n  registration: flow:handler-registration\n\
+    \  lifecycle: api:application-lifecycle\n  middleware: policy:web-middleware\n\
+    configuration:\n  API: api:runtime-configuration\n  model: decision:independent-runtime-config-bindings\n\
+    \  subcommands: api:subcommands\ngeneration:\n  pipeline: flow:generation-pipeline\n\
+    \  artifacts: policy:generated-artifacts\n  html: flow:template-generation\n \
+    \ sql: flow:sql-generation\nhandler_api:\n  request: api:request-binding\n  html:\
+    \ api:html-response\n  api: api:api-response\n  stream: api:typed-stream\n  problem:\
+    \ api:problem-response\n  transaction: api:transaction-runner\nruntime:\n  context:\
+    \ api:request-context-accessors\n  engine: system:tinybind\n  tinygo_compatibility:\
+    \ system:tinygodriver\n```"
+  product:
+    vision: vision:popcorn-web
+    package_boundary: concept:public-package-boundaries
+    entry_point: concept:application-entry-point
+  cli:
+    system: system:pw-cli
+    commands:
+    - api:cli-init
+    - api:cli-generate
+    - api:cli-build
+    - api:cli-dev
+    test_command: use go test ./...; no initial pw test
+  project:
+    layout: concept:project-layout
+    tooling_config: data:project-config
+  http:
+    mux: api:serve-mux
+    registration: flow:handler-registration
+    lifecycle: api:application-lifecycle
+    middleware: policy:web-middleware
+  configuration:
+    API: api:runtime-configuration
+    model: decision:independent-runtime-config-bindings
+    subcommands: api:subcommands
+  generation:
+    pipeline: flow:generation-pipeline
+    artifacts: policy:generated-artifacts
+    html: flow:template-generation
+    sql: flow:sql-generation
+  handler_api:
+    request: api:request-binding
+    html: api:html-response
+    api: api:api-response
+    stream: api:typed-stream
+    problem: api:problem-response
+    transaction: api:transaction-runner
+  runtime:
+    context: api:request-context-accessors
+    engine: system:tinybind
+    tinygo_compatibility: system:tinygodriver
+relations:
+- relation: mentions
+  to: api:api-response
+  resolution: resolved
+- relation: mentions
+  to: api:application-lifecycle
+  resolution: resolved
+- relation: mentions
+  to: api:cli-build
+  resolution: resolved
+- relation: mentions
+  to: api:cli-dev
+  resolution: resolved
+- relation: mentions
+  to: api:cli-generate
+  resolution: resolved
+- relation: mentions
+  to: api:cli-init
+  resolution: resolved
+- relation: mentions
+  to: api:html-response
+  resolution: resolved
+- relation: mentions
+  to: api:problem-response
+  resolution: resolved
+- relation: mentions
+  to: api:request-binding
+  resolution: resolved
+- relation: mentions
+  to: api:request-context-accessors
+  resolution: resolved
+- relation: mentions
+  to: api:runtime-configuration
+  resolution: resolved
+- relation: mentions
+  to: api:serve-mux
+  resolution: resolved
+- relation: mentions
+  to: api:subcommands
+  resolution: resolved
+- relation: mentions
+  to: api:transaction-runner
+  resolution: resolved
+- relation: mentions
+  to: api:typed-stream
+  resolution: resolved
+- relation: mentions
+  to: concept:application-entry-point
+  resolution: resolved
+- relation: mentions
+  to: concept:project-layout
+  resolution: resolved
+- relation: mentions
+  to: concept:public-package-boundaries
+  resolution: resolved
+- relation: mentions
+  to: data:project-config
+  resolution: resolved
+- relation: mentions
+  to: decision:independent-runtime-config-bindings
+  resolution: resolved
+- relation: mentions
+  to: flow:generation-pipeline
+  resolution: resolved
+- relation: mentions
+  to: flow:handler-registration
+  resolution: resolved
+- relation: mentions
+  to: flow:sql-generation
+  resolution: resolved
+- relation: mentions
+  to: flow:template-generation
+  resolution: resolved
+- relation: mentions
+  to: policy:generated-artifacts
+  resolution: resolved
+- relation: mentions
+  to: policy:web-middleware
+  resolution: resolved
+- relation: mentions
+  to: system:pw-cli
+  resolution: resolved
+- relation: mentions
+  to: system:tinybind
+  resolution: resolved
+- relation: mentions
+  to: system:tinygodriver
+  resolution: resolved
+- relation: mentions
+  to: vision:popcorn-web
+  resolution: resolved

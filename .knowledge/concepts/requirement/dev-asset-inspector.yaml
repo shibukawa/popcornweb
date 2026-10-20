@@ -1,0 +1,154 @@
+id: requirement:dev-asset-inspector
+type: requirement
+title: Development Asset Inspector
+summary: A requirement:dev-console pane reports the public tree as the developer loop
+  serves it and as api:cli-build would serve it, because decision:development-public-assets
+  makes those two answers differ and nothing today shows the difference.
+facts:
+  legacy_body: "A requirement:dev-console pane reports the public tree as the developer\
+    \ loop serves it and as api:cli-build would serve it, because decision:development-public-assets\
+    \ makes those two answers differ and nothing today shows the difference.\n\n```yaml\n\
+    audience: actor:application-developer\npane_of: requirement:dev-console\nsource:\
+    \ static analysis of the project tree, per policy:dev-console-boundary\nproblem:\n\
+    \  - api:cli-dev reads files locally, negotiates no encoding, and creates no sidecar\n\
+    \  - so the first time a developer sees what requirement:public-asset-delivery\
+    \ actually serves is after a release build\nshows:\n  file_tree:\n    entries:\
+    \ every file under project-root public, excluding the generated sidecars and the\
+    \ empty-tree sentinel of flow:public-asset-build\n    per_entry:\n      - the\
+    \ URL it answers, resolved through server.public.mount\n      - size\n      -\
+    \ whether policy:public-asset-precompression finds it eligible\n      - the sidecar\
+    \ flow:public-asset-build would write, and the ratio it would reach\n      - whether\
+    \ a sidecar exists now and whether it is stale against its source\n  mode:\n \
+    \   current: the decision:development-public-assets reading, stated plainly so\
+    \ nothing on this page is mistaken for production behavior\n    production: the\
+    \ requirement:public-asset-delivery reading the same configuration would produce\n\
+    \  generated:\n    tailwind: the requirement:tailwind-css-integration output path,\
+    \ whether it exists, and whether it is older than its input\n    framework_scripts:\
+    \ the requirement:framework-script-assets set and the revision segment currently\
+    \ serving them\n  configuration: the data:server-runtime-config public values\
+    \ that produced the mount, with the source layer each came from\nlimits:\n  -\
+    \ a mount collision is reported by api:cli-doctor rather than here, because rule:project-integrity-checks\
+    \ already owns it\n  - a value the pane could not determine is named as undetermined\
+    \ rather than shown as its default\nactions:\n  none: this pane runs no build\n\
+    \  reason: policy:dev-console-boundary admits only actions that already exist\
+    \ as a subcommand, and precompression belongs to api:cli-build\nnon_goals:\n \
+    \ - editing, uploading, or deleting a file\n  - an asset pipeline, a bundler,\
+    \ or a fingerprinting scheme\n  - reporting request-level asset traffic, which\
+    \ requirement:dev-telemetry-viewer already carries\nacceptance:\n  - a project\
+    \ with no public directory reports an empty tree rather than an error\n  - an\
+    \ eligible file with no sidecar is shown as one production would compress\n  -\
+    \ an ineligible file names the policy:public-asset-precompression reason it was\
+    \ skipped\n  - a stale Tailwind output is reported as stale, with the input that\
+    \ is newer\n  - the pane is correct while the application process is down, because\
+    \ it reads the tree and not the server\n```"
+  audience: actor:application-developer
+  pane_of: requirement:dev-console
+  source: static analysis of the project tree, per policy:dev-console-boundary
+  problem:
+  - api:cli-dev reads files locally, negotiates no encoding, and creates no sidecar
+  - so the first time a developer sees what requirement:public-asset-delivery actually
+    serves is after a release build
+  shows:
+    file_tree:
+      entries: every file under project-root public, excluding the generated sidecars
+        and the empty-tree sentinel of flow:public-asset-build
+      per_entry:
+      - the URL it answers, resolved through server.public.mount
+      - size
+      - whether policy:public-asset-precompression finds it eligible
+      - the sidecar flow:public-asset-build would write, and the ratio it would reach
+      - whether a sidecar exists now and whether it is stale against its source
+    mode:
+      current: the decision:development-public-assets reading, stated plainly so nothing
+        on this page is mistaken for production behavior
+      production: the requirement:public-asset-delivery reading the same configuration
+        would produce
+    generated:
+      tailwind: the requirement:tailwind-css-integration output path, whether it exists,
+        and whether it is older than its input
+      framework_scripts: the requirement:framework-script-assets set and the revision
+        segment currently serving them
+    configuration: the data:server-runtime-config public values that produced the
+      mount, with the source layer each came from
+  limits:
+  - a mount collision is reported by api:cli-doctor rather than here, because rule:project-integrity-checks
+    already owns it
+  - a value the pane could not determine is named as undetermined rather than shown
+    as its default
+  actions:
+    none: this pane runs no build
+    reason: policy:dev-console-boundary admits only actions that already exist as
+      a subcommand, and precompression belongs to api:cli-build
+  non_goals:
+  - editing, uploading, or deleting a file
+  - an asset pipeline, a bundler, or a fingerprinting scheme
+  - reporting request-level asset traffic, which requirement:dev-telemetry-viewer
+    already carries
+  acceptance:
+  - a project with no public directory reports an empty tree rather than an error
+  - an eligible file with no sidecar is shown as one production would compress
+  - an ineligible file names the policy:public-asset-precompression reason it was
+    skipped
+  - a stale Tailwind output is reported as stale, with the input that is newer
+  - the pane is correct while the application process is down, because it reads the
+    tree and not the server
+acceptance:
+  item-d36b43b8db8a7d08:
+    text: a project with no public directory reports an empty tree rather than an
+      error
+  item-7ecdc52c35a3e25b:
+    text: an eligible file with no sidecar is shown as one production would compress
+  item-3efea864a9616677:
+    text: an ineligible file names the policy:public-asset-precompression reason it
+      was skipped
+  item-f13d07c568123d7e:
+    text: a stale Tailwind output is reported as stale, with the input that is newer
+  item-6f01597b1dc667a8:
+    text: the pane is correct while the application process is down, because it reads
+      the tree and not the server
+relations:
+- relation: mentions
+  to: actor:application-developer
+  resolution: resolved
+- relation: mentions
+  to: api:cli-build
+  resolution: resolved
+- relation: mentions
+  to: api:cli-dev
+  resolution: resolved
+- relation: mentions
+  to: api:cli-doctor
+  resolution: resolved
+- relation: mentions
+  to: data:server-runtime-config
+  resolution: resolved
+- relation: mentions
+  to: decision:development-public-assets
+  resolution: resolved
+- relation: mentions
+  to: flow:public-asset-build
+  resolution: resolved
+- relation: mentions
+  to: policy:dev-console-boundary
+  resolution: resolved
+- relation: mentions
+  to: policy:public-asset-precompression
+  resolution: resolved
+- relation: mentions
+  to: requirement:dev-console
+  resolution: resolved
+- relation: mentions
+  to: requirement:dev-telemetry-viewer
+  resolution: resolved
+- relation: mentions
+  to: requirement:framework-script-assets
+  resolution: resolved
+- relation: mentions
+  to: requirement:public-asset-delivery
+  resolution: resolved
+- relation: mentions
+  to: requirement:tailwind-css-integration
+  resolution: resolved
+- relation: mentions
+  to: rule:project-integrity-checks
+  resolution: resolved

@@ -88,11 +88,11 @@ func derivedSidecarCodings() ([]sidecarCoding, error) {
 		return nil, fmt.Errorf("public assets: create zstd encoder: %w", err)
 	}
 	return []sidecarCoding{
-		{token: "br", suffix: ".br", params: strconv.Itoa(brotli.BestCompression), encode: encodeBrotli},
-		{token: "zstd", suffix: ".zstd", params: zstd.SpeedBestCompression.String(), encode: func(source []byte) ([]byte, error) {
+		{token: "br", suffix: ".br", params: "brotli/1.2.6 " + strconv.Itoa(brotli.BestCompression), encode: encodeBrotli},
+		{token: "zstd", suffix: ".zstd", params: "compress/1.20.3 " + zstd.SpeedBestCompression.String(), encode: func(source []byte) ([]byte, error) {
 			return zstdEncoder.EncodeAll(source, nil), nil
 		}},
-		{token: "gzip", suffix: ".gz", params: strconv.Itoa(gzip.BestCompression), encode: encodeGzip},
+		{token: "gzip", suffix: ".gz", params: "compress/1.20.3 " + strconv.Itoa(gzip.BestCompression), encode: encodeGzip},
 	}, nil
 }
 
@@ -211,7 +211,7 @@ func buildDerivedAssets(root string, assets assetsConfig) (derivedReport, error)
 	// A variant is converted by the tree walk, so the upstream conversion cache
 	// never sees it. Without one of its own, every build re-encoded every image
 	// whether or not anything had changed.
-	cache := filepath.Join(root, filepath.FromSlash(conversionCacheDir))
+	cache := filepath.Join(root, filepath.FromSlash(assets.locations().cache))
 	return buildDerivedAssetsWithEncoder(root, assets, cachedImageEncoder(cache, "avif", encodeAVIF))
 }
 
@@ -220,11 +220,14 @@ func buildDerivedAssets(root string, assets assetsConfig) (derivedReport, error)
 // property of this code, and only the second is worth a test running an encoder.
 func buildDerivedAssetsWithEncoder(root string, assets assetsConfig, encodeVariant imageEncoder) (derivedReport, error) {
 	report := derivedReport{}
-	authored := filepath.Join(root, "public")
-	output := filepath.Join(root, filepath.FromSlash(derivedPublicDir))
-	staged := filepath.Join(root, filepath.FromSlash(derivedStageDir))
+	if err := validateAssetLocations(root, assets); err != nil {
+		return report, err
+	}
+	authored := filepath.Join(root, filepath.FromSlash(assets.locations().public))
+	output := filepath.Join(root, filepath.FromSlash(assets.locations().derived))
+	staged := filepath.Join(root, filepath.FromSlash(assets.locations().stage))
 
-	if err := verifyPublicEmbed(root); err != nil {
+	if err := verifyPublicEmbed(root, assets); err != nil {
 		return report, err
 	}
 	rootInfo, err := os.Lstat(authored)
@@ -371,7 +374,7 @@ func buildDerivedAssetsWithEncoder(root string, assets assetsConfig, encodeVaria
 		}
 		report.skipped = append(report.skipped, variants...)
 	}
-	if err := writeDerivedSidecars(output, filepath.Join(root, filepath.FromSlash(conversionCacheDir))); err != nil {
+	if err := writeDerivedSidecars(output, filepath.Join(root, filepath.FromSlash(assets.locations().cache))); err != nil {
 		return report, err
 	}
 	immutable := map[string]bool{}
@@ -387,7 +390,7 @@ func buildDerivedAssetsWithEncoder(root string, assets assetsConfig, encodeVaria
 		return report, err
 	}
 	report.written = len(entries)
-	if err := writeAssetManifest(root, entries); err != nil {
+	if err := writeAssetManifest(root, entries, assets); err != nil {
 		return report, err
 	}
 	return report, nil
@@ -396,23 +399,35 @@ func buildDerivedAssetsWithEncoder(root string, assets assetsConfig, encodeVaria
 // verifyPublicEmbed refuses to build a tree the application will not embed. The
 // scaffolded file is never rewritten by pw, so an older project is told exactly
 // what to change rather than silently serving its authored tree.
-func verifyPublicEmbed(root string) error {
-	name := filepath.Join(root, "public.go")
+func verifyPublicEmbed(root string, assets assetsConfig) error {
+	l := assets.locations()
+	name := filepath.Join(root, filepath.FromSlash(l.embed))
+	relative, err := filepath.Rel(filepath.Dir(filepath.FromSlash(l.embed)), filepath.FromSlash(l.derived))
+	if err != nil {
+		return err
+	}
+	pattern := filepath.ToSlash(relative)
 	info, err := os.Lstat(name)
 	if err != nil || !info.Mode().IsRegular() {
-		return fmt.Errorf("public.go is required; run pw init to create the public embed scaffold")
+		return fmt.Errorf("%s is required; run pw init to create the public embed scaffold", l.embed)
 	}
 	source, err := os.ReadFile(name)
 	if err != nil {
 		return err
 	}
-	if strings.Contains(string(source), "//go:embed all:"+derivedPublicDir) {
-		return nil
+	for _, line := range strings.Split(string(source), "\n") {
+		if directive, ok := strings.CutPrefix(line, "//go:embed "); ok {
+			for _, token := range strings.Fields(directive) {
+				if token == "all:"+pattern {
+					return nil
+				}
+			}
+		}
 	}
-	return fmt.Errorf(`public.go embeds the authored tree, which is no longer what is served.
+	return fmt.Errorf(`%s does not embed the configured derived tree.
 Change its two references:
   //go:embed all:%s
-  fs.Sub(embeddedPublic, "%s")`, derivedPublicDir, derivedPublicDir)
+  fs.Sub(embeddedPublic, "%s")`, l.embed, pattern, pattern)
 }
 
 // stagedProducedFiles reads what the generation hooks wrote. An empty or absent
@@ -583,6 +598,12 @@ func newRetentionScanner(root string, assets assetsConfig) (*retentionScanner, e
 			return walkErr
 		}
 		if entry.IsDir() {
+			l := assets.locations()
+			for _, dir := range []string{l.public, l.derived, l.stage, l.cache} {
+				if name == filepath.Join(root, filepath.FromSlash(dir)) {
+					return filepath.SkipDir
+				}
+			}
 			switch entry.Name() {
 			case ".git", ".pw", "dist", "node_modules", "public", ".devbox":
 				return filepath.SkipDir

@@ -1,0 +1,111 @@
+id: decision:escape-hatch-transaction-scope
+type: decision
+title: The Escape Hatch Runs Inside The Open Transaction
+summary: api:native-connection-access hands the connection the active data:transaction-scope
+  is executing on, not a fresh one from the pool, so work done through the hatch cannot
+  outlive a rollback of the transaction that contained it.
+facts:
+  legacy_body: "api:native-connection-access hands the connection the active data:transaction-scope\
+    \ is executing on, not a fresh one from the pool, so work done through the hatch\
+    \ cannot outlive a rollback of the transaction that contained it.\n\n```yaml\n\
+    status: accepted, implemented 2026-08-09\nmechanism:\n  fact: the pgx transaction\
+    \ type exposes the connection it runs on\n  consequence: >\n    handing that connection\
+    \ back gives the callback the same session, so every\n    statement it issues\
+    \ is inside the open transaction with no wrapper, no\n    second type in the callback\
+    \ signature, and no branch in caller code\n  savepoints: >\n    a nested api:transaction-runner\
+    \ call is a savepoint on that same\n    connection per decision:savepoint-nested-transaction,\
+    \ so the hatch inherits\n    the current depth without knowing about it\nwhy_not_a_pooled_connection:\n\
+    \  what: lease a connection from the pool and run the callback there, ignoring\n\
+    \    the open scope\n  why_not: >\n    the writes would land outside the transaction\
+    \ the caller opened, and a\n    rollback of that transaction would leave them\
+    \ standing. Under api:test-run\n    they would also escape the depth 0 transaction\n\
+    \    requirement:parallel-database-tests rolls back, so a test would leak rows\n\
+    \    into the next one\n  precedent: >\n    api:database-selection already refuses\
+    \ the same shape, when SelectDB names\n    a writable group other than the scope's,\
+    \ and for the same reason: work\n    outside the open transaction reads as atomic\
+    \ and is not\n  not_offered_as_an_option: a caller cannot make it safe by knowing\
+    \ about it\ncallback_must_not_end_the_transaction:\n  rule: the callback commits\
+    \ and rolls back nothing, per\n    decision:explicit-transaction-boundary\n  enforcement:\
+    \ the callback receives the connection, not the transaction, so\n    Commit and\
+    \ Rollback are not in reach\n  residual: >\n    raw COMMIT or ROLLBACK text sent\
+    \ through Exec would still end it, which no\n    signature can prevent and which\
+    \ the surface documentation names rather than\n    pretends to block\nbatch_consequence:\n\
+    \  what: a batch sent through the hatch inside a transaction keeps its one round\n\
+    \    trip, because the pgx transport pipelines on the connection either way\n\
+    \  contrast: >\n    the sqlbatch transport of rule:batch-engine-capability cannot\
+    \ do this at\n    all, since it enters through sql.Conn.Raw and sql.Tx has none.\
+    \ This is the\n    sharpest difference between the engines and belongs in the\
+    \ guide\n```"
+  status: accepted, implemented 2026-08-09
+  mechanism:
+    fact: the pgx transaction type exposes the connection it runs on
+    consequence: 'handing that connection back gives the callback the same session,
+      so every statement it issues is inside the open transaction with no wrapper,
+      no second type in the callback signature, and no branch in caller code
+
+      '
+    savepoints: 'a nested api:transaction-runner call is a savepoint on that same
+      connection per decision:savepoint-nested-transaction, so the hatch inherits
+      the current depth without knowing about it
+
+      '
+  why_not_a_pooled_connection:
+    what: lease a connection from the pool and run the callback there, ignoring the
+      open scope
+    why_not: 'the writes would land outside the transaction the caller opened, and
+      a rollback of that transaction would leave them standing. Under api:test-run
+      they would also escape the depth 0 transaction requirement:parallel-database-tests
+      rolls back, so a test would leak rows into the next one
+
+      '
+    precedent: 'api:database-selection already refuses the same shape, when SelectDB
+      names a writable group other than the scope''s, and for the same reason: work
+      outside the open transaction reads as atomic and is not
+
+      '
+    not_offered_as_an_option: a caller cannot make it safe by knowing about it
+  callback_must_not_end_the_transaction:
+    rule: the callback commits and rolls back nothing, per decision:explicit-transaction-boundary
+    enforcement: the callback receives the connection, not the transaction, so Commit
+      and Rollback are not in reach
+    residual: 'raw COMMIT or ROLLBACK text sent through Exec would still end it, which
+      no signature can prevent and which the surface documentation names rather than
+      pretends to block
+
+      '
+  batch_consequence:
+    what: a batch sent through the hatch inside a transaction keeps its one round
+      trip, because the pgx transport pipelines on the connection either way
+    contrast: 'the sqlbatch transport of rule:batch-engine-capability cannot do this
+      at all, since it enters through sql.Conn.Raw and sql.Tx has none. This is the
+      sharpest difference between the engines and belongs in the guide
+
+      '
+relations:
+- relation: mentions
+  to: api:database-selection
+  resolution: resolved
+- relation: mentions
+  to: api:native-connection-access
+  resolution: resolved
+- relation: mentions
+  to: api:test-run
+  resolution: resolved
+- relation: mentions
+  to: api:transaction-runner
+  resolution: resolved
+- relation: mentions
+  to: data:transaction-scope
+  resolution: resolved
+- relation: mentions
+  to: decision:explicit-transaction-boundary
+  resolution: resolved
+- relation: mentions
+  to: decision:savepoint-nested-transaction
+  resolution: resolved
+- relation: mentions
+  to: requirement:parallel-database-tests
+  resolution: resolved
+- relation: mentions
+  to: rule:batch-engine-capability
+  resolution: resolved

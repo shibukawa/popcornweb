@@ -1,0 +1,41 @@
+id: data:user-account
+type: data
+title: Local User Account
+summary: A local account is the stable application identity shared by OIDC identities,
+  passkey credentials, authorization, and sessions.
+facts:
+  legacy_body: "A local account is the stable application identity shared by OIDC\
+    \ identities, passkey credentials, authorization, and sessions.\n\n```yaml\nrequired:\n\
+    \  id: stable opaque application identifier\n  passkey_user_handle: stable random\
+    \ opaque bytes\n  state: provisional, active, suspended, or deleted\n  created_at:\
+    \ timestamp\noptional:\n  display_name: string\n  verified_contact: application-defined\n\
+    relations:\n  external_identities: data:external-identity list\n  passkeys: data:passkey-credential\
+    \ list\nrules:\n  - never use email address as the primary account key\n  - passkey\
+    \ user handle is not derived from email, username, or database sequence\n  - activation\
+    \ follows a completed trusted bootstrap flow\n  - suspended and deleted accounts\
+    \ cannot create sessions\n  - storage schema and generated SQL functions remain\
+    \ application-owned\n```"
+  required:
+    id: stable opaque application identifier
+    passkey_user_handle: stable random opaque bytes
+    state: provisional, active, suspended, or deleted
+    created_at: timestamp
+  optional:
+    display_name: string
+    verified_contact: application-defined
+  relations:
+    external_identities: data:external-identity list
+    passkeys: data:passkey-credential list
+  rules:
+  - never use email address as the primary account key
+  - passkey user handle is not derived from email, username, or database sequence
+  - activation follows a completed trusted bootstrap flow
+  - suspended and deleted accounts cannot create sessions
+  - storage schema and generated SQL functions remain application-owned
+relations:
+- relation: mentions
+  to: data:external-identity
+  resolution: resolved
+- relation: mentions
+  to: data:passkey-credential
+  resolution: resolved

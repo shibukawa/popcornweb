@@ -1,0 +1,169 @@
+id: api:testutil-auth
+type: api
+title: Test Authentication Seams
+summary: authtest installs an authenticated request context without a server, and
+  testutil mints a real session without a ceremony, so an application tests behavior
+  behind the guard at the cost the test deserves.
+facts:
+  legacy_body: "authtest installs an authenticated request context without a server,\
+    \ and testutil mints a real session without a ceremony, so an application tests\
+    \ behavior behind the guard at the cost the test deserves.\n\n```yaml\npackages:\n\
+    \  - github.com/shibukawa/popcornweb/plugin/auth/authtest\nladder: decision:test-authentication-seams\n\
+    authtest:\n  implemented: plugin/auth/authtest, with the api:cli-build guard registered\n\
+    \  surface:\n    - authtest.NewContext(ctx, authtest.Identity{...}) returns a\
+    \ context carrying an authenticated data:request-authentication\n    - authtest.NewRequest(method,\
+    \ target, body, authtest.Identity{...}) returns an httptest.NewRequest already\
+    \ carrying it\n    - authtest.Anonymous(ctx) and authtest.NewAnonymousRequest\
+    \ return the explicit unauthenticated state, so a test proves the deny path\n\
+    \    - auth.MethodOIDC and auth.MethodPasskey name the method, so a test compares\
+    \ against a constant rather than a literal\n  identity:\n    fields: account ID,\
+    \ display name, method, authenticated_at, and optional application principal and\
+    \ scope\n    default: method oidc and authenticated_at now, so a recent_auth_max_age\
+    \ check passes unless the test sets otherwise\n    subject: the account ID becomes\
+    \ the authentication subject, which is what plugin/auth records, so a test and\
+    \ a real login agree\n  readers: pw.RequestAuthentication, pw.Authenticated, and\
+    \ auth.User read the value exactly as they do in production\n  mechanism: pwruntime.WithSession\
+    \ and pwruntime.WithAuthentication, which are already exported and which concept:public-package-boundaries\
+    \ already keeps out of handwritten application code\n  reach:\n    bare_handler:\
+    \ the test calls the handler and nothing else runs\n    full_stack: the test calls\
+    \ ServeHTTP against the real middleware chain, and the value survives under the\
+    \ decision:test-authentication-seams middleware contract\n    guard: policy:authenticated-path-protection\
+    \ therefore admits the request, so a test can prove both the allow and the deny\
+    \ path without a server\n  rules:\n    - the package builds a value and never\
+    \ contacts a store, a session, or a database\n    - it installs no cookie, so\
+    \ nothing it produces can travel over a real connection\nserver_rung:\n  implemented:\
+    \ plugin/auth/authtest, beside the handler rung\n  placement: plugin/auth/authtest\
+    \ rather than testutil, because a session payload is a plugin/auth type and testutil\
+    \ is framework generic; testutil needed no change at all\n  surface:\n    - authtest.NewClient(serverURL,\
+    \ Identity) returns an http.Client whose jar holds a real session\n    - authtest.Authenticate(client,\
+    \ serverURL, Identity) installs one into a jar the test already built\n    - authtest.SessionCookies(Identity)\
+    \ returns the cookies for a test that manages its own jar\n  mechanism: auth.EstablishSession\
+    \ creates the session through api:session-manager exactly as a completed login\
+    \ does, so rotation, lifetime, and cookie attributes are the production ones\n\
+    \  reach: the request travels a real connection and passes every framework middleware\
+    \ including policy:authenticated-path-protection\n  evidence: plugin/auth/passkeye2e\
+    \ proves the guard denies anonymous, admits the seam client, and denies it again\
+    \ after logout\nestablish_session:\n  surface: auth.EstablishSession(w, r, data,\
+    \ method)\n  audience: an application whose own flow authenticated a user, not\
+    \ only tests\n  safety: it authenticates nobody and nothing a remote client sends\
+    \ can reach it, which is the class SetAccountResolver is already in; it is not\
+    \ middleware reading attacker-controlled input\n  naming: AuthenticatedClient\
+    \ rather than LoginAs, because api:testutil-idp already uses LoginAs for pre-selecting\
+    \ the provider user, and the two would read as the same act\n  modes: usable in\
+    \ every auth.mode, including oidc_only, where it removes the need to start requirement:contrib-devidp\
+    \ for a test that is not about login\nceremony_rung: api:testutil-passkey and\
+    \ api:testutil-idp remain the only seams that exercise a real ceremony\nrules:\n\
+    \  - neither package writes a data:passkey-credential row or an external identity;\
+    \ a test that needs one uses the ceremony rung\n  - a framework test of plugin/auth\
+    \ may not use these seams to assert that authentication succeeded\n  - both seams\
+    \ fail the test through decision:testutil-testing-interface rather than returning\
+    \ an error a test can ignore\n```"
+  packages:
+  - github.com/shibukawa/popcornweb/plugin/auth/authtest
+  ladder: decision:test-authentication-seams
+  authtest:
+    implemented: plugin/auth/authtest, with the api:cli-build guard registered
+    surface:
+    - authtest.NewContext(ctx, authtest.Identity{...}) returns a context carrying
+      an authenticated data:request-authentication
+    - authtest.NewRequest(method, target, body, authtest.Identity{...}) returns an
+      httptest.NewRequest already carrying it
+    - authtest.Anonymous(ctx) and authtest.NewAnonymousRequest return the explicit
+      unauthenticated state, so a test proves the deny path
+    - auth.MethodOIDC and auth.MethodPasskey name the method, so a test compares against
+      a constant rather than a literal
+    identity:
+      fields: account ID, display name, method, authenticated_at, and optional application
+        principal and scope
+      default: method oidc and authenticated_at now, so a recent_auth_max_age check
+        passes unless the test sets otherwise
+      subject: the account ID becomes the authentication subject, which is what plugin/auth
+        records, so a test and a real login agree
+    readers: pw.RequestAuthentication, pw.Authenticated, and auth.User read the value
+      exactly as they do in production
+    mechanism: pwruntime.WithSession and pwruntime.WithAuthentication, which are already
+      exported and which concept:public-package-boundaries already keeps out of handwritten
+      application code
+    reach:
+      bare_handler: the test calls the handler and nothing else runs
+      full_stack: the test calls ServeHTTP against the real middleware chain, and
+        the value survives under the decision:test-authentication-seams middleware
+        contract
+      guard: policy:authenticated-path-protection therefore admits the request, so
+        a test can prove both the allow and the deny path without a server
+    rules:
+    - the package builds a value and never contacts a store, a session, or a database
+    - it installs no cookie, so nothing it produces can travel over a real connection
+  server_rung:
+    implemented: plugin/auth/authtest, beside the handler rung
+    placement: plugin/auth/authtest rather than testutil, because a session payload
+      is a plugin/auth type and testutil is framework generic; testutil needed no
+      change at all
+    surface:
+    - authtest.NewClient(serverURL, Identity) returns an http.Client whose jar holds
+      a real session
+    - authtest.Authenticate(client, serverURL, Identity) installs one into a jar the
+      test already built
+    - authtest.SessionCookies(Identity) returns the cookies for a test that manages
+      its own jar
+    mechanism: auth.EstablishSession creates the session through api:session-manager
+      exactly as a completed login does, so rotation, lifetime, and cookie attributes
+      are the production ones
+    reach: the request travels a real connection and passes every framework middleware
+      including policy:authenticated-path-protection
+    evidence: plugin/auth/passkeye2e proves the guard denies anonymous, admits the
+      seam client, and denies it again after logout
+  establish_session:
+    surface: auth.EstablishSession(w, r, data, method)
+    audience: an application whose own flow authenticated a user, not only tests
+    safety: it authenticates nobody and nothing a remote client sends can reach it,
+      which is the class SetAccountResolver is already in; it is not middleware reading
+      attacker-controlled input
+    naming: AuthenticatedClient rather than LoginAs, because api:testutil-idp already
+      uses LoginAs for pre-selecting the provider user, and the two would read as
+      the same act
+    modes: usable in every auth.mode, including oidc_only, where it removes the need
+      to start requirement:contrib-devidp for a test that is not about login
+  ceremony_rung: api:testutil-passkey and api:testutil-idp remain the only seams that
+    exercise a real ceremony
+  rules:
+  - neither package writes a data:passkey-credential row or an external identity;
+    a test that needs one uses the ceremony rung
+  - a framework test of plugin/auth may not use these seams to assert that authentication
+    succeeded
+  - both seams fail the test through decision:testutil-testing-interface rather than
+    returning an error a test can ignore
+relations:
+- relation: mentions
+  to: api:cli-build
+  resolution: resolved
+- relation: mentions
+  to: api:session-manager
+  resolution: resolved
+- relation: mentions
+  to: api:testutil-idp
+  resolution: resolved
+- relation: mentions
+  to: api:testutil-passkey
+  resolution: resolved
+- relation: mentions
+  to: concept:public-package-boundaries
+  resolution: resolved
+- relation: mentions
+  to: data:passkey-credential
+  resolution: resolved
+- relation: mentions
+  to: data:request-authentication
+  resolution: resolved
+- relation: mentions
+  to: decision:test-authentication-seams
+  resolution: resolved
+- relation: mentions
+  to: decision:testutil-testing-interface
+  resolution: resolved
+- relation: mentions
+  to: policy:authenticated-path-protection
+  resolution: resolved
+- relation: mentions
+  to: requirement:contrib-devidp
+  resolution: resolved

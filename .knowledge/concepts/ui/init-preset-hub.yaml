@@ -1,0 +1,156 @@
+id: ui:init-preset-hub
+type: ui
+title: pw init Preset and Answer Hub
+summary: 'The three screens api:cli-init shows in a terminal: the requirement:init-presets
+  list, the project name, and the decision:navigable-answer-hub that both reviews
+  a preset and edits a Manual answer set.'
+facts:
+  legacy_body: "The three screens api:cli-init shows in a terminal: the requirement:init-presets\
+    \ list, the project name, and the decision:navigable-answer-hub that both reviews\
+    \ a preset and edits a Manual answer set.\n\n```yaml\nui:\n  root:\n    kind:\
+    \ terminal\n    id: screen.init\n    title: Popcorn Web  new project\n    children:\n\
+    \      - kind: screen\n        id: preset-list\n        title: Preset\n      \
+    \  state: first screen of every run with a terminal\n        children:\n     \
+    \     - kind: choice-list\n            id: presets\n            columns:\n   \
+    \           - label\n              - summary\n            options:\n         \
+    \     - label: Web site with login\n                summary: discovered routing,\
+    \ OIDC, Redis sessions, SQLite, Tailwind\n              - label: Web site on AWS\n\
+    \                summary: discovered routing, OIDC, DynamoDB, Tailwind\n     \
+    \         - label: Simple website\n                summary: discovered routing,\
+    \ no login, no database\n              - label: Simple website, handlers\n   \
+    \             summary: registered routing, no login, no database\n           \
+    \   - label: API Server\n                summary: registered routing, JWT verification,\
+    \ no browser login\n              - label: Package\n                summary: a\
+    \ publishable module, no application of its own\n              - label: Manual\n\
+    \                summary: choose every answer\n          - kind: footer\n    \
+    \        label: \"↑/↓ move  ·  enter next  ·  ctrl+c cancel\"\n      - kind: screen\n\
+    \        id: project-name\n        title: Project name\n        state: shown for\
+    \ every preset including Manual\n        children:\n          - kind: text-input\n\
+    \            id: name\n            label: Creates ./<name> holding a Go module\
+    \ of the same name\n            state: seeded by the directory argument\n    \
+    \      - kind: text-input\n            id: module-path\n            label: The\
+    \ module path a consumer imports; the directory is its last element\n        \
+    \    state: replaces the name input for the package preset, per requirement:package-project-scaffold\n\
+    \      - kind: screen\n        id: hub\n        title: Review\n        state:\
+    \ reached from the name step; the same screen for a preset and for Manual\n  \
+    \      children:\n          - kind: table\n            id: answers\n         \
+    \   columns:\n              - question\n              - answer\n             \
+    \ - answered\n            action: enter opens the question of the selected row\n\
+    \            target: screen.init/step\n          - kind: row\n            id:\
+    \ create\n            label: create\n            action: flow:project-bootstrap\n\
+    \          - kind: footer\n            label: \"↑/↓ move  ·  enter open  ·  ctrl+c\
+    \ cancel\"\n      - kind: screen\n        id: step\n        title: one question\n\
+    \        state: the existing choice or text step, opened from a hub row\n    \
+    \    children:\n          - kind: footer\n            label: \"↑/↓ move  ·  enter\
+    \ accept  ·  esc back  ·  ctrl+c cancel\"\n        action: returns to screen.init/hub\
+    \ on accept and on esc\n```\n\n```yaml\npresentation:\n  preset_summary: one line\
+    \ naming the answers that distinguish the preset, not every answer it gives\n\
+    \  hub_answer_column: the same value the review screen renders today, per the\
+    \ wizardStep value contract\n  hub_answered_column: blank for a default nobody\
+    \ opened, and a mark for an answer the operator gave or a preset decided\n  unshippable_preset:\
+    \ a preset whose capability is not built is absent from the list rather than shown\
+    \ disabled; none is absent today\n  no_terminal: none of these screens; the shortcut\
+    \ path prints nothing interactive\ncopy_rule: each question keeps the explanation\
+    \ it already carries, since the hub shows the label and the step shows the reasoning\n\
+    ```"
+  ui:
+    root:
+      kind: terminal
+      id: screen.init
+      title: Popcorn Web  new project
+      children:
+      - kind: screen
+        id: preset-list
+        title: Preset
+        state: first screen of every run with a terminal
+        children:
+        - kind: choice-list
+          id: presets
+          columns:
+          - label
+          - summary
+          options:
+          - label: Web site with login
+            summary: discovered routing, OIDC, Redis sessions, SQLite, Tailwind
+          - label: Web site on AWS
+            summary: discovered routing, OIDC, DynamoDB, Tailwind
+          - label: Simple website
+            summary: discovered routing, no login, no database
+          - label: Simple website, handlers
+            summary: registered routing, no login, no database
+          - label: API Server
+            summary: registered routing, JWT verification, no browser login
+          - label: Package
+            summary: a publishable module, no application of its own
+          - label: Manual
+            summary: choose every answer
+        - kind: footer
+          label: ↑/↓ move  ·  enter next  ·  ctrl+c cancel
+      - kind: screen
+        id: project-name
+        title: Project name
+        state: shown for every preset including Manual
+        children:
+        - kind: text-input
+          id: name
+          label: Creates ./<name> holding a Go module of the same name
+          state: seeded by the directory argument
+        - kind: text-input
+          id: module-path
+          label: The module path a consumer imports; the directory is its last element
+          state: replaces the name input for the package preset, per requirement:package-project-scaffold
+      - kind: screen
+        id: hub
+        title: Review
+        state: reached from the name step; the same screen for a preset and for Manual
+        children:
+        - kind: table
+          id: answers
+          columns:
+          - question
+          - answer
+          - answered
+          action: enter opens the question of the selected row
+          target: screen.init/step
+        - kind: row
+          id: create
+          label: create
+          action: flow:project-bootstrap
+        - kind: footer
+          label: ↑/↓ move  ·  enter open  ·  ctrl+c cancel
+      - kind: screen
+        id: step
+        title: one question
+        state: the existing choice or text step, opened from a hub row
+        children:
+        - kind: footer
+          label: ↑/↓ move  ·  enter accept  ·  esc back  ·  ctrl+c cancel
+        action: returns to screen.init/hub on accept and on esc
+  presentation:
+    preset_summary: one line naming the answers that distinguish the preset, not every
+      answer it gives
+    hub_answer_column: the same value the review screen renders today, per the wizardStep
+      value contract
+    hub_answered_column: blank for a default nobody opened, and a mark for an answer
+      the operator gave or a preset decided
+    unshippable_preset: a preset whose capability is not built is absent from the
+      list rather than shown disabled; none is absent today
+    no_terminal: none of these screens; the shortcut path prints nothing interactive
+  copy_rule: each question keeps the explanation it already carries, since the hub
+    shows the label and the step shows the reasoning
+relations:
+- relation: mentions
+  to: api:cli-init
+  resolution: resolved
+- relation: mentions
+  to: decision:navigable-answer-hub
+  resolution: resolved
+- relation: mentions
+  to: flow:project-bootstrap
+  resolution: resolved
+- relation: mentions
+  to: requirement:init-presets
+  resolution: resolved
+- relation: mentions
+  to: requirement:package-project-scaffold
+  resolution: resolved

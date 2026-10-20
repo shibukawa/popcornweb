@@ -1,0 +1,97 @@
+id: system:tinygodriver-dynamodb
+type: system
+title: tinygodriver DynamoDB Client
+summary: The TinyGo-buildable DynamoDB client Popcorn Web configures and hands to
+  generated code; it speaks the DynamoDB JSON protocol directly instead of through
+  aws-sdk-go-v2.
+facts:
+  legacy_body: "The TinyGo-buildable DynamoDB client Popcorn Web configures and hands\
+    \ to generated code; it speaks the DynamoDB JSON protocol directly instead of\
+    \ through aws-sdk-go-v2.\n\n```yaml\npackage: github.com/shibukawa/tinygodriver/nosql/dynamodb\n\
+    part_of: system:tinygodriver\nminimum_version: v1.1.3, the release that introduced\
+    \ nosql/dynamodb\nupstream_catalog: the tinygodriver repository ships its own\
+    \ concepts for the client, attribute value, retry policy, connection policy, JSON\
+    \ codec, and local endpoint; read them there rather than restating them\nrecorded_here:\
+    \ only the facts a Popcorn Web concept depends on\nconstructor: New(opts ...Option)\
+    \ (*Client, error)\ncredentials:\n  default: environment, through WithCredentialsFromEnv\n\
+    \  explicit: WithCredentials\n  region: environment, or WithRegion; absent is\
+    \ an error rather than a default\n  endpoint: AWS_ENDPOINT_URL_DYNAMODB, then\
+    \ AWS_ENDPOINT_URL, then the regional host; WithEndpoint overrides\ntable_admin:\n\
+    \  present: [CreateTable, DeleteTable, DescribeTable, ListTables]\n  absent: UpdateTable,\
+    \ which the driver places out of scope\n  consequence: requirement:dynamodb-migration\
+    \ can create a table and read one back, and cannot alter one\n  waiting: DescribeTable\
+    \ is exposed and polling it is the caller's loop; the driver ships no waiter\n\
+    schema_types:\n  TableDefinition: \"{Name; PartitionKey KeyAttribute; SortKey\
+    \ *KeyAttribute; BillingMode; ReadCapacity; WriteCapacity; GlobalIndexes; LocalIndexes}\"\
+    \n  KeyAttribute: \"{Name string; Type AttributeType}\" with S, N or B only\n\
+    \  BillingMode: PayPerRequest default, Provisioned\n  TableDescription: what DescribeTable\
+    \ returns; the observed side of the same shape\ndescribe_table_reports_less_than_it_receives:\n\
+    \  found: implementation 2026-08-01\n  fact: a described key attribute carries\
+    \ its name only; the driver decodes the KeySchema without its HASH and RANGE roles,\
+    \ and decodes no AttributeDefinitions at all\n  effect: requirement:dynamodb-migration\
+    \ compares key names positionally, so a deployed table whose key is named as expected\
+    \ but typed differently reads as matching\n  bounded: a renamed key, a missing\
+    \ sort key, and an extra one are all still caught; only a retyped key is invisible\n\
+    \  upstream: reporting KeyType and the attribute types would close it, and is\
+    \ the third item worth sending after the two already ranked\nerrors:\n  wrapper:\
+    \ \"*dynamodb.Error with Op, Table, StatusCode, RequestID, Unwrap, Retryable\"\
+    \n  sentinels_used_by_pw: [ErrTableNotFound, ErrResourceNotFound, ErrTableInUse,\
+    \ ErrValidation, ErrBadCredentials, ErrNoRegion]\n  passthrough: system:tinybind\
+    \ dynamobind wraps with %w or not at all, so a Popcorn Web caller matches these\
+    \ directly\ntransport:\n  http_client: WithHTTPClient replaces the whole client,\
+    \ which is the seam decision:dynamodb-observability-seam uses\n  close: Close\
+    \ releases pooled TLS handles, and is skipped for a client built with WithHTTPClient\
+    \ because its owner may still use it\n  pool: 4 idle connections per host by default,\
+    \ raised with WithMaxIdleConns; one host per client\nexcluded_by_the_driver: [transactions,\
+    \ PartiQL, Streams, DAX, TTL administration, autoscaling, tags, global tables,\
+    \ backup]\ntransactions:\n  answer: not supported and not reachable; the driver\
+    \ declares no TransactWriteItems or TransactGetItems\n  misleading_sentinel: ErrTransactionConflict\
+    \ exists and is not a trace of support; DynamoDB returns it to an ordinary PutItem\
+    \ whose item is held by someone else's transaction, and the driver maps it as\
+    \ retryable\n  effect_here: api:transaction-runner has no DynamoDB meaning, and\
+    \ no future one is planned\nupstream_requests:\n  ranked: 2026-07-31 by how much\
+    \ one driver change unlocks downstream, per decision:dynamodb-framework-scope\n\
+    \  UpdateTimeToLive:\n    status: withdrawn from this side on 2026-08-01, per\
+    \ decision:dynamodb-operational-configuration\n    was: ranked first, because\
+    \ it appeared to unlock the session backend\n    why_withdrawn: the framework\
+    \ would not call it if it had it; a deployed table's TTL is defined by deployment\
+    \ tooling\n    unaffected: system:tinybind still wants its own TTL tag, which\
+    \ declares an attribute rather than applying a setting\n  UpdateTable:\n    priority:\
+    \ second\n    unlocks: adding a secondary index to a live table, without which\
+    \ an index-bearing table can only be created and never evolved\n    note: the\
+    \ same call site as the TTL work, so the two are worth sending together\n  transactions:\n\
+    \    priority: third, and larger than the other two combined\nlocal_server: amazon/dynamodb-local\
+    \ over http, which is what api:cli-dev starts for a scaffolded project\n```"
+  legacy_parse_issues:
+  - kind: legacy_parse_error
+    block: 0
+    message: "while parsing a block mapping\n  in \"<unicode string>\", line 18, column\
+      \ 3:\n      TableDefinition: \"{Name; Partiti ... \n      ^\nexpected <block\
+      \ end>, but found '<scalar>'\n  in \"<unicode string>\", line 19, column 53:\n\
+      \     ... me string; Type AttributeType}\" with S, N or B only\n           \
+      \                              ^"
+relations:
+- relation: mentions
+  to: api:cli-dev
+  resolution: resolved
+- relation: mentions
+  to: api:transaction-runner
+  resolution: resolved
+- relation: mentions
+  to: decision:dynamodb-framework-scope
+  resolution: resolved
+- relation: mentions
+  to: decision:dynamodb-observability-seam
+  resolution: resolved
+- relation: mentions
+  to: decision:dynamodb-operational-configuration
+  resolution: resolved
+- relation: mentions
+  to: requirement:dynamodb-migration
+  resolution: resolved
+- relation: mentions
+  to: system:tinybind
+  resolution: resolved
+- relation: mentions
+  to: system:tinygodriver
+  resolution: resolved

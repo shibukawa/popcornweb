@@ -1,0 +1,120 @@
+id: api:render-html-chain
+type: api
+title: TinyBind HTML Render Chain
+summary: TinyBind composes generated document and layout wrappers around one generated
+  page fragment.
+facts:
+  legacy_body: "TinyBind composes generated document and layout wrappers around one\
+    \ generated page fragment.\n\n```yaml\nowner: system:tinybind htmlbind package\n\
+    signature: \"htmlbind.RenderChain(io.Writer, []htmlbind.Wrapper, htmlbind.Fragment,\
+    \ ...htmlbind.Option) error\"\nasync_signature: \"htmlbind.RenderChainAsync(context.Context,\
+    \ io.Writer, []htmlbind.Wrapper, htmlbind.Fragment, ...htmlbind.Option) iter.Seq2[htmlbind.Content,\
+    \ error]\"\nprobe: \"htmlbind.HasAwaitBlock([]htmlbind.Wrapper, htmlbind.Fragment)\
+    \ bool unions the chain members\"\norder:\n  wrappers: outermost first\n  leaf:\
+    \ innermost page fragment\ngenerated_values:\n  fragment: \"<Name>(<Name>Params)\
+    \ htmlbind.Fragment\"\n  wrapper: \"Bind<Name>(<Name>Params) htmlbind.Wrapper\
+    \ for a component with an unnamed slot\"\nbehavior:\n  - validate the leaf and\
+    \ wrappers before writing\n  - merge head contributions in composition order\n\
+    \  - fill each wrapper unnamed slot with the next wrapper or leaf\n  - render\
+    \ an empty wrapper list like htmlbind.Render\n  - RenderChain blocks on every\
+    \ await binding and writes a complete settled document\nasync_behavior:\n  - rendering\
+    \ starts on the first pull of the sequence\n  - assembly and parameter validation\
+    \ errors yield before any byte is written\n  - the initial pass writes the shell,\
+    \ merged head, and every fallback, then flushes\n  - the merged head carries component\
+    \ contributions only; nothing is injected\n  - each later item is one settled\
+    \ boundary, in completion order\n  - Content.WriteTo writes the bare fragment,\
+    \ so the caller writes its own framing around it per api:html-boundary-protocol\n\
+    \  - only the ranging caller writes the response and calls htmlbind.Flush\n  -\
+    \ the sequence is single-use and single-consumer; stopping early ends the render\n\
+    \  - after the initial pass the status is committed and a later error is only\
+    \ loggable\nchain_composition:\n  coordinator: one per render call, shared by\
+    \ every chain member\n  identifiers: one counter across the whole chain, so a\
+    \ document, layout, and page boundary cannot collide\n  siblings:\n    fact: a\
+    \ slot may not appear inside an await block, so an inner member always renders\
+    \ in the initial pass rather than inside a boundary goroutine\n    effect: boundaries\
+    \ from different chain members start together and settle concurrently\n    cost:\
+    \ wall clock is the slowest single boundary, not the sum across members\n  nesting:\n\
+    \    fact: an await inside another await primary subtree registers only when that\
+    \ subtree renders\n    effect: nested boundaries serialize, and their timeouts\
+    \ add up\n    delivery: the outer replacement carries the inner placeholder, and\
+    \ the inner completion applies to it normally\n  head: MergeHead drops exact duplicates\
+    \ outermost first, so two members declaring one stylesheet emit one tag\noptions:\n\
+    \  - WithCache\n  - WithContext\n  - WithErrorReporter\n  - WithAsyncTimeout\n\
+    \  - WithConcurrencyLimit\ncompatibility: v0.1.15 generated Fragment and Wrapper\
+    \ APIs replace earlier direct-writer template APIs and require regenerated call\
+    \ sites; v0.1.19 adds the async entry points and htmlbind.Pending parameters;\
+    \ v0.1.20 narrows Content.WriteTo to the bare fragment and stops injecting a client\
+    \ runtime\nvisibility: internal implementation behind api:html-response and decision:implicit-document-shell\n\
+    ```"
+  owner: system:tinybind htmlbind package
+  signature: htmlbind.RenderChain(io.Writer, []htmlbind.Wrapper, htmlbind.Fragment,
+    ...htmlbind.Option) error
+  async_signature: htmlbind.RenderChainAsync(context.Context, io.Writer, []htmlbind.Wrapper,
+    htmlbind.Fragment, ...htmlbind.Option) iter.Seq2[htmlbind.Content, error]
+  probe: htmlbind.HasAwaitBlock([]htmlbind.Wrapper, htmlbind.Fragment) bool unions
+    the chain members
+  order:
+    wrappers: outermost first
+    leaf: innermost page fragment
+  generated_values:
+    fragment: <Name>(<Name>Params) htmlbind.Fragment
+    wrapper: Bind<Name>(<Name>Params) htmlbind.Wrapper for a component with an unnamed
+      slot
+  behavior:
+  - validate the leaf and wrappers before writing
+  - merge head contributions in composition order
+  - fill each wrapper unnamed slot with the next wrapper or leaf
+  - render an empty wrapper list like htmlbind.Render
+  - RenderChain blocks on every await binding and writes a complete settled document
+  async_behavior:
+  - rendering starts on the first pull of the sequence
+  - assembly and parameter validation errors yield before any byte is written
+  - the initial pass writes the shell, merged head, and every fallback, then flushes
+  - the merged head carries component contributions only; nothing is injected
+  - each later item is one settled boundary, in completion order
+  - Content.WriteTo writes the bare fragment, so the caller writes its own framing
+    around it per api:html-boundary-protocol
+  - only the ranging caller writes the response and calls htmlbind.Flush
+  - the sequence is single-use and single-consumer; stopping early ends the render
+  - after the initial pass the status is committed and a later error is only loggable
+  chain_composition:
+    coordinator: one per render call, shared by every chain member
+    identifiers: one counter across the whole chain, so a document, layout, and page
+      boundary cannot collide
+    siblings:
+      fact: a slot may not appear inside an await block, so an inner member always
+        renders in the initial pass rather than inside a boundary goroutine
+      effect: boundaries from different chain members start together and settle concurrently
+      cost: wall clock is the slowest single boundary, not the sum across members
+    nesting:
+      fact: an await inside another await primary subtree registers only when that
+        subtree renders
+      effect: nested boundaries serialize, and their timeouts add up
+      delivery: the outer replacement carries the inner placeholder, and the inner
+        completion applies to it normally
+    head: MergeHead drops exact duplicates outermost first, so two members declaring
+      one stylesheet emit one tag
+  options:
+  - WithCache
+  - WithContext
+  - WithErrorReporter
+  - WithAsyncTimeout
+  - WithConcurrencyLimit
+  compatibility: v0.1.15 generated Fragment and Wrapper APIs replace earlier direct-writer
+    template APIs and require regenerated call sites; v0.1.19 adds the async entry
+    points and htmlbind.Pending parameters; v0.1.20 narrows Content.WriteTo to the
+    bare fragment and stops injecting a client runtime
+  visibility: internal implementation behind api:html-response and decision:implicit-document-shell
+relations:
+- relation: mentions
+  to: api:html-boundary-protocol
+  resolution: resolved
+- relation: mentions
+  to: api:html-response
+  resolution: resolved
+- relation: mentions
+  to: decision:implicit-document-shell
+  resolution: resolved
+- relation: mentions
+  to: system:tinybind
+  resolution: resolved

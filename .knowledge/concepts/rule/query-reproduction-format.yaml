@@ -1,0 +1,55 @@
+id: rule:query-reproduction-format
+type: rule
+title: Query Reproduction Format
+summary: The rerun snippet in data:query-record binds parameters and then executes
+  the original statement text, so the reproduced plan matches the observed one.
+facts:
+  legacy_body: "The rerun snippet in data:query-record binds parameters and then executes\
+    \ the original statement text, so the reproduced plan matches the observed one.\n\
+    \n```yaml\nform: a dialect CLI snippet that sets the bind values and then runs\
+    \ the unmodified statement\nprohibition:\n  literal_substitution: never inline\
+    \ argument values into the SQL\n  reason: constant folding and literal-driven\
+    \ index selection can produce a different plan than the parameterized execution\
+    \ being diagnosed\nsnippet:\n  sqlite: parameter-set directives for each placeholder,\
+    \ then the statement text\n  postgres: a prepared statement declaration, then\
+    \ execution with the typed argument list\n  mysql: user variable assignments,\
+    \ then prepare, execute using, and deallocate\nrules:\n  - placeholder style matches\
+    \ the generated statement rather than a per-dialect rewrite\n  - values render\
+    \ with the quoting of the target CLI and escape control characters and line breaks\n\
+    \  - omit the snippet when bind_values is off, because a parameterized snippet\
+    \ without arguments cannot run\n  - omit the snippet when a value was truncated,\
+    \ because a truncated value reproduces a different query\n  - the snippet names\
+    \ no DSN, host, database file path, or credential, per policy:query-log-safety\n\
+    \  - an unsupported dialect emits no snippet and leaves sql and args as plain\
+    \ data:query-record fields\n  - the snippet is diagnostic output, not an executable\
+    \ the framework ever runs itself\n```"
+  form: a dialect CLI snippet that sets the bind values and then runs the unmodified
+    statement
+  prohibition:
+    literal_substitution: never inline argument values into the SQL
+    reason: constant folding and literal-driven index selection can produce a different
+      plan than the parameterized execution being diagnosed
+  snippet:
+    sqlite: parameter-set directives for each placeholder, then the statement text
+    postgres: a prepared statement declaration, then execution with the typed argument
+      list
+    mysql: user variable assignments, then prepare, execute using, and deallocate
+  rules:
+  - placeholder style matches the generated statement rather than a per-dialect rewrite
+  - values render with the quoting of the target CLI and escape control characters
+    and line breaks
+  - omit the snippet when bind_values is off, because a parameterized snippet without
+    arguments cannot run
+  - omit the snippet when a value was truncated, because a truncated value reproduces
+    a different query
+  - the snippet names no DSN, host, database file path, or credential, per policy:query-log-safety
+  - an unsupported dialect emits no snippet and leaves sql and args as plain data:query-record
+    fields
+  - the snippet is diagnostic output, not an executable the framework ever runs itself
+relations:
+- relation: mentions
+  to: data:query-record
+  resolution: resolved
+- relation: mentions
+  to: policy:query-log-safety
+  resolution: resolved

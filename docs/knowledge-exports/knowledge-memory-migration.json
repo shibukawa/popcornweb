@@ -1,0 +1,1067 @@
+{
+  "from": "knowledge-compiler Markdown",
+  "to": "knowledge-memory version 1",
+  "concept_count": 703,
+  "parse_issue_count": 96,
+  "structured_ready": false,
+  "preservation": "IDs, titles, summaries, original body text, successfully parsed fields, profiles, and mention references retained. No implementation or test verification inferred.",
+  "legacy_schema": "_schema/ retained as metadata; schema/ contains the active knowledge-memory JSON Schemas.",
+  "diagnostics": [
+    {
+      "id": "api:assurance-guard",
+      "path": ".knowledge/concepts/api/assurance-guard.yaml",
+      "parse_issues": [
+        {
+          "kind": "legacy_parse_error",
+          "block": 0,
+          "message": "while parsing a block collection\n  in \"<unicode string>\", line 34, column 3:\n      - auth.MaxAge(d) states the wind ... \n      ^\nexpected <block end>, but found '?'\n  in \"<unicode string>\", line 37, column 3:\n      extensibility: one parameter typ ... \n      ^"
+        }
+      ]
+    },
+    {
+      "id": "api:cli-dev",
+      "path": ".knowledge/concepts/api/cli-dev.yaml",
+      "parse_issues": [
+        {
+          "kind": "legacy_parse_error",
+          "block": 0,
+          "message": "mapping values are not allowed here\n  in \"<unicode string>\", line 124, column 71:\n     ...  the loop as \"application exited: exit status 1\", which ended pw ... \n                                         ^"
+        }
+      ]
+    },
+    {
+      "id": "api:cli-init",
+      "path": ".knowledge/concepts/api/cli-init.yaml",
+      "parse_issues": [
+        {
+          "kind": "legacy_parse_error",
+          "block": 0,
+          "message": "'<' not supported between instances of 'bool' and 'str'"
+        }
+      ]
+    },
+    {
+      "id": "api:cli-new",
+      "path": ".knowledge/concepts/api/cli-new.yaml",
+      "parse_issues": [
+        {
+          "kind": "legacy_parse_error",
+          "block": 0,
+          "message": "'<' not supported between instances of 'bool' and 'str'"
+        }
+      ]
+    },
+    {
+      "id": "api:cli-package",
+      "path": ".knowledge/concepts/api/cli-package.yaml",
+      "parse_issues": [
+        {
+          "kind": "legacy_parse_error",
+          "block": 0,
+          "message": "while parsing a block mapping\n  in \"<unicode string>\", line 2, column 3:\n      command: \"pw init --kind package ... \n      ^\nexpected <block end>, but found ','\n  in \"<unicode string>\", line 2, column 36:\n      command: \"pw init --kind package\", reached from the package prese ... \n                                       ^"
+        }
+      ]
+    },
+    {
+      "id": "api:html-boundary-protocol",
+      "path": ".knowledge/concepts/api/html-boundary-protocol.yaml",
+      "parse_issues": [
+        {
+          "kind": "legacy_parse_error",
+          "block": 0,
+          "message": "while parsing a block mapping\n  in \"<unicode string>\", line 2, column 3:\n      placeholder: \"<tb-boundary id=\\\" ... \n      ^\nexpected <block end>, but found ','\n  in \"<unicode string>\", line 2, column 92:\n     ... ntents\\\">fallback</tb-boundary>\", where the element name and the ... \n                                         ^"
+        }
+      ]
+    },
+    {
+      "id": "api:live-delivery-protocol",
+      "path": ".knowledge/concepts/api/live-delivery-protocol.yaml",
+      "parse_issues": [
+        {
+          "kind": "legacy_parse_error",
+          "block": 0,
+          "message": "while parsing a block mapping\n  in \"<unicode string>\", line 61, column 3:\n      why: no transport signal disting ... \n      ^\nexpected <block end>, but found ','\n  in \"<unicode string>\", line 63, column 92:\n     ... tb-1:…,tb-2:…\"></tb-stream-end>', inert and carrying no script,  ... \n                                         ^"
+        }
+      ]
+    },
+    {
+      "id": "api:session-store",
+      "path": ".knowledge/concepts/api/session-store.yaml",
+      "parse_issues": [
+        {
+          "kind": "legacy_parse_error",
+          "block": 0,
+          "message": "mapping values are not allowed here\n  in \"<unicode string>\", line 77, column 30:\n      in_memory: sqlite://:memory:\n                                 ^"
+        }
+      ]
+    },
+    {
+      "id": "api:storage-package",
+      "path": ".knowledge/concepts/api/storage-package.yaml",
+      "parse_issues": [
+        {
+          "kind": "legacy_parse_error",
+          "block": 0,
+          "message": "mapping values are not allowed here\n  in \"<unicode string>\", line 8, column 99:\n     ... fServed are the self-served half: a backend whose URLs point bac ... \n                                         ^"
+        }
+      ]
+    },
+    {
+      "id": "api:test-run",
+      "path": ".knowledge/concepts/api/test-run.yaml",
+      "parse_issues": [
+        {
+          "kind": "legacy_parse_error",
+          "block": 0,
+          "message": "'<' not supported between instances of 'bool' and 'str'"
+        }
+      ]
+    },
+    {
+      "id": "api:transaction-runner",
+      "path": ".knowledge/concepts/api/transaction-runner.yaml",
+      "parse_issues": [
+        {
+          "kind": "legacy_parse_error",
+          "block": 0,
+          "message": "while parsing a block mapping\n  in \"<unicode string>\", line 26, column 3:\n      model: decision:savepoint-nested ... \n      ^\nexpected <block end>, but found '-'\n  in \"<unicode string>\", line 27, column 3:\n      - detect the active scope instea ... \n      ^"
+        }
+      ]
+    },
+    {
+      "id": "concept:template-source-dialects",
+      "path": ".knowledge/concepts/concept/template-source-dialects.yaml",
+      "parse_issues": [
+        {
+          "kind": "legacy_parse_error",
+          "block": 0,
+          "message": "while parsing a block mapping\n  in \"<unicode string>\", line 24, column 5:\n      - annotations of the form @name(ke ... \n        ^\nexpected <block end>, but found '<scalar>'\n  in \"<unicode string>\", line 24, column 47:\n     ... s of the form @name(key: \"value\") preceding a declaration\n                                         ^"
+        }
+      ]
+    },
+    {
+      "id": "data:bot-user-agent-catalog",
+      "path": ".knowledge/concepts/data/bot-user-agent-catalog.yaml",
+      "parse_issues": [
+        {
+          "kind": "legacy_parse_error",
+          "block": 0,
+          "message": "while parsing a block mapping\n  in \"<unicode string>\", line 94, column 5:\n        note: a browser-shaped agent tha ... \n        ^\nexpected <block end>, but found '<scalar>'\n  in \"<unicode string>\", line 101, column 22:\n        caution: \"+http\" matches the contact URL conventi ... \n                         ^"
+        }
+      ]
+    },
+    {
+      "id": "data:browser-report-record",
+      "path": ".knowledge/concepts/data/browser-report-record.yaml",
+      "parse_issues": [
+        {
+          "kind": "legacy_parse_error",
+          "block": 0,
+          "message": "mapping values are not allowed here\n  in \"<unicode string>\", line 55, column 31:\n      opaque_scheme: a data:, blob: or filesystem: URL is reduced  ... \n                                  ^"
+        }
+      ]
+    },
+    {
+      "id": "data:database-driver-contract",
+      "path": ".knowledge/concepts/data/database-driver-contract.yaml",
+      "parse_issues": [
+        {
+          "kind": "legacy_parse_error",
+          "block": 0,
+          "message": "while parsing a block collection\n  in \"<unicode string>\", line 14, column 3:\n      - nil\n      ^\nexpected <block end>, but found '<scalar>'\n  in \"<unicode string>\", line 19, column 7:\n      - []byte\n          ^"
+        }
+      ]
+    },
+    {
+      "id": "data:diagnostic-check",
+      "path": ".knowledge/concepts/data/diagnostic-check.yaml",
+      "parse_issues": [
+        {
+          "kind": "legacy_parse_error",
+          "block": 0,
+          "message": "while parsing a block mapping\n  in \"<unicode string>\", line 27, column 3:\n      finding: data:diagnostic-report  ... \n      ^\nexpected <block end>, but found '<scalar>'\n  in \"<unicode string>\", line 28, column 68:\n     ... is set from config file (prod)\" is the intended shape, identifie ... \n                                         ^"
+        }
+      ]
+    },
+    {
+      "id": "data:diagnostic-report",
+      "path": ".knowledge/concepts/data/diagnostic-report.yaml",
+      "parse_issues": [
+        {
+          "kind": "legacy_parse_error",
+          "block": 0,
+          "message": "mapping values are not allowed here\n  in \"<unicode string>\", line 40, column 73:\n     ... er, printed first, as in \"PW0412: session secret is set from con ... \n                                         ^"
+        }
+      ]
+    },
+    {
+      "id": "data:dynamodb-runtime-config",
+      "path": ".knowledge/concepts/data/dynamodb-runtime-config.yaml",
+      "parse_issues": [
+        {
+          "kind": "legacy_parse_error",
+          "block": 0,
+          "message": "Object of type date is not JSON serializable"
+        }
+      ]
+    },
+    {
+      "id": "data:framework-span-set",
+      "path": ".knowledge/concepts/data/framework-span-set.yaml",
+      "parse_issues": [
+        {
+          "kind": "legacy_parse_error",
+          "block": 0,
+          "message": "while parsing a block collection\n  in \"<unicode string>\", line 62, column 5:\n        - bind values, per policy:query- ... \n        ^\nexpected <block end>, but found '?'\n  in \"<unicode string>\", line 64, column 5:\n        reason: a trace is retained long ... \n        ^"
+        }
+      ]
+    },
+    {
+      "id": "data:project-config",
+      "path": ".knowledge/concepts/data/project-config.yaml",
+      "parse_issues": [
+        {
+          "kind": "legacy_parse_error",
+          "block": 0,
+          "message": "while parsing a block mapping\n  in \"<unicode string>\", line 44, column 5:\n        handlers: [handlers] as scaffold ... \n        ^\nexpected <block end>, but found '<scalar>'\n  in \"<unicode string>\", line 44, column 26:\n        handlers: [handlers] as scaffolded, per decision:expl ... \n                             ^"
+        }
+      ]
+    },
+    {
+      "id": "data:release-artifact",
+      "path": ".knowledge/concepts/data/release-artifact.yaml",
+      "parse_issues": [
+        {
+          "kind": "legacy_parse_error",
+          "block": 0,
+          "message": "while parsing a block mapping\n  in \"<unicode string>\", line 1, column 1:\n    tag: \"v{major}.{minor}.{patch}\"  ... \n    ^\nexpected <block end>, but found '<scalar>'\n  in \"<unicode string>\", line 1, column 33:\n    tag: \"v{major}.{minor}.{patch}\" with an optional prerelease suffix\n                                    ^"
+        }
+      ]
+    },
+    {
+      "id": "data:session-runtime-config",
+      "path": ".knowledge/concepts/data/session-runtime-config.yaml",
+      "parse_issues": [
+        {
+          "kind": "legacy_parse_error",
+          "block": 0,
+          "message": "mapping values are not allowed here\n  in \"<unicode string>\", line 50, column 76:\n     ... ite://app.db or sqlite://:memory:\n                                         ^"
+        }
+      ]
+    },
+    {
+      "id": "decision:auth-backend-selection",
+      "path": ".knowledge/concepts/decision/auth-backend-selection.yaml",
+      "parse_issues": [
+        {
+          "kind": "legacy_parse_error",
+          "block": 0,
+          "message": "Object of type date is not JSON serializable"
+        }
+      ]
+    },
+    {
+      "id": "decision:browser-suite-seeding",
+      "path": ".knowledge/concepts/decision/browser-suite-seeding.yaml",
+      "parse_issues": [
+        {
+          "kind": "legacy_parse_error",
+          "block": 0,
+          "message": "mapping values are not allowed here\n  in \"<unicode string>\", line 15, column 68:\n     ... mpile, and no reach into :memory: pools\n                                         ^"
+        }
+      ]
+    },
+    {
+      "id": "decision:component-handler-namespace",
+      "path": ".knowledge/concepts/decision/component-handler-namespace.yaml",
+      "parse_issues": [
+        {
+          "kind": "legacy_parse_error",
+          "block": 0,
+          "message": "Object of type date is not JSON serializable"
+        }
+      ]
+    },
+    {
+      "id": "decision:config-verbosity-tag-adoption",
+      "path": ".knowledge/concepts/decision/config-verbosity-tag-adoption.yaml",
+      "parse_issues": [
+        {
+          "kind": "legacy_parse_error",
+          "block": 0,
+          "message": "while parsing a block mapping\n  in \"<unicode string>\", line 52, column 5:\n        where: auth.assurance.hint and a ... \n        ^\nexpected <block end>, but found '<scalar>'\n  in \"<unicode string>\", line 56, column 32:\n        fix: 'dependon:\".enabled\"' on every sibling of both switches\n                                   ^"
+        }
+      ]
+    },
+    {
+      "id": "decision:cors-above-the-refusals",
+      "path": ".knowledge/concepts/decision/cors-above-the-refusals.yaml",
+      "parse_issues": [
+        {
+          "kind": "legacy_parse_error",
+          "block": 0,
+          "message": "Duplicate YAML key: also"
+        }
+      ]
+    },
+    {
+      "id": "decision:dev-harness-process",
+      "path": ".knowledge/concepts/decision/dev-harness-process.yaml",
+      "parse_issues": [
+        {
+          "kind": "legacy_parse_error",
+          "block": 0,
+          "message": "mapping values are not allowed here\n  in \"<unicode string>\", line 35, column 162:\n     ... ; an in-process sqlite://:memory: is unreachable outright, and a ... \n                                         ^"
+        }
+      ]
+    },
+    {
+      "id": "decision:development-port-shift",
+      "path": ".knowledge/concepts/decision/development-port-shift.yaml",
+      "parse_issues": [
+        {
+          "kind": "legacy_parse_error",
+          "block": 0,
+          "message": "mapping values are not allowed here\n  in \"<unicode string>\", line 3, column 51:\n     ... -dev reports \"application exited: listen tcp :8080: bind: addres ... \n                                         ^"
+        }
+      ]
+    },
+    {
+      "id": "decision:dynamodb-auth-compensating-registration",
+      "path": ".knowledge/concepts/decision/dynamodb-auth-compensating-registration.yaml",
+      "parse_issues": [
+        {
+          "kind": "legacy_parse_error",
+          "block": 0,
+          "message": "Object of type date is not JSON serializable"
+        }
+      ]
+    },
+    {
+      "id": "decision:dynamodb-desired-state-migration",
+      "path": ".knowledge/concepts/decision/dynamodb-desired-state-migration.yaml",
+      "parse_issues": [
+        {
+          "kind": "legacy_parse_error",
+          "block": 0,
+          "message": "mapping values are not allowed here\n  in \"<unicode string>\", line 14, column 8:\n        for:\n           ^"
+        }
+      ]
+    },
+    {
+      "id": "decision:dynamodb-framework-scope",
+      "path": ".knowledge/concepts/decision/dynamodb-framework-scope.yaml",
+      "parse_issues": [
+        {
+          "kind": "legacy_parse_error",
+          "block": 0,
+          "message": "Object of type date is not JSON serializable"
+        }
+      ]
+    },
+    {
+      "id": "decision:dynamodb-no-runtime-abstraction",
+      "path": ".knowledge/concepts/decision/dynamodb-no-runtime-abstraction.yaml",
+      "parse_issues": [
+        {
+          "kind": "legacy_parse_error",
+          "block": 0,
+          "message": "while parsing a block collection\n  in \"<unicode string>\", line 8, column 3:\n      - reading data:dynamodb-runtime- ... \n      ^\nexpected <block end>, but found '?'\n  in \"<unicode string>\", line 13, column 3:\n      reason: these are lifecycle and  ... \n      ^"
+        }
+      ]
+    },
+    {
+      "id": "decision:dynamodb-observability-seam",
+      "path": ".knowledge/concepts/decision/dynamodb-observability-seam.yaml",
+      "parse_issues": [
+        {
+          "kind": "legacy_parse_error",
+          "block": 0,
+          "message": "while parsing a block collection\n  in \"<unicode string>\", line 10, column 3:\n      - the operation, from the X-Amz- ... \n      ^\nexpected <block end>, but found '?'\n  in \"<unicode string>\", line 14, column 3:\n      not_observable: the Go call site ... \n      ^"
+        }
+      ]
+    },
+    {
+      "id": "decision:dynamodb-operational-configuration",
+      "path": ".knowledge/concepts/decision/dynamodb-operational-configuration.yaml",
+      "parse_issues": [
+        {
+          "kind": "legacy_parse_error",
+          "block": 0,
+          "message": "while parsing a block collection\n  in \"<unicode string>\", line 9, column 3:\n      - TTL, including enabling it and ... \n      ^\nexpected <block end>, but found '?'\n  in \"<unicode string>\", line 14, column 3:\n      mostly_already_true: system:tiny ... \n      ^"
+        }
+      ]
+    },
+    {
+      "id": "decision:firestore-conditional-writes",
+      "path": ".knowledge/concepts/decision/firestore-conditional-writes.yaml",
+      "parse_issues": [
+        {
+          "kind": "legacy_parse_error",
+          "block": 0,
+          "message": "Object of type date is not JSON serializable"
+        }
+      ]
+    },
+    {
+      "id": "decision:firestore-datastore-mode-only",
+      "path": ".knowledge/concepts/decision/firestore-datastore-mode-only.yaml",
+      "parse_issues": [
+        {
+          "kind": "legacy_parse_error",
+          "block": 0,
+          "message": "while parsing a block mapping\n  in \"<unicode string>\", line 4, column 3:\n      config_section: middleware.firestore\n      ^\nexpected <block end>, but found '<scalar>'\n  in \"<unicode string>\", line 9, column 34:\n      why_not_datastore: \"datastore\" is a common noun that names no p ... \n                                     ^"
+        }
+      ]
+    },
+    {
+      "id": "decision:firestore-namespace-isolation",
+      "path": ".knowledge/concepts/decision/firestore-namespace-isolation.yaml",
+      "parse_issues": [
+        {
+          "kind": "legacy_parse_error",
+          "block": 0,
+          "message": "Object of type date is not JSON serializable"
+        }
+      ]
+    },
+    {
+      "id": "decision:firestore-no-schema-application",
+      "path": ".knowledge/concepts/decision/firestore-no-schema-application.yaml",
+      "parse_issues": [
+        {
+          "kind": "legacy_parse_error",
+          "block": 0,
+          "message": "while parsing a block collection\n  in \"<unicode string>\", line 12, column 3:\n      - a migration entry point, a pla ... \n      ^\nexpected <block end>, but found '?'\n  in \"<unicode string>\", line 16, column 3:\n      reading: the DynamoDB store spen ... \n      ^"
+        }
+      ]
+    },
+    {
+      "id": "decision:formatter-delivery",
+      "path": ".knowledge/concepts/decision/formatter-delivery.yaml",
+      "parse_issues": [
+        {
+          "kind": "legacy_parse_error",
+          "block": 0,
+          "message": "mapping values are not allowed here\n  in \"<unicode string>\", line 31, column 358:\n     ... e version was never the question: what requirement:editor-format ... \n                                         ^"
+        }
+      ]
+    },
+    {
+      "id": "decision:generated-public-asset-version-control",
+      "path": ".knowledge/concepts/decision/generated-public-asset-version-control.yaml",
+      "parse_issues": [
+        {
+          "kind": "legacy_parse_error",
+          "block": 0,
+          "message": "Object of type date is not JSON serializable"
+        }
+      ]
+    },
+    {
+      "id": "decision:host-state-fit-severity",
+      "path": ".knowledge/concepts/decision/host-state-fit-severity.yaml",
+      "parse_issues": [
+        {
+          "kind": "legacy_parse_error",
+          "block": 0,
+          "message": "mapping values are not allowed here\n  in \"<unicode string>\", line 8, column 137:\n     ... and gives it only ephemeral disk: the four function targets of d ... \n                                         ^"
+        }
+      ]
+    },
+    {
+      "id": "decision:message-source-of-truth",
+      "path": ".knowledge/concepts/decision/message-source-of-truth.yaml",
+      "parse_issues": [
+        {
+          "kind": "legacy_parse_error",
+          "block": 0,
+          "message": "mapping values are not allowed here\n  in \"<unicode string>\", line 32, column 68:\n     ... reference, as \"{t greeting, name: user.Name}\"\n                                         ^"
+        }
+      ]
+    },
+    {
+      "id": "decision:migration-execution-split",
+      "path": ".knowledge/concepts/decision/migration-execution-split.yaml",
+      "parse_issues": [
+        {
+          "kind": "legacy_parse_error",
+          "block": 0,
+          "message": "mapping values are not allowed here\n  in \"<unicode string>\", line 30, column 55:\n     ... : an in-process sqlite://:memory: database is invisible to the c ... \n                                         ^"
+        }
+      ]
+    },
+    {
+      "id": "decision:preset-first-bootstrap",
+      "path": ".knowledge/concepts/decision/preset-first-bootstrap.yaml",
+      "parse_issues": [
+        {
+          "kind": "legacy_parse_error",
+          "block": 0,
+          "message": "'<' not supported between instances of 'bool' and 'str'"
+        }
+      ]
+    },
+    {
+      "id": "decision:server-sql-support-tier",
+      "path": ".knowledge/concepts/decision/server-sql-support-tier.yaml",
+      "parse_issues": [
+        {
+          "kind": "legacy_parse_error",
+          "block": 0,
+          "message": "Object of type date is not JSON serializable"
+        }
+      ]
+    },
+    {
+      "id": "decision:test-migration-snapshot",
+      "path": ".knowledge/concepts/decision/test-migration-snapshot.yaml",
+      "parse_issues": [
+        {
+          "kind": "legacy_parse_error",
+          "block": 0,
+          "message": "mapping values are not allowed here\n  in \"<unicode string>\", line 3, column 84:\n     ... h an in-process sqlite://:memory: database, but it can emit SQL  ... \n                                         ^"
+        }
+      ]
+    },
+    {
+      "id": "decision:testutil-testing-interface",
+      "path": ".knowledge/concepts/decision/testutil-testing-interface.yaml",
+      "parse_issues": [
+        {
+          "kind": "legacy_parse_error",
+          "block": 0,
+          "message": "while scanning an alias\n  in \"<unicode string>\", line 21, column 5:\n      - *testing.T satisfies the interfa ... \n        ^\nexpected alphabetic or numeric character, but found '.'\n  in \"<unicode string>\", line 21, column 13:\n      - *testing.T satisfies the interface, so w ... \n                ^"
+        }
+      ]
+    },
+    {
+      "id": "decision:tinygo-fasthttp-needs-nozstd",
+      "path": ".knowledge/concepts/decision/tinygo-fasthttp-needs-nozstd.yaml",
+      "parse_issues": [
+        {
+          "kind": "legacy_parse_error",
+          "block": 0,
+          "message": "mapping values are not allowed here\n  in \"<unicode string>\", line 3, column 42:\n     ... : tinygodriver v1.2.4, \"fasthttp: encode zstd through compress/z ... \n                                         ^"
+        }
+      ]
+    },
+    {
+      "id": "decision:tinygo-storage-direction",
+      "path": ".knowledge/concepts/decision/tinygo-storage-direction.yaml",
+      "parse_issues": [
+        {
+          "kind": "legacy_parse_error",
+          "block": 0,
+          "message": "Object of type date is not JSON serializable"
+        }
+      ]
+    },
+    {
+      "id": "decision:upstream-message-surface",
+      "path": ".knowledge/concepts/decision/upstream-message-surface.yaml",
+      "parse_issues": [
+        {
+          "kind": "legacy_parse_error",
+          "block": 0,
+          "message": "Object of type date is not JSON serializable"
+        }
+      ]
+    },
+    {
+      "id": "policy:context-value-storage",
+      "path": ".knowledge/concepts/policy/context-value-storage.yaml",
+      "parse_issues": [
+        {
+          "kind": "legacy_parse_error",
+          "block": 0,
+          "message": "while parsing a block mapping\n  in \"<unicode string>\", line 10, column 3:\n      session_slots: api:session-regis ... \n      ^\nexpected <block end>, but found '-'\n  in \"<unicode string>\", line 11, column 3:\n      - masked CSRF request token; nev ... \n      ^"
+        }
+      ]
+    },
+    {
+      "id": "policy:dev-console-boundary",
+      "path": ".knowledge/concepts/policy/dev-console-boundary.yaml",
+      "parse_issues": [
+        {
+          "kind": "legacy_parse_error",
+          "block": 0,
+          "message": "mapping values are not allowed here\n  in \"<unicode string>\", line 16, column 107:\n     ... opment route on its own listener: reading assets locally, servin ... \n                                         ^"
+        }
+      ]
+    },
+    {
+      "id": "policy:dynamodb-migration-safety",
+      "path": ".knowledge/concepts/policy/dynamodb-migration-safety.yaml",
+      "parse_issues": [
+        {
+          "kind": "legacy_parse_error",
+          "block": 0,
+          "message": "while parsing a block collection\n  in \"<unicode string>\", line 5, column 3:\n      - deleting a table, whether or n ... \n      ^\nexpected <block end>, but found '?'\n  in \"<unicode string>\", line 8, column 3:\n      form: the run reports the differ ... \n      ^"
+        }
+      ]
+    },
+    {
+      "id": "policy:startup-summary",
+      "path": ".knowledge/concepts/policy/startup-summary.yaml",
+      "parse_issues": [
+        {
+          "kind": "legacy_parse_error",
+          "block": 0,
+          "message": "'<' not supported between instances of 'bool' and 'str'"
+        }
+      ]
+    },
+    {
+      "id": "requirement:api-catalog-well-known",
+      "path": ".knowledge/concepts/requirement/api-catalog-well-known.yaml",
+      "parse_issues": [
+        {
+          "kind": "legacy_parse_error",
+          "block": 0,
+          "message": "mapping values are not allowed here\n  in \"<unicode string>\", line 89, column 25:\n      head_link_header: Link: </.well-known/api-catalog>; re ... \n                            ^"
+        }
+      ]
+    },
+    {
+      "id": "requirement:auth-security-remediation",
+      "path": ".knowledge/concepts/requirement/auth-security-remediation.yaml",
+      "parse_issues": [
+        {
+          "kind": "legacy_parse_error",
+          "block": 0,
+          "message": "Object of type date is not JSON serializable"
+        }
+      ]
+    },
+    {
+      "id": "requirement:browser-report-ingest",
+      "path": ".knowledge/concepts/requirement/browser-report-ingest.yaml",
+      "parse_issues": [
+        {
+          "kind": "legacy_parse_error",
+          "block": 0,
+          "message": "mapping values are not allowed here\n  in \"<unicode string>\", line 60, column 27:\n      - reduce a data: or blob: blocked URL to its scheme, sin ... \n                              ^"
+        }
+      ]
+    },
+    {
+      "id": "requirement:cli-generate-check-rename",
+      "path": ".knowledge/concepts/requirement/cli-generate-check-rename.yaml",
+      "parse_issues": [
+        {
+          "kind": "legacy_parse_error",
+          "block": 0,
+          "message": "mapping values are not allowed here\n  in \"<unicode string>\", line 15, column 169:\n     ...  — because four callers share it: the first step of the command, ... \n                                         ^"
+        }
+      ]
+    },
+    {
+      "id": "requirement:cli-request",
+      "path": ".knowledge/concepts/requirement/cli-request.yaml",
+      "parse_issues": [
+        {
+          "kind": "legacy_parse_error",
+          "block": 0,
+          "message": "while parsing a block mapping\n  in \"<unicode string>\", line 8, column 3:\n      hono_request: \"hono request -P / ... \n      ^\nexpected <block end>, but found '<scalar>'\n  in \"<unicode string>\", line 8, column 93:\n     ... ame\\\":\\\"Alice\\\"}' src/index.ts\" runs the app's request() in-proc ... \n                                         ^"
+        }
+      ]
+    },
+    {
+      "id": "requirement:cloudflare-cache-memo-store",
+      "path": ".knowledge/concepts/requirement/cloudflare-cache-memo-store.yaml",
+      "parse_issues": [
+        {
+          "kind": "legacy_parse_error",
+          "block": 0,
+          "message": "mapping values are not allowed here\n  in \"<unicode string>\", line 11, column 104:\n     ... lidateTag become generation keys: one generation entry per scope ... \n                                         ^"
+        }
+      ]
+    },
+    {
+      "id": "requirement:cloudflare-workers-build-target",
+      "path": ".knowledge/concepts/requirement/cloudflare-workers-build-target.yaml",
+      "parse_issues": [
+        {
+          "kind": "legacy_parse_error",
+          "block": 0,
+          "message": "Object of type date is not JSON serializable"
+        }
+      ]
+    },
+    {
+      "id": "requirement:context-lookup-performance",
+      "path": ".knowledge/concepts/requirement/context-lookup-performance.yaml",
+      "parse_issues": [
+        {
+          "kind": "legacy_parse_error",
+          "block": 0,
+          "message": "Object of type date is not JSON serializable"
+        }
+      ]
+    },
+    {
+      "id": "requirement:contrib-auth-state-firestore",
+      "path": ".knowledge/concepts/requirement/contrib-auth-state-firestore.yaml",
+      "parse_issues": [
+        {
+          "kind": "legacy_parse_error",
+          "block": 0,
+          "message": "while parsing a block collection\n  in \"<unicode string>\", line 6, column 3:\n      - NewRawStore(Options) returns t ... \n      ^\nexpected <block end>, but found '?'\n  in \"<unicode string>\", line 8, column 3:\n      shape: a raw store over encoded  ... \n      ^"
+        }
+      ]
+    },
+    {
+      "id": "requirement:contrib-redis-valkey",
+      "path": ".knowledge/concepts/requirement/contrib-redis-valkey.yaml",
+      "parse_issues": [
+        {
+          "kind": "legacy_parse_error",
+          "block": 0,
+          "message": "Object of type date is not JSON serializable"
+        }
+      ]
+    },
+    {
+      "id": "requirement:cors-middleware",
+      "path": ".knowledge/concepts/requirement/cors-middleware.yaml",
+      "parse_issues": [
+        {
+          "kind": "legacy_parse_error",
+          "block": 0,
+          "message": "Object of type date is not JSON serializable"
+        }
+      ]
+    },
+    {
+      "id": "requirement:derived-asset-pipeline",
+      "path": ".knowledge/concepts/requirement/derived-asset-pipeline.yaml",
+      "parse_issues": [
+        {
+          "kind": "legacy_parse_error",
+          "block": 0,
+          "message": "Duplicate YAML key: upstream_requests"
+        }
+      ]
+    },
+    {
+      "id": "requirement:dev-console-launcher",
+      "path": ".knowledge/concepts/requirement/dev-console-launcher.yaml",
+      "parse_issues": [
+        {
+          "kind": "legacy_parse_error",
+          "block": 0,
+          "message": "mapping values are not allowed here\n  in \"<unicode string>\", line 21, column 195:\n     ... this corner is still the default: the collision is transient\n                                         ^"
+        }
+      ]
+    },
+    {
+      "id": "requirement:dev-console",
+      "path": ".knowledge/concepts/requirement/dev-console.yaml",
+      "parse_issues": [
+        {
+          "kind": "legacy_parse_error",
+          "block": 0,
+          "message": "mapping values are not allowed here\n  in \"<unicode string>\", line 62, column 190:\n     ... rs and fails for one it does not: navigating to the telemetry vi ... \n                                         ^"
+        }
+      ]
+    },
+    {
+      "id": "requirement:dev-data-pane",
+      "path": ".knowledge/concepts/requirement/dev-data-pane.yaml",
+      "parse_issues": [
+        {
+          "kind": "legacy_parse_error",
+          "block": 0,
+          "message": "'<' not supported between instances of 'NoneType' and 'str'"
+        }
+      ]
+    },
+    {
+      "id": "requirement:dev-reload-summary",
+      "path": ".knowledge/concepts/requirement/dev-reload-summary.yaml",
+      "parse_issues": [
+        {
+          "kind": "legacy_parse_error",
+          "block": 0,
+          "message": "'<' not supported between instances of 'bool' and 'str'"
+        }
+      ]
+    },
+    {
+      "id": "requirement:dynamodb-auth-backend",
+      "path": ".knowledge/concepts/requirement/dynamodb-auth-backend.yaml",
+      "parse_issues": [
+        {
+          "kind": "legacy_parse_error",
+          "block": 0,
+          "message": "Object of type date is not JSON serializable"
+        }
+      ]
+    },
+    {
+      "id": "requirement:dynamodb-generation",
+      "path": ".knowledge/concepts/requirement/dynamodb-generation.yaml",
+      "parse_issues": [
+        {
+          "kind": "legacy_parse_error",
+          "block": 0,
+          "message": "while parsing a block collection\n  in \"<unicode string>\", line 22, column 3:\n      - an unknown dynamo tag option i ... \n      ^\nexpected <block end>, but found '?'\n  in \"<unicode string>\", line 26, column 3:\n      rule: Popcorn Web reports these; ... \n      ^"
+        }
+      ]
+    },
+    {
+      "id": "requirement:dynamodb-store",
+      "path": ".knowledge/concepts/requirement/dynamodb-store.yaml",
+      "parse_issues": [
+        {
+          "kind": "legacy_parse_error",
+          "block": 0,
+          "message": "while parsing a block collection\n  in \"<unicode string>\", line 27, column 3:\n      - no transactions, PartiQL, Stre ... \n      ^\nexpected <block end>, but found '?'\n  in \"<unicode string>\", line 30, column 3:\n      effect: these bound requirement: ... \n      ^"
+        }
+      ]
+    },
+    {
+      "id": "requirement:environment-switching",
+      "path": ".knowledge/concepts/requirement/environment-switching.yaml",
+      "parse_issues": [
+        {
+          "kind": "legacy_parse_error",
+          "block": 0,
+          "message": "while parsing a block mapping\n  in \"<unicode string>\", line 20, column 3:\n      why_two_and_not_one: the promote ... \n      ^\nexpected <block end>, but found '-'\n  in \"<unicode string>\", line 25, column 3:\n      - requirement:built-in-config-ge ... \n      ^"
+        }
+      ]
+    },
+    {
+      "id": "requirement:fasthttp-middleware-registration",
+      "path": ".knowledge/concepts/requirement/fasthttp-middleware-registration.yaml",
+      "parse_issues": [
+        {
+          "kind": "legacy_parse_error",
+          "block": 0,
+          "message": "mapping values are not allowed here\n  in \"<unicode string>\", line 35, column 99:\n     ...  which is the pw arrangement too: pw.RegisterExtension does not  ... \n                                         ^"
+        }
+      ]
+    },
+    {
+      "id": "requirement:firestore-auth-backend",
+      "path": ".knowledge/concepts/requirement/firestore-auth-backend.yaml",
+      "parse_issues": [
+        {
+          "kind": "legacy_parse_error",
+          "block": 0,
+          "message": "Object of type date is not JSON serializable"
+        }
+      ]
+    },
+    {
+      "id": "requirement:firestore-store",
+      "path": ".knowledge/concepts/requirement/firestore-store.yaml",
+      "parse_issues": [
+        {
+          "kind": "legacy_parse_error",
+          "block": 0,
+          "message": "while parsing a block collection\n  in \"<unicode string>\", line 39, column 3:\n      - no partial update, so a renewa ... \n      ^\nexpected <block end>, but found '?'\n  in \"<unicode string>\", line 45, column 3:\n      effect: these bound the stores b ... \n      ^"
+        }
+      ]
+    },
+    {
+      "id": "requirement:framework-metrics",
+      "path": ".knowledge/concepts/requirement/framework-metrics.yaml",
+      "parse_issues": [
+        {
+          "kind": "legacy_parse_error",
+          "block": 0,
+          "message": "'<' not supported between instances of 'bool' and 'str'"
+        }
+      ]
+    },
+    {
+      "id": "requirement:object-storage",
+      "path": ".knowledge/concepts/requirement/object-storage.yaml",
+      "parse_issues": [
+        {
+          "kind": "legacy_parse_error",
+          "block": 0,
+          "message": "Object of type date is not JSON serializable"
+        }
+      ]
+    },
+    {
+      "id": "requirement:page-scope-emission",
+      "path": ".knowledge/concepts/requirement/page-scope-emission.yaml",
+      "parse_issues": [
+        {
+          "kind": "legacy_parse_error",
+          "block": 0,
+          "message": "while parsing a block mapping\n  in \"<unicode string>\", line 1, column 1:\n    status: superseded in granularit ... \n    ^\nexpected <block end>, but found '<scalar>'\n  in \"<unicode string>\", line 18, column 61:\n     ... hash=\"…\" module=\"…\"></pw-page>' inside the page's own rendered s ... \n                                         ^"
+        }
+      ]
+    },
+    {
+      "id": "requirement:pgx-native-execution",
+      "path": ".knowledge/concepts/requirement/pgx-native-execution.yaml",
+      "parse_issues": [
+        {
+          "kind": "legacy_parse_error",
+          "block": 0,
+          "message": "while scanning a simple key\n  in \"<unicode string>\", line 104, column 5:\n        affected counts, the sqlbind cur ... \n        ^\ncould not find expected ':'\n  in \"<unicode string>\", line 105, column 5:\n        transactions, savepoint nesting  ... \n        ^"
+        }
+      ]
+    },
+    {
+      "id": "requirement:sql-conditional-predicate-composition",
+      "path": ".knowledge/concepts/requirement/sql-conditional-predicate-composition.yaml",
+      "parse_issues": [
+        {
+          "kind": "legacy_parse_error",
+          "block": 0,
+          "message": "while parsing a block mapping\n  in \"<unicode string>\", line 15, column 3:\n      joiner_recognition_is_broader: t ... \n      ^\nexpected <block end>, but found '<scalar>'\n  in \"<unicode string>\", line 19, column 72:\n     ... gal: \"{if a}WHERE x = {x}{/if}\" is a pre-existing idiom and stil ... \n                                         ^"
+        }
+      ]
+    },
+    {
+      "id": "requirement:template-bound-page-loader",
+      "path": ".knowledge/concepts/requirement/template-bound-page-loader.yaml",
+      "parse_issues": [
+        {
+          "kind": "legacy_parse_error",
+          "block": 0,
+          "message": "Object of type date is not JSON serializable"
+        }
+      ]
+    },
+    {
+      "id": "requirement:template-source-positions",
+      "path": ".knowledge/concepts/requirement/template-source-positions.yaml",
+      "parse_issues": [
+        {
+          "kind": "legacy_parse_error",
+          "block": 0,
+          "message": "mapping values are not allowed here\n  in \"<unicode string>\", line 25, column 452:\n     ... ramework has never actually paid: no case of an html render-time ... \n                                         ^"
+        }
+      ]
+    },
+    {
+      "id": "requirement:typed-server-action",
+      "path": ".knowledge/concepts/requirement/typed-server-action.yaml",
+      "parse_issues": [
+        {
+          "kind": "legacy_parse_error",
+          "block": 0,
+          "message": "Object of type date is not JSON serializable"
+        }
+      ]
+    },
+    {
+      "id": "rule:batch-engine-capability",
+      "path": ".knowledge/concepts/rule/batch-engine-capability.yaml",
+      "parse_issues": [
+        {
+          "kind": "legacy_parse_error",
+          "block": 0,
+          "message": "while scanning a simple key\n  in \"<unicode string>\", line 123, column 5:\n        api:native-connection-access aga ... \n        ^\ncould not find expected ':'\n  in \"<unicode string>\", line 124, column 3:\n      - outstanding: the sqlite fsync  ... \n      ^"
+        }
+      ]
+    },
+    {
+      "id": "rule:client-event-authoring",
+      "path": ".knowledge/concepts/rule/client-event-authoring.yaml",
+      "parse_issues": [
+        {
+          "kind": "legacy_parse_error",
+          "block": 0,
+          "message": "'<' not supported between instances of 'str' and 'bool'"
+        }
+      ]
+    },
+    {
+      "id": "rule:configuration-advisories",
+      "path": ".knowledge/concepts/rule/configuration-advisories.yaml",
+      "parse_issues": [
+        {
+          "kind": "legacy_parse_error",
+          "block": 0,
+          "message": "Duplicate YAML key: cookies"
+        }
+      ]
+    },
+    {
+      "id": "rule:rdb-dsn-resolution",
+      "path": ".knowledge/concepts/rule/rdb-dsn-resolution.yaml",
+      "parse_issues": [
+        {
+          "kind": "legacy_parse_error",
+          "block": 0,
+          "message": "mapping values are not allowed here\n  in \"<unicode string>\", line 19, column 88:\n     ... e driver takes a path or :memory:\n                                         ^"
+        }
+      ]
+    },
+    {
+      "id": "rule:request-parameter-routing",
+      "path": ".knowledge/concepts/rule/request-parameter-routing.yaml",
+      "parse_issues": [
+        {
+          "kind": "legacy_parse_error",
+          "block": 0,
+          "message": "mapping values are not allowed here\n  in \"<unicode string>\", line 12, column 145:\n     ... value coerced by the schema type: integers and numbers parsed, b ... \n                                         ^"
+        }
+      ]
+    },
+    {
+      "id": "rule:route-and-template-checks",
+      "path": ".knowledge/concepts/rule/route-and-template-checks.yaml",
+      "parse_issues": [
+        {
+          "kind": "legacy_parse_error",
+          "block": 0,
+          "message": "Duplicate YAML key: reason"
+        }
+      ]
+    },
+    {
+      "id": "rule:tinygo-runtime-compatibility",
+      "path": ".knowledge/concepts/rule/tinygo-runtime-compatibility.yaml",
+      "parse_issues": [
+        {
+          "kind": "legacy_parse_error",
+          "block": 0,
+          "message": "mapping values are not allowed here\n  in \"<unicode string>\", line 51, column 157:\n     ...  not set\" while Client{Transport: &http.Transport{}} and Default ... \n                                         ^"
+        }
+      ]
+    },
+    {
+      "id": "system:tinybind",
+      "path": ".knowledge/concepts/system/tinybind.yaml",
+      "parse_issues": [
+        {
+          "kind": "legacy_parse_error",
+          "block": 0,
+          "message": "mapping values are not allowed here\n  in \"<unicode string>\", line 15, column 94:\n     ... stream-message-surface asked for: a messages declaration, a {t}  ... \n                                         ^"
+        }
+      ]
+    },
+    {
+      "id": "system:tinygodriver-dynamodb",
+      "path": ".knowledge/concepts/system/tinygodriver-dynamodb.yaml",
+      "parse_issues": [
+        {
+          "kind": "legacy_parse_error",
+          "block": 0,
+          "message": "while parsing a block mapping\n  in \"<unicode string>\", line 18, column 3:\n      TableDefinition: \"{Name; Partiti ... \n      ^\nexpected <block end>, but found '<scalar>'\n  in \"<unicode string>\", line 19, column 53:\n     ... me string; Type AttributeType}\" with S, N or B only\n                                         ^"
+        }
+      ]
+    },
+    {
+      "id": "vision:editor-support",
+      "path": ".knowledge/concepts/vision/editor-support.yaml",
+      "parse_issues": [
+        {
+          "kind": "legacy_parse_error",
+          "block": 0,
+          "message": "while parsing a block collection\n  in \"<unicode string>\", line 7, column 5:\n        - requirement:editor-language-re ... \n        ^\nexpected <block end>, but found '?'\n  in \"<unicode string>\", line 10, column 5:\n        ships: an extension with no proc ... \n        ^"
+        }
+      ]
+    }
+  ]
+}

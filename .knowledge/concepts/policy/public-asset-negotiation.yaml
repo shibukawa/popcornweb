@@ -1,0 +1,86 @@
+id: policy:public-asset-negotiation
+type: policy
+title: Public Asset Negotiation
+summary: Public assets select one precompressed representation with standards-compliant
+  HTTP content negotiation, from the codings policy:public-asset-precompression produced.
+facts:
+  legacy_body: "Public assets select one precompressed representation with standards-compliant\
+    \ HTTP content negotiation, from the codings policy:public-asset-precompression\
+    \ produced.\n\n```yaml\nscope: production and non-pw-dev execution\ncodings:\n\
+    \  offered: br, zstd, gzip\n  order: br, then zstd, then gzip, then identity\n\
+    \  why_that_order: pure ratio, because every representation was encoded at build\
+    \ time and none of them costs request latency, which is what separates this ordering\
+    \ from the throughput-weighted one of policy:response-content-encoding\nselection:\n\
+    \  - parse Accept-Encoding tokens, wildcards, and q-values\n  - absent or empty\
+    \ Accept-Encoding selects identity\n  - a coding is a candidate when it is explicitly\
+    \ acceptable with q greater than zero, or reached through a wildcard with q greater\
+    \ than zero, and a sidecar for it exists\n  - among candidates choose by the order\
+    \ above, not by client q-value, matching policy:public-asset-media-negotiation\n\
+    \  - prefer the original identity representation when no coding is a candidate\n\
+    \  - return 406 when every available representation is explicitly unacceptable\n\
+    encoded_response:\n  Content-Encoding: the selected coding token\n  Content-Type:\
+    \ media type of the original path\n  Content-Length: encoded byte length\ncommon_response:\n\
+    \  Vary: Accept-Encoding\n  methods: GET and HEAD\nrules:\n  - api:public-asset-middleware\
+    \ development implementation bypasses this policy\n  - HEAD returns the selected\
+    \ representation headers without a body\n  - precompressed selection is independent\
+    \ from data:compression-runtime-config dynamic compression enablement\n  - representation-specific\
+    \ validators must not reuse one strong ETag across codings; each representation\
+    \ carries the tag of its own bytes, per data:public-asset-manifest\n  - runtime\
+    \ response-compression middleware must not recompress this handler response, per\
+    \ the scope exclusion in policy:response-content-encoding\n  - nothing is encoded\
+    \ or decoded at request time, whatever the client sent\nreferences:\n  - https://www.rfc-editor.org/rfc/rfc9110.html#name-accept-encoding\n\
+    \  - https://www.rfc-editor.org/rfc/rfc9659\n```"
+  scope: production and non-pw-dev execution
+  codings:
+    offered: br, zstd, gzip
+    order: br, then zstd, then gzip, then identity
+    why_that_order: pure ratio, because every representation was encoded at build
+      time and none of them costs request latency, which is what separates this ordering
+      from the throughput-weighted one of policy:response-content-encoding
+  selection:
+  - parse Accept-Encoding tokens, wildcards, and q-values
+  - absent or empty Accept-Encoding selects identity
+  - a coding is a candidate when it is explicitly acceptable with q greater than zero,
+    or reached through a wildcard with q greater than zero, and a sidecar for it exists
+  - among candidates choose by the order above, not by client q-value, matching policy:public-asset-media-negotiation
+  - prefer the original identity representation when no coding is a candidate
+  - return 406 when every available representation is explicitly unacceptable
+  encoded_response:
+    Content-Encoding: the selected coding token
+    Content-Type: media type of the original path
+    Content-Length: encoded byte length
+  common_response:
+    Vary: Accept-Encoding
+    methods: GET and HEAD
+  rules:
+  - api:public-asset-middleware development implementation bypasses this policy
+  - HEAD returns the selected representation headers without a body
+  - precompressed selection is independent from data:compression-runtime-config dynamic
+    compression enablement
+  - representation-specific validators must not reuse one strong ETag across codings;
+    each representation carries the tag of its own bytes, per data:public-asset-manifest
+  - runtime response-compression middleware must not recompress this handler response,
+    per the scope exclusion in policy:response-content-encoding
+  - nothing is encoded or decoded at request time, whatever the client sent
+  references:
+  - https://www.rfc-editor.org/rfc/rfc9110.html#name-accept-encoding
+  - https://www.rfc-editor.org/rfc/rfc9659
+relations:
+- relation: mentions
+  to: api:public-asset-middleware
+  resolution: resolved
+- relation: mentions
+  to: data:compression-runtime-config
+  resolution: resolved
+- relation: mentions
+  to: data:public-asset-manifest
+  resolution: resolved
+- relation: mentions
+  to: policy:public-asset-media-negotiation
+  resolution: resolved
+- relation: mentions
+  to: policy:public-asset-precompression
+  resolution: resolved
+- relation: mentions
+  to: policy:response-content-encoding
+  resolution: resolved

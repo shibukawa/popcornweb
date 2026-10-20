@@ -1,0 +1,225 @@
+id: decision:propagation-header-access
+type: decision
+title: One Trace Context Validator, Two Header Types
+summary: The W3C Trace Context validator stays a single transport-free function and
+  each transport supplies its own header reading, because the part that must never
+  diverge is the part that never touches a header.
+facts:
+  legacy_body: "The W3C Trace Context validator stays a single transport-free function\
+    \ and each transport supplies its own header reading, because the part that must\
+    \ never diverge is the part that never touches a header.\n\n```yaml\nstatus: accepted\n\
+    serves: requirement:contrib-otel propagation, on the second transport of requirement:alternate-http-backend-readiness\n\
+    implemented: 2026-08-11, in contrib/otel/propagation and pwfast\nwhat_was_wrong:\n\
+    \  signature: Extract and Inject took net/http.Header, so contrib/otel/propagation\
+    \ was reachable only from the net/http build\n  effect: pwfast had no Otel middleware,\
+    \ and an incoming traceparent on that transport was dropped rather than becoming\
+    \ a parent\n  already_committed: decision:backend-specific-middleware ports the\
+    \ whole framework set rather than a subset, and policy:web-middleware names OpenTelemetry\
+    \ propagation among the concerns in it, so the middleware being absent was unfinished\
+    \ work rather than an open question\n  what_was_open: only where the build-tag\
+    \ line falls inside the propagation package, which the middleware decision does\
+    \ not answer because this is a leaf below the middleware rather than a middleware\n\
+    shape_of_the_file_before:\n  validation: version, hex, length, and the tracestate\
+    \ grammar, roughly two thirds of it, operating on strings and reading no header\n\
+    \  header_access: three reads and two writes, being the traceparent values, the\
+    \ tracestate values, and the Set and Del of Inject\n  observation: the split this\
+    \ decision needed was already the shape of the code, so it was a move rather than\
+    \ a rewrite\nrule:\n  core: SpanContextFromFields takes the traceparent values\
+    \ and the tracestate values and returns a trace.SpanContext or a refusal; Fields\
+    \ is the same seam for the outbound direction\n  edges: per-transport header reading,\
+    \ being the four lines of TraceContext.Extract and the fifteen of extractedParent\
+    \ in pwfast\n  why_the_line_falls_there: a divergence in the validator is a silent\
+    \ protocol bug that accepts a header one transport rejects, and a divergence in\
+    \ five header calls is a compile error or an obviously missing value\n  evidence:\
+    \ the pwfast tests assert the refusals by name — two traceparents, uppercase hex,\
+    \ version ff, a zero span ID — and they pass without pwfast containing one line\
+    \ of that reasoning\nfasthttp_supports_the_strict_reads:\n  multiple_traceparent:\
+    \ RequestHeader.PeekAll returns every value, so the reject-unless-exactly-one\
+    \ rule ports rather than degrading to first-wins\n  tracestate: the same call\
+    \ supplies the members to join, keeping the comma concatenation the spec asks\
+    \ for\n  writes: Set and Del exist, so Inject needs no substitute behavior\n \
+    \ checked_against: the transport api:pwfast-package names, at the revision the\
+    \ tree builds against\nwhere_the_edges_live:\n  net_http: contrib/otel/propagation,\
+    \ beside the core, because net/http is what the contrib subset already depends\
+    \ on\n  fasthttp: pwfast, rather than a second file in the propagation package,\
+    \ because putting it beside the core would pull the fasthttp fork into every build\
+    \ that traces anything\n  not_a_build_tag: the two transports are already separate\
+    \ packages here, so the line this decision draws is a package boundary and the\
+    \ tag guidance of decision:backend-specific-middleware does not need to be reached\
+    \ for\nbyte_slices_cost_one_conversion:\n  fact: PeekAll returns [][]byte and\
+    \ net/http.Header.Values returns []string, so one side converts\n  chosen: the\
+    \ core takes strings and the fasthttp edge converts\n  cost: one allocation per\
+    \ request that carries a traceparent, and none for a request without one, because\
+    \ the conversion happens after the presence check rather than before it\n  why_not_the_other_way:\
+    \ a core on []byte moves the conversion onto the net/http path, which is the default\
+    \ build, to save it on the second one\nconsidered:\n  carrier_interface:\n   \
+    \ what: an interface with Values, Set, and Del that both header types implement\
+    \ through adapters\n    why_not: it buys a shared Extract body whose shared part\
+    \ is five calls, pays an interface dispatch and an adapter allocation on every\
+    \ request, and still needs a per-transport adapter, so it is the same two files\
+    \ plus indirection\n  build_tagged_copies_of_the_whole_file:\n    why_not: it\
+    \ duplicates the validator, which is the one part where two implementations drifting\
+    \ apart is invisible until a traceparent is silently dropped in production on\
+    \ one transport\n    sharper: the tracestate grammar is the largest and least-exercised\
+    \ piece, and it is exactly the piece with no reason to know which transport it\
+    \ serves\n  copy_into_an_http_Header_at_the_fasthttp_edge:\n    why_not: it allocates\
+    \ a map per request to reuse a function whose header-touching part is smaller\
+    \ than the map\nprecedent: internal/requestorigin, where one question every transport\
+    \ asks has one answer in one place, which pwfast already follows for the HTTPS\
+    \ determination\nconsequences:\n  - the pwfast Otel middleware is a small port\
+    \ rather than a second propagation implementation\n  - decision:outbound-trace-propagation\
+    \ gets the same treatment for free, since its fasthttp wrapper would inject through\
+    \ the same core\n  - the existing propagation tests cover both transports, because\
+    \ they exercise the validator that both call\n  - trace.StoreContext carries the\
+    \ span onto the request value for the same reason the reading was split: the other\
+    \ half derives a context per frame and this transport's request value is its context,\
+    \ so SpanContextFromContext, SpanFromContext, and a child span all read it unchanged\n\
+    \  - the root span switch is the RuntimeOptions.Tracing of api:pwfast-package\
+    \ rather than a published setting, because whether a span has anywhere to go is\
+    \ decided by the exporter the process built rather than by a configuration key\n\
+    confirmed_by_an_independent_implementation:\n  what_happened: a second effort\
+    \ added the pwfast middleware at the same time, sharing the validator by copying\
+    \ the two fields into an http.Header and calling the existing Extract\n  which_this_decision_had_considered:\
+    \ the copy_into_an_http_Header_at_the_fasthttp_edge entry above, rejected on the\
+    \ map allocation\n  what_the_allocation_argument_missed: the copy read with Peek,\
+    \ which returns the first value, so a request carrying two traceparent fields\
+    \ reached the shared validator as one field and was given a parent — while the\
+    \ same request on net/http is refused one\n  why_that_is_the_whole_point: the\
+    \ validator was shared and the rule still diverged, because the rule it enforces\
+    \ is about how many fields arrived and the reading decided that before the validator\
+    \ saw anything\n  sharper_than_the_original_reasoning: this decision argued the\
+    \ reading is the safe half to duplicate since a divergence there is a compile\
+    \ error; a reading that silently drops values is the exception, and PeekAll versus\
+    \ Peek is the specific shape of it\n  settled: the merged middleware reads with\
+    \ PeekAll, and the refusals are asserted by name in the pwfast tests so the two\
+    \ transports refuse the same requests\n```"
+  status: accepted
+  serves: requirement:contrib-otel propagation, on the second transport of requirement:alternate-http-backend-readiness
+  implemented: 2026-08-11, in contrib/otel/propagation and pwfast
+  what_was_wrong:
+    signature: Extract and Inject took net/http.Header, so contrib/otel/propagation
+      was reachable only from the net/http build
+    effect: pwfast had no Otel middleware, and an incoming traceparent on that transport
+      was dropped rather than becoming a parent
+    already_committed: decision:backend-specific-middleware ports the whole framework
+      set rather than a subset, and policy:web-middleware names OpenTelemetry propagation
+      among the concerns in it, so the middleware being absent was unfinished work
+      rather than an open question
+    what_was_open: only where the build-tag line falls inside the propagation package,
+      which the middleware decision does not answer because this is a leaf below the
+      middleware rather than a middleware
+  shape_of_the_file_before:
+    validation: version, hex, length, and the tracestate grammar, roughly two thirds
+      of it, operating on strings and reading no header
+    header_access: three reads and two writes, being the traceparent values, the tracestate
+      values, and the Set and Del of Inject
+    observation: the split this decision needed was already the shape of the code,
+      so it was a move rather than a rewrite
+  rule:
+    core: SpanContextFromFields takes the traceparent values and the tracestate values
+      and returns a trace.SpanContext or a refusal; Fields is the same seam for the
+      outbound direction
+    edges: per-transport header reading, being the four lines of TraceContext.Extract
+      and the fifteen of extractedParent in pwfast
+    why_the_line_falls_there: a divergence in the validator is a silent protocol bug
+      that accepts a header one transport rejects, and a divergence in five header
+      calls is a compile error or an obviously missing value
+    evidence: the pwfast tests assert the refusals by name — two traceparents, uppercase
+      hex, version ff, a zero span ID — and they pass without pwfast containing one
+      line of that reasoning
+  fasthttp_supports_the_strict_reads:
+    multiple_traceparent: RequestHeader.PeekAll returns every value, so the reject-unless-exactly-one
+      rule ports rather than degrading to first-wins
+    tracestate: the same call supplies the members to join, keeping the comma concatenation
+      the spec asks for
+    writes: Set and Del exist, so Inject needs no substitute behavior
+    checked_against: the transport api:pwfast-package names, at the revision the tree
+      builds against
+  where_the_edges_live:
+    net_http: contrib/otel/propagation, beside the core, because net/http is what
+      the contrib subset already depends on
+    fasthttp: pwfast, rather than a second file in the propagation package, because
+      putting it beside the core would pull the fasthttp fork into every build that
+      traces anything
+    not_a_build_tag: the two transports are already separate packages here, so the
+      line this decision draws is a package boundary and the tag guidance of decision:backend-specific-middleware
+      does not need to be reached for
+  byte_slices_cost_one_conversion:
+    fact: PeekAll returns [][]byte and net/http.Header.Values returns []string, so
+      one side converts
+    chosen: the core takes strings and the fasthttp edge converts
+    cost: one allocation per request that carries a traceparent, and none for a request
+      without one, because the conversion happens after the presence check rather
+      than before it
+    why_not_the_other_way: a core on []byte moves the conversion onto the net/http
+      path, which is the default build, to save it on the second one
+  considered:
+    carrier_interface:
+      what: an interface with Values, Set, and Del that both header types implement
+        through adapters
+      why_not: it buys a shared Extract body whose shared part is five calls, pays
+        an interface dispatch and an adapter allocation on every request, and still
+        needs a per-transport adapter, so it is the same two files plus indirection
+    build_tagged_copies_of_the_whole_file:
+      why_not: it duplicates the validator, which is the one part where two implementations
+        drifting apart is invisible until a traceparent is silently dropped in production
+        on one transport
+      sharper: the tracestate grammar is the largest and least-exercised piece, and
+        it is exactly the piece with no reason to know which transport it serves
+    copy_into_an_http_Header_at_the_fasthttp_edge:
+      why_not: it allocates a map per request to reuse a function whose header-touching
+        part is smaller than the map
+  precedent: internal/requestorigin, where one question every transport asks has one
+    answer in one place, which pwfast already follows for the HTTPS determination
+  consequences:
+  - the pwfast Otel middleware is a small port rather than a second propagation implementation
+  - decision:outbound-trace-propagation gets the same treatment for free, since its
+    fasthttp wrapper would inject through the same core
+  - the existing propagation tests cover both transports, because they exercise the
+    validator that both call
+  - trace.StoreContext carries the span onto the request value for the same reason the reading was split: the
+      other half derives a context per frame and this transport's request value is
+      its context, so SpanContextFromContext, SpanFromContext, and a child span all
+      read it unchanged
+  - the root span switch is the RuntimeOptions.Tracing of api:pwfast-package rather
+    than a published setting, because whether a span has anywhere to go is decided
+    by the exporter the process built rather than by a configuration key
+  confirmed_by_an_independent_implementation:
+    what_happened: a second effort added the pwfast middleware at the same time, sharing
+      the validator by copying the two fields into an http.Header and calling the
+      existing Extract
+    which_this_decision_had_considered: the copy_into_an_http_Header_at_the_fasthttp_edge
+      entry above, rejected on the map allocation
+    what_the_allocation_argument_missed: the copy read with Peek, which returns the
+      first value, so a request carrying two traceparent fields reached the shared
+      validator as one field and was given a parent — while the same request on net/http
+      is refused one
+    why_that_is_the_whole_point: the validator was shared and the rule still diverged,
+      because the rule it enforces is about how many fields arrived and the reading
+      decided that before the validator saw anything
+    sharper_than_the_original_reasoning: this decision argued the reading is the safe
+      half to duplicate since a divergence there is a compile error; a reading that
+      silently drops values is the exception, and PeekAll versus Peek is the specific
+      shape of it
+    settled: the merged middleware reads with PeekAll, and the refusals are asserted
+      by name in the pwfast tests so the two transports refuse the same requests
+lifecycle: accepted
+relations:
+- relation: mentions
+  to: api:pwfast-package
+  resolution: resolved
+- relation: mentions
+  to: decision:backend-specific-middleware
+  resolution: resolved
+- relation: mentions
+  to: decision:outbound-trace-propagation
+  resolution: resolved
+- relation: mentions
+  to: policy:web-middleware
+  resolution: resolved
+- relation: mentions
+  to: requirement:alternate-http-backend-readiness
+  resolution: resolved
+- relation: mentions
+  to: requirement:contrib-otel
+  resolution: resolved

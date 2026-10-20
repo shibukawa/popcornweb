@@ -1,0 +1,119 @@
+id: data:framework-span-set
+type: data
+title: Framework Span Set
+summary: The spans Popcorn Web opens inside a request root span, so a trace shows
+  which branch a response took, how long the first paint held, and which statements
+  it ran.
+facts:
+  legacy_body: "The spans Popcorn Web opens inside a request root span, so a trace\
+    \ shows which branch a response took, how long the first paint held, and which\
+    \ statements it ran.\n\n```yaml\nconfiguration: data:observability-runtime-config\
+    \ observability.trace\nroot: the request server span of requirement:contrib-otel,\
+    \ opened by the tracing middleware whenever export exists or observability.trace.enabled\
+    \ is on\nscope: github.com/shibukawa/popcornweb\nrender:\n  name: \"render <mode>\"\
+    \n  kind: internal\n  modes:\n    buffered: the whole document rendered before\
+    \ the first byte, which is what a bot or a disabled stream gets\n    stream: flow:initial-streaming-render\n\
+    \    live: flow:live-boundary-delivery, the delivery response rather than the\
+    \ document\n    navigate: the requirement:navigation-delta-rendering path of flow:partial-refresh\n\
+    \    redraw: the requirement:reloadable-component-endpoint path of flow:partial-refresh\n\
+    \    fragment: requirement:html-fragment-rendering\n  attributes:\n    pw.render.mode:\
+    \ the mode above, restated so a backend filters on it\n    pw.render.layers: wrapper\
+    \ depth plus the leaf\n    pw.render.async: the chain reports an await block\n\
+    \    pw.render.live: the chain reports a live block\n    pw.render.bot: decision:bot-client-classification\
+    \ forced the buffered branch\n    pw.render.bytes: bytes that reached the client,\
+    \ uncompressed; a live response counts its deliveries and not the document it\
+    \ discarded\n    pw.render.boundaries: settled boundaries or deliveries, whatever\
+    \ observability.trace.boundary says\n    pw.render.cache_hits: entries of requirement:component-output-cache\
+    \ this response reused, present only when the response consulted the cache at\
+    \ all\n    pw.render.cache_misses: the other half, reported with the hits because\
+    \ a hit count alone cannot distinguish a working cache from one nothing is eligible\
+    \ for; a response consulting the cache not at all reports neither rather than\
+    \ two zeros a dashboard would average over\n    pw.live.close_reason: done or\
+    \ retry, live only\n  status: error when the render failed, including a stream\
+    \ that broke after commit and still answered 200\ninitial_build:\n  name: render\
+    \ initial\n  parent: the render span\n  covers: the shell, the merged head, and\
+    \ every fallback\n  boundary_signal: htmlbind flushes once when that pass ends,\
+    \ and the framework's response writer turns that flush into the end of this span\n\
+    \  omitted_on: the buffered and fragment modes, where the whole render is the\
+    \ initial build\n  attributes:\n    pw.render.bytes: the size of the committed\
+    \ document\nawait_boundary:\n  name: render boundary\n  parent: the render span\n\
+    \  extent: from the commit to the completion, which is how long that fallback\
+    \ held the screen rather than how long its work took\n  why: a boundary is observed\
+    \ only on arrival, so the interval around it is the one thing measured rather\
+    \ than guessed\n  attributes:\n    pw.boundary.id: the positional placeholder\
+    \ id, which is generated and carries no user value\n    pw.boundary.bytes: the\
+    \ settled fragment\nlive_delivery:\n  name: live delivery\n  parent: the live\
+    \ render span\n  extent: from the previous delivery of the same boundary, or from\
+    \ the stream opening, so consecutive spans abut and read as one region changing\n\
+    \  attributes: the same two as an await boundary\ndatabase:\n  name: the statement\
+    \ keyword, from a closed allowlist, falling back to the executor operation\n \
+    \ kind: client\n  seam: decision:executor-seam-instrumentation, the same one data:query-record\
+    \ uses\n  attributes:\n    db.system.name: driver\n    db.operation.name: the\
+    \ statement keyword\n    db.query.text: bounded by observability.query.max_sql_length,\
+    \ and present only when observability.trace.statement is on\n    pw.db.query_truncated:\
+    \ the text hit that bound\n    pw.db.connection: the pool label, when more than\
+    \ one is configured\n    pw.db.tx_depth: inside a transaction only\n    pw.db.rows_affected:\
+    \ an exec only\n    pw.db.slow: over data:query-diagnostics-config slow_threshold\n\
+    \  status: error with an exception event when the statement failed\n  excluded:\n\
+    \    - bind values, per policy:query-log-safety\n    - the EXPLAIN plan and the\
+    \ rerun snippet, which stay on data:query-record\n    reason: a trace is retained\
+    \ longer and read more widely than a log, and the span id correlates the record\
+    \ that carries them\ncost:\n  disabled: one nil comparison per response and per\
+    \ statement; no span object, no wrapped writer, and no wrapped executor\n  boundary_off:\
+    \ the render span still counts boundaries, because the count is an attribute rather\
+    \ than a span\ncardinality:\n  safe: mode, driver, statement keyword, generated\
+    \ boundary id\n  absent: instance key, component input, user value, matching requirement:modern-observability\n\
+    ```"
+  legacy_parse_issues:
+  - kind: legacy_parse_error
+    block: 0
+    message: "while parsing a block collection\n  in \"<unicode string>\", line 62,\
+      \ column 5:\n        - bind values, per policy:query- ... \n        ^\nexpected\
+      \ <block end>, but found '?'\n  in \"<unicode string>\", line 64, column 5:\n\
+      \        reason: a trace is retained long ... \n        ^"
+relations:
+- relation: mentions
+  to: data:observability-runtime-config
+  resolution: resolved
+- relation: mentions
+  to: data:query-diagnostics-config
+  resolution: resolved
+- relation: mentions
+  to: data:query-record
+  resolution: resolved
+- relation: mentions
+  to: decision:bot-client-classification
+  resolution: resolved
+- relation: mentions
+  to: decision:executor-seam-instrumentation
+  resolution: resolved
+- relation: mentions
+  to: flow:initial-streaming-render
+  resolution: resolved
+- relation: mentions
+  to: flow:live-boundary-delivery
+  resolution: resolved
+- relation: mentions
+  to: flow:partial-refresh
+  resolution: resolved
+- relation: mentions
+  to: policy:query-log-safety
+  resolution: resolved
+- relation: mentions
+  to: requirement:component-output-cache
+  resolution: resolved
+- relation: mentions
+  to: requirement:contrib-otel
+  resolution: resolved
+- relation: mentions
+  to: requirement:html-fragment-rendering
+  resolution: resolved
+- relation: mentions
+  to: requirement:modern-observability
+  resolution: resolved
+- relation: mentions
+  to: requirement:navigation-delta-rendering
+  resolution: resolved
+- relation: mentions
+  to: requirement:reloadable-component-endpoint
+  resolution: resolved

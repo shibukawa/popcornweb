@@ -1,0 +1,102 @@
+id: api:application-lifecycle
+type: api
+title: Application Lifecycle API
+summary: The pw package can own the complete server lifecycle or return the same initialized
+  middleware stack for an application-owned server.
+facts:
+  legacy_body: "The pw package can own the complete server lifecycle or return the\
+    \ same initialized middleware stack for an application-owned server.\n\n```yaml\n\
+    surface:\n  - Run(context.Context, http.Handler, ...Option) error\n  - Middlewares(http.Handler,\
+    \ ...Option) (http.Handler, error)\n  - WithPublicFS(fs.FS) Option\n  - middlewares.RegisterPublicFS(fs.FS)\n\
+    run:\n  - call api:runtime-configuration if configuration is not parsed\n  - execute\
+    \ requirement:built-in-config-generation and return when its framework option\
+    \ is selected\n  - initialize decision:config-driven-database from runtime configuration\n\
+    \  - initialize services and log safe values with provenance\n  - initialize the\
+    \ framework middleware stack\n  - mount api:authentication-endpoints when data:authentication-runtime-config\
+    \ is enabled\n  - construct api:public-asset-middleware for the selected build\
+    \ mode\n  - attach framework resources to request contexts\n  - bind the configured\
+    \ listener under decision:development-port-shift, then emit policy:startup-summary\
+    \ with its address\n  - start the configured HTTP server\n  - gracefully stop\
+    \ acceptance and drain requests where supported\n  - close resources in reverse\
+    \ initialization order\n  - announce the bound address to requirement:dev-console\
+    \ in the pwdev build mode, per decision:dev-application-attachment\nmiddlewares:\n\
+    \  - performs the same configuration, service, and middleware initialization\n\
+    \  - emits policy:startup-summary without a listening address\n  - returns the\
+    \ final standard http.Handler without starting a listener\n  - binds nothing,\
+    \ so decision:development-port-shift does not apply and the application owns the\
+    \ outcome of its own bind\nplatform:\n  standard_go: signal.NotifyContext on os.Interrupt\
+    \ and SIGTERM drives graceful shutdown\n  tinygo: no signal handler is installed;\
+    \ the caller's context is the only shutdown trigger\n  rationale: TinyGo os/signal\
+    \ replaces the default disposition but delivers nothing, so registering would\
+    \ make the process unkillable by Ctrl+C or SIGTERM\n  seam: notifyShutdownSignals,\
+    \ split by the tinygo build tag\nrule: all startup validation failures occur before\
+    \ request acceptance\n```"
+  surface:
+  - Run(context.Context, http.Handler, ...Option) error
+  - Middlewares(http.Handler, ...Option) (http.Handler, error)
+  - WithPublicFS(fs.FS) Option
+  - middlewares.RegisterPublicFS(fs.FS)
+  run:
+  - call api:runtime-configuration if configuration is not parsed
+  - execute requirement:built-in-config-generation and return when its framework option
+    is selected
+  - initialize decision:config-driven-database from runtime configuration
+  - initialize services and log safe values with provenance
+  - initialize the framework middleware stack
+  - mount api:authentication-endpoints when data:authentication-runtime-config is
+    enabled
+  - construct api:public-asset-middleware for the selected build mode
+  - attach framework resources to request contexts
+  - bind the configured listener under decision:development-port-shift, then emit
+    policy:startup-summary with its address
+  - start the configured HTTP server
+  - gracefully stop acceptance and drain requests where supported
+  - close resources in reverse initialization order
+  - announce the bound address to requirement:dev-console in the pwdev build mode,
+    per decision:dev-application-attachment
+  middlewares:
+  - performs the same configuration, service, and middleware initialization
+  - emits policy:startup-summary without a listening address
+  - returns the final standard http.Handler without starting a listener
+  - binds nothing, so decision:development-port-shift does not apply and the application
+    owns the outcome of its own bind
+  platform:
+    standard_go: signal.NotifyContext on os.Interrupt and SIGTERM drives graceful
+      shutdown
+    tinygo: no signal handler is installed; the caller's context is the only shutdown
+      trigger
+    rationale: TinyGo os/signal replaces the default disposition but delivers nothing,
+      so registering would make the process unkillable by Ctrl+C or SIGTERM
+    seam: notifyShutdownSignals, split by the tinygo build tag
+  rule: all startup validation failures occur before request acceptance
+relations:
+- relation: mentions
+  to: api:authentication-endpoints
+  resolution: resolved
+- relation: mentions
+  to: api:public-asset-middleware
+  resolution: resolved
+- relation: mentions
+  to: api:runtime-configuration
+  resolution: resolved
+- relation: mentions
+  to: data:authentication-runtime-config
+  resolution: resolved
+- relation: mentions
+  to: decision:config-driven-database
+  resolution: resolved
+- relation: mentions
+  to: decision:dev-application-attachment
+  resolution: resolved
+- relation: mentions
+  to: decision:development-port-shift
+  resolution: resolved
+- relation: mentions
+  to: policy:startup-summary
+  resolution: resolved
+- relation: mentions
+  to: requirement:built-in-config-generation
+  resolution: resolved
+- relation: mentions
+  to: requirement:dev-console
+  resolution: resolved

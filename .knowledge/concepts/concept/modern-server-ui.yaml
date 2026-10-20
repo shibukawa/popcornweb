@@ -1,0 +1,57 @@
+id: concept:modern-server-ui
+type: concept
+title: Modern Server UI
+summary: The server renders addressable typed component boundaries; a small browser
+  runtime applies streamed and refresh patches without recreating the server component
+  tree.
+facts:
+  legacy_body: "The server renders addressable typed component boundaries; a small\
+    \ browser runtime applies streamed and refresh patches without recreating the\
+    \ server component tree.\n\n```yaml\ncomponent_roles:\n  presentational: supplied\
+    \ values to server HTML\n  server: typed data fetch to server HTML\n  client:\
+    \ optional browser state and events via concept:client-component\nserver_component_input:\n\
+    \  properties: small, stable, data-identifying\n  uses:\n    - cache key\n   \
+    \ - refresh target\n    - instance identity\n    - dependency analysis\ncapabilities:\n\
+    \  - api:typed-external-function\n  - api:async-html-value\n  - requirement:async-html-rendering\n\
+    \  - flow:initial-streaming-render\n  - flow:partial-refresh\n  - api:server-action\n\
+    ```"
+  component_roles:
+    presentational: supplied values to server HTML
+    server: typed data fetch to server HTML
+    client: optional browser state and events via concept:client-component
+  server_component_input:
+    properties: small, stable, data-identifying
+    uses:
+    - cache key
+    - refresh target
+    - instance identity
+    - dependency analysis
+  capabilities:
+  - api:typed-external-function
+  - api:async-html-value
+  - requirement:async-html-rendering
+  - flow:initial-streaming-render
+  - flow:partial-refresh
+  - api:server-action
+relations:
+- relation: mentions
+  to: api:async-html-value
+  resolution: resolved
+- relation: mentions
+  to: api:server-action
+  resolution: resolved
+- relation: mentions
+  to: api:typed-external-function
+  resolution: resolved
+- relation: mentions
+  to: concept:client-component
+  resolution: resolved
+- relation: mentions
+  to: flow:initial-streaming-render
+  resolution: resolved
+- relation: mentions
+  to: flow:partial-refresh
+  resolution: resolved
+- relation: mentions
+  to: requirement:async-html-rendering
+  resolution: resolved

@@ -1,0 +1,85 @@
+id: decision:textmate-grammar-first
+type: decision
+title: Highlight Without a Server First
+summary: Stage 1 of vision:editor-support is a TextMate grammar and nothing else,
+  so highlighting works in a freshly opened file with no binary, no project, and no
+  configuration.
+facts:
+  legacy_body: "Stage 1 of vision:editor-support is a TextMate grammar and nothing\
+    \ else, so highlighting works in a freshly opened file with no binary, no project,\
+    \ and no configuration.\n\n```yaml\nstatus: proposed\nproblem:\n  - semantic tokens\
+    \ are more accurate but arrive only after a server starts, a project loads, and\
+    \ a document syncs\n  - a .pw.html opened from a code review checkout, a dependency,\
+    \ or a gist has no project at all\ndecision:\n  stage_1: contributes.grammars\
+    \ only, per requirement:template-syntax-highlighting\n  later: semantic tokens\
+    \ from requirement:pw-language-server refine the same file, never replace the\
+    \ grammar\naccepted_inaccuracy:\n  - the grammar cannot tell a declared parameter\
+    \ from any other identifier, so both highlight as an identifier\n  - the grammar\
+    \ cannot verify that {/if} closes an {if}, so an unbalanced body degrades to plain\
+    \ text rather than to an error\n  - an expression spanning lines inside an attribute\
+    \ value may lose its scope, because the engine is line-oriented\n  - a type name\
+    \ and a component name are both PascalCase and are not distinguished\nrule: an\
+    \ inaccuracy is acceptable when the worst case is missing color; a grammar that\
+    \ colors invalid source as valid, or valid source as an error, is not\nreason:\n\
+    \  - the request that opened vision:editor-support is highlighting, and this is\
+    \ the whole of it\n  - zero runtime dependency means zero startup failure mode,\
+    \ which is the entire cost of stage 1\n  - system:vscode embeddedLanguages already\
+    \ gives bracket matching and comment toggling inside the HTML and SQL bodies for\
+    \ free\nconsequences:\n  - the grammar duplicates knowledge system:tinybind owns,\
+    \ guarded by rule:template-grammar-scopes\n  - no diagnostic, completion, or navigation\
+    \ exists at stage 1, and the extension must not imply otherwise\n  - semantic\
+    \ token scopes must be chosen to layer over the grammar scopes rather than to\
+    \ contradict them\n```"
+  status: proposed
+  problem:
+  - semantic tokens are more accurate but arrive only after a server starts, a project
+    loads, and a document syncs
+  - a .pw.html opened from a code review checkout, a dependency, or a gist has no
+    project at all
+  decision:
+    stage_1: contributes.grammars only, per requirement:template-syntax-highlighting
+    later: semantic tokens from requirement:pw-language-server refine the same file,
+      never replace the grammar
+  accepted_inaccuracy:
+  - the grammar cannot tell a declared parameter from any other identifier, so both
+    highlight as an identifier
+  - the grammar cannot verify that {/if} closes an {if}, so an unbalanced body degrades
+    to plain text rather than to an error
+  - an expression spanning lines inside an attribute value may lose its scope, because
+    the engine is line-oriented
+  - a type name and a component name are both PascalCase and are not distinguished
+  rule: an inaccuracy is acceptable when the worst case is missing color; a grammar
+    that colors invalid source as valid, or valid source as an error, is not
+  reason:
+  - the request that opened vision:editor-support is highlighting, and this is the
+    whole of it
+  - zero runtime dependency means zero startup failure mode, which is the entire cost
+    of stage 1
+  - system:vscode embeddedLanguages already gives bracket matching and comment toggling
+    inside the HTML and SQL bodies for free
+  consequences:
+  - the grammar duplicates knowledge system:tinybind owns, guarded by rule:template-grammar-scopes
+  - no diagnostic, completion, or navigation exists at stage 1, and the extension
+    must not imply otherwise
+  - semantic token scopes must be chosen to layer over the grammar scopes rather than
+    to contradict them
+lifecycle: proposed
+relations:
+- relation: mentions
+  to: requirement:pw-language-server
+  resolution: resolved
+- relation: mentions
+  to: requirement:template-syntax-highlighting
+  resolution: resolved
+- relation: mentions
+  to: rule:template-grammar-scopes
+  resolution: resolved
+- relation: mentions
+  to: system:tinybind
+  resolution: resolved
+- relation: mentions
+  to: system:vscode
+  resolution: resolved
+- relation: mentions
+  to: vision:editor-support
+  resolution: resolved

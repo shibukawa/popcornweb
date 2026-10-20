@@ -1,0 +1,170 @@
+id: flow:page-route-generation
+type: flow
+title: Page Route Generation
+summary: Generation walks each page tree root once and writes the components, decoders,
+  and registry that serve it, in a run whose unit is the tree rather than the package
+  directory.
+facts:
+  legacy_body: "Generation walks each page tree root once and writes the components,\
+    \ decoders, and registry that serve it, in a run whose unit is the tree rather\
+    \ than the package directory.\n\n```yaml\nflow:\n  trigger: api:cli-generate reads\
+    \ the data:project-config generate.pages roots\n  steps:\n    - id: discover\n\
+    \      action: walk one root, deriving a route from every directory holding page.pw.html,\
+    \ its ancestor layouts, and its segment kinds\n      rules: rule:page-directory-naming\n\
+    \      reporting: every problem in the walk is reported, not only the first\n\
+    \    - id: analyze\n      actor: system:tinybind\n      action: read each page\
+    \ and layout component signature, read the optional page.go Load, and classify\
+    \ the concept:page-tree rung\n      checks:\n        - a Load matching neither\
+    \ the typed nor the handler signature\n        - a typed Load whose results do\
+    \ not match the page component parameters by count, order, and type\n        -\
+    \ a layout that does not declare children as html\n        - an input type a URL\
+    \ cannot carry\n    - id: discover-actions\n      action: collect the exported\
+    \ handler-shaped functions of each route package as api:page-action-endpoint entries\
+    \ and reject a prefix an existing route occupies\n    - id: emit-go\n      emitter:\
+    \ the pw-owned emitter of decision:page-render-binding\n      outputs:\n     \
+    \   - page_pw_gen.go and layout_pw_gen.go compiled components\n        - route_pw_gen.go\
+    \ route parameters and decoder\n        - routes_pw_gen.go api:page-registry and\
+    \ data:page-route-table\n      import_direction: down the tree only\n    - id:\
+    \ bind-actions\n      action: run request binding over every package the discovered\
+    \ tree reports, so api:page-action-endpoint handlers can call pw.Parse\n     \
+    \ source: the tree's own package list, which is the route root plus each route\
+    \ and layout directory in deterministic order\n      artifacts:\n        kept:\
+    \ request binding\n        dropped: the OpenAPI fragment, because a page route\
+    \ and an action endpoint are not a published contract\n      empty_package: a\
+    \ package with nothing to bind reports the generator's nothing-to-generate error,\
+    \ which this step skips rather than failing on, since most route packages have\
+    \ no request model\n      why_not_earlier: binder discovery reads the Bind call\
+    \ sites of the package it analyzes and never consults a registration, so the only\
+    \ thing that was missing is this run\n    - id: compare-or-commit\n      action:\
+    \ join these files with the rest of the api:cli-generate plan, then compare in\
+    \ check mode or replace atomically\n      per_directory: the tree's output is\
+    \ planned as part of the directory it lands in, so one directory keeps one staleness\
+    \ sweep\n      merge: a compiled component and a request binder that derive the\
+    \ same base name, as page.pw.html and page.go do, become one generated file rather\
+    \ than deleting each other\n  failure:\n    default: nothing is written for any\
+    \ purpose, since the plan commits as one set\n  ordering: roots and directories\
+    \ are processed in stable lexical order, so identical sources produce identical\
+    \ bytes\nopenapi_exclusion:\n  first_guard: the pages purpose keeps no OpenAPI\
+    \ artifact, which is the same per-directory artifact selection decision:explicit-generation-sources\
+    \ already applies\n  second_guard: the Popcorn Web generated header prefix is\
+    \ registered with the discovery pass, so nothing api:cli-generate wrote is read\
+    \ back as a source\n  why_both: the second guard is a registration a future change\
+    \ could drop, and the first holds without it\n  observed_upstream: once discovery\
+    \ reached the route packages, every page route and action endpoint appeared in\
+    \ the document, so this is a demonstrated failure rather than a precaution\n \
+    \ wider_effect: one registered prefix also covers the generated files of every\
+    \ other purpose, which discovery has been reading all along; they carry no registrations,\
+    \ so nothing was wrong, but a generated binder is not an input either\nrelation:\n\
+    \  pipeline: flow:generation-pipeline, of which this is the page-tree purpose\n\
+    \  templates: the flat flow:template-generation run compiles the handler-tree\
+    \ templates and never reaches inside a page tree root\n```"
+  flow:
+    trigger: api:cli-generate reads the data:project-config generate.pages roots
+    steps:
+    - id: discover
+      action: walk one root, deriving a route from every directory holding page.pw.html,
+        its ancestor layouts, and its segment kinds
+      rules: rule:page-directory-naming
+      reporting: every problem in the walk is reported, not only the first
+    - id: analyze
+      actor: system:tinybind
+      action: read each page and layout component signature, read the optional page.go
+        Load, and classify the concept:page-tree rung
+      checks:
+      - a Load matching neither the typed nor the handler signature
+      - a typed Load whose results do not match the page component parameters by count,
+        order, and type
+      - a layout that does not declare children as html
+      - an input type a URL cannot carry
+    - id: discover-actions
+      action: collect the exported handler-shaped functions of each route package
+        as api:page-action-endpoint entries and reject a prefix an existing route
+        occupies
+    - id: emit-go
+      emitter: the pw-owned emitter of decision:page-render-binding
+      outputs:
+      - page_pw_gen.go and layout_pw_gen.go compiled components
+      - route_pw_gen.go route parameters and decoder
+      - routes_pw_gen.go api:page-registry and data:page-route-table
+      import_direction: down the tree only
+    - id: bind-actions
+      action: run request binding over every package the discovered tree reports,
+        so api:page-action-endpoint handlers can call pw.Parse
+      source: the tree's own package list, which is the route root plus each route
+        and layout directory in deterministic order
+      artifacts:
+        kept: request binding
+        dropped: the OpenAPI fragment, because a page route and an action endpoint
+          are not a published contract
+      empty_package: a package with nothing to bind reports the generator's nothing-to-generate
+        error, which this step skips rather than failing on, since most route packages
+        have no request model
+      why_not_earlier: binder discovery reads the Bind call sites of the package it
+        analyzes and never consults a registration, so the only thing that was missing
+        is this run
+    - id: compare-or-commit
+      action: join these files with the rest of the api:cli-generate plan, then compare
+        in check mode or replace atomically
+      per_directory: the tree's output is planned as part of the directory it lands
+        in, so one directory keeps one staleness sweep
+      merge: a compiled component and a request binder that derive the same base name,
+        as page.pw.html and page.go do, become one generated file rather than deleting
+        each other
+    failure:
+      default: nothing is written for any purpose, since the plan commits as one set
+    ordering: roots and directories are processed in stable lexical order, so identical
+      sources produce identical bytes
+  openapi_exclusion:
+    first_guard: the pages purpose keeps no OpenAPI artifact, which is the same per-directory
+      artifact selection decision:explicit-generation-sources already applies
+    second_guard: the Popcorn Web generated header prefix is registered with the discovery
+      pass, so nothing api:cli-generate wrote is read back as a source
+    why_both: the second guard is a registration a future change could drop, and the
+      first holds without it
+    observed_upstream: once discovery reached the route packages, every page route
+      and action endpoint appeared in the document, so this is a demonstrated failure
+      rather than a precaution
+    wider_effect: one registered prefix also covers the generated files of every other
+      purpose, which discovery has been reading all along; they carry no registrations,
+      so nothing was wrong, but a generated binder is not an input either
+  relation:
+    pipeline: flow:generation-pipeline, of which this is the page-tree purpose
+    templates: the flat flow:template-generation run compiles the handler-tree templates
+      and never reaches inside a page tree root
+relations:
+- relation: mentions
+  to: api:cli-generate
+  resolution: resolved
+- relation: mentions
+  to: api:page-action-endpoint
+  resolution: resolved
+- relation: mentions
+  to: api:page-registry
+  resolution: resolved
+- relation: mentions
+  to: concept:page-tree
+  resolution: resolved
+- relation: mentions
+  to: data:page-route-table
+  resolution: resolved
+- relation: mentions
+  to: data:project-config
+  resolution: resolved
+- relation: mentions
+  to: decision:explicit-generation-sources
+  resolution: resolved
+- relation: mentions
+  to: decision:page-render-binding
+  resolution: resolved
+- relation: mentions
+  to: flow:generation-pipeline
+  resolution: resolved
+- relation: mentions
+  to: flow:template-generation
+  resolution: resolved
+- relation: mentions
+  to: rule:page-directory-naming
+  resolution: resolved
+- relation: mentions
+  to: system:tinybind
+  resolution: resolved

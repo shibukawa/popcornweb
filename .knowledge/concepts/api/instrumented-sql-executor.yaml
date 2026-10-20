@@ -1,0 +1,77 @@
+id: api:instrumented-sql-executor
+type: api
+title: Instrumented SQL Executor
+summary: The framework executor resolver returns an observing wrapper so requirement:query-diagnostics
+  needs no change to generated code, drivers, or call sites.
+facts:
+  legacy_body: "The framework executor resolver returns an observing wrapper so requirement:query-diagnostics\
+    \ needs no change to generated code, drivers, or call sites.\n\n```yaml\nresolution:\n\
+    \  disabled: return the underlying executor unchanged\n  enabled: return a wrapper\
+    \ over the same executor, built once per resolution rather than per statement\n\
+    surface:\n  - the wrapper implements the same exec and query context methods as\
+    \ the executor it wraps\n  - it delegates the call verbatim and rewrites no SQL\
+    \ and no arguments\n  - it returns the observed error unmodified\n  - it exposes\
+    \ the wrapped value for unwrapping\nunwrap:\n  - api:transaction-runner scope\
+    \ adoption unwraps before asserting a concrete transaction type\n  - accessors\
+    \ that hand out a raw transaction handle return the unwrapped value\n  - api:test-run\
+    \ keeps working because the wrapper sits above the scope executor, not inside\
+    \ it\nexplain:\n  executor: the observed executor itself, so the plan sees the\
+    \ same transaction and snapshot\n  isolation: EXPLAIN failure is recorded in data:query-record\
+    \ and never surfaces to the caller\nrules:\n  - the wrapper observes only what\
+    \ the executor receives, so no statement name or source location is available\n\
+    \  - the query method returns the concrete rows value, which cannot be decorated,\
+    \ so row count and scan time stay outside the measurement\n  - diagnostics work\
+    \ never changes the observed call result, its error, or its row iteration\n  -\
+    \ selection happens at resolution time, per decision:executor-seam-instrumentation\n\
+    \  - api:rdb-middleware still owns the pool and installs the executor; this layer\
+    \ only decorates it\n```"
+  resolution:
+    disabled: return the underlying executor unchanged
+    enabled: return a wrapper over the same executor, built once per resolution rather
+      than per statement
+  surface:
+  - the wrapper implements the same exec and query context methods as the executor
+    it wraps
+  - it delegates the call verbatim and rewrites no SQL and no arguments
+  - it returns the observed error unmodified
+  - it exposes the wrapped value for unwrapping
+  unwrap:
+  - api:transaction-runner scope adoption unwraps before asserting a concrete transaction
+    type
+  - accessors that hand out a raw transaction handle return the unwrapped value
+  - api:test-run keeps working because the wrapper sits above the scope executor,
+    not inside it
+  explain:
+    executor: the observed executor itself, so the plan sees the same transaction
+      and snapshot
+    isolation: EXPLAIN failure is recorded in data:query-record and never surfaces
+      to the caller
+  rules:
+  - the wrapper observes only what the executor receives, so no statement name or
+    source location is available
+  - the query method returns the concrete rows value, which cannot be decorated, so
+    row count and scan time stay outside the measurement
+  - diagnostics work never changes the observed call result, its error, or its row
+    iteration
+  - selection happens at resolution time, per decision:executor-seam-instrumentation
+  - api:rdb-middleware still owns the pool and installs the executor; this layer only
+    decorates it
+relations:
+- relation: mentions
+  to: api:rdb-middleware
+  resolution: resolved
+- relation: mentions
+  to: api:test-run
+  resolution: resolved
+- relation: mentions
+  to: api:transaction-runner
+  resolution: resolved
+- relation: mentions
+  to: data:query-record
+  resolution: resolved
+- relation: mentions
+  to: decision:executor-seam-instrumentation
+  resolution: resolved
+- relation: mentions
+  to: requirement:query-diagnostics
+  resolution: resolved

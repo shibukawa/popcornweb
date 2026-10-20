@@ -1,0 +1,43 @@
+id: requirement:built-in-config-generation
+type: requirement
+title: Built-in Config Generation
+summary: Configuration scaffold generation is a framework lifecycle capability, not
+  application subcommand boilerplate.
+facts:
+  legacy_body: "Configuration scaffold generation is a framework lifecycle capability,\
+    \ not application subcommand boilerplate.\n\n```yaml\nowner: api:application-lifecycle\n\
+    activation: framework-owned config-generation CLI option\nbehavior:\n  - api:application-lifecycle\
+    \ Run detects the option after registrations are available\n  - merge every framework\
+    \ and application config definition through system:tinybind\n  - write the selected\
+    \ TOML or environment scaffold named for the active data:runtime-environment\n\
+    \  - return successfully without database startup, middleware construction, or\
+    \ HTTP listening\nerrors:\n  - invalid format or destination returns before service\
+    \ startup\n  - partial destination files are forbidden\napplication_code:\n  remove:\n\
+    \    - GenerateConfigCommand type\n    - config generation subcommand registration\n\
+    \    - explicit WriteScaffoldTOML or WriteScaffoldEnv dispatch\n```"
+  owner: api:application-lifecycle
+  activation: framework-owned config-generation CLI option
+  behavior:
+  - api:application-lifecycle Run detects the option after registrations are available
+  - merge every framework and application config definition through system:tinybind
+  - write the selected TOML or environment scaffold named for the active data:runtime-environment
+  - return successfully without database startup, middleware construction, or HTTP
+    listening
+  errors:
+  - invalid format or destination returns before service startup
+  - partial destination files are forbidden
+  application_code:
+    remove:
+    - GenerateConfigCommand type
+    - config generation subcommand registration
+    - explicit WriteScaffoldTOML or WriteScaffoldEnv dispatch
+relations:
+- relation: mentions
+  to: api:application-lifecycle
+  resolution: resolved
+- relation: mentions
+  to: data:runtime-environment
+  resolution: resolved
+- relation: mentions
+  to: system:tinybind
+  resolution: resolved

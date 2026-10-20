@@ -1,0 +1,70 @@
+id: system:syumai-workers
+type: system
+title: syumai/workers
+summary: github.com/syumai/workers is the fetch-to-net/http adapter that lets a Go Wasm module serve HTTP inside
+  a Cloudflare Worker; requirement:cloudflare-workers-build-target links it into the generated entry point.
+facts:
+  legacy_body: "github.com/syumai/workers is the fetch-to-net/http adapter that lets a Go Wasm module serve HTTP\
+    \ inside a Cloudflare Worker; requirement:cloudflare-workers-build-target links it into the generated entry\
+    \ point.\n\n```yaml\nmodule: github.com/syumai/workers\npinned: v0.33.0, whose library is byte-identical to\
+    \ main as of 2026-09-01; the only later change is a template file\nlicense: MIT\nwhat_it_provides:\n  serve:\
+    \ workers.Serve(http.Handler) registers the handler and signals the loader that the module is ready\n  request_bridge:\
+    \ the JS Request becomes an http.Request, the handler's writes stream through an io.Pipe into the JS Response\n\
+    \  env: cloudflare.Getenv and GetBinding read the Worker env through a global the loader supplies\n  sockets:\
+    \ cloudflare:sockets connect is exposed to Go for outbound TCP, unused by the framework so far\n  bindings:\
+    \ cloudflare/d1 is a database/sql driver registered as d1, cloudflare/r2 wraps a bucket binding with get, head,\
+    \ put, delete and list, cloudflare/kv wraps a namespace with get, put, delete and list; decision:cloudflare-bindings-placement\
+    \ builds the framework backends on these\nhost_facts:\n  per_request_main: the loader instantiates the module\
+    \ and runs main for every fetch, so process state does not survive a request\n  body_after_write: a request\
+    \ body read after the first response write fails in the host, upstream issue 176\n  loader: the module needs\
+    \ a wasm_exec.js that provides the context global; decision:owned-wasm-loader supplies the framework's own\n\
+    input_offered:\n  - the runtime.getRandomData import missing from the bundled TinyGo wasm_exec.js at TinyGo\
+    \ 0.42, found by requirement:cloudflare-workers-hosting's probe\n  - the template fix for reading a body after\
+    \ a write, merged as upstream pull request 204\n```"
+  module: github.com/syumai/workers
+  pinned: v0.36.0, as declared by go.mod and the deployment generator
+  license: MIT
+  what_it_provides:
+    serve: workers.Serve(http.Handler) registers the handler and signals the loader that the module is ready
+    request_bridge: the JS Request becomes an http.Request, the handler's writes stream through an io.Pipe into
+      the JS Response
+    env: cloudflare.Getenv and GetBinding read the Worker env through a global the loader supplies
+    sockets: cloudflare:sockets connect is exposed to Go for outbound TCP, unused by the framework so far
+    bindings: cloudflare/d1 is a database/sql driver registered as d1, cloudflare/r2 wraps a bucket binding with
+      get, head, put, delete and list, cloudflare/kv wraps a namespace with get, put, delete and list; decision:cloudflare-bindings-placement
+      builds the framework backends on these
+  host_facts:
+    per_request_main: the loader instantiates the module and runs main for every fetch, so process state does not
+      survive a request
+    body_after_write: a request body read after the first response write fails in the host, upstream issue 176
+    loader: the module needs a wasm_exec.js that provides the context global; decision:owned-wasm-loader supplies
+      the framework's own
+  input_offered:
+  - the runtime.getRandomData import missing from the bundled TinyGo wasm_exec.js at TinyGo 0.42, found by requirement:cloudflare-workers-hosting's
+    probe
+  - the template fix for reading a body after a write, merged as upstream pull request 204
+  current_dependency:
+    module: github.com/syumai/workers
+    version: v0.36.0
+    evidence_source: source:go-modules
+relations:
+- relation: mentions
+  to: decision:cloudflare-bindings-placement
+  resolution: resolved
+- relation: mentions
+  to: decision:owned-wasm-loader
+  resolution: resolved
+- relation: mentions
+  to: requirement:cloudflare-workers-build-target
+  resolution: resolved
+- relation: mentions
+  to: requirement:cloudflare-workers-hosting
+  resolution: resolved
+- relation: observed_in
+  to: source:go-modules
+  resolution: resolved
+history:
+  dependency-refresh:
+    summary: Updated the declared dependency; imported legacy body text remains historical source material.
+    evidence:
+      path: go.mod

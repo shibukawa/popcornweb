@@ -1,0 +1,56 @@
+id: data:local-jsonl-log-record
+type: data
+title: Local JSONL Log Record
+summary: One line in a requirement:local-jsonl-log-capture file is the structured
+  form of one api:logger record, not a transcription of terminal text.
+facts:
+  legacy_body: "One line in a requirement:local-jsonl-log-capture file is the structured\
+    \ form of one api:logger record, not a transcription of terminal text.\n\n```yaml\n\
+    encoding: UTF-8 JSON Lines; exactly one complete JSON object and newline per record\n\
+    stable_fields:\n  timestamp: RFC 3339 timestamp with subsecond precision\n  severity:\
+    \ trace, debug, info, warn, or error\n  message: string\n  service_name: string\n\
+    optional_correlation:\n  trace_id: string\n  span_id: string\n  trace_flags: integer\n\
+    attributes:\n  source: data:log-attribute\n  shape: top-level typed fields after\
+    \ stable and reserved fields\nrules:\n  - preserve string, boolean, integer, and\
+    \ floating-point attribute types\n  - apply data:log-attribute collision and redaction\
+    \ rules before persistence\n  - encode no terminal prefixes, ANSI control sequences,\
+    \ progress output, or non-api:logger child-process output\n  - finish a record\
+    \ before exposing its newline, so a concurrently reading DuckDB query sees only\
+    \ complete rows\ncompatibility:\n  - additive fields are allowed\n  - stable field\
+    \ meanings and types do not change within a major release\n  - readers spanning\
+    \ files use name-based schema union because application attributes vary\n```"
+  encoding: UTF-8 JSON Lines; exactly one complete JSON object and newline per record
+  stable_fields:
+    timestamp: RFC 3339 timestamp with subsecond precision
+    severity: trace, debug, info, warn, or error
+    message: string
+    service_name: string
+  optional_correlation:
+    trace_id: string
+    span_id: string
+    trace_flags: integer
+  attributes:
+    source: data:log-attribute
+    shape: top-level typed fields after stable and reserved fields
+  rules:
+  - preserve string, boolean, integer, and floating-point attribute types
+  - apply data:log-attribute collision and redaction rules before persistence
+  - encode no terminal prefixes, ANSI control sequences, progress output, or non-api:logger
+    child-process output
+  - finish a record before exposing its newline, so a concurrently reading DuckDB
+    query sees only complete rows
+  compatibility:
+  - additive fields are allowed
+  - stable field meanings and types do not change within a major release
+  - readers spanning files use name-based schema union because application attributes
+    vary
+relations:
+- relation: mentions
+  to: api:logger
+  resolution: resolved
+- relation: mentions
+  to: data:log-attribute
+  resolution: resolved
+- relation: mentions
+  to: requirement:local-jsonl-log-capture
+  resolution: resolved

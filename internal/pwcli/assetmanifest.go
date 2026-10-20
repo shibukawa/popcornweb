@@ -52,9 +52,10 @@ type manifestEntryJSON struct {
 
 // writeAssetManifest emits both forms from one grouping, so the table the
 // application links and the file a person reads can never disagree.
-func writeAssetManifest(root string, assets []derivedAsset) error {
+func writeAssetManifest(root string, assets []derivedAsset, config assetsConfig) error {
+	l := config.locations()
 	grouped := groupByURL(assets)
-	packageName, err := publicPackageName(root)
+	packageName, err := publicPackageName(root, config)
 	if err != nil {
 		return err
 	}
@@ -62,14 +63,14 @@ func writeAssetManifest(root string, assets []derivedAsset) error {
 	if err != nil {
 		return err
 	}
-	if err := writeScaffoldFile(filepath.Join(root, assetManifestFile), source); err != nil {
+	if err := writeScaffoldFile(filepath.Join(root, filepath.FromSlash(l.manifestGo)), source); err != nil {
 		return fmt.Errorf("public assets: write %s: %w", assetManifestFile, err)
 	}
 	encoded, err := json.MarshalIndent(grouped, "", "  ")
 	if err != nil {
 		return err
 	}
-	target := filepath.Join(root, filepath.FromSlash(assetManifestJSON))
+	target := filepath.Join(root, filepath.FromSlash(l.manifest))
 	if err := os.MkdirAll(filepath.Dir(target), 0o755); err != nil {
 		return err
 	}
@@ -178,11 +179,11 @@ func renderAssetManifest(packageName string, entries []manifestEntryJSON) ([]byt
 
 // publicPackageName reads the package the scaffolded embed lives in, so the
 // generated registration compiles beside it whatever the project named it.
-func publicPackageName(root string) (string, error) {
-	name := filepath.Join(root, "public.go")
+func publicPackageName(root string, config assetsConfig) (string, error) {
+	name := filepath.Join(root, filepath.FromSlash(config.locations().embed))
 	file, err := parser.ParseFile(token.NewFileSet(), name, nil, parser.PackageClauseOnly)
 	if err != nil {
-		return "", fmt.Errorf("public assets: read package clause of public.go: %w", err)
+		return "", fmt.Errorf("public assets: read package clause of %s: %w", config.locations().embed, err)
 	}
 	return file.Name.Name, nil
 }

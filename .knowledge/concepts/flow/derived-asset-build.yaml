@@ -1,0 +1,122 @@
+id: flow:derived-asset-build
+type: flow
+title: Derived Asset Build Flow
+summary: One host phase turns the authored tree and the generation-time conversions
+  into concept:derived-public-tree, its sidecars, and data:public-asset-manifest,
+  before Go embeds any of it.
+facts:
+  legacy_body: "One host phase turns the authored tree and the generation-time conversions\
+    \ into concept:derived-public-tree, its sidecars, and data:public-asset-manifest,\
+    \ before Go embeds any of it.\n\n```yaml\ntrigger:\n  - api:cli-build\n  - api:cli-dev,\
+    \ per decision:derived-tree-development\nreplaces: flow:public-asset-build, whose\
+    \ sidecar step becomes one step of this one\ninputs:\n  authored: project-root\
+    \ public, walked without following symbolic links\n  generated_css: flow:tailwind-css-build\
+    \ output, which enters as an ordinary input rather than as a special case\n  produced:\
+    \ the files api:cli-generate reference hooks declared, per requirement:derived-asset-pipeline\n\
+    steps:\n  - run api:cli-generate first, since a hook produces files and rewrites\
+    \ references while templates compile\n  - classify every authored file per policy:asset-transform-matrix\n\
+    \  - copy or transform each into dist/public, preserving its relative path\n \
+    \ - place every produced file into the same tree and fail on a name two producers\
+    \ claim\n  - drop the authored bytes of any source whose conversion succeeded\n\
+    \  - write .br, .zstd, and .gz sidecars for eligible results, per policy:public-asset-precompression\n\
+    \  - digest every emitted representation and write data:public-asset-manifest\n\
+    \  - verify the scaffolded public.go embeds dist/public and that the tree is non-empty\n\
+    \  - compile only after the tree and the manifest are complete\nordering_note:\n\
+    \  why_generate_first: a reference rewrite decides a URL, and the manifest cannot\
+    \ be written before every URL exists\n  why_sidecars_last: a sidecar is a representation\
+    \ of a final byte sequence, so compressing before conversion would compress bytes\
+    \ nobody serves\nreconciliation:\n  form: the tree is derived, so a removed source\
+    \ removes its outputs by construction rather than by a cleanup rule\n  stale:\
+    \ an output whose source and producer both disappeared cannot survive a rebuild,\
+    \ which is the cleanup requirement:component-asset-extraction still lacks in the\
+    \ authored tree\nfailure:\n  - preserve the previous complete tree and manifest\n\
+    \  - never embed a tree and a manifest from different runs\n  - a conversion error\
+    \ names the source, and a hook error names the template file, line, and column\n\
+    reproducibility:\n  - identical inputs, settings, and toolchain versions produce\
+    \ identical bytes, names, and manifest order\n  - toolchain identity is hashed\
+    \ per decision:asset-transform-toolchain\nempty_tree: a project with no asset\
+    \ still emits a sentinel and a manifest, since go:embed fails on an absent directory\n\
+    ```"
+  trigger:
+  - api:cli-build
+  - api:cli-dev, per decision:derived-tree-development
+  replaces: flow:public-asset-build, whose sidecar step becomes one step of this one
+  inputs:
+    authored: project-root public, walked without following symbolic links
+    generated_css: flow:tailwind-css-build output, which enters as an ordinary input
+      rather than as a special case
+    produced: the files api:cli-generate reference hooks declared, per requirement:derived-asset-pipeline
+  steps:
+  - run api:cli-generate first, since a hook produces files and rewrites references
+    while templates compile
+  - classify every authored file per policy:asset-transform-matrix
+  - copy or transform each into dist/public, preserving its relative path
+  - place every produced file into the same tree and fail on a name two producers
+    claim
+  - drop the authored bytes of any source whose conversion succeeded
+  - write .br, .zstd, and .gz sidecars for eligible results, per policy:public-asset-precompression
+  - digest every emitted representation and write data:public-asset-manifest
+  - verify the scaffolded public.go embeds dist/public and that the tree is non-empty
+  - compile only after the tree and the manifest are complete
+  ordering_note:
+    why_generate_first: a reference rewrite decides a URL, and the manifest cannot
+      be written before every URL exists
+    why_sidecars_last: a sidecar is a representation of a final byte sequence, so
+      compressing before conversion would compress bytes nobody serves
+  reconciliation:
+    form: the tree is derived, so a removed source removes its outputs by construction
+      rather than by a cleanup rule
+    stale: an output whose source and producer both disappeared cannot survive a rebuild,
+      which is the cleanup requirement:component-asset-extraction still lacks in the
+      authored tree
+  failure:
+  - preserve the previous complete tree and manifest
+  - never embed a tree and a manifest from different runs
+  - a conversion error names the source, and a hook error names the template file,
+    line, and column
+  reproducibility:
+  - identical inputs, settings, and toolchain versions produce identical bytes, names,
+    and manifest order
+  - toolchain identity is hashed per decision:asset-transform-toolchain
+  empty_tree: a project with no asset still emits a sentinel and a manifest, since
+    go:embed fails on an absent directory
+relations:
+- relation: mentions
+  to: api:cli-build
+  resolution: resolved
+- relation: mentions
+  to: api:cli-dev
+  resolution: resolved
+- relation: mentions
+  to: api:cli-generate
+  resolution: resolved
+- relation: mentions
+  to: concept:derived-public-tree
+  resolution: resolved
+- relation: mentions
+  to: data:public-asset-manifest
+  resolution: resolved
+- relation: mentions
+  to: decision:asset-transform-toolchain
+  resolution: resolved
+- relation: mentions
+  to: decision:derived-tree-development
+  resolution: resolved
+- relation: mentions
+  to: flow:public-asset-build
+  resolution: resolved
+- relation: mentions
+  to: flow:tailwind-css-build
+  resolution: resolved
+- relation: mentions
+  to: policy:asset-transform-matrix
+  resolution: resolved
+- relation: mentions
+  to: policy:public-asset-precompression
+  resolution: resolved
+- relation: mentions
+  to: requirement:component-asset-extraction
+  resolution: resolved
+- relation: mentions
+  to: requirement:derived-asset-pipeline
+  resolution: resolved

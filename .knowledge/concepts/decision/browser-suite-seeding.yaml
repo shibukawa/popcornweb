@@ -1,0 +1,61 @@
+id: decision:browser-suite-seeding
+type: decision
+title: Browser Suite Seeding Route
+summary: A Playwright-style browser suite seeds and asserts data:seed-dataset files
+  through in-process HTTP endpoints (api:dev-test-endpoints) served by the pwdev application
+  itself, not through a CLI subprocess or an external sidecar.
+facts:
+  legacy_body: "A Playwright-style browser suite seeds and asserts data:seed-dataset\
+    \ files through in-process HTTP endpoints (api:dev-test-endpoints) served by the\
+    \ pwdev application itself, not through a CLI subprocess or an external sidecar.\n\
+    \n```yaml\nstatus: accepted\nscope: requirement:test-data-seeding\nproblem:\n\
+    \  - a browser suite is a separate process, so api:test-seed (in-process Go) cannot\
+    \ serve it\n  - api:cli-seed resolves its DSN by compiling and running the application,\
+    \ costing seconds per call\n  - middleware.rdb connection DSNs have no environment\
+    \ variable form, so a suite cannot redirect a CLI call by env alone\n  - an in-memory\
+    \ SQLite pool is unreachable from any second process\nchoice:\n  - mount seed\
+    \ and assert handlers on the application listener under the reserved /_pw namespace,\
+    \ pwdev build only\n  - reuse internal/dbseed, keeping decision:dbtestify-integration\
+    \ the single dbtestify boundary\n  - target the running pool itself, so the seeded\
+    \ database is exactly the one handlers read\nrejected:\n  cli_subprocess:\n  \
+    \  idea: the suite shells out to api:cli-seed between tests\n    reason: per-call\
+    \ application compile, and no reach into :memory: pools\n  dbtestify_http_sidecar:\n\
+    \    idea: run the upstream dbtestify http server beside the suite\n    reason:\
+    \ the DSN is written twice and drifts; a second pool races the application's on\
+    \ file-backed SQLite\n  testutil_bridge:\n    idea: expose api:test-run over a\
+    \ port for external clients\n    reason: the bridge exists to copy configuration\
+    \ for Go tests; a browser suite needs the developer's real server\nconsequences:\n\
+    \  - api:cli-dev is the natural server for a browser suite; a release binary carries\
+    \ no endpoint bytes\n  - suite writes are committed, so isolation comes from reseeding,\
+    \ not from api:test-run WithTransaction\n```"
+  legacy_parse_issues:
+  - kind: legacy_parse_error
+    block: 0
+    message: "mapping values are not allowed here\n  in \"<unicode string>\", line\
+      \ 15, column 68:\n     ... mpile, and no reach into :memory: pools\n       \
+      \                                  ^"
+relations:
+- relation: mentions
+  to: api:cli-dev
+  resolution: resolved
+- relation: mentions
+  to: api:cli-seed
+  resolution: resolved
+- relation: mentions
+  to: api:dev-test-endpoints
+  resolution: resolved
+- relation: mentions
+  to: api:test-run
+  resolution: resolved
+- relation: mentions
+  to: api:test-seed
+  resolution: resolved
+- relation: mentions
+  to: data:seed-dataset
+  resolution: resolved
+- relation: mentions
+  to: decision:dbtestify-integration
+  resolution: resolved
+- relation: mentions
+  to: requirement:test-data-seeding
+  resolution: resolved

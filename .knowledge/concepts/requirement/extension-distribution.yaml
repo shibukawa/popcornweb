@@ -1,0 +1,123 @@
+id: requirement:extension-distribution
+type: requirement
+title: Extension Distribution
+summary: The system:vscode extension is published as a versioned package to both marketplaces,
+  built from decision:extension-in-repository by CI, and never hand-uploaded.
+facts:
+  legacy_body: "The system:vscode extension is published as a versioned package to\
+    \ both marketplaces, built from decision:extension-in-repository by CI, and never\
+    \ hand-uploaded.\n\n```yaml\nstatus: pipeline implemented at .github/workflows/vscode.yml;\
+    \ first publish pending the registry tokens\nstage: 1 of vision:editor-support,\
+    \ because an unpublished extension helps nobody\nartifact: a vsix built from tools/vscode\n\
+    registries:\n  - Visual Studio Marketplace\n  - Open VSX, so a VSCodium or a remote\
+    \ editor user is not excluded\nidentity:\n  publisher: the same account requirement:cli-distribution\
+    \ already uses where a registry allows it\n  name: fixed at first publish, because\
+    \ requirement:editor-language-registration proposes recommending it from a scaffold\n\
+    versioning:\n  scheme: the extension has its own semantic version and does not\
+    \ track the CLI version\n  reason: a grammar fix must ship without a CLI release,\
+    \ and a CLI release must not force an extension release\n  compatibility: the\
+    \ manifest records the minimum pw version each stage-2 feature needs, checked\
+    \ at activation by policy:editor-tool-execution\n  stage_1: declares no pw requirement\
+    \ at all\ntrigger:\n  tag: vscode-v*, distinct from the flow:cli-release v* tags,\
+    \ so one push publishes one thing\n  reason: sharing the release trigger would\
+    \ republish an unchanged extension on every CLI patch\npipeline:\n  - build the\
+    \ extension from a clean checkout\n  - rebuild the decision:formatter-delivery\
+    \ WebAssembly module and fail if it differs from the committed one\n  - run the\
+    \ rule:template-grammar-scopes tokenization fixtures\n  - package the vsix and\
+    \ attach it to the tag\n  - publish to both registries from the same vsix\n  -\
+    \ a registry failure leaves the other published and is repaired by rerunning that\
+    \ job\ncontents:\n  included: the manifest, the grammars, the language configuration,\
+    \ the snippets, the client, and the decision:formatter-delivery WebAssembly module\n\
+    \  excluded: any pw binary, per policy:editor-tool-execution\n  license: the repository\
+    \ license, restated in the package\ndocumentation:\n  readme: states what each\
+    \ stage does and what it needs, so a stage-1 install does not read as a broken\
+    \ language server\n  changelog: required by both registries and generated from\
+    \ the tag range\nacceptance:\n  - a published version installs and highlights\
+    \ with no other software present\n  - the same vsix is what both registries serve\n\
+    \  - a CLI release publishes no extension version\n  - a grammar fixture failure\
+    \ blocks publication\n```"
+  status: pipeline implemented at .github/workflows/vscode.yml; first publish pending
+    the registry tokens
+  stage: 1 of vision:editor-support, because an unpublished extension helps nobody
+  artifact: a vsix built from tools/vscode
+  registries:
+  - Visual Studio Marketplace
+  - Open VSX, so a VSCodium or a remote editor user is not excluded
+  identity:
+    publisher: the same account requirement:cli-distribution already uses where a
+      registry allows it
+    name: fixed at first publish, because requirement:editor-language-registration
+      proposes recommending it from a scaffold
+  versioning:
+    scheme: the extension has its own semantic version and does not track the CLI
+      version
+    reason: a grammar fix must ship without a CLI release, and a CLI release must
+      not force an extension release
+    compatibility: the manifest records the minimum pw version each stage-2 feature
+      needs, checked at activation by policy:editor-tool-execution
+    stage_1: declares no pw requirement at all
+  trigger:
+    tag: vscode-v*, distinct from the flow:cli-release v* tags, so one push publishes
+      one thing
+    reason: sharing the release trigger would republish an unchanged extension on
+      every CLI patch
+  pipeline:
+  - build the extension from a clean checkout
+  - rebuild the decision:formatter-delivery WebAssembly module and fail if it differs
+    from the committed one
+  - run the rule:template-grammar-scopes tokenization fixtures
+  - package the vsix and attach it to the tag
+  - publish to both registries from the same vsix
+  - a registry failure leaves the other published and is repaired by rerunning that
+    job
+  contents:
+    included: the manifest, the grammars, the language configuration, the snippets,
+      the client, and the decision:formatter-delivery WebAssembly module
+    excluded: any pw binary, per policy:editor-tool-execution
+    license: the repository license, restated in the package
+  documentation:
+    readme: states what each stage does and what it needs, so a stage-1 install does
+      not read as a broken language server
+    changelog: required by both registries and generated from the tag range
+  acceptance:
+  - a published version installs and highlights with no other software present
+  - the same vsix is what both registries serve
+  - a CLI release publishes no extension version
+  - a grammar fixture failure blocks publication
+acceptance:
+  item-30405e48b608151f:
+    text: a published version installs and highlights with no other software present
+  item-35e38ab88d53f915:
+    text: the same vsix is what both registries serve
+  item-0e22ef6b4105729e:
+    text: a CLI release publishes no extension version
+  item-20ff8184d4dc3eaf:
+    text: a grammar fixture failure blocks publication
+relations:
+- relation: mentions
+  to: decision:extension-in-repository
+  resolution: resolved
+- relation: mentions
+  to: decision:formatter-delivery
+  resolution: resolved
+- relation: mentions
+  to: flow:cli-release
+  resolution: resolved
+- relation: mentions
+  to: policy:editor-tool-execution
+  resolution: resolved
+- relation: mentions
+  to: requirement:cli-distribution
+  resolution: resolved
+- relation: mentions
+  to: requirement:editor-language-registration
+  resolution: resolved
+- relation: mentions
+  to: rule:template-grammar-scopes
+  resolution: resolved
+- relation: mentions
+  to: system:vscode
+  resolution: resolved
+- relation: mentions
+  to: vision:editor-support
+  resolution: resolved

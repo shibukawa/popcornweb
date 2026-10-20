@@ -1,0 +1,155 @@
+id: api:html-boundary-protocol
+type: api
+title: HTML Boundary Wire Protocol
+summary: system:tinybind emits boundary placeholders and allocates their identity;
+  every completion framing and the client runtime that acts on it belong to Popcorn
+  Web.
+facts:
+  legacy_body: "system:tinybind emits boundary placeholders and allocates their identity;\
+    \ every completion framing and the client runtime that acts on it belong to Popcorn\
+    \ Web.\n\n```yaml\nupstream_emits:\n  placeholder: \"<tb-boundary id=\\\"tb-N\\\
+    \" style=\\\"display:contents\\\">fallback</tb-boundary>\", where the element\
+    \ name and the id prefix follow the configured boundary prefix from system:tinybind\
+    \ v0.3.1 and carry the Popcorn Web brand here\n  commit: shell, merged head, and\
+    \ every fallback flush before slow work settles\n  head: component contributions\
+    \ only, with nothing injected\n  completion: htmlbind.Content carries BoundaryID\
+    \ and HTML; WriteTo writes the bare fragment and nothing else\n  order: settle\
+    \ order, not document order\nbaseline: v0.1.20 removed the template, the marker,\
+    \ and the runtime script from the module\nframework_owns:\n  - the framing written\
+    \ around each fragment, on every transport\n  - the client runtime that applies\
+    \ a fragment to its placeholder\n  - keeping framing and runtime consistent, since\
+    \ they are one design\n  narrowed_at_v0_3_0: the fetch envelope and its runtime\
+    \ half come from upstream, so what stays framework-owned is the parser and record\
+    \ envelopes, the merged asset of requirement:unified-update-runtime, and the naming;\
+    \ decision:update-runtime-convergence records why\nenvelopes:\n  parser_driven:\n\
+    \    use: the streaming initial load, where the browser parser consumes the response\
+    \ as it arrives\n    framing: \"<template data-tb-boundary=\\\"tb-N\\\">fragment</template><tb-apply\
+    \ for=\\\"tb-N\\\"></tb-apply>\"\n    trigger: the tb-apply marker, never the\
+    \ template element\n    rationale: an HTML parser inserts an element at its start\
+    \ tag, so reacting to the template can read an unfinished one and replace the\
+    \ placeholder with nothing, losing the fallback along with the result\n    evidence:\
+    \ observed once the template start tag landed in its own network chunk; invisible\
+    \ in development, and surfacing only once a proxy, TLS record, or compressing\
+    \ encoder splits the bytes\n    invariant: the marker follows the closing template\
+    \ tag in the byte stream, so it cannot exist before its template is complete,\
+    \ however the bytes were chunked\n    ownership_note: the module no longer enforces\
+    \ this, so the framing and the runtime must preserve it deliberately\n  document_replacement:\n\
+    \    use: decision:unhandled-boundary-escalation, where a page is replaced rather\
+    \ than patched\n    framing: an inert template holding the error document followed\
+    \ by its own marker, carrying no boundary id\n    target: the children of the\
+    \ document body, so no identifier is needed\n    trigger: the marker, for the\
+    \ same parser reason as a completion\n    terminal: nothing may be written after\
+    \ it, and the runtime ignores any later completion\n  record_driven:\n    use:\
+    \ api:live-delivery-protocol, where deliveries continue after the document is\
+    \ complete\n    framing: one JSON record per delivery from htmlbind.Content.AppendJSON,\
+    \ never markup\n    rationale: past the initial document there is no parser reading,\
+    \ so the marker rule has nothing to trigger\n  fetch_driven:\n    use: flow:partial-refresh\
+    \ and any navigation the runtime drives with fetch\n    framing: boundary id and\
+    \ HTML as data, never marker markup\n    trigger: the runtime applies by id once\
+    \ it holds the complete bytes, because a resolved fetch already proves completeness\n\
+    \    rationale: no parser runs over a fetched body, so a marker has nothing to\
+    \ connect; parsing one into a detached document does not upgrade custom elements\
+    \ at all, and adopting the nodes later upgrades them at an unpredictable point\n\
+    \    supplied_by: system:tinybind htmlupdate from v0.3.0, per decision:update-runtime-convergence,\
+    \ so the delta encoder, the operation kinds, and the manifest codec are no longer\
+    \ this framework's to define\n    operations: replace for a boundary, plus head\
+    \ operations installing a first-appearing component's tags before its markup lands\n\
+    \    addressing: the framework boundary attribute first, then the author-written\
+    \ element id, since requirement:action-response-update and requirement:reloadable-component-endpoint\
+    \ address regions the author named\n    streamed_form: one record per line, each\
+    \ carrying its own manifest entry because a trailing manifest cannot precede the\
+    \ operations it describes, and an explicit terminator because that is the only\
+    \ way to tell a finished render from a truncated one\nrules:\n  - marker framing\
+    \ appears only in a parser-driven response body\n  - the runtime core is a plain\
+    \ apply function taking a boundary id and HTML\n  - a custom element, where used,\
+    \ is a thin parser-path adapter over that function\n  - apply each boundary at\
+    \ most once per delivery; a settle-once boundary therefore applies once, and a\
+    \ live one applies per delivery into the range it already holds\n  - do nothing\
+    \ when the target placeholder is missing and no range holds that id, so a truncated\
+    \ or superseded response leaves the fallback visible\n  - no framing carries script,\
+    \ so policy:security-response-headers needs no nonce beyond the shell reference\n\
+    cleanup:\n  on_apply: the placeholder element and the framing elements are removed,\
+    \ and the applied content is left bracketed by a pair of comment nodes carrying\
+    \ the boundary id\n  why_a_range: a live boundary is re-rendered for as long as\
+    \ its subscription lives, so its content needs an address that survives the first\
+    \ delivery; comments are inert, invisible to CSS and layout, and bracket a range\
+    \ rather than wrap it, so a delivery of several top-level nodes needs no container\
+    \ element the author never wrote\n  why_every_boundary: nothing on the wire says\
+    \ which boundary is live, since the placeholder markup and the delivery record\
+    \ are identical for both kinds, so the range is kept for all of them\n  effect:\
+    \ no id, template, or marker element survives an apply, and applied boundaries\
+    \ still cannot collide with anything later\n  cost: two comment nodes per applied\
+    \ boundary, which is the price of the address a live delivery replaces\n  not_unconditional:\
+    \ a boundary that never settles keeps its placeholder on purpose, because that\
+    \ placeholder is the visible fallback\n  nested_reuse: an enclosing live boundary\
+    \ re-rendering removes the ranges inside it, and the replacement subtree carries\
+    \ those boundaries' placeholders again under the same ids, so the next delivery\
+    \ re-establishes them\nidentifiers:\n  scope: allocated upstream; a top-level\
+    \ boundary is tb-1, tb-2\n  positional_since_v0_2_7:\n    shape: each boundary's\
+    \ subtree is a namespace under its own id, so a nested boundary is tb-1-1 rather\
+    \ than a number from one flat counter\n    gained: the same chain executed again\
+    \ produces the same ids, which is what requirement:live-connection-recovery reconnects\
+    \ against, and a nested id no longer depends on the order siblings settled in\n\
+    \    breaking: a project with a boundary nested inside another sees different\
+    \ ids than before\n    affects_here: the fetch-path rewrite below namespaces whole\
+    \ ids, so it keeps working, but any code matching the flat tb-N shape does not\n\
+    \  cleared_by_apply: an applied boundary removes its own id, so history is not\
+    \ what collides\n  remaining_collisions:\n    unsettled: a boundary that timed\
+    \ out or was cut off keeps its placeholder forever, and a later render numbering\
+    \ from tb-1 duplicates that id\n    superseded: completions from a response still\
+    \ in flight carry ids the next response reuses\n    concurrent: two refreshes\
+    \ rendered at once both number from tb-1\n  resolution:\n    parser_path: no rewrite\
+    \ needed; an initial load parses into a fresh document\n    fetch_path: the runtime\
+    \ rewrites placeholder ids to a per-response namespace as it inserts a fragment,\
+    \ and maps arriving completion ids through the same rename\n    why_it_works:\
+    \ the framework owns both the framing and the insertion on this path, so it holds\
+    \ the bytes before they reach the document\n    scope_of_rewrite: every inserted\
+    \ fragment, since a completion can carry nested boundaries of its own\n  upstream_change:\
+    \ not required, so document-lifetime identity stays a simplification rather than\
+    \ a blocker\nrejected_alternative:\n  what: read every boundary through fetch,\
+    \ including the initial load, to have one application mechanism\n  why: the boundaries\
+    \ could not flush until the client asked for them, which forfeits the single-response\
+    \ property of flow:initial-streaming-render\ntransport_boundary: htmlbind writes\
+    \ no headers, sets no status, and chooses no encoding\n```"
+  legacy_parse_issues:
+  - kind: legacy_parse_error
+    block: 0
+    message: "while parsing a block mapping\n  in \"<unicode string>\", line 2, column\
+      \ 3:\n      placeholder: \"<tb-boundary id=\\\" ... \n      ^\nexpected <block\
+      \ end>, but found ','\n  in \"<unicode string>\", line 2, column 92:\n     ...\
+      \ ntents\\\">fallback</tb-boundary>\", where the element name and the ... \n\
+      \                                         ^"
+relations:
+- relation: mentions
+  to: api:live-delivery-protocol
+  resolution: resolved
+- relation: mentions
+  to: decision:unhandled-boundary-escalation
+  resolution: resolved
+- relation: mentions
+  to: decision:update-runtime-convergence
+  resolution: resolved
+- relation: mentions
+  to: flow:initial-streaming-render
+  resolution: resolved
+- relation: mentions
+  to: flow:partial-refresh
+  resolution: resolved
+- relation: mentions
+  to: policy:security-response-headers
+  resolution: resolved
+- relation: mentions
+  to: requirement:action-response-update
+  resolution: resolved
+- relation: mentions
+  to: requirement:live-connection-recovery
+  resolution: resolved
+- relation: mentions
+  to: requirement:reloadable-component-endpoint
+  resolution: resolved
+- relation: mentions
+  to: requirement:unified-update-runtime
+  resolution: resolved
+- relation: mentions
+  to: system:tinybind
+  resolution: resolved

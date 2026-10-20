@@ -1,0 +1,437 @@
+id: requirement:component-script-event-binding
+type: requirement
+title: Component Script Event Binding
+summary: A template names a handler its component's script block declared, and the
+  runtime binds it as a listener on that element, so the handler is written beside
+  the markup that triggers it without the inline script a strict CSP forbids and the
+  module scope makes unreachable anyway.
+facts:
+  legacy_body: "A template names a handler its component's script block declared,\
+    \ and the runtime binds it as a listener on that element, so the handler is written\
+    \ beside the markup that triggers it without the inline script a strict CSP forbids\
+    \ and the module scope makes unreachable anyway.\n\n```yaml\nsource: the authored-islands\
+    \ tier of concept:interaction-cost-ladder, which today costs an author their own\
+    \ querySelector plumbing\nrides_on: the per-instance lifecycle requirement:client-signal-registry\
+    \ already ships, so this adds a binding pass to a mount that exists rather than\
+    \ a lifecycle\nwhy_an_inline_handler_cannot_be_the_answer:\n  module_scope: the\
+    \ script block of system:tinybind v0.5.5 makes the block an ES module, so an exported\
+    \ function is not a global and onclick=\"increment()\" resolves nothing\n  csp:\
+    \ policy:security-response-headers is written so script-src can be self with no\
+    \ nonce, and requirement:unified-update-runtime states applying every path under\
+    \ no inline allowance as an acceptance condition; an event handler content attribute\
+    \ needs unsafe-hashes at least\n  it_compiles_today: the event attribute context\
+    \ rule of system:tinybind leaves a static on-attribute untouched, so a template\
+    \ writing one generates, ships, and fails in the browser with nothing having said\
+    \ so\n  lifetime: an attribute handler is re-parsed with the markup and belongs\
+    \ to no scope, so it survives none of the release requirement:client-signal-registry\
+    \ performs and reinstalls itself on every swap\n  therefore: the feature has to\
+    \ be a lowering, which is the same shape server-action already has\nauthoring:\n\
+    \  writes: an attribute on the element naming a handler, with no call syntax and\
+    \ no arguments\n  spelled: decision:event-binding-attribute-spelling\n  element_it_resolves_under:\
+    \ the nearest enclosing component declaring a script block, which is the element\
+    \ carrying the marker requirement:client-signal-registry mounts against\n  name_it_resolves_against:\
+    \ what that instance's setup returned, per decision:component-handler-namespace\n\
+    \  handler_shape: the function receives the event, whose currentTarget is the\
+    \ element the attribute was written on\n  no_arguments: an argument list is an\
+    \ expression to evaluate at bind time, and a name reached in a namespace is not;\
+    \ what varies per element is read from the DOM or closed over by setup\n  precedent:\
+    \ rule:client-event-authoring already tells an author to close over the constant\
+    \ and read the varying, and this is the same rule one layer down\nshipped_upstream_2026_08_12:\n\
+    \  version: system:tinybind v0.5.8, which reserves the attribute, resolves the\
+    \ name against an answer this framework supplies, and lowers it\n  emitted: one\
+    \ attribute per element listing every pair, in the comma-and-colon grammar this\
+    \ catalog asked for, so click:increment,blur:validate is one indexed selector\
+    \ away\n  reservation_is_narrower_than_proposed: it applies only inside a component\
+    \ declaring a script block, and elsewhere an on-prefixed hyphenated attribute\
+    \ is emitted unread\n  not_matched: a second hyphen, so on-my-event stays the\
+    \ ordinary custom-element attribute it was\n  refused: a computed value, and two\
+    \ of the same event on one element\n  what_is_left_here: the parser behind the\
+    \ seam and the runtime binding, both of which this requirement already specifies\n\
+    lowering:\n  emits: a data attribute carrying the event name and the handler name,\
+    \ replacing the authored attribute\n  never_emitted: the authored attribute itself,\
+    \ matching how the lowering never emits server-action\n  static: the value is\
+    \ a string literal, so the pair is a compile-time constant and folds into the\
+    \ surrounding static run\n  untouched: every other attribute on the element survives\
+    \ unread, unchanged from the server-action rule\n  several: one element may declare\
+    \ more than one event\n  why_the_authored_attribute_cannot_simply_survive:\n \
+    \   selector: CSS has no attribute-name prefix match, so finding on-anything means\
+    \ walking every element and iterating its attributes, on every mount and every\
+    \ swap; a lowered marker is one indexed querySelectorAll, which is the call the\
+    \ runtime already makes for the scope marker at pwbrowser/boundary.js:600\n  \
+    \  collision: the event attribute context rule of system:tinybind says a hyphenated\
+    \ on-name belongs to a custom element, so leaving it in the DOM is claiming a\
+    \ namespace that document explicitly assigned elsewhere\n    checking_is_separable:\
+    \ generation could check the name and still emit it unchanged, so this is a mechanism\
+    \ argument rather than a checking one\n  emitted_shape:\n    settled: with the\
+    \ user 2026-08-11, one prefixed event attribute listing what the element binds,\
+    \ such as click,blur\n    selector: one indexed querySelectorAll over that attribute\
+    \ finds every behaviour-bearing element of either kind, which is the constraint\
+    \ that ruled the authored attribute out\n    grammar_already_ships: comma between\
+    \ entries and colon within one is what parseScopeCatalog reads at pwbrowser/boundary.js:742,\
+    \ so a packed pair list reuses a parse rule that is written, tested, and documented\
+    \ rather than inventing a second\n    prefixed: the framework prefix, like every\
+    \ other attribute it writes and like the configurable spellings api:client-update-api\
+    \ publishes, so an unprefixed name cannot collide with an application's own or\
+    \ a third party's\nbinding:\n  when: in the mount pass, after setup returned,\
+    \ since the namespace is what setup produced and does not exist before then\n\
+    \  how: the runtime scans the mounted subtree for the emitted attribute and adds\
+    \ a listener per declared pair from that instance's namespace\n  what_the_runtime_already_has:\
+    \ boundary.js calls setup(element, scope) at pwbrowser/boundary.js:721 and keeps\
+    \ what it returned, so the namespace is a value in hand rather than a new channel\n\
+    \  what_changes_in_the_runtime: mounted stores a record rather than a teardown\
+    \ function, because a later swap inside an already-mounted component needs the\
+    \ namespace again\n  a_region_swapped_later: the incoming markup is scanned for\
+    \ the same attribute and bound against the nearest ancestor marker's retained\
+    \ namespace, which is what makes a nested redraw inside a mounted component work\n\
+    \  window_before_mount: an element carrying the attribute is inert until its module\
+    \ imports and its setup returns, unchanged in kind from today, since the import\
+    \ was always async; a control that must not be pressed early is rendered disabled\
+    \ and enabled by setup\n  release: none needed; a listener added directly to a\
+    \ node dies with the node, so nothing is recorded and nothing can leak\n  unresolved_name:\
+    \ reported through the diagnostics channel and the element is left inert, never\
+    \ guessed at\na_handler_may_be_async:\n  decided: with the user 2026-08-11, together\
+    \ with the same answer for setup\n  awaited: the runtime awaits what a handler\
+    \ returned, so the gesture is in flight until it settles\n  in_flight_state:\n\
+    \    re_entry: guarded by the runtime, which ignores a second activation of the\
+    \ same element rather than queueing it; this is the correctness half and it works\
+    \ on any element\n    marker: the busy attribute requirement:update-navigation-continuity\
+    \ already maintains, so an application styles a pending gesture with what it already\
+    \ has\n    announced: aria-disabled rather than the disabled property\n    why_not_disabled:\
+    \ disabling the focused control moves focus to the document body, which loses\
+    \ the user's place and is a known regression of the pattern; aria-disabled says\
+    \ the same thing to assistive technology and moves nothing, and the runtime's\
+    \ own guard is what actually blocks the second activation\n    ordering_with_a_form:\
+    \ the fields are collected before anything is marked, so nothing the user typed\
+    \ is excluded by a control that has since been marked\n  rejection: reported through\
+    \ the diagnostics channel; the element leaves its in-flight state either way,\
+    \ because a handler that threw must not leave a control inert forever\nrejected_delegation:\n\
+    \  shape: one listener per event type at the document, dispatching by the nearest\
+    \ matching ancestor\n  buys: an element inserted at any time works with no rescan\n\
+    \  why_not: the module is imported dynamically, so a dispatcher may have to await\
+    \ it, and a handler cannot preventDefault after an await; a submit or a modified\
+    \ click would take its default action before the handler ran\n  cost_of_the_choice:\
+    \ a rescan on every swap, which is a walk the apply loop is already doing for\
+    \ markers\n  settled_for_both: rule:template-behavior-attributes takes this walk\
+    \ for the server side too, since the action side never needed delegation and one\
+    \ mechanism is worth more than the rescan it saves\nchecking:\n  asked_for: system:tinybind\
+    \ resolving the name at generation, per decision:component-handler-namespace,\
+    \ so a typo fails the build the way a renamed server action already does\n  what_it_costs_upstream:\
+    \ reading the block, which reverses the standing position that the module reads\
+    \ no JavaScript and is the one part of this that is an agreement rather than an\
+    \ implementation\n  total_for_the_idiomatic_shape: a setup returning an object\
+    \ literal and a top-level function declaration are both enumerable; a namespace\
+    \ assembled conditionally is not, and is reported as unverified rather than passing\
+    \ silently\n  what_generation_can_check_with_no_parser_at_all: that the element\
+    \ is inside a component declaring a script block, which is a generation error\
+    \ naming the file, line and column when it is not\n  until_then: a name unresolved\
+    \ at mount is reported through the diagnostics channel, which stays necessary\
+    \ afterwards because a partial check is not a total one\n  not_mitigated_by_a_convention:\
+    \ requiring a prefix or a naming rule would check spelling and not existence\n\
+    why_this_beats_setup_doing_it_itself:\n  possible_today: setup receives the element\
+    \ and can addEventListener on anything under it, so nothing here is newly expressible\n\
+    \  the_handler_is_the_same_function_either_way: decision:component-handler-namespace\
+    \ resolves it in setup's own closure, so this removes the wiring and changes nothing\
+    \ about what a handler can reach\n  what_it_costs_instead: a selector per handler,\
+    \ written in the script and matched in the markup, which is the untyped string\
+    \ pairing server-action exists to remove one layer up\n  loops: an element rendered\
+    \ inside a for block needs the author to select many and bind each, and the declarative\
+    \ form binds each one where it was written\n  legibility: the reason a page's\
+    \ button does something is on the button, which is the property that makes this\
+    \ an ergonomics feature rather than sugar\nsecurity:\n  no_dynamic_names: the\
+    \ handler name is a static literal from the template, so no payload and no attribute\
+    \ an injected node could carry decides which function runs\n  the_rule_it_inherits:\
+    \ rule:client-event-authoring forbids publishing a general mechanism that dispatches\
+    \ by a string somebody else supplied, and a generation-time literal is the opposite\
+    \ of that\n  csp_unchanged: nothing inline is emitted, so script-src stays self\
+    \ with no nonce and no unsafe-hashes\n  cross_origin: the module URL is the server's\
+    \ own and already refused when it is not, unchanged from what boundary.js does\
+    \ today\nacceptance:\n  - a button naming a handler runs it on click, with no\
+    \ inline script and no author-written selector\n  - the handler receives the event\
+    \ and reaches the element it was written on\n  - a handler reads and writes the\
+    \ state its own instance's setup built, without deriving it from the event\n \
+    \ - twenty elements rendered in a loop each bind their own listener into their\
+    \ own instance's namespace\n  - a region replaced by a delta, a redraw, or an\
+    \ action response binds the handlers in the incoming markup\n  - an instance destroyed\
+    \ leaves no listener behind and records nothing that could\n  - a name no namespace\
+    \ holds fails generation once the block is read, and is reported at mount until\
+    \ then\n  - an element declaring a handler outside any component with a script\
+    \ block fails generation with a position\n  - a strict CSP with no inline allowance\
+    \ runs every bound handler\n  - a project declaring no handler regenerates byte-identical\
+    \ output\nopen_questions:\n  - whether a handler may be declared on the component's\
+    \ own root element, where the marker already is, or whether that collides with\
+    \ the marker's own reading\n  - whether an event needs modifiers such as prevent\
+    \ or stop, which every comparable framework grew and which each one spells differently\n\
+    \  - whether a page's own script reaches this, given a page is a component with\
+    \ a script block and the marker mechanism does not distinguish one\n```"
+  source: the authored-islands tier of concept:interaction-cost-ladder, which today
+    costs an author their own querySelector plumbing
+  rides_on: the per-instance lifecycle requirement:client-signal-registry already
+    ships, so this adds a binding pass to a mount that exists rather than a lifecycle
+  why_an_inline_handler_cannot_be_the_answer:
+    module_scope: the script block of system:tinybind v0.5.5 makes the block an ES
+      module, so an exported function is not a global and onclick="increment()" resolves
+      nothing
+    csp: policy:security-response-headers is written so script-src can be self with
+      no nonce, and requirement:unified-update-runtime states applying every path
+      under no inline allowance as an acceptance condition; an event handler content
+      attribute needs unsafe-hashes at least
+    it_compiles_today: the event attribute context rule of system:tinybind leaves
+      a static on-attribute untouched, so a template writing one generates, ships,
+      and fails in the browser with nothing having said so
+    lifetime: an attribute handler is re-parsed with the markup and belongs to no
+      scope, so it survives none of the release requirement:client-signal-registry
+      performs and reinstalls itself on every swap
+    therefore: the feature has to be a lowering, which is the same shape server-action
+      already has
+  authoring:
+    writes: an attribute on the element naming a handler, with no call syntax and
+      no arguments
+    spelled: decision:event-binding-attribute-spelling
+    element_it_resolves_under: the nearest enclosing component declaring a script
+      block, which is the element carrying the marker requirement:client-signal-registry
+      mounts against
+    name_it_resolves_against: what that instance's setup returned, per decision:component-handler-namespace
+    handler_shape: the function receives the event, whose currentTarget is the element
+      the attribute was written on
+    no_arguments: an argument list is an expression to evaluate at bind time, and
+      a name reached in a namespace is not; what varies per element is read from the
+      DOM or closed over by setup
+    precedent: rule:client-event-authoring already tells an author to close over the
+      constant and read the varying, and this is the same rule one layer down
+  shipped_upstream_2026_08_12:
+    version: system:tinybind v0.5.8, which reserves the attribute, resolves the name
+      against an answer this framework supplies, and lowers it
+    emitted: one attribute per element listing every pair, in the comma-and-colon
+      grammar this catalog asked for, so click:increment,blur:validate is one indexed
+      selector away
+    reservation_is_narrower_than_proposed: it applies only inside a component declaring
+      a script block, and elsewhere an on-prefixed hyphenated attribute is emitted
+      unread
+    not_matched: a second hyphen, so on-my-event stays the ordinary custom-element
+      attribute it was
+    refused: a computed value, and two of the same event on one element
+    what_is_left_here: the parser behind the seam and the runtime binding, both of
+      which this requirement already specifies
+  lowering:
+    emits: a data attribute carrying the event name and the handler name, replacing
+      the authored attribute
+    never_emitted: the authored attribute itself, matching how the lowering never
+      emits server-action
+    static: the value is a string literal, so the pair is a compile-time constant
+      and folds into the surrounding static run
+    untouched: every other attribute on the element survives unread, unchanged from
+      the server-action rule
+    several: one element may declare more than one event
+    why_the_authored_attribute_cannot_simply_survive:
+      selector: CSS has no attribute-name prefix match, so finding on-anything means
+        walking every element and iterating its attributes, on every mount and every
+        swap; a lowered marker is one indexed querySelectorAll, which is the call
+        the runtime already makes for the scope marker at pwbrowser/boundary.js:600
+      collision: the event attribute context rule of system:tinybind says a hyphenated
+        on-name belongs to a custom element, so leaving it in the DOM is claiming
+        a namespace that document explicitly assigned elsewhere
+      checking_is_separable: generation could check the name and still emit it unchanged,
+        so this is a mechanism argument rather than a checking one
+    emitted_shape:
+      settled: with the user 2026-08-11, one prefixed event attribute listing what
+        the element binds, such as click,blur
+      selector: one indexed querySelectorAll over that attribute finds every behaviour-bearing
+        element of either kind, which is the constraint that ruled the authored attribute
+        out
+      grammar_already_ships: comma between entries and colon within one is what parseScopeCatalog
+        reads at pwbrowser/boundary.js:742, so a packed pair list reuses a parse rule
+        that is written, tested, and documented rather than inventing a second
+      prefixed: the framework prefix, like every other attribute it writes and like
+        the configurable spellings api:client-update-api publishes, so an unprefixed
+        name cannot collide with an application's own or a third party's
+  binding:
+    when: in the mount pass, after setup returned, since the namespace is what setup
+      produced and does not exist before then
+    how: the runtime scans the mounted subtree for the emitted attribute and adds
+      a listener per declared pair from that instance's namespace
+    what_the_runtime_already_has: boundary.js calls setup(element, scope) at pwbrowser/boundary.js:721
+      and keeps what it returned, so the namespace is a value in hand rather than
+      a new channel
+    what_changes_in_the_runtime: mounted stores a record rather than a teardown function,
+      because a later swap inside an already-mounted component needs the namespace
+      again
+    a_region_swapped_later: the incoming markup is scanned for the same attribute
+      and bound against the nearest ancestor marker's retained namespace, which is
+      what makes a nested redraw inside a mounted component work
+    window_before_mount: an element carrying the attribute is inert until its module
+      imports and its setup returns, unchanged in kind from today, since the import
+      was always async; a control that must not be pressed early is rendered disabled
+      and enabled by setup
+    release: none needed; a listener added directly to a node dies with the node,
+      so nothing is recorded and nothing can leak
+    unresolved_name: reported through the diagnostics channel and the element is left
+      inert, never guessed at
+  a_handler_may_be_async:
+    decided: with the user 2026-08-11, together with the same answer for setup
+    awaited: the runtime awaits what a handler returned, so the gesture is in flight
+      until it settles
+    in_flight_state:
+      re_entry: guarded by the runtime, which ignores a second activation of the same
+        element rather than queueing it; this is the correctness half and it works
+        on any element
+      marker: the busy attribute requirement:update-navigation-continuity already
+        maintains, so an application styles a pending gesture with what it already
+        has
+      announced: aria-disabled rather than the disabled property
+      why_not_disabled: disabling the focused control moves focus to the document
+        body, which loses the user's place and is a known regression of the pattern;
+        aria-disabled says the same thing to assistive technology and moves nothing,
+        and the runtime's own guard is what actually blocks the second activation
+      ordering_with_a_form: the fields are collected before anything is marked, so
+        nothing the user typed is excluded by a control that has since been marked
+    rejection: reported through the diagnostics channel; the element leaves its in-flight
+      state either way, because a handler that threw must not leave a control inert
+      forever
+  rejected_delegation:
+    shape: one listener per event type at the document, dispatching by the nearest
+      matching ancestor
+    buys: an element inserted at any time works with no rescan
+    why_not: the module is imported dynamically, so a dispatcher may have to await
+      it, and a handler cannot preventDefault after an await; a submit or a modified
+      click would take its default action before the handler ran
+    cost_of_the_choice: a rescan on every swap, which is a walk the apply loop is
+      already doing for markers
+    settled_for_both: rule:template-behavior-attributes takes this walk for the server
+      side too, since the action side never needed delegation and one mechanism is
+      worth more than the rescan it saves
+  checking:
+    asked_for: system:tinybind resolving the name at generation, per decision:component-handler-namespace,
+      so a typo fails the build the way a renamed server action already does
+    what_it_costs_upstream: reading the block, which reverses the standing position
+      that the module reads no JavaScript and is the one part of this that is an agreement
+      rather than an implementation
+    total_for_the_idiomatic_shape: a setup returning an object literal and a top-level
+      function declaration are both enumerable; a namespace assembled conditionally
+      is not, and is reported as unverified rather than passing silently
+    what_generation_can_check_with_no_parser_at_all: that the element is inside a
+      component declaring a script block, which is a generation error naming the file,
+      line and column when it is not
+    until_then: a name unresolved at mount is reported through the diagnostics channel,
+      which stays necessary afterwards because a partial check is not a total one
+    not_mitigated_by_a_convention: requiring a prefix or a naming rule would check
+      spelling and not existence
+  why_this_beats_setup_doing_it_itself:
+    possible_today: setup receives the element and can addEventListener on anything
+      under it, so nothing here is newly expressible
+    the_handler_is_the_same_function_either_way: decision:component-handler-namespace
+      resolves it in setup's own closure, so this removes the wiring and changes nothing
+      about what a handler can reach
+    what_it_costs_instead: a selector per handler, written in the script and matched
+      in the markup, which is the untyped string pairing server-action exists to remove
+      one layer up
+    loops: an element rendered inside a for block needs the author to select many
+      and bind each, and the declarative form binds each one where it was written
+    legibility: the reason a page's button does something is on the button, which
+      is the property that makes this an ergonomics feature rather than sugar
+  security:
+    no_dynamic_names: the handler name is a static literal from the template, so no
+      payload and no attribute an injected node could carry decides which function
+      runs
+    the_rule_it_inherits: rule:client-event-authoring forbids publishing a general
+      mechanism that dispatches by a string somebody else supplied, and a generation-time
+      literal is the opposite of that
+    csp_unchanged: nothing inline is emitted, so script-src stays self with no nonce
+      and no unsafe-hashes
+    cross_origin: the module URL is the server's own and already refused when it is
+      not, unchanged from what boundary.js does today
+  acceptance:
+  - a button naming a handler runs it on click, with no inline script and no author-written
+    selector
+  - the handler receives the event and reaches the element it was written on
+  - a handler reads and writes the state its own instance's setup built, without deriving
+    it from the event
+  - twenty elements rendered in a loop each bind their own listener into their own
+    instance's namespace
+  - a region replaced by a delta, a redraw, or an action response binds the handlers
+    in the incoming markup
+  - an instance destroyed leaves no listener behind and records nothing that could
+  - a name no namespace holds fails generation once the block is read, and is reported
+    at mount until then
+  - an element declaring a handler outside any component with a script block fails
+    generation with a position
+  - a strict CSP with no inline allowance runs every bound handler
+  - a project declaring no handler regenerates byte-identical output
+  open_questions:
+  - whether a handler may be declared on the component's own root element, where the
+    marker already is, or whether that collides with the marker's own reading
+  - whether an event needs modifiers such as prevent or stop, which every comparable
+    framework grew and which each one spells differently
+  - whether a page's own script reaches this, given a page is a component with a script
+    block and the marker mechanism does not distinguish one
+acceptance:
+  item-64da886ec8827d23:
+    text: a button naming a handler runs it on click, with no inline script and no
+      author-written selector
+  item-cd49de7b17efbb98:
+    text: the handler receives the event and reaches the element it was written on
+  item-891e084ad48a57fe:
+    text: a handler reads and writes the state its own instance's setup built, without
+      deriving it from the event
+  item-e89dd604c9a50460:
+    text: twenty elements rendered in a loop each bind their own listener into their
+      own instance's namespace
+  item-89b528b5ed1e4720:
+    text: a region replaced by a delta, a redraw, or an action response binds the
+      handlers in the incoming markup
+  item-9177b1a6a9809d9f:
+    text: an instance destroyed leaves no listener behind and records nothing that
+      could
+  item-e3ae9c0b6d9544ee:
+    text: a name no namespace holds fails generation once the block is read, and is
+      reported at mount until then
+  item-868698499c3be2d8:
+    text: an element declaring a handler outside any component with a script block
+      fails generation with a position
+  item-169c7e56c556191e:
+    text: a strict CSP with no inline allowance runs every bound handler
+  item-e8405d1d7ca9d453:
+    text: a project declaring no handler regenerates byte-identical output
+open_questions:
+  item-8796194c2c007b98:
+    text: whether a handler may be declared on the component's own root element, where
+      the marker already is, or whether that collides with the marker's own reading
+  item-e8934f61ad2cd9af:
+    text: whether an event needs modifiers such as prevent or stop, which every comparable
+      framework grew and which each one spells differently
+  item-2e3482f0bfca4c9d:
+    text: whether a page's own script reaches this, given a page is a component with
+      a script block and the marker mechanism does not distinguish one
+relations:
+- relation: mentions
+  to: api:client-update-api
+  resolution: resolved
+- relation: mentions
+  to: concept:interaction-cost-ladder
+  resolution: resolved
+- relation: mentions
+  to: decision:component-handler-namespace
+  resolution: resolved
+- relation: mentions
+  to: decision:event-binding-attribute-spelling
+  resolution: resolved
+- relation: mentions
+  to: policy:security-response-headers
+  resolution: resolved
+- relation: mentions
+  to: requirement:client-signal-registry
+  resolution: resolved
+- relation: mentions
+  to: requirement:unified-update-runtime
+  resolution: resolved
+- relation: mentions
+  to: requirement:update-navigation-continuity
+  resolution: resolved
+- relation: mentions
+  to: rule:client-event-authoring
+  resolution: resolved
+- relation: mentions
+  to: rule:template-behavior-attributes
+  resolution: resolved
+- relation: mentions
+  to: system:tinybind
+  resolution: resolved

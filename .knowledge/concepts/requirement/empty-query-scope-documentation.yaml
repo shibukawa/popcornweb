@@ -1,0 +1,103 @@
+id: requirement:empty-query-scope-documentation
+type: requirement
+title: Document an Explicit Empty Query Generation Scope
+summary: Document that an application with no SQL queries still declares generate.queries = [] in popcornweb.toml.
+authority: authored
+lifecycle: accepted
+review_state: confirmed
+facts:
+  origin:
+    request: concept:bdf-printmanager-integration
+    source: source:bdf-printmanager-request
+    section: Smaller notes from the same integration
+  requester_priority: nonblocking documentation note
+  implementation_status: Implemented and verified in this repository; no BDF deployment is claimed.
+  required_spelling:
+    generate.queries: []
+  reported_behavior: Omitting generate.queries errors clearly; the request asks for documentation rather than a
+    change to required generation scopes.
+  implementation_report: docs/requests/bdf-printmanager-implementation.md
+relations:
+- relation: requested_by
+  to: concept:bdf-printmanager-integration
+  resolution: resolved
+  evidence:
+    source_id: source:bdf-printmanager-request
+    path: bdf-printmanager-public-assets.md
+    heading: Smaller notes from the same integration
+    input_hash: a2df65a9a5a065a50b78c3559e0f9b0c559e18ff5d7c22f9a08352ad4674a426
+- relation: clarifies
+  to: decision:explicit-generation-sources
+  resolution: resolved
+  evidence:
+    source_id: source:bdf-printmanager-request
+    path: bdf-printmanager-public-assets.md
+    heading: Smaller notes from the same integration
+    input_hash: a2df65a9a5a065a50b78c3559e0f9b0c559e18ff5d7c22f9a08352ad4674a426
+- relation: affects
+  to: data:project-config
+  resolution: resolved
+  evidence:
+    source_id: source:bdf-printmanager-request
+    path: bdf-printmanager-public-assets.md
+    heading: Smaller notes from the same integration
+    input_hash: a2df65a9a5a065a50b78c3559e0f9b0c559e18ff5d7c22f9a08352ad4674a426
+- relation: affects
+  to: api:cli-generate
+  resolution: resolved
+  evidence:
+    source_id: source:bdf-printmanager-request
+    path: bdf-printmanager-public-assets.md
+    heading: Smaller notes from the same integration
+    input_hash: a2df65a9a5a065a50b78c3559e0f9b0c559e18ff5d7c22f9a08352ad4674a426
+acceptance:
+  empty-query-docs:
+    text: The generation/build configuration documentation includes a no-query example with queries = [] and explains
+      that omission is different from an explicit empty scope.
+    authority: authored
+    evidence:
+      source_id: source:bdf-printmanager-request
+      path: bdf-printmanager-public-assets.md
+      heading: Smaller notes from the same integration
+      input_hash: a2df65a9a5a065a50b78c3559e0f9b0c559e18ff5d7c22f9a08352ad4674a426
+    verified_by:
+    - empty-query-docs
+verification:
+  empty-query-docs:
+    state: passed
+    method: static
+    test: 'Astro build: explicit queries = [] in English/Japanese documentation'
+    authority: observed
+    evidence:
+      path: website/src/content/docs/ja/reference/build-configuration.md
+      locator: 'Astro build: explicit queries = [] in English/Japanese documentation'
+    basis:
+    - path: go.mod
+      input_hash: 6395d43e84ea0b7fc07ade55b2846879f49afc2a2484ece5121ed4444ce5ed6f
+    - path: website/src/content/docs/ja/reference/build-configuration.md
+      input_hash: 742bcb7c2975e475bc632fab24a7a0a5c973a54acb0355e81cf517bef0a9b4cd
+    - path: website/src/content/docs/reference/build-configuration.md
+      input_hash: 5bd1ce4956251f7053b1d7d3e93561028716b92ff6b90a2061a39fb82e35749f
+non_goals:
+- Make generate.queries optional or change generation discovery.
+capabilities:
+  requested-behavior:
+    state: implemented
+    authority: observed
+    verified_by:
+    - empty-query-docs
+    basis:
+    - path: go.mod
+      input_hash: 6395d43e84ea0b7fc07ade55b2846879f49afc2a2484ece5121ed4444ce5ed6f
+    - path: website/src/content/docs/ja/reference/build-configuration.md
+      input_hash: 742bcb7c2975e475bc632fab24a7a0a5c973a54acb0355e81cf517bef0a9b4cd
+    - path: website/src/content/docs/reference/build-configuration.md
+      input_hash: 5bd1ce4956251f7053b1d7d3e93561028716b92ff6b90a2061a39fb82e35749f
+    evidence:
+      path: docs/requests/bdf-printmanager-implementation.md
+history:
+  implementation:
+    summary: Implemented the requested behavior and documentation; acceptance verification records refer to local
+      fixtures and saved input hashes.
+    evidence:
+      path: docs/requests/bdf-printmanager-implementation.md

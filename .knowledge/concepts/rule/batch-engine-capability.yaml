@@ -1,0 +1,139 @@
+id: rule:batch-engine-capability
+type: rule
+title: Batch Capability Per Engine
+summary: What batching is worth on each dialect of rule:rdb-dsn-resolution, how a
+  caller reaches it, and what it costs there, because this is the one SQL capability
+  that differs per engine in kind rather than only in syntax.
+facts:
+  legacy_body: "What batching is worth on each dialect of rule:rdb-dsn-resolution,\
+    \ how a caller reaches it, and what it costs there, because this is the one SQL\
+    \ capability that differs per engine in kind rather than only in syntax.\n\n```yaml\n\
+    status: written up 2026-08-09 as guides/storage/batching, both locales\npurpose:\
+    \ the fact table requirement:native-pgx-escape-hatch wrote its\n  documentation\
+    \ from; the framework implements none of this itself\npostgres:\n  transport:\
+    \ pgx SendBatch, one pipelined extended-protocol exchange\n  reached_by: api:native-connection-access,\
+    \ because pw.DB reports absence on a\n    requirement:pgx-native-execution connection\n\
+    \  exec: yes\n  query: yes, rows delivered per queued statement\n  cost: one round\
+    \ trip\n  failing_index: exact; pgx names the queued statement that failed\n \
+    \ transaction: joins an open data:transaction-scope and keeps the one round\n\
+    \    trip, per decision:escape-hatch-transaction-scope\n  atomicity_without_a_scope:\
+    \ >\n    everything between the first message and the Sync is one implicit\n \
+    \   transaction, so a failure rolls the whole batch back and later statements\n\
+    \    never run\n  prepared_statements: >\n    already in use, and the batch does\
+    \ not disturb them. The default exec mode\n    is cache_statement with a per-connection\
+    \ LRU, and every mode but the simple\n    protocol sends the batch over the extended\
+    \ protocol, so a queued statement\n    is prepared and reused exactly as an unbatched\
+    \ one is\n  caveats:\n    parse_before_execute: >\n      the extended protocol\
+    \ may parse every queued statement before any of them\n      executes, so DDL\
+    \ followed by use of what it created fails inside a batch\n      where it would\
+    \ succeed inside an explicit transaction. This is the\n      sharpest difference\
+    \ from ordinary execution and the guide states it\n    non_transactional_statements:\
+    \ an implicit transaction is still a\n      transaction block, so VACUUM, CREATE\
+    \ DATABASE, and CREATE INDEX\n      CONCURRENTLY are rejected in any batch of\
+    \ more than one statement\n    isolation: cannot be set for the implicit transaction;\
+    \ a batch needing\n      REPEATABLE READ or SERIALIZABLE runs inside api:transaction-runner,\
+    \ which\n      is where an isolation level belongs anyway\n  verdict: the only\
+    \ engine where a batch is a batch, and the reason\n    requirement:native-pgx-escape-hatch\
+    \ exists\nsqlite:\n  transport: sqlbatch sequential execution, one statement at\
+    \ a time, inside one\n    transaction\n  reached_by: nothing new is needed; api:transaction-runner\
+    \ opens that same\n    transaction\n  exec: yes\n  query: yes\n  cost: no round\
+    \ trips to save; what it saves is the fsync each autocommit\n    statement would\
+    \ otherwise pay, measured at 200 inserts in ~50ms against ~1ms\n  failing_index:\
+    \ exact, because each statement is executed separately\n  prepared_statements:\
+    \ unchanged from ordinary execution; the transport calls\n    ExecContext and\
+    \ QueryContext on the leased connection, so database/sql\n    handles statements\
+    \ there exactly as it does outside a batch\n  verdict: >\n    the batch adds nothing\
+    \ over pw.Transaction, because it is pw.Transaction\n    with a queue in front.\
+    \ The win belongs to the transaction, so the guidance\n    is to open one and\
+    \ write ordinary statements inside it\nmysql:\n  transport: sqlbatch, statements\
+    \ joined into one multi-statement command\n  reached_by: pw.DB, which is a real\
+    \ *sql.DB on this engine, so a caller uses\n    sqlbatch directly with no framework\
+    \ surface involved\n  exec: yes, with per-statement RowsAffected and LastInsertID\n\
+    \  query: refused; a queued read is served only by the sequential fallback\n \
+    \ cost: one round trip, or three when the transport adds its own transaction\n\
+    \  failing_index: usually unknown, reported as -1; the server returns one error\n\
+    \    for the whole command and the driver returns no result to count against\n\
+    \  transaction: cannot join an open scope at all, because the transport enters\n\
+    \    through sql.Conn.Raw and sql.Tx has none\n  atomicity: the transport wraps\
+    \ the joined statement in a transaction, which\n    DDL breaks by committing implicitly\n\
+    \  size_ceiling: the rendered statement is checked against maxAllowedPacket, and\n\
+    \    an oversized batch arrives as the same skip error as the causes below\n \
+    \ prepared_statements:\n    exclusive_with_the_batch: >\n      a multi-statement\
+    \ command cannot be prepared, which is the reason\n      interpolateParams appears\
+    \ in required_dsn: the driver renders arguments\n      into the SQL text client-side\
+    \ instead of binding them server-side.\n      Choosing the batch on mysql is choosing\
+    \ to give those statements up as\n      prepared ones, by the same mechanism security_posture\
+    \ warns about\n    the_alternative: without interpolateParams a statement carrying\
+    \ arguments is\n      prepared and then executed, two round trips each; the batch\
+    \ trades N of\n      those for one interpolated command\n  required_dsn:\n   \
+    \ multiStatements: true, always; the capability is negotiated at handshake so\n\
+    \      no batch can turn it on\n    interpolateParams: true whenever a queued\
+    \ statement carries arguments\n    detection: >\n      neither flag is readable\
+    \ from the connection, so a refusal is produced by\n      failing and translating.\
+    \ The driver spends one skip error on three causes\n      — interpolateParams\
+    \ off, an argument it cannot inline, and a statement\n      over max_allowed_packet\
+    \ — so the message names all three\n  framework_does_not_default_them:\n    precedent_considered:\
+    \ the engine already normalizes parseTime=true, per\n      rule:rdb-dsn-resolution,\
+    \ so normalizing more would be consistent in form\n    why_not: >\n      multiStatements\
+    \ widens the blast radius of any injection that reaches the\n      SQL text, on\
+    \ every connection, for every deployment, whether or not it\n      ever batches.\
+    \ That is a security posture change the framework must not\n      make on an operator's\
+    \ behalf to enable an optimization they did not ask\n      for\n    instead: the\
+    \ operator sets both flags knowingly, and the guide presents the\n      batch\
+    \ as a trade rather than a default\n  security_posture: with multiStatements on,\
+    \ an injection reaching the SQL text\n    can append a second statement; with\
+    \ interpolateParams on, the driver\n    escapes values itself instead of sending\
+    \ them out of band\n  verdict: reachable today with no framework change, and worth\
+    \ it only for a\n    write-heavy path whose operator accepts both flags\nsnapshot_exception:\n\
+    \  what: reads inside one batch do not necessarily share a snapshot\n  why: postgres\
+    \ takes a fresh one per statement at READ COMMITTED, while sqlite\n    and mysql\
+    \ InnoDB share one across the containing transaction\n  consequence: nothing at\
+    \ any layer can reconcile this, so a batch promises\n    order and atomicity and\
+    \ not a consistent view\nrules:\n  - the framework prepares nothing explicitly,\
+    \ because the sqlbind executor\n    seam of requirement:pgx-native-execution carries\
+    \ exec and query and no\n    Prepare; statement reuse is the driver's, automatic\
+    \ on postgres and absent\n    by construction inside a mysql batch\n  - capability\
+    \ is a static property of the dialect and the connection kind,\n    never a runtime\
+    \ probe, except the mysql DSN flags which cannot be read\n  - a batch is never\
+    \ described only as faster; each engine entry states what it\n    costs, and two\
+    \ of the three cost something\n  - no framework code depends on this table; it\
+    \ governs documentation and the\n    postgres accessor, nothing else\nverification:\n\
+    \  - done: the postgres exec, transaction-joining, and rollback claims, through\n\
+    \    api:native-connection-access against postgres 17\n  - outstanding: the sqlite\
+    \ fsync numbers are quoted from\n    system:tinygodriver rather than re-measured\
+    \ here, and the guide attributes\n    them to the driver for that reason\n  -\
+    \ out_of_scope: the mysql claims stay system:tinygodriver's, which owns and\n\
+    \    tests that transport; this catalog records them rather than re-verifying\n\
+    ```"
+  legacy_parse_issues:
+  - kind: legacy_parse_error
+    block: 0
+    message: "while scanning a simple key\n  in \"<unicode string>\", line 123, column\
+      \ 5:\n        api:native-connection-access aga ... \n        ^\ncould not find\
+      \ expected ':'\n  in \"<unicode string>\", line 124, column 3:\n      - outstanding:\
+      \ the sqlite fsync  ... \n      ^"
+relations:
+- relation: mentions
+  to: api:native-connection-access
+  resolution: resolved
+- relation: mentions
+  to: api:transaction-runner
+  resolution: resolved
+- relation: mentions
+  to: data:transaction-scope
+  resolution: resolved
+- relation: mentions
+  to: decision:escape-hatch-transaction-scope
+  resolution: resolved
+- relation: mentions
+  to: requirement:native-pgx-escape-hatch
+  resolution: resolved
+- relation: mentions
+  to: requirement:pgx-native-execution
+  resolution: resolved
+- relation: mentions
+  to: rule:rdb-dsn-resolution
+  resolution: resolved
+- relation: mentions
+  to: system:tinygodriver
+  resolution: resolved

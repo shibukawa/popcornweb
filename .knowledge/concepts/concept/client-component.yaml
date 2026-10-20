@@ -1,0 +1,33 @@
+id: concept:client-component
+type: concept
+title: Client Component
+summary: An explicitly declared optional island owns browser-only state and events
+  without requiring full-document hydration.
+facts:
+  legacy_body: "An explicitly declared optional island owns browser-only state and\
+    \ events without requiring full-document hydration.\n\n```yaml\nrequirements:\n\
+    \  - serializable typed props\n  - local state and DOM events\n  - modules loaded\
+    \ only for client boundaries used by the page, delivered through requirement:framework-script-assets\n\
+    \  - calls to api:server-action and flow:partial-refresh\n  - separation from\
+    \ server-only functions and credentials\n  - independent failure boundary where\
+    \ practical\nbaseline: presentational and server components emit usable HTML without\
+    \ JavaScript\n```"
+  requirements:
+  - serializable typed props
+  - local state and DOM events
+  - modules loaded only for client boundaries used by the page, delivered through
+    requirement:framework-script-assets
+  - calls to api:server-action and flow:partial-refresh
+  - separation from server-only functions and credentials
+  - independent failure boundary where practical
+  baseline: presentational and server components emit usable HTML without JavaScript
+relations:
+- relation: mentions
+  to: api:server-action
+  resolution: resolved
+- relation: mentions
+  to: flow:partial-refresh
+  resolution: resolved
+- relation: mentions
+  to: requirement:framework-script-assets
+  resolution: resolved

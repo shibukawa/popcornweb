@@ -1,0 +1,51 @@
+id: policy:public-asset-resolution
+type: policy
+title: Public Asset Resolution
+summary: Public asset lookup preserves source consistency while allowing an explicit
+  working-directory override of embedded assets.
+facts:
+  legacy_body: "Public asset lookup preserves source consistency while allowing an\
+    \ explicit working-directory override of embedded assets.\n\n```yaml\nproduction:\n\
+    \  source_order:\n    - when server.public.read_local is true and ./public contains\
+    \ the original regular file, select the local layer\n    - otherwise select the\
+    \ embedded PublicFS layer\ndevelopment:\n  source: decision:development-public-assets\n\
+    path:\n  - strip the normalized configured mount prefix\n  - percent-decode once\
+    \ through net/http request semantics\n  - clean as a slash-separated relative\
+    \ fs.ValidPath\n  - reject empty ambiguity, dot segments, backslashes, NUL, and\
+    \ traversal\nrepresentation:\n  - inspect only the selected layer\n  - choose\
+    \ {path}.zstd when policy:public-asset-negotiation allows it and the matching\
+    \ sidecar exists\n  - otherwise choose the original file\nsecurity:\n  - reject\
+    \ a symbolic-link local root, symbolic links below it, and non-regular local files\n\
+    \  - never fall back to an embedded sidecar for a local original\n  - never expose\
+    \ directory listings, dot-prefixed path segments, or .zstd URLs\n  - resolve a\
+    \ directory only as its index.html when present\n```"
+  production:
+    source_order:
+    - when server.public.read_local is true and ./public contains the original regular
+      file, select the local layer
+    - otherwise select the embedded PublicFS layer
+  development:
+    source: decision:development-public-assets
+  path:
+  - strip the normalized configured mount prefix
+  - percent-decode once through net/http request semantics
+  - clean as a slash-separated relative fs.ValidPath
+  - reject empty ambiguity, dot segments, backslashes, NUL, and traversal
+  representation:
+  - inspect only the selected layer
+  - choose {path}.zstd when policy:public-asset-negotiation allows it and the matching
+    sidecar exists
+  - otherwise choose the original file
+  security:
+  - reject a symbolic-link local root, symbolic links below it, and non-regular local
+    files
+  - never fall back to an embedded sidecar for a local original
+  - never expose directory listings, dot-prefixed path segments, or .zstd URLs
+  - resolve a directory only as its index.html when present
+relations:
+- relation: mentions
+  to: decision:development-public-assets
+  resolution: resolved
+- relation: mentions
+  to: policy:public-asset-negotiation
+  resolution: resolved

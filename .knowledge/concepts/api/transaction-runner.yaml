@@ -1,0 +1,87 @@
+id: api:transaction-runner
+type: api
+title: Transaction API
+summary: pw.Transaction scopes database work through a child context so generated
+  SQL functions automatically use the active transaction, and nests through savepoints.
+facts:
+  legacy_body: "pw.Transaction scopes database work through a child context so generated\
+    \ SQL functions automatically use the active transaction, and nests through savepoints.\n\
+    \n```yaml\nshape:\n  direction: policy:request-scoped-accessor-shape gives this\
+    \ a pair, Transaction(r, ...) as the handler entry point and TransactionContext(ctx,\
+    \ ...) for a caller already holding one\n  why_both_are_used_here: a caller that\
+    \ pinned a group with api:database-selection holds a context and wants the transaction\
+    \ on that group, so the Context form is the ordinary one after a pin rather than\
+    \ a fallback\n  unchanged: the callback still receives the child context, so nothing\
+    \ below this surface moves\nsurface:\n  - Transaction(context.Context, func(context.Context)\
+    \ error) error\nstate: data:transaction-scope\ngroup:\n  source: the effective\
+    \ group of the caller context, per api:database-selection\n  explicit: SelectDB\
+    \ on the context handed here, which is the call a single statement already uses\n\
+    \  form: the runner takes no group option, so a group has one spelling and no\
+    \ option-beats-context precedence to document\n  readonly: a group whose selected\
+    \ connection is readonly begins a read-only transaction, and sqlbind rejects a\
+    \ write inside it\noption_placement:\n  here: only what exists because a transaction\
+    \ exists, such as an isolation level or a retry policy\n  api:database-selection:\
+    \ anything that also governs a statement outside a transaction, which is why the\
+    \ group lives there\n  form_when_added: a variadic option after the callback,\
+    \ so a two-argument call keeps compiling\ndepth_0:\n  - resolve the group, then\
+    \ its memoized connection\n  - begin *sql.Tx on that connection with the caller\
+    \ context\n  - create a child context carrying a new scope whose active SQL executor\
+    \ is that transaction\n  - call the function with the child context\n  - rollback\
+    \ on returned error or panic\n  - commit only after the function returns nil\n\
+    \  - return begin, callback, or commit failure\nnested:\n  model: decision:savepoint-nested-transaction\n\
+    \  - detect the active scope instead of beginning a transaction\n  - fail when\
+    \ the caller context selects a group other than the active scope group, per decision:grouped-database-connections\n\
+    \  - fail when rule:savepoint-dialect-support marks the driver unsupported\n \
+    \ - fail when the scope is already marked failed\n  - open SAVEPOINT pw_sp_{depth}\
+    \ and call the function with a child context at that depth\n  - release the savepoint\
+    \ after the function returns nil\n  - rollback to the savepoint, release it, and\
+    \ return the error on failure or panic\n  - mark the scope failed when release\
+    \ or rollback fails\npanic:\n  - unwind the current depth first, then propagate\
+    \ or convert the panic per framework recovery policy\nrules:\n  - flow:sql-generation\
+    \ functions receive the child context and select its executor\n  - no repository\
+    \ type is required\n  - inner rollback keeps the outer transaction committable\n\
+    \  - a failed scope makes any later commit fail\n  - recoverable application error\
+    \ mapping occurs outside this runner\n  - callers cannot install an arbitrary\
+    \ executor, name a savepoint, choose a connection within a group, or mutate capsule\
+    \ fields\n  - a scope created by api:rdb-middleware or api:test-run makes the\
+    \ application's first call nested\n  - scope adoption unwraps api:instrumented-sql-executor\
+    \ before asserting a concrete transaction type\n  - an unknown group name fails\
+    \ here rather than at api:database-selection\n```"
+  legacy_parse_issues:
+  - kind: legacy_parse_error
+    block: 0
+    message: "while parsing a block mapping\n  in \"<unicode string>\", line 26, column\
+      \ 3:\n      model: decision:savepoint-nested ... \n      ^\nexpected <block\
+      \ end>, but found '-'\n  in \"<unicode string>\", line 27, column 3:\n     \
+      \ - detect the active scope instea ... \n      ^"
+relations:
+- relation: mentions
+  to: api:database-selection
+  resolution: resolved
+- relation: mentions
+  to: api:instrumented-sql-executor
+  resolution: resolved
+- relation: mentions
+  to: api:rdb-middleware
+  resolution: resolved
+- relation: mentions
+  to: api:test-run
+  resolution: resolved
+- relation: mentions
+  to: data:transaction-scope
+  resolution: resolved
+- relation: mentions
+  to: decision:grouped-database-connections
+  resolution: resolved
+- relation: mentions
+  to: decision:savepoint-nested-transaction
+  resolution: resolved
+- relation: mentions
+  to: flow:sql-generation
+  resolution: resolved
+- relation: mentions
+  to: policy:request-scoped-accessor-shape
+  resolution: resolved
+- relation: mentions
+  to: rule:savepoint-dialect-support
+  resolution: resolved

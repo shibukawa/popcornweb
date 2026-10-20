@@ -1,0 +1,195 @@
+id: requirement:browser-report-ingest
+type: requirement
+title: Browser Report Ingest
+summary: A deployment names a framework-owned endpoint in `Reporting-Endpoints`, and
+  every report a browser delivers there becomes one api:logger record, so the enforcing
+  policy this framework now ships by default stops breaking pages invisibly.
+facts:
+  legacy_body: "A deployment names a framework-owned endpoint in `Reporting-Endpoints`,\
+    \ and every report a browser delivers there becomes one api:logger record, so\
+    \ the enforcing policy this framework now ships by default stops breaking pages\
+    \ invisibly.\n\n```yaml\nstatus: requirements recorded 2026-08-10, unimplemented\n\
+    priority: should\nsource: user request 2026-08-10, collect client errors through\
+    \ the Reporting-Endpoints header; logging what arrives is enough\ndriving_case:\n\
+    \  what: pwruntime DefaultContentSecurityPolicy ships an enforcing policy to every\
+    \ project that names none, on the stated reasoning that a CSP shipped empty is\
+    \ one nobody had\n  consequence: a page loading third-party script is broken by\
+    \ a default nobody chose, and nothing on the server says so\n  documented_dead_end:\
+    \ the website security-headers guide shows report-uri /csp-report in its report-only\
+    \ example, and no build of this framework serves that path, so the one documented\
+    \ way to learn what a policy would break points at a 404\n  therefore: the endpoint\
+    \ is what makes both the shipped default and the content_security_policy_report_only\
+    \ key usable rather than decorative\nwhat_the_mechanism_actually_carries:\n  verified:\
+    \ 2026-08-10 against the W3C Reporting API specification and caniuse\n  types:\
+    \ csp-violation, deprecation, intervention, crash, coep, coop, permissions-policy-violation,\
+    \ integrity-violation\n  not_carried:\n    javascript_errors: window.onerror and\
+    \ unhandledrejection are not report types; no Reporting API configuration delivers\
+    \ an uncaught application exception\n    why_it_matters: a reader who asks for\
+    \ client errors and receives this feature gets policy violations and user-agent\
+    \ notices, not a stack trace from their own script\n    separate: recorded under\
+    \ open.javascript_errors rather than folded in, because it needs a browser-side\
+    \ module and a different privacy argument\n  reachable_here: csp-violation is\
+    \ the only type this framework configures a header for today; deprecation, intervention\
+    \ and crash arrive at the default endpoint with no header at all, and the remaining\
+    \ four need headers this framework does not set\n  delivery_is_not_live: reports\
+    \ are batched and delayed by the browser, so this is a signal an operator reads\
+    \ afterwards, never a request-time one\nbrowser_support:\n  reporting_endpoints_header:\
+    \ Chrome and Edge 96, Firefox 130, Safari and iOS Safari 16.4\n  csp_report_to_directive:\
+    \ Chrome 70, Edge 79, Firefox 149, Safari 16.4\n  the_gap: Firefox 130 through\
+    \ 148 parses the header and does not honour the report-to directive, which is\
+    \ the entire case for still emitting report-uri\n  chrome_only_types: deprecation,\
+    \ intervention and crash are Chromium notices; a cross-browser deployment should\
+    \ expect csp-violation and little else\ntransport_facts:\n  request: POST, Content-Type\
+    \ application/reports+json, fetch mode cors, credentials mode same-origin\n  credentials_consequence:\
+    \ a same-origin endpoint receives the visitor's cookies on a request the visitor\
+    \ never made and that carries no CSRF token, which is decision:report-endpoint-above-the-session\n\
+    \  endpoint_url: parsed against the response URL, so a relative path is legal\
+    \ and is what this framework emits\n  secure_context: an endpoint whose origin\
+    \ is not potentially trustworthy is skipped, so plain-HTTP staging receives nothing\
+    \ and api:cli-dev on localhost receives everything\n  failure_accounting: a non-2xx\
+    \ response increments the browser's failure counter for the endpoint and 410 Gone\
+    \ removes it, which is why this endpoint answers 2xx to a body it could not parse\n\
+    decided_shape:\n  header: Reporting-Endpoints with one entry named default, whose\
+    \ value is the configured path as a quoted structured-field string\n  one_endpoint:\
+    \ default receives every type that names no endpoint of its own, so one name covers\
+    \ the whole surface and no report type needs a second key\n  csp_wiring: append\
+    \ report-to default to the enforced and report-only policies, and append report-uri\
+    \ with the same path unless the deployment turns it off\n  author_policy_untouched:\
+    \ a configured policy already naming report-to or report-uri is left exactly as\
+    \ written, because policy:security-response-headers gives the policy text to the\
+    \ application author\n  path: an absolute path inside the reserved /_pw/ prefix,\
+    \ defaulting to /_pw/report, so serveReservedPath already closes it and no application\
+    \ route can collide\n  slot: pwruntime SlotOperational, per decision:report-endpoint-above-the-session\n\
+    \  resolution_site: pwruntime, so ResolveSecurityHeaders emits one header set\
+    \ for both transports and the parse-and-redact core is called by each rather than\
+    \ written twice, per decision:shared-runtime-leaf\n  record: data:browser-report-record\n\
+    handler_contract:\n  method: POST only; every other method answers 405 with an\
+    \ Allow header, since operationalMethod admits GET and HEAD and this endpoint\
+    \ admits neither\n  content_type:\n    application/reports+json: the Reporting\
+    \ API batch\n    application/csp-report: the legacy report-uri body, accepted\
+    \ because report-uri is emitted\n    anything_else: 415, which is safe because\
+    \ no browser delivery sends another type and a non-2xx here reaches nothing that\
+    \ counts failures\n  body_bound: its own cap, defaulting to 64 KiB, rather than\
+    \ server.max_request_body, which is sized for uploads\n  batch_bound: a cap on\
+    \ reports read from one body, defaulting to 32, with the remainder counted and\
+    \ dropped\n  response: 204 with Cache-Control no-store, including for a body that\
+    \ failed to parse and for reports the rate bound dropped\n  parse_failure: one\
+    \ bounded diagnostic record naming the length and the content type, never the\
+    \ body\nflood_control:\n  problem: one misconfigured directive on a popular page\
+    \ produces one report per page view, and the burst arrives during the incident\
+    \ whose log an operator is trying to read\n  shape: a token bucket over records\
+    \ written, defaulting to 10 per second with a small burst, dropping past it and\
+    \ writing one dropped-count record per window\n  drop_rather_than_queue: policy:log-emission\
+    \ keeps a log queue out of the response path deliberately, and requirement:live-error-report-off-lock\
+    \ records what a queued reporter costs\n  http_unaffected: a dropped report is\
+    \ still answered 204, because refusing one would make a browser back off from\
+    \ an endpoint whose only problem is that it is working\n  already_covered: SlotRateLimitProcess,\
+    \ SlotMaxRequestBody, SlotRecover and SlotAccessLog all sit above SlotOperational,\
+    \ so a configured process bound, the global body cap, panic recovery and the access\
+    \ log reach this endpoint without anything new\nconfiguration:\n  binding: data:security-runtime-config\
+    \ security.reporting\n  dependency: reporting enabled with headers.enabled false\
+    \ emits no header and is a startup error, per the data:middleware-runtime-config\
+    \ rule that disabling a dependency of an enabled feature is one\n  validation:\
+    \ absolute path, inside the reserved prefix, no quote or control character, and\
+    \ no collision with health, readiness, openapi or the public mount\nmust:\n  -\
+    \ strip query and fragment from every URL-shaped value before it reaches a record,\
+    \ because a document URL or a blocked URL can carry a token\n  - reduce a data:\
+    \ or blob: blocked URL to its scheme, since the payload is the injected content\
+    \ itself\n  - cap every string attribute at a fixed byte length, because every\
+    \ field on this endpoint is written by whoever posts to it\n  - rely on policy:log-emission\
+    \ control-character escaping rather than adding a second one, and state the dependency\n\
+    \  - never record original_policy, which echoes the deployment's own configured\
+    \ policy at every violation and says nothing the configuration does not\n  - never\
+    \ record user_agent, which is high cardinality and which the access log already\
+    \ holds for the same request\n  - keep the raw body out of every record, including\
+    \ the parse-failure diagnostic\ndefault_state:\n  decided: on whenever headers.enabled\
+    \ is on, 2026-08-10\n  why: the argument that put DefaultContentSecurityPolicy\
+    \ in the tree applies unchanged; a policy whose breakage nobody can see is the\
+    \ failure this feature exists to fix, and a default that has to be discovered\
+    \ is one most affected projects will not find\n  accepted_cost: an unauthenticated\
+    \ POST endpoint on every deployment, which is what the body, batch, and rate bounds\
+    \ above are for\n  contrast: requirement:network-error-logging defaults off instead,\
+    \ because its policy persists in the browser and this one does not\nopen:\n  javascript_errors:\n\
+    \    what: window.onerror and unhandledrejection reported by the framework's own\
+    \ browser runtime to this same path\n    fits: the runtime module already ships\
+    \ and the endpoint, the bounds and the record shape would all be reused\n    costs:\
+    \ a distinct payload dialect, a stack trace that is only readable against requirement:deployed-debug-information\
+    \ source maps, and a privacy argument about reporting every visitor's script failures\
+    \ that CSP violations did not need\n    stance: a separate requirement, not a\
+    \ widening of this one\n  external_collector: a configured absolute URL that replaces\
+    \ the framework path in the header, registering no local handler; nearly free,\
+    \ and it removes the logging that is this request's whole point\n  dev_console:\
+    \ routing reports into requirement:dev-telemetry-viewer as well as the log, which\
+    \ is the shape policy:log-emission already carves out for api:cli-dev\n  doctor_check:\
+    \ whether rule:production-readiness-checks should report an enforcing CSP with\
+    \ no reporting endpoint, and a reporting endpoint on a deployment serving plain\
+    \ HTTP, since neither can produce a report\nnon_goals:\n  - JavaScript runtime\
+    \ errors, per open.javascript_errors\n  - the NEL header and its network-error\
+    \ reports, which are requirement:network-error-logging and share this endpoint\
+    \ without widening this requirement\n  - COOP, COEP, Permissions-Policy and Document-Policy\
+    \ reporting, none of whose headers this framework sets\n  - the deprecated Report-To\
+    \ header, which no supported browser still needs\n  - storing, aggregating, deduplicating\
+    \ or displaying reports; the log is the product, as the request stated\n  - answering\
+    \ a report with anything an application handler can observe\nacceptance:\n  -\
+    \ a default project serves a response carrying Reporting-Endpoints and a policy\
+    \ naming report-to default\n  - a CSP violation on a Chrome, Firefox and Safari\
+    \ page each produces one warn record naming the effective directive and the blocked\
+    \ URL\n  - a POST of unparseable bytes is answered 204 and produces exactly one\
+    \ bounded diagnostic\n  - a 64 KiB body limit and a 32-report batch limit are\
+    \ each enforced, and the excess is counted rather than logged\n  - a burst past\
+    \ the rate bound writes one dropped-count record and still answers 204\n  - a\
+    \ request to the endpoint reaches no session, no authentication and no CSRF check\n\
+    \  - the endpoint path 404s through serveReservedPath when reporting is disabled\n\
+    \  - a document URL carrying a query string reaches the log without it\n  - both\
+    \ transports emit byte-identical headers and write identical records for one body\n\
+    \  - the website security-headers guide no longer shows report-uri pointing at\
+    \ an unserved path\n```"
+  legacy_parse_issues:
+  - kind: legacy_parse_error
+    block: 0
+    message: "mapping values are not allowed here\n  in \"<unicode string>\", line\
+      \ 60, column 27:\n      - reduce a data: or blob: blocked URL to its scheme,\
+      \ sin ... \n                              ^"
+relations:
+- relation: mentions
+  to: api:cli-dev
+  resolution: resolved
+- relation: mentions
+  to: api:logger
+  resolution: resolved
+- relation: mentions
+  to: data:browser-report-record
+  resolution: resolved
+- relation: mentions
+  to: data:middleware-runtime-config
+  resolution: resolved
+- relation: mentions
+  to: data:security-runtime-config
+  resolution: resolved
+- relation: mentions
+  to: decision:report-endpoint-above-the-session
+  resolution: resolved
+- relation: mentions
+  to: decision:shared-runtime-leaf
+  resolution: resolved
+- relation: mentions
+  to: policy:log-emission
+  resolution: resolved
+- relation: mentions
+  to: policy:security-response-headers
+  resolution: resolved
+- relation: mentions
+  to: requirement:deployed-debug-information
+  resolution: resolved
+- relation: mentions
+  to: requirement:dev-telemetry-viewer
+  resolution: resolved
+- relation: mentions
+  to: requirement:live-error-report-off-lock
+  resolution: resolved
+- relation: mentions
+  to: requirement:network-error-logging
+  resolution: resolved
+- relation: mentions
+  to: rule:production-readiness-checks
+  resolution: resolved

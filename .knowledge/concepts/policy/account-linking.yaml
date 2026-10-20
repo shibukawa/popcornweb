@@ -1,0 +1,30 @@
+id: policy:account-linking
+type: policy
+title: Account Linking Policy
+summary: Link external identities and passkeys only through authenticated, conflict-free
+  proof bound to one local account.
+facts:
+  legacy_body: "Link external identities and passkeys only through authenticated,\
+    \ conflict-free proof bound to one local account.\n\n```yaml\nrules:\n  - external\
+    \ identity key is canonical issuer plus verified subject\n  - never auto-link\
+    \ accounts solely because email strings match\n  - linking to an existing account\
+    \ requires a current authenticated session and recent strong authentication\n\
+    \  - reject a link already owned by another account\n  - require explicit user\
+    \ confirmation before adding or removing a login method\n  - rotate session after\
+    \ login-method changes\n  - retain an audit event without tokens, cookie values,\
+    \ credential IDs, or raw claims\noptional_email_assist:\n  - may suggest a candidate\
+    \ only when issuer is trusted and email_verified is true\n  - still requires authenticated\
+    \ confirmation and conflict checks\n```"
+  rules:
+  - external identity key is canonical issuer plus verified subject
+  - never auto-link accounts solely because email strings match
+  - linking to an existing account requires a current authenticated session and recent
+    strong authentication
+  - reject a link already owned by another account
+  - require explicit user confirmation before adding or removing a login method
+  - rotate session after login-method changes
+  - retain an audit event without tokens, cookie values, credential IDs, or raw claims
+  optional_email_assist:
+  - may suggest a candidate only when issuer is trusted and email_verified is true
+  - still requires authenticated confirmation and conflict checks
+relations: []

@@ -1,0 +1,284 @@
+id: api:cli-dev
+type: api
+title: pw dev
+summary: pw dev runs the local service set and continuously regenerates, rebuilds,
+  and restarts the configured application.
+facts:
+  legacy_body: "pw dev runs the local service set and continuously regenerates, rebuilds,\
+    \ and restarts the configured application.\n\n```yaml\nusage: pw dev\nsteps:\n\
+    \  - start configured Devbox services\n  - run api:cli-generate\n  - run api:cli-migrate\
+    \ up when data:project-config migration.auto is enabled\n  - start requirement:contrib-devidp\
+    \ when data:project-config dev.idp.enabled is true\n  - start requirement:dev-console\
+    \ unless data:project-config dev.console disables it, which mounts requirement:dev-telemetry-viewer\
+    \ and every other enabled pane\n  - build and start the decision:dev-harness-process\
+    \ binary when a pane needing it is enabled, and rebuild it with the project so\
+    \ a template edit reaches the storybook the way it reaches the application\n \
+    \ - start flow:tailwind-css-build watch mode when enabled\n  - enable decision:development-public-assets\n\
+    \  - build and run data:project-config project.main, which binds its port under\
+    \ decision:development-port-shift\n  - default data:runtime-environment to dev\
+    \ when APP_ENV is unset\n  - watch every Go source for rebuild, plus .pw.html,\
+    \ .pw.sql, popcornweb.toml, config.*.toml, config/config.*.toml, .env, and .env.*,\
+    \ per decision:developer-loop-watch-scope\n  - regenerate only from the data:project-config\
+    \ generate purposes, because api:cli-generate reads nothing else\n  - regenerate\
+    \ when a concept:page-tree route appears or disappears, which the file walk already\
+    \ reports because a route always carries a page template\n  - watch the data:devidp-config\
+    \ file when the development identity provider is enabled\n  - watch the data:migration-source\
+    \ directory\n  - add data:project-config dev.watch.includes paths and globs, and\
+    \ skip every dev.watch.excludes subtree\n  - exclude public/** and public/**/*.zstd\
+    \ from Go rebuild inputs\n  - regenerate when generated inputs change\n  - reapply\
+    \ pending migrations before restart when migration sources changed\n  - rebuild\
+    \ and restart after successful changes\nchild_process_lifetime:\n  rule: no process\
+    \ api:cli-dev started outlives it, by any exit path\n  problem:\n    indirection:\
+    \ the application is started as go run, which compiles and then runs the binary\
+    \ as a grandchild, so the process pw holds is not the process listening on the\
+    \ port\n    escalation: the stop path signals go run and then kills it, and a\
+    \ kill cannot be forwarded, so the binary underneath is orphaned\n    unconditional_kill:\
+    \ the wait between the two has no branch for the process having already exited,\
+    \ so the kill is not an escalation after a failed interrupt but the normal ending\
+    \ of every stop\n    no_wait_for_exit: the stop path returns without waiting for\
+    \ the process to be gone or the port to be released, so the replacement is started\
+    \ against a socket the previous one may still hold\n    rebuild_is_the_common_case:\
+    \ every watched change stops and restarts, so this is met during ordinary editing\
+    \ rather than only at shutdown; the symptom is a restart that cannot bind\n  \
+    \  cancellation: the context kills go run the same way, so a canceled run has\
+    \ the same orphan\n    abrupt_exit: a pw process that dies without unwinding leaves\
+    \ every child it started, since nothing but its own deferred stops reaps them\n\
+    \    symptom: the next pw dev fails on an address already in use, held by a process\
+    \ the developer did not start and cannot name\n    services: the same shape as\
+    \ the known devbox case, where interrupting devbox leaves the process manager\
+    \ it spawned running\n  requirement:\n    - the application is stopped through\
+    \ something that reaches the process actually serving, not only its launcher\n\
+    \    - a kill applies to the whole group pw created, so an unforwardable signal\
+    \ is not the end of the chain\n    - the stop path is the same whether the loop\
+    \ ended by interrupt, by error, or by context cancellation\n    - the stop path\
+    \ waits for the process to be gone before the replacement starts, and reports\
+    \ the wait rather than racing it\n    - a process that exits on the interrupt\
+    \ is not killed afterwards\n    - a leftover process from an earlier run is reported\
+    \ by name and port rather than surfacing as a bind failure\nreporting:\n  policy:\
+    \ policy:cli-progress-reporting\n  startup: a bounded progress region naming the\
+    \ phase in progress, because these steps together take long enough that silence\
+    \ reads as a hang\n  phases: services, generation, migration, identity provider,\
+    \ console, CSS build, and the Go build\n  browser: a failing phase also reaches\
+    \ an open page through requirement:dev-error-overlay, so the terminal is no longer\
+    \ the only place a diagnostic lands\n  collapse: the region gives way to policy:startup-summary\
+    \ and then the application and service log stream\n  rebuild: a watch-triggered\
+    \ regenerate, migrate, and rebuild reuses the same region rather than reprinting\
+    \ the startup sequence, and the restarted process reports per requirement:dev-reload-summary\
+    \ rather than reprinting policy:startup-summary\n  logs: the application stream\
+    \ stays plaintext under policy:log-emission, since the developer loop is read\
+    \ in a terminal\n  diagnostics: never enter the region, so a generation or migration\
+    \ failure keeps its place in the scrollback\nservices:\n  absent_environment:\
+    \ a project without devbox.json declares no service here, so the step is skipped\
+    \ in silence\n  default: Valkey\n  rule: default services may be disabled or changed\
+    \ in Devbox configuration\n  none_declared:\n    behavior: skip startup silently\
+    \ when devbox reports that the project defines no service\n    rationale: a project\
+    \ with no database and no cache is an ordinary shape, and starting anyway prints\
+    \ an error that reads like a misconfiguration\n    probe: devbox exits zero either\
+    \ way, so the wording of its listing is the only signal; an unreadable answer\
+    \ falls through to starting services rather than skipping them\n  output: service\
+    \ logs join the developer loop stream, because the process manager terminal UI\
+    \ would paint over generation, migration, and application output\n  lifetime:\
+    \ services stop with the developer loop, because interrupting devbox leaves the\
+    \ process manager it spawned running\nidentity_provider:\n  package: requirement:contrib-devidp\n\
+    \  lifetime: starts before the application process and stops with the developer\
+    \ loop\n  issuer:\n    port: an available loopback port reserved per run, because\
+    \ the injected issuer makes a fixed port unnecessary\n    pin: data:project-config\
+    \ dev.idp.port, which api:cli-init scaffolds with a value rather than leaving\
+    \ reserved; a reserved port moves the issuer every run, and the scaffolded resolver\
+    \ builds its account ID out of the issuer, so the same person is handed a new\
+    \ account each time\n  client:\n    ownership: pw dev registers one ephemeral\
+    \ client per run and the developer declares none\n    credentials: client id and\
+    \ secret generated from crypto/rand at startup and discarded at shutdown\n   \
+    \ redirect: loopback redirect URIs accepted per policy:devidp-safety, so the application\
+    \ callback path stays application-owned\n  injection:\n    mechanism: environment\
+    \ variables on the application process, which outrank TOML in data:loaded-configuration\
+    \ precedence\n    variables: data:authentication-runtime-config oidc issuer, client\
+    \ id, and client secret environment names\n    rule: injected only for the process\
+    \ api:cli-dev starts, never exported to the developer shell\n    override: an\
+    \ explicit environment value already set by the developer is preserved\n  reporting:\
+    \ log the issuer, the login URL, the roster subjects, and the client id, with\
+    \ the secret masked\n  reload: roster changes reload in place without restarting\
+    \ the application\n  guardrails: policy:devidp-safety\n  default: disabled\nconsole:\n\
+    \  requirement: requirement:dev-console\n  boundary: policy:dev-console-boundary\n\
+    \  lifetime: starts before the application process, survives every rebuild and\
+    \ restart, and stops with the developer loop\n  listener: one loopback port for\
+    \ the index and every pane, per decision:dev-console-consolidation\n  injection:\
+    \ the resolved console URL, on the application process only, for requirement:dev-error-overlay\n\
+    \  state: every phase transition publishes data:dev-loop-state, which reaches\
+    \ an open page through flow:dev-overlay-delivery\n  build_mode: the application\
+    \ is built with the pwdev tag, which selects decision:development-public-assets,\
+    \ the overlay module of decision:dev-browser-runtime-scope, and decision:dev-application-attachment\n\
+    \  attachment: an attachment token is generated per run and injected beside the\
+    \ console URL, the way requirement:contrib-devidp injects its client secret\n\
+    \  application_url: announced by the application over that attachment rather than\
+    \ read out of the project, because the loop reads the development configuration\
+    \ best effort and decision:development-port-shift outranks it\n  default: enabled\n\
+    telemetry_viewer:\n  requirement: requirement:dev-telemetry-viewer\n  flow: flow:dev-telemetry-capture\n\
+    \  mount: a requirement:dev-console pane; the OTLP receiver keeps its own port\
+    \ for exporters that must find it\n  injection: data:observability-runtime-config\
+    \ otel enabled and endpoint, on the application process only\n  output: records\
+    \ reach both the viewer and the developer loop stream, because a viewer must not\
+    \ empty the terminal\n  default: enabled\nmigration:\n  default: enabled, and\
+    \ the one place policy:migration-safety permits an automatic rollback\n  ordering:\
+    \ migrations complete before the application process starts\n  edited_file:\n\
+    \    problem: a forward-only loop does nothing useful when the file that changed\
+    \ is one already applied, because its version is recorded; the schema the developer\
+    \ is editing is the one schema the loop cannot reach\n    behavior: roll back\
+    \ to the version before the changed file, then apply forward to the latest\n \
+    \   scope: the api:cli-dev loop only; api:cli-migrate, startup apply, and api:test-run\
+    \ keep the policy:migration-safety rules unchanged\n    trigger: a watched change\
+    \ to an already-applied migration, or a new file inserted below the highest applied\
+    \ version\n    data: rows below that version are lost, which is accepted here\
+    \ because requirement:test-data-seeding is where a development database gets its\
+    \ rows back\n    reseed:\n      default: on, through data:project-config seed.auto\n\
+    \      action: apply the api:cli-seed datasets after the schema is back at the\
+    \ latest version, so the cycle that emptied the database is the cycle that refills\
+    \ it\n      bounded_to: the migration cycles that reset the schema, and the first\
+    \ apply that created it; an ordinary rebuild reseeds nothing\n      why_bounded:\
+    \ seeding is clear-insert and truncates its tables, so reseeding on every restart\
+    \ would delete what the developer typed into the running application\n      off:\
+    \ seed.auto false leaves the database empty after a rollback, for a developer\
+    \ whose rows are worth more than the datasets\n    down_required: a changed migration\
+    \ with no usable Down stops before any statement runs, per policy:migration-safety,\
+    \ and the loop reports it and leaves the schema alone rather than half-reversing\
+    \ it\n    announced: the loop names the version it is rolling back to and the\
+    \ files it will reverse, because this is the one automatic action in the loop\
+    \ that destroys something\n    detection:\n      within_a_session: the watcher\
+    \ already knows which file changed, which is enough to pick the target version\n\
+    \      across_sessions: an edit made while the loop was down is invisible, since\
+    \ nothing records the content of an applied file; that case still surfaces as\
+    \ the existing integrity error\n  forward_only_elsewhere: policy:migration-safety,\
+    \ unchanged for every other caller\nfailure:\n  generation_css_or_build: keep\
+    \ the developer loop alive and report diagnostics\n  application_process:\n  \
+    \  rule: report the exit and keep watching, whatever the status was\n    reason:\
+    \ the loop exists to survive a half-finished edit, and a project is unbuildable\
+    \ for most of the time between two working states\n    instance: a compile error\
+    \ reaching the loop as \"application exited: exit status 1\", which ended pw dev\
+    \ over a field the developer was in the middle of renaming\n    clean_exit: also\
+    \ non-terminal; an application that returned zero on its own is waiting for the\
+    \ next change like any other\n    recovery: the next watched change rebuilds and\
+    \ restarts, with no second command to type\n    ends_the_loop: only the interrupt,\
+    \ which is the one exit the developer asked for\n    precedent: the CSS toolchain\
+    \ exit in the same select already reports and keeps going\n  migration: report\
+    \ diagnostics, skip the restart, and keep the developer loop alive\n  identity_provider:\
+    \ report diagnostics and stop the loop, because the application cannot log in\
+    \ without its configured issuer\n  console: report diagnostics and keep the loop\
+    \ alive, because an unobservable run is still a working one; this covers the telemetry\
+    \ viewer and every other pane\n  dev_harness: report diagnostics, disable the\
+    \ panes that need it, and keep the loop alive, because the harness of decision:dev-harness-process\
+    \ is a reader of the project and not part of it\n```"
+  legacy_parse_issues:
+  - kind: legacy_parse_error
+    block: 0
+    message: "mapping values are not allowed here\n  in \"<unicode string>\", line\
+      \ 124, column 71:\n     ...  the loop as \"application exited: exit status 1\"\
+      , which ended pw ... \n                                         ^"
+relations:
+- relation: mentions
+  to: api:cli-generate
+  resolution: resolved
+- relation: mentions
+  to: api:cli-init
+  resolution: resolved
+- relation: mentions
+  to: api:cli-migrate
+  resolution: resolved
+- relation: mentions
+  to: api:cli-seed
+  resolution: resolved
+- relation: mentions
+  to: api:test-run
+  resolution: resolved
+- relation: mentions
+  to: concept:page-tree
+  resolution: resolved
+- relation: mentions
+  to: data:authentication-runtime-config
+  resolution: resolved
+- relation: mentions
+  to: data:dev-loop-state
+  resolution: resolved
+- relation: mentions
+  to: data:devidp-config
+  resolution: resolved
+- relation: mentions
+  to: data:loaded-configuration
+  resolution: resolved
+- relation: mentions
+  to: data:migration-source
+  resolution: resolved
+- relation: mentions
+  to: data:observability-runtime-config
+  resolution: resolved
+- relation: mentions
+  to: data:project-config
+  resolution: resolved
+- relation: mentions
+  to: data:runtime-environment
+  resolution: resolved
+- relation: mentions
+  to: decision:dev-application-attachment
+  resolution: resolved
+- relation: mentions
+  to: decision:dev-browser-runtime-scope
+  resolution: resolved
+- relation: mentions
+  to: decision:dev-console-consolidation
+  resolution: resolved
+- relation: mentions
+  to: decision:dev-harness-process
+  resolution: resolved
+- relation: mentions
+  to: decision:developer-loop-watch-scope
+  resolution: resolved
+- relation: mentions
+  to: decision:development-port-shift
+  resolution: resolved
+- relation: mentions
+  to: decision:development-public-assets
+  resolution: resolved
+- relation: mentions
+  to: flow:dev-overlay-delivery
+  resolution: resolved
+- relation: mentions
+  to: flow:dev-telemetry-capture
+  resolution: resolved
+- relation: mentions
+  to: flow:tailwind-css-build
+  resolution: resolved
+- relation: mentions
+  to: policy:cli-progress-reporting
+  resolution: resolved
+- relation: mentions
+  to: policy:dev-console-boundary
+  resolution: resolved
+- relation: mentions
+  to: policy:devidp-safety
+  resolution: resolved
+- relation: mentions
+  to: policy:log-emission
+  resolution: resolved
+- relation: mentions
+  to: policy:migration-safety
+  resolution: resolved
+- relation: mentions
+  to: policy:startup-summary
+  resolution: resolved
+- relation: mentions
+  to: requirement:contrib-devidp
+  resolution: resolved
+- relation: mentions
+  to: requirement:dev-console
+  resolution: resolved
+- relation: mentions
+  to: requirement:dev-error-overlay
+  resolution: resolved
+- relation: mentions
+  to: requirement:dev-reload-summary
+  resolution: resolved
+- relation: mentions
+  to: requirement:dev-telemetry-viewer
+  resolution: resolved
+- relation: mentions
+  to: requirement:test-data-seeding
+  resolution: resolved

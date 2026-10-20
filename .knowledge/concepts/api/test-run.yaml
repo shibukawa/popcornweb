@@ -1,0 +1,116 @@
+id: api:test-run
+type: api
+title: Isolated TestRun
+summary: testutil.TestRun executes an application from a deep copy of every registered
+  framework and application configuration.
+facts:
+  legacy_body: "testutil.TestRun executes an application from a deep copy of every\
+    \ registered framework and application configuration.\n\n```yaml\npackage: github.com/shibukawa/popcornweb/testutil\n\
+    testing_interface: decision:testutil-testing-interface\nsurface:\n  - TestRun(t\
+    \ TestingT, handler, customize, ...RunOption) *Server\n  - Get[T](*Config) T\n\
+    \  - Set[T](*Config, T)\n  - Update[T](*Config, func(*T))\n  - WithMigrations(path)\n\
+    \  - WithMigrationsFS(fs.FS)\n  - WithTransaction(enabled bool)\n  - api:test-seed\
+    \ WithSeed and WithSeedDir\n  - api:testutil-idp WithIdentityProvider\n  - api:testutil-passkey\
+    \ WithVirtualAuthenticator\nisolation:\n  source: api:runtime-configuration registered\
+    \ effective values\n  copy: deep copy keyed by exact Go type\n  mutation: customize\
+    \ changes only the copy\n  request: copied framework and user config is installed\
+    \ in data:request-context-capsule\nport:\n  customize_default: server.port -1\n\
+    \  behavior: reserve an available loopback port before runtime initialization\n\
+    \  effective_copy: replace -1 with the reserved port\ndatabase:\n  configuration:\
+    \ customize copied data:middleware-runtime-config\n  ownership: TestRun opens\
+    \ and closes its own pool\n  connection_set:\n    collapse: open only the resolved\
+    \ write group and map every configured group name onto that one pool\n    effect:\
+    \ an api:database-selection call for a replica group needs no test-only branch\n\
+    \    reason: schema, seed data, and the single test transaction must all live\
+    \ in one database\n  data: api:test-seed loads data:seed-dataset rows after the\
+    \ migration install and before the test transaction\n  migration:\n    source:\
+    \ WithMigrations reads data:migration-source from disk and WithMigrationsFS reads\
+    \ an embedded tree\n    timing: flow:database-migration completes before the server\
+    \ starts and before any test transaction begins\n    install: decision:test-migration-snapshot\
+    \ replays a cached data:migration-snapshot into the isolated sqlite database\n\
+    \    backend: decision:migration-execution-split selects in-process goose or pw\
+    \ migrate snapshot to produce that artifact\n    memory_database: supported on\
+    \ both paths because SQL is transferred instead of a DSN\n    server_engine: direct\
+    \ apply against the configured DSN, selected by the rule:rdb-dsn-resolution dialect,\
+    \ because the snapshot is SQLite DDL and a server database is reachable by DSN\n\
+    \    fallback: direct apply when the test opts out of snapshots\n    default:\
+    \ no schema work when no migration option is supplied\n    rollback: never; test\
+    \ databases are created and discarded\ntransaction:\n  requirement: requirement:parallel-database-tests\n\
+    \  flow: flow:test-transaction-isolation\n  option: WithTransaction(enabled) toggles\
+    \ per-test transaction isolation\n  default: off, because a pool sized for one\
+    \ connection or an in-memory database cannot serve both the test transaction and\
+    \ the pool\n  on:\n    - reject the run when the driver fails rule:savepoint-dialect-support,\
+    \ before opening a pool\n    - begin one *sql.Tx and install data:transaction-scope\
+    \ at depth 0\n    - the scope belongs to the server resources, so every request\
+    \ context carries it\n    - roll back in Server.Close before the pool closes,\
+    \ and fail the test on rollback error\n    - a shared database supports t.Parallel\
+    \ across tests\n  off:\n    - requests use the pooled *sql.DB\n    - required\
+    \ for drivers unsupported by rule:savepoint-dialect-support, with test parallelism\
+    \ 1\n  scope_note: migration install and api:test-seed WithSeed run before and\
+    \ outside the test transaction\n  Server.Context: context carrying the same resources\
+    \ as a request, including the test transaction, for setup and assertions\nruntime:\n\
+    \  - validate copied configuration\n  - construct production middleware behavior\
+    \ without mutating global config\n  - start an HTTP server\n  - register testing\
+    \ cleanup\n```"
+  legacy_parse_issues:
+  - kind: legacy_parse_error
+    block: 0
+    message: '''<'' not supported between instances of ''bool'' and ''str'''
+relations:
+- relation: mentions
+  to: api:database-selection
+  resolution: resolved
+- relation: mentions
+  to: api:runtime-configuration
+  resolution: resolved
+- relation: mentions
+  to: api:test-seed
+  resolution: resolved
+- relation: mentions
+  to: api:testutil-idp
+  resolution: resolved
+- relation: mentions
+  to: api:testutil-passkey
+  resolution: resolved
+- relation: mentions
+  to: data:middleware-runtime-config
+  resolution: resolved
+- relation: mentions
+  to: data:migration-snapshot
+  resolution: resolved
+- relation: mentions
+  to: data:migration-source
+  resolution: resolved
+- relation: mentions
+  to: data:request-context-capsule
+  resolution: resolved
+- relation: mentions
+  to: data:seed-dataset
+  resolution: resolved
+- relation: mentions
+  to: data:transaction-scope
+  resolution: resolved
+- relation: mentions
+  to: decision:migration-execution-split
+  resolution: resolved
+- relation: mentions
+  to: decision:test-migration-snapshot
+  resolution: resolved
+- relation: mentions
+  to: decision:testutil-testing-interface
+  resolution: resolved
+- relation: mentions
+  to: flow:database-migration
+  resolution: resolved
+- relation: mentions
+  to: flow:test-transaction-isolation
+  resolution: resolved
+- relation: mentions
+  to: requirement:parallel-database-tests
+  resolution: resolved
+- relation: mentions
+  to: rule:rdb-dsn-resolution
+  resolution: resolved
+- relation: mentions
+  to: rule:savepoint-dialect-support
+  resolution: resolved

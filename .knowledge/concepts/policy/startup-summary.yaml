@@ -1,0 +1,89 @@
+id: policy:startup-summary
+type: policy
+title: Startup Summary
+summary: Resolved configuration is reported once per process, in the shape its reader
+  can use, instead of one record per key.
+facts:
+  legacy_body: "Resolved configuration is reported once per process, in the shape\
+    \ its reader can use, instead of one record per key.\n\n```yaml\ncapture:\n  when:\
+    \ api:runtime-configuration finishes loading data:loaded-configuration\n  content:\
+    \ environment, resolved config path, every reported key with value and winning\
+    \ place, start time\n  secrets: policy:log-emission redaction applies before the\
+    \ value is stored, and a DSN takes the rule:dsn-redaction form rather than the\
+    \ whole mask\n  already_dropped: a key whose variant was not selected never arrives,\
+    \ per decision:config-verbosity-tag-adoption value_conditions\nbrevity:\n  requirement:\
+    \ requirement:startup-summary-brevity\n  rule: this is the short surface, so an\
+    \ entry rated as detail is skipped while nothing but the default layer set it\n\
+    \  where: the capture, so tree and record skip the same entries and cannot disagree\n\
+    \  rating_is_carried_not_applied: the loader marks the entry and this decides;\
+    \ api:cli-doctor decides the other way\n  state: implemented in bootEntries, which\
+    \ is the capture\nemission:\n  once: the first of Run or Middlewares to complete\
+    \ initialization emits it\n  run: emitted after the listener binds, so the reported\
+    \ address is the accepted one and not the configured one decision:development-port-shift\
+    \ may have moved off\n  middlewares: emitted after initialization without a listening\
+    \ address\n  restarted: once per process is once per rebuild under api:cli-dev,\
+    \ so the loop captures the summary and replaces it per requirement:dev-reload-summary;\
+    \ nothing here knows that happened\nselection:\n  key: observability.boot_log\n\
+    \  auto: tree when stderr is a character device, otherwise record; off under the\
+    \ pwcloudflare build tag, because requirement:cloudflare-workers-build-target's\
+    \ host runs main per request and a summary per request is noise rather than a\
+    \ summary\n  function_hosts: once per process is once per warm instance on the\
+    \ targets of decision:serverless-target-scope, which is one summary per cold start,\
+    \ the record an operator wants; nothing is switched off there, per decision:host-state-fit-severity\n\
+    \  tree: banner, configuration grouped as a tree, and the listening URL, written\
+    \ to stderr\n  record: one api:logger record named \"popcornweb started\"\n  off:\
+    \ nothing\ntree:\n  grouping: dotted keys nest by section; values align with their\
+    \ siblings\n  provenance: only non-default places are marked (file, env, flag)\n\
+    \  color: ANSI only on a terminal without NO_COLOR and TERM=dumb\nrecord:\n  config:\
+    \ nested groups mirroring the key structure\n  config_source: flat group naming\
+    \ the place of every non-default key\n  listening: present only when the framework\
+    \ owns the listener\nrationale:\n  - one boot event keeps log collectors and OTLP\
+    \ exporters from ingesting a record per key\n  - a tree shows an operator the\
+    \ shape of the configuration and what was overridden\n```"
+  legacy_parse_issues:
+  - kind: legacy_parse_error
+    block: 0
+    message: '''<'' not supported between instances of ''bool'' and ''str'''
+relations:
+- relation: mentions
+  to: api:cli-dev
+  resolution: resolved
+- relation: mentions
+  to: api:cli-doctor
+  resolution: resolved
+- relation: mentions
+  to: api:logger
+  resolution: resolved
+- relation: mentions
+  to: api:runtime-configuration
+  resolution: resolved
+- relation: mentions
+  to: data:loaded-configuration
+  resolution: resolved
+- relation: mentions
+  to: decision:config-verbosity-tag-adoption
+  resolution: resolved
+- relation: mentions
+  to: decision:development-port-shift
+  resolution: resolved
+- relation: mentions
+  to: decision:host-state-fit-severity
+  resolution: resolved
+- relation: mentions
+  to: decision:serverless-target-scope
+  resolution: resolved
+- relation: mentions
+  to: policy:log-emission
+  resolution: resolved
+- relation: mentions
+  to: requirement:cloudflare-workers-build-target
+  resolution: resolved
+- relation: mentions
+  to: requirement:dev-reload-summary
+  resolution: resolved
+- relation: mentions
+  to: requirement:startup-summary-brevity
+  resolution: resolved
+- relation: mentions
+  to: rule:dsn-redaction
+  resolution: resolved

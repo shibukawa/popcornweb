@@ -1,0 +1,58 @@
+id: requirement:modern-web-acceptance
+type: requirement
+title: Modern Web Acceptance
+summary: A modern build delivers meaningful server HTML, incremental patches, safe
+  default caching, and optional isolated client behavior on the shared runtime.
+facts:
+  legacy_body: "A modern build delivers meaningful server HTML, incremental patches,\
+    \ safe default caching, and optional isolated client behavior on the shared runtime.\n\
+    \n```yaml\ncriteria:\n  - meaningful HTML precedes client JavaScript\n  - flow:initial-streaming-render\
+    \ resolves independent async boundaries\n  - requirement:async-html-rendering\
+    \ keeps the handler surface unchanged when a page starts streaming\n  - flow:partial-refresh\
+    \ updates only affected boundaries\n  - unchanged output hashes avoid fragment\
+    \ transfer\n  - policy:layered-cache caches safe queries and deterministic components\
+    \ by default\n  - api:server-action invalidates data and component caches by explicit\
+    \ tags\n  - concept:client-component does not require full-page hydration\n  -\
+    \ normal navigation, actions, and refresh require neither WebSocket nor SSE\n\
+    \  - standard handlers and middleware remain usable below the component runtime\n\
+    security: policy:server-ui-security\noperations: requirement:modern-observability\n\
+    ```"
+  criteria:
+  - meaningful HTML precedes client JavaScript
+  - flow:initial-streaming-render resolves independent async boundaries
+  - requirement:async-html-rendering keeps the handler surface unchanged when a page
+    starts streaming
+  - flow:partial-refresh updates only affected boundaries
+  - unchanged output hashes avoid fragment transfer
+  - policy:layered-cache caches safe queries and deterministic components by default
+  - api:server-action invalidates data and component caches by explicit tags
+  - concept:client-component does not require full-page hydration
+  - normal navigation, actions, and refresh require neither WebSocket nor SSE
+  - standard handlers and middleware remain usable below the component runtime
+  security: policy:server-ui-security
+  operations: requirement:modern-observability
+relations:
+- relation: mentions
+  to: api:server-action
+  resolution: resolved
+- relation: mentions
+  to: concept:client-component
+  resolution: resolved
+- relation: mentions
+  to: flow:initial-streaming-render
+  resolution: resolved
+- relation: mentions
+  to: flow:partial-refresh
+  resolution: resolved
+- relation: mentions
+  to: policy:layered-cache
+  resolution: resolved
+- relation: mentions
+  to: policy:server-ui-security
+  resolution: resolved
+- relation: mentions
+  to: requirement:async-html-rendering
+  resolution: resolved
+- relation: mentions
+  to: requirement:modern-observability
+  resolution: resolved

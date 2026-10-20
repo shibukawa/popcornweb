@@ -1,0 +1,41 @@
+id: data:log-attribute
+type: data
+title: Log Attribute
+summary: Logger attributes reuse the scalar attribute contract shared with requirement:contrib-otel
+  traces and logs.
+facts:
+  legacy_body: "Logger attributes reuse the scalar attribute contract shared with\
+    \ requirement:contrib-otel traces and logs.\n\n```yaml\nshape:\n  key: non-empty\
+    \ string\n  value: string, bool, int64, or float64\nconstructors:\n  - String(key,\
+    \ value)\n  - Bool(key, value)\n  - Int64(key, value)\n  - Float64(key, value)\n\
+    reserved_record_fields:\n  - timestamp\n  - severity\n  - message\n  - trace_id\n\
+    \  - span_id\n  - trace_flags\nrules:\n  - user attributes cannot replace reserved\
+    \ record fields\n  - later duplicate user keys replace earlier values deterministically\n\
+    \  - framework code never adds credentials, tokens, cookies, or raw personal inputs\
+    \ by default\n  - application code owns classification and redaction of its custom\
+    \ attributes\n```"
+  shape:
+    key: non-empty string
+    value: string, bool, int64, or float64
+  constructors:
+  - String(key, value)
+  - Bool(key, value)
+  - Int64(key, value)
+  - Float64(key, value)
+  reserved_record_fields:
+  - timestamp
+  - severity
+  - message
+  - trace_id
+  - span_id
+  - trace_flags
+  rules:
+  - user attributes cannot replace reserved record fields
+  - later duplicate user keys replace earlier values deterministically
+  - framework code never adds credentials, tokens, cookies, or raw personal inputs
+    by default
+  - application code owns classification and redaction of its custom attributes
+relations:
+- relation: mentions
+  to: requirement:contrib-otel
+  resolution: resolved

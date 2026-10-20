@@ -1,0 +1,77 @@
+id: decision:buffered-fragment-delivery
+type: decision
+title: Buffered Fragment Delivery
+summary: api:html-fragment-response always buffers; a fragment response never streams
+  await boundaries.
+facts:
+  legacy_body: "api:html-fragment-response always buffers; a fragment response never\
+    \ streams await boundaries.\n\n```yaml\nstatus: accepted\nrule: render with the\
+    \ blocking entry point, so the body is settled markup before any byte leaves\n\
+    why:\n  parser_framing: the marker envelope of api:html-boundary-protocol is only\
+    \ valid where the browser parser consumes the response, and a swap library reads\
+    \ the body with fetch, where a marker connects to nothing\n  insertion_owner:\
+    \ the fetch envelope works because the framework holds the bytes and namespaces\
+    \ placeholder ids as it inserts; here the swap library inserts, so neither guarantee\
+    \ exists\n  no_stray_ids: the blocking await path writes the settled subtree in\
+    \ place and emits no tb-boundary element at all, so a fragment carries no placeholder\
+    \ and no id that could duplicate one already live in the document\n  no_runtime:\
+    \ with no placeholder there is nothing for requirement:external-boundary-runtime\
+    \ to apply, so a fragment route works in a page that never loaded it\nconfiguration:\n\
+    \  html.async_timeout: applied as a render deadline, the per-render shape policy:async-render-bounds\
+    \ describes for the buffered branch\n  html.streaming: not read, since this path\
+    \ has one branch\n  html.bot_detection: not read, since one representation needs\
+    \ no api:client-classification\ncost:\n  fact: a slow await inside a fragment\
+    \ delays the whole swap and shows no fallback\n  bound: the render deadline above,\
+    \ after which a recover clause renders or the response becomes a 500\n  mitigation:\
+    \ keep slow work out of a fragment leaf, or let flow:partial-refresh deliver it\
+    \ progressively\nfuture: a streaming fragment belongs on the fetch envelope of\
+    \ flow:partial-refresh, which already owns ordering, ids, and application into\
+    \ a live document\n```"
+  status: accepted
+  rule: render with the blocking entry point, so the body is settled markup before
+    any byte leaves
+  why:
+    parser_framing: the marker envelope of api:html-boundary-protocol is only valid
+      where the browser parser consumes the response, and a swap library reads the
+      body with fetch, where a marker connects to nothing
+    insertion_owner: the fetch envelope works because the framework holds the bytes
+      and namespaces placeholder ids as it inserts; here the swap library inserts,
+      so neither guarantee exists
+    no_stray_ids: the blocking await path writes the settled subtree in place and
+      emits no tb-boundary element at all, so a fragment carries no placeholder and
+      no id that could duplicate one already live in the document
+    no_runtime: with no placeholder there is nothing for requirement:external-boundary-runtime
+      to apply, so a fragment route works in a page that never loaded it
+  configuration:
+    html.async_timeout: applied as a render deadline, the per-render shape policy:async-render-bounds
+      describes for the buffered branch
+    html.streaming: not read, since this path has one branch
+    html.bot_detection: not read, since one representation needs no api:client-classification
+  cost:
+    fact: a slow await inside a fragment delays the whole swap and shows no fallback
+    bound: the render deadline above, after which a recover clause renders or the
+      response becomes a 500
+    mitigation: keep slow work out of a fragment leaf, or let flow:partial-refresh
+      deliver it progressively
+  future: a streaming fragment belongs on the fetch envelope of flow:partial-refresh,
+    which already owns ordering, ids, and application into a live document
+lifecycle: accepted
+relations:
+- relation: mentions
+  to: api:client-classification
+  resolution: resolved
+- relation: mentions
+  to: api:html-boundary-protocol
+  resolution: resolved
+- relation: mentions
+  to: api:html-fragment-response
+  resolution: resolved
+- relation: mentions
+  to: flow:partial-refresh
+  resolution: resolved
+- relation: mentions
+  to: policy:async-render-bounds
+  resolution: resolved
+- relation: mentions
+  to: requirement:external-boundary-runtime
+  resolution: resolved

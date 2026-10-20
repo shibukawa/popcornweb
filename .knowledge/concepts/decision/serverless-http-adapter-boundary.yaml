@@ -1,0 +1,75 @@
+id: decision:serverless-http-adapter-boundary
+type: decision
+title: Serverless HTTP Adapter Boundary
+summary: Keep the application as one long-lived selected-backend HTTP process when
+  a serverless host can forward HTTP, and add a source adapter only where the host
+  requires net/http.HandlerFunc.
+facts:
+  legacy_body: "Keep the application as one long-lived selected-backend HTTP process\
+    \ when a serverless host can forward HTTP, and add a source adapter only where\
+    \ the host requires net/http.HandlerFunc.\n\n```yaml\nclasses:\n  assigned_port_process:\n\
+    \    shape: the application listens on a host-assigned port\n    support: native\
+    \ through data:server-runtime-config PORT and requirement:serverless-http-hosting\
+    \ adapter port aliases\n  http_web_adapter:\n    shape: a host extension translates\
+    \ invocation events to HTTP against the unchanged process\n    support: preferred;\
+    \ deployment supplies the extension\n  exported_handler:\n    shape: the host\
+    \ remote-builds one exported net/http handler with no application main\n    support:\
+    \ generated source adapter over pw.Middlewares or pwfast.Start plus pwfast.NetHTTPHandler\
+    \ in requirement:serverless-source-entrypoints\n  event_function:\n    shape:\
+    \ a provider-specific event and response ABI\n    support: deferred until one\
+    \ adapter can preserve the complete HTTP contract\n  edge_wasm:\n    shape: a\
+    \ fetch or WASI HTTP ABI rather than net/http\n    support: Cloudflare is targeted\
+    \ by requirement:cloudflare-workers-hosting through a fetch-to-net/http adapter;\
+    \ component-model hosts remain deferred by decision:wasi-http-deferred\nprinciples:\n\
+    \  - do not reimplement a provider Runtime API when a maintained HTTP adapter\
+    \ preserves the existing server\n  - provider assignment overrides the configured\
+    \ listener port because the host sends traffic there regardless of config.prod.toml\n\
+    \  - deployment credentials, resource creation, routing, domains, and secrets\
+    \ remain provider tooling concerns\n  - target names the provider; backend names\
+    \ nethttp or fasthttp; neither axis aliases the other\n```"
+  classes:
+    assigned_port_process:
+      shape: the application listens on a host-assigned port
+      support: native through data:server-runtime-config PORT and requirement:serverless-http-hosting
+        adapter port aliases
+    http_web_adapter:
+      shape: a host extension translates invocation events to HTTP against the unchanged
+        process
+      support: preferred; deployment supplies the extension
+    exported_handler:
+      shape: the host remote-builds one exported net/http handler with no application
+        main
+      support: generated source adapter over pw.Middlewares or pwfast.Start plus pwfast.NetHTTPHandler
+        in requirement:serverless-source-entrypoints
+    event_function:
+      shape: a provider-specific event and response ABI
+      support: deferred until one adapter can preserve the complete HTTP contract
+    edge_wasm:
+      shape: a fetch or WASI HTTP ABI rather than net/http
+      support: Cloudflare is targeted by requirement:cloudflare-workers-hosting through
+        a fetch-to-net/http adapter; component-model hosts remain deferred by decision:wasi-http-deferred
+  principles:
+  - do not reimplement a provider Runtime API when a maintained HTTP adapter preserves
+    the existing server
+  - provider assignment overrides the configured listener port because the host sends
+    traffic there regardless of config.prod.toml
+  - deployment credentials, resource creation, routing, domains, and secrets remain
+    provider tooling concerns
+  - target names the provider; backend names nethttp or fasthttp; neither axis aliases
+    the other
+relations:
+- relation: mentions
+  to: data:server-runtime-config
+  resolution: resolved
+- relation: mentions
+  to: decision:wasi-http-deferred
+  resolution: resolved
+- relation: mentions
+  to: requirement:cloudflare-workers-hosting
+  resolution: resolved
+- relation: mentions
+  to: requirement:serverless-http-hosting
+  resolution: resolved
+- relation: mentions
+  to: requirement:serverless-source-entrypoints
+  resolution: resolved

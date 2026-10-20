@@ -1,0 +1,46 @@
+id: api:auth-state-codec
+type: api
+title: Authentication State Codec
+summary: authstate.Codec[T] provides explicit bounded serialization for durable requirement:contrib-auth-state
+  adapters.
+facts:
+  legacy_body: "authstate.Codec[T] provides explicit bounded serialization for durable\
+    \ requirement:contrib-auth-state adapters.\n\n```yaml\npackage: authstate\ninterface:\n\
+    \  - Encode(value T) returns []byte or stable error\n  - Decode([]byte) returns\
+    \ T or stable error\nrules:\n  - each payload begins with an explicit format version\n\
+    \  - unknown versions, trailing data, malformed lengths, and oversized fields\
+    \ fail closed\n  - stores enforce encoded-size limits before persistence and before\
+    \ decode\n  - codec errors never include payload, credentials, challenges, verifiers,\
+    \ nonces, or tokens\n  - no implicit gob or reflection-selected encoding\nproviders:\n\
+    \  oauth: requirement:contrib-oauth provides TransactionCodec\n  passkey: requirement:contrib-passkey\
+    \ provides CeremonyStateCodec for private fields\ncompatibility:\n  - codecs decode\
+    \ every format version still present within the maximum store TTL\n  - incompatible\
+    \ encoding changes use a new version before deployment\n```"
+  package: authstate
+  interface:
+  - Encode(value T) returns []byte or stable error
+  - Decode([]byte) returns T or stable error
+  rules:
+  - each payload begins with an explicit format version
+  - unknown versions, trailing data, malformed lengths, and oversized fields fail
+    closed
+  - stores enforce encoded-size limits before persistence and before decode
+  - codec errors never include payload, credentials, challenges, verifiers, nonces,
+    or tokens
+  - no implicit gob or reflection-selected encoding
+  providers:
+    oauth: requirement:contrib-oauth provides TransactionCodec
+    passkey: requirement:contrib-passkey provides CeremonyStateCodec for private fields
+  compatibility:
+  - codecs decode every format version still present within the maximum store TTL
+  - incompatible encoding changes use a new version before deployment
+relations:
+- relation: mentions
+  to: requirement:contrib-auth-state
+  resolution: resolved
+- relation: mentions
+  to: requirement:contrib-oauth
+  resolution: resolved
+- relation: mentions
+  to: requirement:contrib-passkey
+  resolution: resolved

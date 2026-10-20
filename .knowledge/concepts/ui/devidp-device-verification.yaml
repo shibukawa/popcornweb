@@ -1,0 +1,68 @@
+id: ui:devidp-device-verification
+type: ui
+title: Development Device Verification Screen
+summary: The development provider lets a browser user locate a pending device request,
+  select a roster identity, and explicitly approve or deny it.
+facts:
+  legacy_body: "The development provider lets a browser user locate a pending device\
+    \ request, select a roster identity, and explicitly approve or deny it.\n\n```yaml\n\
+    ui:\n  root:\n    kind: browser\n    id: screen.devidp-device-verification\n \
+    \   title: Authorize a development device\n    children:\n      - kind: banner\n\
+    \        id: dev-warning\n        label: Development identity provider; no password\
+    \ is checked\n        state: always visible\n      - kind: input\n        id:\
+    \ user-code\n        label: Code shown on the device\n      - kind: text\n   \
+    \     id: authorization-context\n        label: normalized user code, requesting\
+    \ client id, and requested scopes\n      - kind: list\n        id: user-roster\n\
+    \        columns:\n          - display_name\n          - subject\n        children:\n\
+    \          - kind: button\n            id: approve\n            label: Approve\
+    \ for this user\n            action: flow:oidc-device-authorization\n      - kind:\
+    \ button\n        id: deny\n        label: Deny\n        action: terminate with\
+    \ access_denied\nrules:\n  - verification_uri_complete pre-fills the code but\
+    \ still displays it for device comparison\n  - an unknown, expired, or exhausted\
+    \ code returns one generic result\n  - every mutation is a POST protected by policy:csrf-protection\n\
+    \  - no password or device_code field exists\n  - configuration cannot disable\
+    \ the warning, context, or explicit decision\n```"
+  ui:
+    root:
+      kind: browser
+      id: screen.devidp-device-verification
+      title: Authorize a development device
+      children:
+      - kind: banner
+        id: dev-warning
+        label: Development identity provider; no password is checked
+        state: always visible
+      - kind: input
+        id: user-code
+        label: Code shown on the device
+      - kind: text
+        id: authorization-context
+        label: normalized user code, requesting client id, and requested scopes
+      - kind: list
+        id: user-roster
+        columns:
+        - display_name
+        - subject
+        children:
+        - kind: button
+          id: approve
+          label: Approve for this user
+          action: flow:oidc-device-authorization
+      - kind: button
+        id: deny
+        label: Deny
+        action: terminate with access_denied
+  rules:
+  - verification_uri_complete pre-fills the code but still displays it for device
+    comparison
+  - an unknown, expired, or exhausted code returns one generic result
+  - every mutation is a POST protected by policy:csrf-protection
+  - no password or device_code field exists
+  - configuration cannot disable the warning, context, or explicit decision
+relations:
+- relation: mentions
+  to: flow:oidc-device-authorization
+  resolution: resolved
+- relation: mentions
+  to: policy:csrf-protection
+  resolution: resolved

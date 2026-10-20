@@ -1,0 +1,144 @@
+id: requirement:database-migration
+type: requirement
+title: Versioned Database Migration
+summary: Versioned migrations are the single relational schema mechanism of Popcorn
+  Web, running identically from the CLI, the development loop, and isolated tests.
+facts:
+  legacy_body: "Versioned migrations are the single relational schema mechanism of\
+    \ Popcorn Web, running identically from the CLI, the development loop, and isolated\
+    \ tests.\n\n```yaml\nscope:\n  covers: every rule:rdb-dsn-resolution engine\n\
+    \  excludes: requirement:dynamodb-store, whose schema is applied by requirement:dynamodb-migration\n\
+    \  why_split: system:goose is a SQL engine and host-only, and a DynamoDB table\
+    \ shape is readable back through DescribeTable, so neither the engine nor the\
+    \ version table transfers\n  why_the_scopes_differ:\n    here: a relational schema\
+    \ normally sits outside what infrastructure tooling manages, so these migrations\
+    \ own production\n    there: a DynamoDB table reads as part of the infrastructure\
+    \ and is created by the same tooling as the queue and the bucket, so that mechanism\
+    \ creates only in development and verifies in production\n    shared_shape: both\
+    \ are still one desired schema, one command, and one development-loop step\n \
+    \ shared: the api:cli-migrate verbs, the api:cli-dev apply step, and the api:test-run\
+    \ integration, so an operator meets one mechanism\nengine: system:goose\nsources:\
+    \ data:migration-source\nsurfaces:\n  cli: api:cli-migrate\n  application: api:migration-runner\n\
+    \  development: api:cli-dev automatic apply\n  test: api:test-run migration option\n\
+    execution_model: decision:migration-execution-split\nengine_linkage: decision:goose-migration-engine\n\
+    flow: flow:database-migration\nsafety: policy:migration-safety\nconfiguration:\n\
+    \  effective_database: decision:config-driven-database\n  tooling_paths: data:project-config\n\
+    removes:\n  command: pw schema-init\n  convention: dbschema directory and its\
+    \ unversioned lexical SQL\n  test_option: api:test-run WithMigrations and WithMigrationsFS\n\
+    \  scaffold: the initial schema example moves to migration version 1\n  rule:\
+    \ no compatibility path is kept; an existing project rewrites its schema as migrations\n\
+    acceptance:\n  - one migration source tree drives CLI, dev, and test apply\n \
+    \ - the same effective DSN resolution serves runtime and migration\n  - a host\
+    \ Go application or test applies migrations in process\n  - a TinyGo application\
+    \ or test applies migrations through the pw child process path\n  - pw dev applies\
+    \ pending migrations before the application accepts requests\n  - api:test-run\
+    \ installs the migrated schema into its isolated copied database, including sqlite://:memory:\n\
+    \  - api:test-run installs the same schema into a configured server database by\
+    \ applying it there, and a second run reuses it\n  - repeated apply on a current\
+    \ database performs no schema change\n  - down and down-to reverse the newest\
+    \ applied migrations under confirmation\n  - a failed migration returns nonzero\
+    \ and leaves recorded version state consistent\n  - credentials never appear in\
+    \ output, logs, process arguments, or errors\nnon_goals:\n  - ORM or schema diffing\n\
+    \  - automatic migration authoring from Go types or .pw.sql sources\n  - multi-node\
+    \ coordinated online migration\n  - data backfill orchestration\n```"
+  scope:
+    covers: every rule:rdb-dsn-resolution engine
+    excludes: requirement:dynamodb-store, whose schema is applied by requirement:dynamodb-migration
+    why_split: system:goose is a SQL engine and host-only, and a DynamoDB table shape
+      is readable back through DescribeTable, so neither the engine nor the version
+      table transfers
+    why_the_scopes_differ:
+      here: a relational schema normally sits outside what infrastructure tooling
+        manages, so these migrations own production
+      there: a DynamoDB table reads as part of the infrastructure and is created by
+        the same tooling as the queue and the bucket, so that mechanism creates only
+        in development and verifies in production
+      shared_shape: both are still one desired schema, one command, and one development-loop
+        step
+    shared: the api:cli-migrate verbs, the api:cli-dev apply step, and the api:test-run
+      integration, so an operator meets one mechanism
+  engine: system:goose
+  sources: data:migration-source
+  surfaces:
+    cli: api:cli-migrate
+    application: api:migration-runner
+    development: api:cli-dev automatic apply
+    test: api:test-run migration option
+  execution_model: decision:migration-execution-split
+  engine_linkage: decision:goose-migration-engine
+  flow: flow:database-migration
+  safety: policy:migration-safety
+  configuration:
+    effective_database: decision:config-driven-database
+    tooling_paths: data:project-config
+  removes:
+    command: pw schema-init
+    convention: dbschema directory and its unversioned lexical SQL
+    test_option: api:test-run WithMigrations and WithMigrationsFS
+    scaffold: the initial schema example moves to migration version 1
+    rule: no compatibility path is kept; an existing project rewrites its schema as
+      migrations
+  acceptance:
+  - one migration source tree drives CLI, dev, and test apply
+  - the same effective DSN resolution serves runtime and migration
+  - a host Go application or test applies migrations in process
+  - a TinyGo application or test applies migrations through the pw child process path
+  - pw dev applies pending migrations before the application accepts requests
+  - api:test-run installs the migrated schema into its isolated copied database, including sqlite://:memory: null
+  - api:test-run installs the same schema into a configured server database by applying
+    it there, and a second run reuses it
+  - repeated apply on a current database performs no schema change
+  - down and down-to reverse the newest applied migrations under confirmation
+  - a failed migration returns nonzero and leaves recorded version state consistent
+  - credentials never appear in output, logs, process arguments, or errors
+  non_goals:
+  - ORM or schema diffing
+  - automatic migration authoring from Go types or .pw.sql sources
+  - multi-node coordinated online migration
+  - data backfill orchestration
+relations:
+- relation: mentions
+  to: api:cli-dev
+  resolution: resolved
+- relation: mentions
+  to: api:cli-migrate
+  resolution: resolved
+- relation: mentions
+  to: api:migration-runner
+  resolution: resolved
+- relation: mentions
+  to: api:test-run
+  resolution: resolved
+- relation: mentions
+  to: data:migration-source
+  resolution: resolved
+- relation: mentions
+  to: data:project-config
+  resolution: resolved
+- relation: mentions
+  to: decision:config-driven-database
+  resolution: resolved
+- relation: mentions
+  to: decision:goose-migration-engine
+  resolution: resolved
+- relation: mentions
+  to: decision:migration-execution-split
+  resolution: resolved
+- relation: mentions
+  to: flow:database-migration
+  resolution: resolved
+- relation: mentions
+  to: policy:migration-safety
+  resolution: resolved
+- relation: mentions
+  to: requirement:dynamodb-migration
+  resolution: resolved
+- relation: mentions
+  to: requirement:dynamodb-store
+  resolution: resolved
+- relation: mentions
+  to: rule:rdb-dsn-resolution
+  resolution: resolved
+- relation: mentions
+  to: system:goose
+  resolution: resolved

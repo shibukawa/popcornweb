@@ -1,0 +1,77 @@
+id: api:server-action
+type: api
+title: Server Action
+summary: A registered typed POST endpoint performs a component mutation and returns
+  typed outcomes plus cache invalidation.
+facts:
+  legacy_body: "A registered typed POST endpoint performs a component mutation and\
+    \ returns typed outcomes plus cache invalidation.\n\n```yaml\nrung:\n  this: the\
+    \ typed contract of concept:modern-server-ui, which has no implementation yet\n\
+    \  delivered_instead: api:page-action-endpoint, whose handler is an ordinary one\
+    \ that owns its whole response\n  difference: typed argument binding and tag-driven\
+    \ invalidation are what this rung adds; the endpoint address, the reachable surface,\
+    \ and the CSRF coverage are already the other one's\n  mechanism_found_2026_08_13:\n\
+    \    what_was_missing: not the machinery but a key, since an arbitrary signature\
+    \ carries nothing that says it is an action and a returned value carries nothing\
+    \ that says which response it becomes\n    the_two_answers: decision:typed-action-declaration\
+    \ admits it, and decision:typed-action-is-call-only decides the response by narrowing\
+    \ the caller\n    taken_as: requirement:typed-server-action, which is this rung's\
+    \ argument binding half\n    what_it_leaves_here: the invalidation tags and the\
+    \ cache invalidation below, which are a separate question from how a function\
+    \ is reached\ngeneration:\n  - opaque action identifier\n  - typed argument binding\n\
+    security:\n  - authentication and authorization\n  - CSRF protection\n  - request\
+    \ limits\napplication:\n  transaction_boundary: explicit\nresults:\n  - redirect\n\
+    \  - typed value\n  - validation-driven patch\n  - invalidation tags\npost_success:\n\
+    \  - invalidate data and component caches\nforbidden: invocation of unregistered\
+    \ functions\n```"
+  rung:
+    this: the typed contract of concept:modern-server-ui, which has no implementation
+      yet
+    delivered_instead: api:page-action-endpoint, whose handler is an ordinary one
+      that owns its whole response
+    difference: typed argument binding and tag-driven invalidation are what this rung
+      adds; the endpoint address, the reachable surface, and the CSRF coverage are
+      already the other one's
+    mechanism_found_2026_08_13:
+      what_was_missing: not the machinery but a key, since an arbitrary signature
+        carries nothing that says it is an action and a returned value carries nothing
+        that says which response it becomes
+      the_two_answers: decision:typed-action-declaration admits it, and decision:typed-action-is-call-only
+        decides the response by narrowing the caller
+      taken_as: requirement:typed-server-action, which is this rung's argument binding
+        half
+      what_it_leaves_here: the invalidation tags and the cache invalidation below,
+        which are a separate question from how a function is reached
+  generation:
+  - opaque action identifier
+  - typed argument binding
+  security:
+  - authentication and authorization
+  - CSRF protection
+  - request limits
+  application:
+    transaction_boundary: explicit
+  results:
+  - redirect
+  - typed value
+  - validation-driven patch
+  - invalidation tags
+  post_success:
+  - invalidate data and component caches
+  forbidden: invocation of unregistered functions
+relations:
+- relation: mentions
+  to: api:page-action-endpoint
+  resolution: resolved
+- relation: mentions
+  to: concept:modern-server-ui
+  resolution: resolved
+- relation: mentions
+  to: decision:typed-action-declaration
+  resolution: resolved
+- relation: mentions
+  to: decision:typed-action-is-call-only
+  resolution: resolved
+- relation: mentions
+  to: requirement:typed-server-action
+  resolution: resolved

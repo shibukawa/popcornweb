@@ -1,0 +1,159 @@
+id: requirement:dev-data-pane
+type: requirement
+title: Development Data Pane
+summary: A requirement:dev-console pane browses and edits the development database
+  through the application's own connection, so investigating what the code did and
+  fixing what it left behind happen without a second tool and without leaving the
+  console.
+facts:
+  legacy_body: "A requirement:dev-console pane browses and edits the development database\
+    \ through the application's own connection, so investigating what the code did\
+    \ and fixing what it left behind happen without a second tool and without leaving\
+    \ the console.\n\n```yaml\naudience: actor:application-developer\nsupersedes:\
+    \ the read-only table viewer this began as, whose refusal to edit sent the developer\
+    \ to the tool this pane exists to replace\nwhy_hosted: decision:dev-console-self-sufficiency\n\
+    mechanism: decision:dev-application-attachment\ndefault: enabled\nconfiguration:\
+    \ data:project-config dev.console.data\nhalves:\n  browsing: schema and rows,\
+    \ described here\n  running: requirement:dev-query-runner, on the same pane and\
+    \ the same attachment, because running a statement and looking at what it changed\
+    \ is one activity\nconnections:\n  addressed: one connection at a time, not one\
+    \ group\n  reason: selection inside a group is round robin under requirement:read-write-splitting,\
+    \ so a pane addressing the group could not say which replica answered, and whether\
+    \ this replica has caught up is the one question replicas raise\n  listed: every\
+    \ connection the application opened, by the label the runtime spells group#ordinal\n\
+    \  default: a writable one, because the pane edits and a page opening on a replica\
+    \ would refuse the first edit for a reason the developer did not choose\n  all_replicas:\
+    \ still readable; the first connection is selected when none is writable\n  read_only:\
+    \ reading works, writing is refused with the reason, which is a fact about the\
+    \ connection rather than a rule the pane applies\n  driver: per connection, so\
+    \ the dialect is resolved there; nothing forbids two groups on two engines\n \
+    \ single_database: a configuration declaring no connection set is one unnamed\
+    \ connection, so the page has no special case\nmigration_version:\n  shows: the\
+    \ applied schema version and how many migrations are recorded, read from the system:goose\
+    \ bookkeeping table\n  absent_table: reported as nothing applied yet, rather than\
+    \ as a failure\n  display_only: applying and rolling back stay with api:cli-migrate,\
+    \ and api:cli-dev already rolls back and reseeds on its own when a migration source\
+    \ changes; a second actor deciding the same thing from a page would be one too\
+    \ many\n  question_answered: why the schema in front of the developer looks the\
+    \ way it does, which is the only migration question a data pane raises\nengines:\n\
+    \  first_class: requirement:contrib-sqlite, requirement:contrib-postgresql, requirement:contrib-mysql,\
+    \ per decision:server-sql-support-tier\n  differences: identifier quoting, placeholder\
+    \ form, and where the catalog lives\n  shape: one table of per-engine spellings\
+    \ rather than a branch per query, so adding an engine is one entry\n  sqlite:\
+    \ reads a pragma where the server engines read information_schema\n  postgres:\
+    \ takes the primary key from the constraint, because information_schema carries\
+    \ no per-column key flag there\nshows:\n  tables: what the live catalog reports,\
+    \ not what data:migration-source would produce, because the rows are in the database\
+    \ and a schema disagreeing with them would mislead\n  columns: name, declared\
+    \ type, nullability, and position in the primary key\n  rows: one bounded page\
+    \ at a time, never a whole table, because holding the application's pool for the\
+    \ length of its largest table is the one thing a development tool must not do\
+    \ to the process it observes\n  null: distinct from the empty string, which is\
+    \ most of why a developer opens this\nedits:\n  operations: update, insert, and\
+    \ delete, one row at a time\n  address: the whole primary key, in key order\n\
+    \  no_key: refused with the reason, rather than an edit that would change an unknown\
+    \ number of rows\n  values: bind parameters throughout; only column names reach\
+    \ the statement text, and only after the catalog has confirmed them\n  reporting:\
+    \ the affected count, including zero, because a row that moved or was already\
+    \ gone is the case a silent success hides\nframework_tables:\n  shown: yes, and\
+    \ readable\n  marked: yes, by the rule:framework-owned-tables prefix\n  why_not_blocked:\
+    \ requirement:dev-query-runner accepts a statement, so the rows are reachable\
+    \ regardless and blocking them here would be theatre rather than a boundary\n\
+    \  why_marked: a row in one of these was written by code the developer did not\
+    \ write, and reading it as application data is the mistake worth preventing\n\
+    foreign_keys:\n  shown: a link on each referencing cell, to the row it points\
+    \ at\n  why: an identifier in a grid means nothing until the row behind it is\
+    \ one click away, which is the difference between reading data and reading a table\n\
+    \  shape: the column and table come from the catalog and the value travels as\
+    \ a bind parameter, so following a link is a selection rather than the filter\
+    \ box this pane declines to offer\n  absent: a dialect with no statement for it,\
+    \ or a catalog that refuses the question, yields no links and a readable grid;\
+    \ losing the page over a missing affordance would be the wrong trade\npaging:\n\
+    \  order: the primary key where there is one\n  no_key: paged by offset, with\
+    \ the order reported as unspecified rather than implying a stability the engine\
+    \ is not promising\n  cost: one bounded read per page, holding no transaction\
+    \ between them\navailability:\n  rule: the pane works exactly while the application\
+    \ is up, because the connection it uses belongs to that process\n  detached: the\
+    \ pane says the application is not attached and recovers when the loop restarts\
+    \ it\nnon_goals:\n  - schema editing, migration authoring, and connection management,\
+    \ per decision:dev-console-self-sufficiency\n  - reading any database but the\
+    \ one the running application opened\n  - filtering, sorting, or searching from\
+    \ the grid; requirement:dev-query-runner is where an expression belongs\n  - exporting\
+    \ a table\n  - requirement:dynamodb-store items, whose schemaless shape needs\
+    \ a different presentation and is a pane of its own later\nacceptance:\n  - a\
+    \ project on an in-process sqlite://:memory: database is served like any other,\
+    \ because the read happens inside the process holding it\n  - each of the three\
+    \ engines lists its tables and describes its columns\n  - a table lists its columns\
+    \ and pages its rows, with NULL distinguishable from an empty string\n  - a row\
+    \ is updated, inserted, and deleted by primary key, and the affected count is\
+    \ reported\n  - a table with no primary key is paged, says its order is unspecified,\
+    \ and refuses a row edit with the reason\n  - a name the catalog does not report\
+    \ is refused rather than quoted into a statement\n  - a rule:framework-owned-tables\
+    \ table is readable and marked\n  - a referencing cell links to the row it points\
+    \ at, and the page says what it is showing\n  - every page lists the tables its\
+    \ sidebar repeats\n  - the pane reports the application as detached while it is\
+    \ down\n  - a project declaring a connection set lists every connection and defaults\
+    \ to a writable one\n  - a write through a read-only connection is refused with\
+    \ the reason and changes nothing\n  - two connections on different engines each\
+    \ answer through their own dialect\n  - the applied schema version is shown, and\
+    \ a database with no bookkeeping table says so\n  - a binary produced by api:cli-build\
+    \ contains no part of the pane\n```"
+  legacy_parse_issues:
+  - kind: legacy_parse_error
+    block: 0
+    message: '''<'' not supported between instances of ''NoneType'' and ''str'''
+relations:
+- relation: mentions
+  to: actor:application-developer
+  resolution: resolved
+- relation: mentions
+  to: api:cli-build
+  resolution: resolved
+- relation: mentions
+  to: api:cli-dev
+  resolution: resolved
+- relation: mentions
+  to: api:cli-migrate
+  resolution: resolved
+- relation: mentions
+  to: data:migration-source
+  resolution: resolved
+- relation: mentions
+  to: data:project-config
+  resolution: resolved
+- relation: mentions
+  to: decision:dev-application-attachment
+  resolution: resolved
+- relation: mentions
+  to: decision:dev-console-self-sufficiency
+  resolution: resolved
+- relation: mentions
+  to: decision:server-sql-support-tier
+  resolution: resolved
+- relation: mentions
+  to: requirement:contrib-mysql
+  resolution: resolved
+- relation: mentions
+  to: requirement:contrib-postgresql
+  resolution: resolved
+- relation: mentions
+  to: requirement:contrib-sqlite
+  resolution: resolved
+- relation: mentions
+  to: requirement:dev-console
+  resolution: resolved
+- relation: mentions
+  to: requirement:dev-query-runner
+  resolution: resolved
+- relation: mentions
+  to: requirement:dynamodb-store
+  resolution: resolved
+- relation: mentions
+  to: requirement:read-write-splitting
+  resolution: resolved
+- relation: mentions
+  to: rule:framework-owned-tables
+  resolution: resolved
+- relation: mentions
+  to: system:goose
+  resolution: resolved

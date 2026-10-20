@@ -1,0 +1,94 @@
+id: decision:tinygo-storage-direction
+type: decision
+title: TinyGo Storage Direction
+summary: Popcorn Web selects native embedded SQLite as its default relational store,
+  adds PostgreSQL and MySQL once their drivers gained TinyGo TLS, and keeps Redis-compatible
+  servers as first-class shared state.
+facts:
+  legacy_body: "Popcorn Web selects native embedded SQLite as its default relational\
+    \ store, adds PostgreSQL and MySQL once their drivers gained TinyGo TLS, and keeps\
+    \ Redis-compatible servers as first-class shared state.\n\n```yaml\nstatus: accepted\n\
+    verified: 2026-07-29\nselected:\n  relational_default: requirement:contrib-sqlite\n\
+    \  relational_also_first_class:\n    - requirement:contrib-postgresql\n    - requirement:contrib-mysql\n\
+    \  tinygo_native: requirement:contrib-cgosqlite\n  network_kv: requirement:contrib-redis-valkey\n\
+    \  network_document: requirement:dynamodb-store, added 2026-07-31 once system:tinygodriver-dynamodb\
+    \ and the system:tinybind dynamo generator made a typed TinyGo path exist\n  transport_boundary:\
+    \ decision:local-tls-proxy-boundary\n  server_sql_tier: decision:server-sql-support-tier\n\
+    findings:\n  database_sql:\n    - TinyGo 0.41.1 imports database/sql and database/sql/driver\
+    \ in the official container\n    - pooling, context operations, queries, scanning,\
+    \ and transactions passed a fake-driver smoke test\n    - Linux arm64 execution\
+    \ and Linux amd64 cross-compilation passed\n  server_sql_drivers:\n    superseded_2026_07_17_finding:\n\
+    \      - go-sql-driver/mysql v1.10.0 needed TinyGo patches and could not perform\
+    \ the required TLS upgrade\n      - pgx v5.10.0 and lib/pq v1.12.3 required missing\
+    \ TinyGo TLS and net APIs\n    current:\n      - system:tinygodriver forks both\
+    \ upstreams and replaces only the TLS call with its OS-backed upgrade seam\n \
+    \     - the fork is three patched files out of 145 for pgx, and two build constraints\
+    \ plus the TLS path for mysql\n      - both keep upstream DSN syntax, type coverage,\
+    \ transactions, prepared statements, and cancellation\n    consequence: decision:server-sql-support-tier\
+    \ promotes both to first class\n  embedded_kv:\n    - BuntDB v1.3.2 persisted\
+    \ transaction writes and reads under TinyGo Linux arm64 and compiled for amd64\n\
+    \    - bbolt v1.5.0 persisted transaction writes and reads under TinyGo Linux\
+    \ arm64 and compiled for amd64\n  network_kv:\n    - Redis and Valkey are suitable\
+    \ for shared TTL, counter, session, and small key-value state\n    - bounded RESP2\
+    \ and go-redis v9.17.3 passed Redis 8.4.4 and Valkey 9.1.0 session operations\
+    \ with TinyGo 0.41.1\n    - go-redis v9.21.0 and valkey-go v1.0.76 do not compile\
+    \ unchanged with TinyGo 0.41.1\n    - first-class transport uses policy:outbound-transport-security\
+    \ instead of requiring direct TinyGo TLS\nsqlite_rejections:\n  purego_dynamic:\n\
+    \    - ebitengine/purego v0.10.1 loaded libsqlite3 with host Go\n    - TinyGo\
+    \ rejected purego CGo constraints and purego depends on standard Go runtime ABI\
+    \ machinery\n  wasm_embedded: rejected for runtime overhead and binary-size uncertainty\n\
+    \  modernc_on_tinygo: TinyGo compiler panicked on modernc.org/sqlite v1.54.0 generated\
+    \ code\n  mattn_on_tinygo: mattn/go-sqlite3 v1.14.48 used unsupported CGo constraint\
+    \ directives\nrationale:\n  - native SQLite preserves SQL, transactions, and database/sql\
+    \ without a separate service, which keeps it the scaffold default\n  - a pinned\
+    \ amalgamation avoids system SQLite version drift\n  - a small dedicated C adapter\
+    \ avoids broad upstream compatibility patches\n  - a server engine is now a configuration\
+    \ choice rather than a compatibility question, so requirement:database-engine-selection\
+    \ can offer it at bootstrap\nsources:\n  tinygo_stdlib: https://tinygo.org/docs/reference/lang-support/stdlib/\n\
+    \  sqlite_c_api: https://sqlite.org/c3ref/intro.html\n  purego: https://github.com/ebitengine/purego\n\
+    \  valkey_protocol: https://valkey.io/topics/protocol/\n  buntdb: https://github.com/tidwall/buntdb\n\
+    \  bbolt: https://github.com/etcd-io/bbolt\n```"
+  legacy_parse_issues:
+  - kind: legacy_parse_error
+    block: 0
+    message: Object of type date is not JSON serializable
+relations:
+- relation: mentions
+  to: decision:local-tls-proxy-boundary
+  resolution: resolved
+- relation: mentions
+  to: decision:server-sql-support-tier
+  resolution: resolved
+- relation: mentions
+  to: policy:outbound-transport-security
+  resolution: resolved
+- relation: mentions
+  to: requirement:contrib-cgosqlite
+  resolution: resolved
+- relation: mentions
+  to: requirement:contrib-mysql
+  resolution: resolved
+- relation: mentions
+  to: requirement:contrib-postgresql
+  resolution: resolved
+- relation: mentions
+  to: requirement:contrib-redis-valkey
+  resolution: resolved
+- relation: mentions
+  to: requirement:contrib-sqlite
+  resolution: resolved
+- relation: mentions
+  to: requirement:database-engine-selection
+  resolution: resolved
+- relation: mentions
+  to: requirement:dynamodb-store
+  resolution: resolved
+- relation: mentions
+  to: system:tinybind
+  resolution: resolved
+- relation: mentions
+  to: system:tinygodriver
+  resolution: resolved
+- relation: mentions
+  to: system:tinygodriver-dynamodb
+  resolution: resolved

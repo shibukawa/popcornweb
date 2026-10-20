@@ -1,0 +1,144 @@
+id: policy:shared-device-mode
+type: policy
+title: Shared Device Mode
+summary: A deployment whose browsers are shared declares it once, and the settings
+  that would otherwise leave one user visible to the next are refused rather than
+  left to be found individually.
+facts:
+  legacy_body: "A deployment whose browsers are shared declares it once, and the settings\
+    \ that would otherwise leave one user visible to the next are refused rather than\
+    \ left to be found individually.\n\n```yaml\nfield: auth.shared_device, bool,\
+    \ default false\nstatus: implemented\nimplemented:\n  prompt: the login endpoint\
+    \ sends login alone rather than select_account and login when this is set\n  logout:\
+    \ Config.validate refuses the mode beside a reconfirm logout_scope rather than\
+    \ overriding it\n  hint: Config.validate refuses the mode beside an enabled policy:session-downgrade\
+    \ hint\n  abandonment: requirement:presence-signal is the answer to the limit\
+    \ below, and a deployment turning this mode on should turn that on too\ndefault_meaning:\
+    \ not declared shared, rather than asserted personal\nimplications:\n  no_hint:\
+    \ policy:session-downgrade is disabled, so the browser leaves the active level\
+    \ for anonymous directly\n  global_logout: policy:provider-session-scope is fixed\
+    \ to global, so an explicit logout ends the provider session\n  no_select_account:\
+    \ the prompt list of policy:reauthentication carries login without select_account\n\
+    coupling:\n  reason: the three are one requirement and not three, because any\
+    \ one alone achieves nothing\n  worked_example: disabling the hint while logout\
+    \ stays reconfirm leaves the provider session alive, so the next visitor still\
+    \ sees the previous account in the provider's own account picker\n  supplier:\
+    \ the division_of_memory of policy:session-downgrade shows that the account name\
+    \ comes from the provider, so removing the local half removes the half that was\
+    \ not doing the disclosing\nthird_implication:\n  case: the common end of a session\
+    \ on a shared device is abandonment rather than logout\n  effect: the local session\
+    \ expires while the provider session remains, so the next visitor reaches the\
+    \ login screen with the provider still holding the previous user\n  response:\
+    \ never send select_account, because it exists to surface exactly what this mode\
+    \ is trying to hide\nlimits:\n  abandonment: prompt=login re-authenticates but\
+    \ does not make the provider forget, and only an explicit logout can end the provider\
+    \ session, so an abandoned session stays partly exposed\n  no_rp_remedy: nothing\
+    \ a relying party sends can end a provider session it was not asked to end\n \
+    \ remaining_controls: a short session idle timeout under data:session-runtime-config,\
+    \ and the provider's own session lifetime, which the deployment configures at\
+    \ the provider\n  idle_timeout_is_weaker_than_it_reads: idle expiry measures time\
+    \ since the last request rather than since a person acted, and a page holding\
+    \ a live connection keeps touching the session on its own, so an abandoned browser\
+    \ can outlast the timeout entirely\n  wanted: requirement:presence-signal, which\
+    \ makes abandonment observable and is the missing half of this mode\n  honesty:\
+    \ this mode reduces disclosure and does not eliminate it, and must not be described\
+    \ as if it did\nvalidation:\n  principle: refuse a conflicting field rather than\
+    \ overriding it, following the mode_validation principle of data:authentication-runtime-config\n\
+    \  refused_when_true:\n    - auth.assurance.hint.enabled true\n    - auth.oidc.logout_scope\
+    \ reconfirm\n  reason: a silently overridden setting leaves a configuration file\
+    \ that reads as one behavior while the deployment runs another\ngranularity:\n\
+    \  scope: the whole deployment, because the framework has no signal telling one\
+    \ browser from another\n  not_offered: per-user or per-device selection, which\
+    \ needs the device trust signals requirement:session-assurance-levels lists as\
+    \ a non-goal\n  consequence: a deployment serving both shared terminals and personal\
+    \ laptops chooses the stricter setting or runs two deployments\n```"
+  field: auth.shared_device, bool, default false
+  status: implemented
+  implemented:
+    prompt: the login endpoint sends login alone rather than select_account and login
+      when this is set
+    logout: Config.validate refuses the mode beside a reconfirm logout_scope rather
+      than overriding it
+    hint: Config.validate refuses the mode beside an enabled policy:session-downgrade
+      hint
+    abandonment: requirement:presence-signal is the answer to the limit below, and
+      a deployment turning this mode on should turn that on too
+  default_meaning: not declared shared, rather than asserted personal
+  implications:
+    no_hint: policy:session-downgrade is disabled, so the browser leaves the active
+      level for anonymous directly
+    global_logout: policy:provider-session-scope is fixed to global, so an explicit
+      logout ends the provider session
+    no_select_account: the prompt list of policy:reauthentication carries login without
+      select_account
+  coupling:
+    reason: the three are one requirement and not three, because any one alone achieves
+      nothing
+    worked_example: disabling the hint while logout stays reconfirm leaves the provider
+      session alive, so the next visitor still sees the previous account in the provider's
+      own account picker
+    supplier: the division_of_memory of policy:session-downgrade shows that the account
+      name comes from the provider, so removing the local half removes the half that
+      was not doing the disclosing
+  third_implication:
+    case: the common end of a session on a shared device is abandonment rather than
+      logout
+    effect: the local session expires while the provider session remains, so the next
+      visitor reaches the login screen with the provider still holding the previous
+      user
+    response: never send select_account, because it exists to surface exactly what
+      this mode is trying to hide
+  limits:
+    abandonment: prompt=login re-authenticates but does not make the provider forget,
+      and only an explicit logout can end the provider session, so an abandoned session
+      stays partly exposed
+    no_rp_remedy: nothing a relying party sends can end a provider session it was
+      not asked to end
+    remaining_controls: a short session idle timeout under data:session-runtime-config,
+      and the provider's own session lifetime, which the deployment configures at
+      the provider
+    idle_timeout_is_weaker_than_it_reads: idle expiry measures time since the last
+      request rather than since a person acted, and a page holding a live connection
+      keeps touching the session on its own, so an abandoned browser can outlast the
+      timeout entirely
+    wanted: requirement:presence-signal, which makes abandonment observable and is
+      the missing half of this mode
+    honesty: this mode reduces disclosure and does not eliminate it, and must not
+      be described as if it did
+  validation:
+    principle: refuse a conflicting field rather than overriding it, following the
+      mode_validation principle of data:authentication-runtime-config
+    refused_when_true:
+    - auth.assurance.hint.enabled true
+    - auth.oidc.logout_scope reconfirm
+    reason: a silently overridden setting leaves a configuration file that reads as
+      one behavior while the deployment runs another
+  granularity:
+    scope: the whole deployment, because the framework has no signal telling one browser
+      from another
+    not_offered: per-user or per-device selection, which needs the device trust signals
+      requirement:session-assurance-levels lists as a non-goal
+    consequence: a deployment serving both shared terminals and personal laptops chooses
+      the stricter setting or runs two deployments
+relations:
+- relation: mentions
+  to: data:authentication-runtime-config
+  resolution: resolved
+- relation: mentions
+  to: data:session-runtime-config
+  resolution: resolved
+- relation: mentions
+  to: policy:provider-session-scope
+  resolution: resolved
+- relation: mentions
+  to: policy:reauthentication
+  resolution: resolved
+- relation: mentions
+  to: policy:session-downgrade
+  resolution: resolved
+- relation: mentions
+  to: requirement:presence-signal
+  resolution: resolved
+- relation: mentions
+  to: requirement:session-assurance-levels
+  resolution: resolved

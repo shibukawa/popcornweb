@@ -1,0 +1,147 @@
+id: requirement:editor-tasks
+type: requirement
+title: Editor Commands and Tasks
+summary: The system:pw-cli commands a developer runs while editing are reachable from
+  the editor, with their output parsed into the Problems view instead of only printed.
+facts:
+  legacy_body: "The system:pw-cli commands a developer runs while editing are reachable\
+    \ from the editor, with their output parsed into the Problems view instead of\
+    \ only printed.\n\n```yaml\nstatus: implemented at tools/vscode; every command\
+    \ below is a palette entry and a resolvable task, with the problem matchers the\
+    \ extension contributes\nstage: 2 of vision:editor-support\nsafety: policy:editor-tool-execution\n\
+    commands:\n  generate:\n    runs: api:cli-generate --code-only\n    trigger: explicit\
+    \ only, because it writes files\n    output: parsed by a problem matcher into\
+    \ file, line, and message\n    why_the_flag: an editor command writes the generated\
+    \ Go a diagnostic points into; the asset tree and the minified stylesheet the\
+    \ unflagged command also builds are a build's concern, not a keystroke's\n  check:\n\
+    \    runs: api:cli-check\n    use: a drift check that writes nothing, safe to\
+    \ bind to a save-time task\n  dev:\n    runs: api:cli-dev\n    terminal: a dedicated\
+    \ long-lived terminal, because the loop owns services, the identity provider,\
+    \ and the telemetry viewer\n    single_instance: a second invocation focuses the\
+    \ running terminal rather than starting a second loop\n    never_implicit: the\
+    \ loop starts processes outside the editor\n  doctor:\n    runs: api:cli-doctor\
+    \ --format=json\n    output: rendered as diagnostics on the files and configuration\
+    \ lines the report names\n  migrate:\n    runs: api:cli-migrate\n    confirmation:\
+    \ required in the editor, because policy:migration-safety makes it forward-only\
+    \ against a real database\n  restart_server:\n    runs: nothing; restarts the\
+    \ api:cli-lsp client\ntask_provider:\n  contributes: the same commands as resolvable\
+    \ tasks, so a project can compose them in tasks.json\n  problem_matchers: contributed\
+    \ by the extension so a project writes none\nintegration:\n  telemetry_viewer:\
+    \ the api:cli-dev banner url is surfaced as a clickable link; the extension embeds\
+    \ no viewer\n  devidp: the login url of requirement:contrib-devidp is surfaced\
+    \ the same way\nnon_goals:\n  - a UI over api:cli-init or api:cli-new, which are\
+    \ interactive and belong in a terminal\n  - a settings editor for popcornweb.toml\n\
+    \  - replacing the api:cli-dev terminal with a custom panel\nacceptance:\n  -\
+    \ a generation error selected in the Problems view opens the source file at the\
+    \ failing position, not the generated file\n  - api:cli-dev started twice yields\
+    \ one loop\n  - every command is disabled in an untrusted workspace\n  - a command\
+    \ that would write announces what it writes before running, and api:cli-migrate\
+    \ additionally asks\n  - the pw binary the commands run is the one policy:editor-tool-execution\
+    \ resolved, reported once at activation\n```"
+  status: implemented at tools/vscode; every command below is a palette entry and
+    a resolvable task, with the problem matchers the extension contributes
+  stage: 2 of vision:editor-support
+  safety: policy:editor-tool-execution
+  commands:
+    generate:
+      runs: api:cli-generate --code-only
+      trigger: explicit only, because it writes files
+      output: parsed by a problem matcher into file, line, and message
+      why_the_flag: an editor command writes the generated Go a diagnostic points
+        into; the asset tree and the minified stylesheet the unflagged command also
+        builds are a build's concern, not a keystroke's
+    check:
+      runs: api:cli-check
+      use: a drift check that writes nothing, safe to bind to a save-time task
+    dev:
+      runs: api:cli-dev
+      terminal: a dedicated long-lived terminal, because the loop owns services, the
+        identity provider, and the telemetry viewer
+      single_instance: a second invocation focuses the running terminal rather than
+        starting a second loop
+      never_implicit: the loop starts processes outside the editor
+    doctor:
+      runs: api:cli-doctor --format=json
+      output: rendered as diagnostics on the files and configuration lines the report
+        names
+    migrate:
+      runs: api:cli-migrate
+      confirmation: required in the editor, because policy:migration-safety makes
+        it forward-only against a real database
+    restart_server:
+      runs: nothing; restarts the api:cli-lsp client
+  task_provider:
+    contributes: the same commands as resolvable tasks, so a project can compose them
+      in tasks.json
+    problem_matchers: contributed by the extension so a project writes none
+  integration:
+    telemetry_viewer: the api:cli-dev banner url is surfaced as a clickable link;
+      the extension embeds no viewer
+    devidp: the login url of requirement:contrib-devidp is surfaced the same way
+  non_goals:
+  - a UI over api:cli-init or api:cli-new, which are interactive and belong in a terminal
+  - a settings editor for popcornweb.toml
+  - replacing the api:cli-dev terminal with a custom panel
+  acceptance:
+  - a generation error selected in the Problems view opens the source file at the
+    failing position, not the generated file
+  - api:cli-dev started twice yields one loop
+  - every command is disabled in an untrusted workspace
+  - a command that would write announces what it writes before running, and api:cli-migrate
+    additionally asks
+  - the pw binary the commands run is the one policy:editor-tool-execution resolved,
+    reported once at activation
+acceptance:
+  item-e82f58433533ad49:
+    text: a generation error selected in the Problems view opens the source file at
+      the failing position, not the generated file
+  item-5d2244f1576e0f73:
+    text: api:cli-dev started twice yields one loop
+  item-6949cc6aab0fd80c:
+    text: every command is disabled in an untrusted workspace
+  item-6b40798ee05c7d66:
+    text: a command that would write announces what it writes before running, and
+      api:cli-migrate additionally asks
+  item-60d01d4d3e0038ef:
+    text: the pw binary the commands run is the one policy:editor-tool-execution resolved,
+      reported once at activation
+relations:
+- relation: mentions
+  to: api:cli-check
+  resolution: resolved
+- relation: mentions
+  to: api:cli-dev
+  resolution: resolved
+- relation: mentions
+  to: api:cli-doctor
+  resolution: resolved
+- relation: mentions
+  to: api:cli-generate
+  resolution: resolved
+- relation: mentions
+  to: api:cli-init
+  resolution: resolved
+- relation: mentions
+  to: api:cli-lsp
+  resolution: resolved
+- relation: mentions
+  to: api:cli-migrate
+  resolution: resolved
+- relation: mentions
+  to: api:cli-new
+  resolution: resolved
+- relation: mentions
+  to: policy:editor-tool-execution
+  resolution: resolved
+- relation: mentions
+  to: policy:migration-safety
+  resolution: resolved
+- relation: mentions
+  to: requirement:contrib-devidp
+  resolution: resolved
+- relation: mentions
+  to: system:pw-cli
+  resolution: resolved
+- relation: mentions
+  to: vision:editor-support
+  resolution: resolved

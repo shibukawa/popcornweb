@@ -1,0 +1,88 @@
+id: system:goose
+type: system
+title: goose Migration Engine
+summary: goose is the external versioned SQL migration engine adopted by Popcorn Web for schema history, ordering,
+  and apply state.
+facts:
+  legacy_body: "goose is the external versioned SQL migration engine adopted by Popcorn Web for schema history,\
+    \ ordering, and apply state.\n\n```yaml\nmodule: github.com/pressly/goose/v3\npinned_baseline: v3.27.3\napi:\n\
+    \  preferred: goose.NewProvider(dialect, *sql.DB, fs.FS, ...ProviderOption)\n  rejected: package-level global\
+    \ registry and SetDialect/SetBaseFS mutation\ncapabilities_used:\n  - lexical versioned SQL migration files\n\
+    \  - applied-version table state\n  - up, up-by-one, up-to, down-to, status, and version actions\n  - fs.FS\
+    \ source so embedded and on-disk trees share one code path\ncapabilities_excluded:\n  - Go function migrations\n\
+    \  - goose CLI binary distribution\n  - goose managed .env loading\ndialects:\n  first_class: sqlite3, postgres,\
+    \ and mysql, selected by rule:rdb-dsn-resolution\n  present_but_unsupported: mssql, clickhouse, vertica, ydb,\
+    \ turso\n  gate: decision:server-sql-support-tier\n  pooling_note: the dialect is chosen from the resolved engine\
+    \ and the pool comes from decision:config-driven-database, so goose never opens its own connection\nmodule_footprint:\n\
+    \  declared: the goose root go.mod requires driver, testing, and container-tooling modules including pgx, mysql,\
+    \ mssql, clickhouse, ydb, testify, and moby client\n  linked_packages_measured:\n    - github.com/mfridman/interpolate\n\
+    \    - go.uber.org/multierr\n    - golang.org/x/sync/errgroup\n    - github.com/sethvargo/go-retry\n  effect:\
+    \ package-level pruning keeps every declared driver out of the built binary; only the four modules above enter\
+    \ go.mod\n  containment: decision:goose-migration-engine\nruntime_compatibility:\n  host_go: supported\n  tinygo:\
+    \ unsupported and unverified; see decision:migration-execution-split\nreferences:\n  - https://github.com/pressly/goose\n\
+    \  - https://pkg.go.dev/github.com/pressly/goose/v3\n```"
+  module: github.com/pressly/goose/v3
+  pinned_baseline: v3.27.3
+  api:
+    preferred: goose.NewProvider(dialect, *sql.DB, fs.FS, ...ProviderOption)
+    rejected: package-level global registry and SetDialect/SetBaseFS mutation
+  capabilities_used:
+  - lexical versioned SQL migration files
+  - applied-version table state
+  - up, up-by-one, up-to, down-to, status, and version actions
+  - fs.FS source so embedded and on-disk trees share one code path
+  capabilities_excluded:
+  - Go function migrations
+  - goose CLI binary distribution
+  - goose managed .env loading
+  dialects:
+    first_class: sqlite3, postgres, and mysql, selected by rule:rdb-dsn-resolution
+    present_but_unsupported: mssql, clickhouse, vertica, ydb, turso
+    gate: decision:server-sql-support-tier
+    pooling_note: the dialect is chosen from the resolved engine and the pool comes from decision:config-driven-database,
+      so goose never opens its own connection
+  module_footprint:
+    declared: the goose root go.mod requires driver, testing, and container-tooling modules including pgx, mysql,
+      mssql, clickhouse, ydb, testify, and moby client
+    linked_packages_measured:
+    - github.com/mfridman/interpolate
+    - go.uber.org/multierr
+    - golang.org/x/sync/errgroup
+    - github.com/sethvargo/go-retry
+    effect: package-level pruning keeps every declared driver out of the built binary; only the four modules above
+      enter go.mod
+    containment: decision:goose-migration-engine
+  runtime_compatibility:
+    host_go: supported
+    tinygo: unsupported and unverified; see decision:migration-execution-split
+  references:
+  - https://github.com/pressly/goose
+  - https://pkg.go.dev/github.com/pressly/goose/v3
+  current_dependency:
+    module: github.com/pressly/goose/v3
+    version: v3.29.0
+    evidence_source: source:go-modules
+relations:
+- relation: mentions
+  to: decision:config-driven-database
+  resolution: resolved
+- relation: mentions
+  to: decision:goose-migration-engine
+  resolution: resolved
+- relation: mentions
+  to: decision:migration-execution-split
+  resolution: resolved
+- relation: mentions
+  to: decision:server-sql-support-tier
+  resolution: resolved
+- relation: mentions
+  to: rule:rdb-dsn-resolution
+  resolution: resolved
+- relation: observed_in
+  to: source:go-modules
+  resolution: resolved
+history:
+  dependency-refresh:
+    summary: Updated the declared dependency; imported legacy body text remains historical source material.
+    evidence:
+      path: go.mod

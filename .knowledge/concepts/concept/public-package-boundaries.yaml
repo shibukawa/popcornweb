@@ -1,0 +1,100 @@
+id: concept:public-package-boundaries
+type: concept
+title: Public Package Boundaries
+summary: Popcorn Web presents one compact handwritten API while keeping generated
+  and advanced lower-level integrations inspectable.
+facts:
+  legacy_body: "Popcorn Web presents one compact handwritten API while keeping generated\
+    \ and advanced lower-level integrations inspectable.\n\n```yaml\nhandwritten_default:\n\
+    \  import: github.com/shibukawa/popcornweb/pw\n  rule: normal application handlers\
+    \ and entry points use pw\ngenerated_runtime:\n  import: github.com/shibukawa/popcornweb/pwruntime\n\
+    \  rule: generated code may use pwruntime but handwritten application code normally\
+    \ does not\n  page_tree: api:page-render-runtime is the same kind of boundary\
+    \ for generated page code, and it imports pw rather than being imported by it\n\
+    public_lower_level:\n  - pwpage\n  - server\n  - middlewares\n  - session\n  -\
+    \ observability\n  - database\n  - database/dynamo\n  - pwruntime\nthird_party:\n\
+    \  unit: concept:component-package, an ordinary Go module importing pw exactly\
+    \ as an application does\n  rule: a package's handwritten code stays inside the\
+    \ handwritten_default boundary, and its committed generated code sits inside generated_runtime\
+    \ like any other generated file\n  registration: api:package-registration and\
+    \ api:framework-extension, both called from the package's own init, so pw imports\
+    \ nothing\ntinybind:\n  role: implementation dependency behind pw\n  normal_usage:\
+    \ hidden\n  escape_hatch: applications may intentionally import low-level packages\
+    \ such as jsonbind\ndrivers:\n  registry: github.com/shibukawa/popcornweb/database,\
+    \ with one subpackage per engine\n  selection: explicit application imports, resolved\
+    \ by rule:rdb-dsn-resolution\n  rule: data:project-config never selects runtime\
+    \ drivers; the rdb DSN scheme does\ndynamo:\n  import: github.com/shibukawa/popcornweb/database/dynamo,\
+    \ per api:dynamo-package\n  exception: it is the one store a handler reaches without\
+    \ going through pw, because decision:dynamodb-no-runtime-abstraction found nothing\
+    \ for pw to wrap\n  not_an_rdb_engine: it sits beside the engine subpackages and\
+    \ registers nothing into the rule:rdb-dsn-resolution table\n  visible_dependency:\
+    \ application code using it names the driver types directly, which the SQL path\
+    \ hides behind database/sql\n```"
+  handwritten_default:
+    import: github.com/shibukawa/popcornweb/pw
+    rule: normal application handlers and entry points use pw
+  generated_runtime:
+    import: github.com/shibukawa/popcornweb/pwruntime
+    rule: generated code may use pwruntime but handwritten application code normally
+      does not
+    page_tree: api:page-render-runtime is the same kind of boundary for generated
+      page code, and it imports pw rather than being imported by it
+  public_lower_level:
+  - pwpage
+  - server
+  - middlewares
+  - session
+  - observability
+  - database
+  - database/dynamo
+  - pwruntime
+  third_party:
+    unit: concept:component-package, an ordinary Go module importing pw exactly as
+      an application does
+    rule: a package's handwritten code stays inside the handwritten_default boundary,
+      and its committed generated code sits inside generated_runtime like any other
+      generated file
+    registration: api:package-registration and api:framework-extension, both called
+      from the package's own init, so pw imports nothing
+  tinybind:
+    role: implementation dependency behind pw
+    normal_usage: hidden
+    escape_hatch: applications may intentionally import low-level packages such as
+      jsonbind
+  drivers:
+    registry: github.com/shibukawa/popcornweb/database, with one subpackage per engine
+    selection: explicit application imports, resolved by rule:rdb-dsn-resolution
+    rule: data:project-config never selects runtime drivers; the rdb DSN scheme does
+  dynamo:
+    import: github.com/shibukawa/popcornweb/database/dynamo, per api:dynamo-package
+    exception: it is the one store a handler reaches without going through pw, because
+      decision:dynamodb-no-runtime-abstraction found nothing for pw to wrap
+    not_an_rdb_engine: it sits beside the engine subpackages and registers nothing
+      into the rule:rdb-dsn-resolution table
+    visible_dependency: application code using it names the driver types directly,
+      which the SQL path hides behind database/sql
+relations:
+- relation: mentions
+  to: api:dynamo-package
+  resolution: resolved
+- relation: mentions
+  to: api:framework-extension
+  resolution: resolved
+- relation: mentions
+  to: api:package-registration
+  resolution: resolved
+- relation: mentions
+  to: api:page-render-runtime
+  resolution: resolved
+- relation: mentions
+  to: concept:component-package
+  resolution: resolved
+- relation: mentions
+  to: data:project-config
+  resolution: resolved
+- relation: mentions
+  to: decision:dynamodb-no-runtime-abstraction
+  resolution: resolved
+- relation: mentions
+  to: rule:rdb-dsn-resolution
+  resolution: resolved

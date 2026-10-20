@@ -1,0 +1,201 @@
+id: requirement:second-build-feature-parity
+type: requirement
+title: Feature Parity For The fasthttp Second Build
+summary: Every framework capability an application can reach on net/http must be reachable
+  on the fasthttp build. Nothing is out of scope by intent; what is listed below is
+  unfinished, not declined.
+facts:
+  legacy_body: "Every framework capability an application can reach on net/http must\
+    \ be reachable on the fasthttp build. Nothing is out of scope by intent; what\
+    \ is listed below is unfinished, not declined.\n\n```yaml\nstatus: proposed\n\
+    serves: requirement:alternate-http-backend-readiness\nmeasured: 2026-08-11 on\
+    \ the merge of the fasthttp branch into main\nmethod:\n  containment: go list\
+    \ -tags fasthttp -deps <pkg> must not contain github.com/shibukawa/popcornweb/pw\n\
+    \  surface: go doc -all ./pw vs ./pwfast, each missing name then searched across\
+    \ every shared leaf\n  call_registry: pw exported funcs taking http.ResponseWriter\
+    \ or *http.Request, diffed against the patterns in internal/pwgen/options.go\n\
+    already_holds:\n  call_registry: all 23 transport-taking pw funcs are registered,\
+    \ so no application call shape is refused for want of a pattern\n  page_runtime:\
+    \ pwpage has pwfastpage\n  middleware:\n    was_recorded_here: that decision:backend-specific-middleware\
+    \ makes pw.RegisterMiddleware per backend by design and therefore not a gap\n\
+    \    corrected_2026_08_17: that decision settles the middleware body, not the\
+    \ registration surface, and pwfast had no registration function at all; the only\
+    \ seam was the plugin's RuntimeOptions.Extra, reachable from Run through a closure\
+    \ and documented nowhere\n    now: requirement:fasthttp-middleware-registration,\
+    \ implemented as pwfast.RegisterMiddleware\nclass_a_reachable_under_another_name:\n\
+    \  defect: not missing capability; the only spelling published is the pw one,\
+    \ so app code shared by both builds names a package the second build does not\
+    \ link\n  rule: rule:shared-code-names-a-leaf\n  mapping:\n    pw.RegisterConfig:\
+    \ pwconfig.Register\n    pw.ParseConfig: pwconfig.Parse\n    pw.SetConfigLoadOptions:\
+    \ pwconfig.SetLoadOptions\n    pw.RegisterExtension: pwextension.Register\n  \
+    \  pw.RegisterSessionBackend: pwsession.RegisterBackend\n    pw.OpenSessionBackend:\
+    \ pwsession.OpenBackend\n    pw.SessionBackends: pwsession.Backends\n    pw.SessionManager:\
+    \ pwsession.Manager\n    pw.SessionRegistry: pwsession.NewRegistry\n    pw.SessionKeyring:\
+    \ pwsession.Keyring\n    pw.SessionCookiePolicy: pwsession.CookiePolicy\n    pw.SessionPrune:\
+    \ pwsession.Prune\n    pw.RegisterSessionStore: pwsession.RegisterStore\n    pw.RegisterRateLimitStore:\
+    \ pwratelimit.RegisterStore\n    pw.RateLimitStores: pwratelimit.Stores\n    pw.StartSpan:\
+    \ contrib/otel/trace.Start\n    pw.StartSpanKind: contrib/otel/trace.Start with\
+    \ WithSpanKind\n    pw.NewSignal: pwruntime.NewSignal, fixed 2026-08-11\n  found_after_the_measurement:\n\
+    \    pw_log_attributes:\n      names: Err, String, Int, Int64, Float64, Bool,\
+    \ Duration, WithLogAttributes, and the Level constants\n      state: fixed 2026-08-11\
+    \ in pwfast/log.go\n      why_the_surface_diff_missed_it: pwfast.Logger existed,\
+    \ so the logging surface looked present; the diff compares names one at a time\
+    \ and nothing asked whether the ones that crossed were usable without the ones\
+    \ that did not\n      lesson_for_the_method: a partially crossed surface passes\
+    \ a name-by-name diff and fails to compile, which is the failure this requirement\
+    \ exists to find\n  open_question: whether a leaf spelling is enough or the pw\
+    \ names should also resolve, since an application reads pw docs and finds no note\
+    \ that the name it copied is net/http-only\nclass_b_no_implementation_anywhere:\n\
+    \  openapi_document_and_ui:\n    names: AssembleOpenAPI, SetOpenAPIInfo, ScalarUI,\
+    \ SwaggerUI\n    partial: pw.OpenAPIJSON is a registered transport call, so the\
+    \ JSON endpoint already crosses; assembly, the info block and both doc UIs do\
+    \ not\n  package_assets:\n    names: RegisterPackage, Packages, PackageAssetURL\n\
+    \  lifecycle_headers:\n    names: LifecycleHeaders\nclass_c_packages_that_block_whole_examples:\n\
+    \  sessionstore:\n    packages: sessionstore and its dynamo, firestore, mysql,\
+    \ postgres, redis, sqlite backends\n    cause: they name pw session symbols only;\
+    \ every symbol exists in pwsession or sessionconfig\n    cost: mechanical retarget,\
+    \ same shape as the signal fix\n    blocks: examples/oidclogin and examples/passkeylogin\
+    \ cannot declare fasthttp = true\n  testutil:\n    cause: names pw.PrepareTestRuntime,\
+    \ pw.SnapshotTestConfigs, pw.Transaction, pw.DB and the config binder aliases\n\
+    \    partial: fasttestutil exists but holds only exchange.go\nclass_d_absent_by_deferral:\n\
+    \  websocket:\n    state: done 2026-08-11; examples/websocket_chat declares fasthttp\
+    \ = true, compiles under both tags, and names no pw in the tagged dependency graph\n\
+    \    requirement: requirement:typed-websocket, which replaced requirement:contrib-websocket\
+    \ once the capability turned out to be upstream already\n    library_exists: system:tinybind-websocket\
+    \ publishes an entry on both transports, so the gap is this framework's surface\
+    \ rather than a dependency\n    parity_is_the_forcing_reason: the entry has to\
+    \ be spelled pw.WebSocket and pwfast.WebSocket for the same rewrite this requirement\
+    \ measures\nclass_e_toolchain: decision:tinygo-fasthttp-needs-nozstd\nacceptance:\n\
+    \  - an example declaring fasthttp = true exists for every capability listed above\n\
+    \  - go list -tags fasthttp -deps of every such example contains no pw\n  - the\
+    \ pw doc for a class_a name says which package a shared file must call instead\n\
+    ```"
+  status: proposed
+  serves: requirement:alternate-http-backend-readiness
+  measured: 2026-08-11 on the merge of the fasthttp branch into main
+  method:
+    containment: go list -tags fasthttp -deps <pkg> must not contain github.com/shibukawa/popcornweb/pw
+    surface: go doc -all ./pw vs ./pwfast, each missing name then searched across
+      every shared leaf
+    call_registry: pw exported funcs taking http.ResponseWriter or *http.Request,
+      diffed against the patterns in internal/pwgen/options.go
+  already_holds:
+    call_registry: all 23 transport-taking pw funcs are registered, so no application
+      call shape is refused for want of a pattern
+    page_runtime: pwpage has pwfastpage
+    middleware:
+      was_recorded_here: that decision:backend-specific-middleware makes pw.RegisterMiddleware
+        per backend by design and therefore not a gap
+      corrected_2026_08_17: that decision settles the middleware body, not the registration
+        surface, and pwfast had no registration function at all; the only seam was
+        the plugin's RuntimeOptions.Extra, reachable from Run through a closure and
+        documented nowhere
+      now: requirement:fasthttp-middleware-registration, implemented as pwfast.RegisterMiddleware
+  class_a_reachable_under_another_name:
+    defect: not missing capability; the only spelling published is the pw one, so
+      app code shared by both builds names a package the second build does not link
+    rule: rule:shared-code-names-a-leaf
+    mapping:
+      pw.RegisterConfig: pwconfig.Register
+      pw.ParseConfig: pwconfig.Parse
+      pw.SetConfigLoadOptions: pwconfig.SetLoadOptions
+      pw.RegisterExtension: pwextension.Register
+      pw.RegisterSessionBackend: pwsession.RegisterBackend
+      pw.OpenSessionBackend: pwsession.OpenBackend
+      pw.SessionBackends: pwsession.Backends
+      pw.SessionManager: pwsession.Manager
+      pw.SessionRegistry: pwsession.NewRegistry
+      pw.SessionKeyring: pwsession.Keyring
+      pw.SessionCookiePolicy: pwsession.CookiePolicy
+      pw.SessionPrune: pwsession.Prune
+      pw.RegisterSessionStore: pwsession.RegisterStore
+      pw.RegisterRateLimitStore: pwratelimit.RegisterStore
+      pw.RateLimitStores: pwratelimit.Stores
+      pw.StartSpan: contrib/otel/trace.Start
+      pw.StartSpanKind: contrib/otel/trace.Start with WithSpanKind
+      pw.NewSignal: pwruntime.NewSignal, fixed 2026-08-11
+    found_after_the_measurement:
+      pw_log_attributes:
+        names: Err, String, Int, Int64, Float64, Bool, Duration, WithLogAttributes,
+          and the Level constants
+        state: fixed 2026-08-11 in pwfast/log.go
+        why_the_surface_diff_missed_it: pwfast.Logger existed, so the logging surface
+          looked present; the diff compares names one at a time and nothing asked
+          whether the ones that crossed were usable without the ones that did not
+        lesson_for_the_method: a partially crossed surface passes a name-by-name diff
+          and fails to compile, which is the failure this requirement exists to find
+    open_question: whether a leaf spelling is enough or the pw names should also resolve,
+      since an application reads pw docs and finds no note that the name it copied
+      is net/http-only
+  class_b_no_implementation_anywhere:
+    openapi_document_and_ui:
+      names: AssembleOpenAPI, SetOpenAPIInfo, ScalarUI, SwaggerUI
+      partial: pw.OpenAPIJSON is a registered transport call, so the JSON endpoint
+        already crosses; assembly, the info block and both doc UIs do not
+    package_assets:
+      names: RegisterPackage, Packages, PackageAssetURL
+    lifecycle_headers:
+      names: LifecycleHeaders
+  class_c_packages_that_block_whole_examples:
+    sessionstore:
+      packages: sessionstore and its dynamo, firestore, mysql, postgres, redis, sqlite
+        backends
+      cause: they name pw session symbols only; every symbol exists in pwsession or
+        sessionconfig
+      cost: mechanical retarget, same shape as the signal fix
+      blocks: examples/oidclogin and examples/passkeylogin cannot declare fasthttp
+        = true
+    testutil:
+      cause: names pw.PrepareTestRuntime, pw.SnapshotTestConfigs, pw.Transaction,
+        pw.DB and the config binder aliases
+      partial: fasttestutil exists but holds only exchange.go
+  class_d_absent_by_deferral:
+    websocket:
+      state: done 2026-08-11; examples/websocket_chat declares fasthttp = true, compiles
+        under both tags, and names no pw in the tagged dependency graph
+      requirement: requirement:typed-websocket, which replaced requirement:contrib-websocket
+        once the capability turned out to be upstream already
+      library_exists: system:tinybind-websocket publishes an entry on both transports,
+        so the gap is this framework's surface rather than a dependency
+      parity_is_the_forcing_reason: the entry has to be spelled pw.WebSocket and pwfast.WebSocket
+        for the same rewrite this requirement measures
+  class_e_toolchain: decision:tinygo-fasthttp-needs-nozstd
+  acceptance:
+  - an example declaring fasthttp = true exists for every capability listed above
+  - go list -tags fasthttp -deps of every such example contains no pw
+  - the pw doc for a class_a name says which package a shared file must call instead
+lifecycle: proposed
+acceptance:
+  item-b273491bf2de4c47:
+    text: an example declaring fasthttp = true exists for every capability listed
+      above
+  item-8a55199227fb2d4b:
+    text: go list -tags fasthttp -deps of every such example contains no pw
+  item-66fb0d3f8ea18b49:
+    text: the pw doc for a class_a name says which package a shared file must call
+      instead
+relations:
+- relation: mentions
+  to: decision:backend-specific-middleware
+  resolution: resolved
+- relation: mentions
+  to: decision:tinygo-fasthttp-needs-nozstd
+  resolution: resolved
+- relation: mentions
+  to: requirement:alternate-http-backend-readiness
+  resolution: resolved
+- relation: mentions
+  to: requirement:contrib-websocket
+  resolution: resolved
+- relation: mentions
+  to: requirement:fasthttp-middleware-registration
+  resolution: resolved
+- relation: mentions
+  to: requirement:typed-websocket
+  resolution: resolved
+- relation: mentions
+  to: rule:shared-code-names-a-leaf
+  resolution: resolved
+- relation: mentions
+  to: system:tinybind-websocket
+  resolution: resolved

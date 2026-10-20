@@ -1,0 +1,124 @@
+id: decision:derived-tree-development
+type: decision
+title: Derived Tree in Development
+summary: api:cli-dev runs the same transforms as a production build and serves concept:derived-public-tree from
+  disk, because a development loop that skipped them would serve URLs the templates no longer name.
+facts:
+  legacy_body: "api:cli-dev runs the same transforms as a production build and serves concept:derived-public-tree\
+    \ from disk, because a development loop that skipped them would serve URLs the templates no longer name.\n\n\
+    ```yaml\nstatus: proposed\nsupersedes_on_acceptance: decision:development-public-assets, on its source directory,\
+    \ its forced local read, and its no-conversion rule\nwhy_the_old_rule_breaks:\n  reference_moved: a template\
+    \ names app.ts and the page names app.js, so serving the authored tree returns 404 for every rewritten reference\n\
+    \  rewrite_is_compiled: the rewrite lands in generated Go, so a development-only skip makes generated output\
+    \ differ by environment and policy:generated-artifacts --check compares one profile\n  conclusion: the switch\
+    \ cannot be per environment; only the settings behind it can be\nwhat_keeps_it_affordable:\n  one_settings_set:\
+    \ development and production convert with the same settings, which is what lets a produced name carry the digest\
+    \ of its own bytes and still be identical in both; a cheaper development profile would move every URL and was\
+    \ not taken\n  reproducibility: the encoders are pinned by decision:asset-transform-toolchain, so two machines\
+    \ on one lock file produce one set of names\n  conversion_cache: an outcome, including a decision to decline,\
+    \ is reused across runs, so a warm loop converts nothing\n  incremental: a build tool that rebuilds only what\
+    \ changed carries the javascript case, per decision:asset-transform-toolchain\n  first_run_cost: a cold cache\
+    \ converts serially, which is the one visible regression against today's loop\nloop_changes:\n  watch: the authored\
+    \ public tree and every asset source enter the watch set, where decision:developer-loop-watch-scope excludes\
+    \ public today\n  rebuild_scope: an asset change rebuilds the tree and the manifest and needs no Go rebuild,\
+    \ unless a rewritten reference changed, which regenerates\n  serving: read dist/public from the working directory,\
+    \ so an edit is visible without an application rebuild, which is what the old rule bought and this keeps\n \
+    \ precompression: no .zstd sidecar is produced or served in development, unchanged\n  negotiation: the default\
+    \ representation only; policy:public-asset-media-negotiation does not run\n  manifest: read from disk rather\
+    \ than embedded, so a rebuilt tree needs no restart\nrules:\n  - path and file security remain policy:public-asset-resolution\n\
+    \  - a missing entry is 404 even when an older embedded file exists, unchanged\n  - the authored tree is never\
+    \ served, so a file that failed to convert is absent rather than silently original\nopen_questions:\n  - whether\
+    \ a first run should convert eagerly or lazily on first request, which trades startup for a stall inside the\
+    \ loop\n  - whether a shared conversion cache lives in the project, the module cache, or a configured path\n\
+    ```"
+  status: accepted
+  supersedes_on_acceptance: decision:development-public-assets, on its source directory, its forced local read,
+    and its no-conversion rule
+  why_the_old_rule_breaks:
+    reference_moved: a template names app.ts and the page names app.js, so serving the authored tree returns 404
+      for every rewritten reference
+    rewrite_is_compiled: the rewrite lands in generated Go, so a development-only skip makes generated output differ
+      by environment and policy:generated-artifacts --check compares one profile
+    conclusion: the switch cannot be per environment; only the settings behind it can be
+  what_keeps_it_affordable:
+    one_settings_set: development and production convert with the same settings, which is what lets a produced name
+      carry the digest of its own bytes and still be identical in both; a cheaper development profile would move
+      every URL and was not taken
+    reproducibility: the encoders are pinned by decision:asset-transform-toolchain, so two machines on one lock
+      file produce one set of names
+    conversion_cache: an outcome, including a decision to decline, is reused across runs, so a warm loop converts
+      nothing
+    incremental: a build tool that rebuilds only what changed carries the javascript case, per decision:asset-transform-toolchain
+    first_run_cost: a cold cache converts serially, which is the one visible regression against today's loop
+  loop_changes:
+    watch: Watch the configured authored tree and exclude configured derived/staging/cache trees.
+    rebuild_scope: The current loop regenerates, rebuilds assets/manifest, and restarts the application after watched
+      edits.
+    serving: server.public.local_root, injected by pw dev as SERVER_PUBLIC_LOCAL_ROOT.
+    precompression: The asset build can produce sidecars; pwdev responses use identity bytes and do not negotiate
+      content encoding.
+    negotiation: the default representation only; policy:public-asset-media-negotiation does not run
+    manifest: Generated registration is linked, but pwdev resolves the live tree directly and uses unrevisioned
+      URLs.
+  rules:
+  - Read the configured derived tree, never the authored tree.
+  - An ordinary local-file miss may fall back to the registered/explicit embedded FS; unsafe paths and symlinks
+    remain rejected.
+  - Report a missing derived tree at startup; embedded bytes may be stale.
+  - Path and file security remain policy:public-asset-resolution.
+  open_questions:
+  - whether a first run should convert eagerly or lazily on first request, which trades startup for a stall inside
+    the loop
+  - whether a shared conversion cache lives in the project, the module cache, or a configured path
+  resolved_change_requests:
+    bdf-printmanager:
+      request: concept:bdf-printmanager-integration
+      proposals:
+      - requirement:development-public-asset-fallback
+      standing: Implemented and verified; see linked requirement profiles and the implementation report.
+lifecycle: accepted
+open_questions:
+  item-7a444f72c1ad8cd7:
+    text: whether a first run should convert eagerly or lazily on first request, which trades startup for a stall
+      inside the loop
+  item-8301a8a059491984:
+    text: whether a shared conversion cache lives in the project, the module cache, or a configured path
+relations:
+- relation: mentions
+  to: api:cli-dev
+  resolution: resolved
+- relation: mentions
+  to: concept:derived-public-tree
+  resolution: resolved
+- relation: mentions
+  to: decision:asset-transform-toolchain
+  resolution: resolved
+- relation: mentions
+  to: decision:developer-loop-watch-scope
+  resolution: resolved
+- relation: mentions
+  to: decision:development-public-assets
+  resolution: resolved
+- relation: mentions
+  to: policy:generated-artifacts
+  resolution: resolved
+- relation: mentions
+  to: policy:public-asset-media-negotiation
+  resolution: resolved
+- relation: mentions
+  to: policy:public-asset-resolution
+  resolution: resolved
+- relation: revised_by
+  to: requirement:development-public-asset-fallback
+  resolution: resolved
+  evidence:
+    source_id: source:bdf-printmanager-request
+    path: bdf-printmanager-public-assets.md
+    heading: 'Ask 2: a development mount that does not go silently empty'
+    input_hash: a2df65a9a5a065a50b78c3559e0f9b0c559e18ff5d7c22f9a08352ad4674a426
+history:
+  configured-path-and-fallback:
+    summary: Accepted configured derived-tree delivery and embedded fallback, replacing the earlier local-miss-404
+      rule.
+    evidence:
+      path: docs/requests/bdf-printmanager-implementation.md

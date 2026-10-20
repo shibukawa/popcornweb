@@ -1,0 +1,111 @@
+id: decision:language-server-in-pw-cli
+type: decision
+title: Language Server Inside the pw CLI
+summary: Editor analysis is a system:pw-cli subcommand written in Go, not a TypeScript
+  service inside the extension, because the parsers, the check catalog, and the project
+  loader already exist there.
+facts:
+  legacy_body: "Editor analysis is a system:pw-cli subcommand written in Go, not a\
+    \ TypeScript service inside the extension, because the parsers, the check catalog,\
+    \ and the project loader already exist there.\n\n```yaml\nstatus: accepted; api:cli-lsp\
+    \ ships in the pw binary and the system:vscode client holds no analysis\nproblem:\n\
+    \  - requirement:editor-diagnostics must report exactly what api:cli-generate\
+    \ reports, and a second implementation of the same parse diverges\n  - decision:shared-check-catalog\
+    \ already refused a second implementation of one condition for api:cli-doctor\n\
+    \  - an extension-local analyzer would be the only consumer of a TypeScript port\
+    \ of concept:template-source-dialects\ndecision:\n  surface: api:cli-lsp\n  language:\
+    \ Go, built and released with the CLI, per decision:host-tools-target-runtime\n\
+    \  reuse: the system:tinybind template parsers, the data:project-config loader,\
+    \ and the decision:shared-check-catalog runner\n  client: the system:vscode extension\
+    \ is a thin language client and holds no analysis\nalternatives_rejected:\n  typescript_analyzer:\
+    \ needs a port of the parsers and drifts on every tinybind release\n  shell_out_to_pw_generate:\
+    \ usable for a save-triggered check and too slow for keystrokes; requirement:editor-diagnostics\
+    \ keeps it only as the stage-2 fallback\n  separate_lsp_binary: a second artifact\
+    \ in flow:cli-release and a second version to reconcile with the project's pinned\
+    \ CLI\nconsequences:\n  - the editor needs pw on PATH or in the Devbox environment,\
+    \ which policy:editor-tool-execution bounds\n  - a project pinning an older pw\
+    \ gets that version's analysis, which matches what its api:cli-generate would\
+    \ do and is the correct answer\n  - JetBrains and Neovim reach every stage-2 and\
+    \ stage-3 feature with a client and no analysis, per decision:vscode-first-editor-target\n\
+    \  - api:cli-lsp joins the system:pw-cli command list and inherits requirement:cli-distribution\n\
+    \  - a check whose inputs the editor cannot build is skipped and reported as skipped,\
+    \ exactly as decision:shared-check-catalog already requires of api:cli-doctor\n\
+    ```"
+  status: accepted; api:cli-lsp ships in the pw binary and the system:vscode client
+    holds no analysis
+  problem:
+  - requirement:editor-diagnostics must report exactly what api:cli-generate reports,
+    and a second implementation of the same parse diverges
+  - decision:shared-check-catalog already refused a second implementation of one condition
+    for api:cli-doctor
+  - an extension-local analyzer would be the only consumer of a TypeScript port of
+    concept:template-source-dialects
+  decision:
+    surface: api:cli-lsp
+    language: Go, built and released with the CLI, per decision:host-tools-target-runtime
+    reuse: the system:tinybind template parsers, the data:project-config loader, and
+      the decision:shared-check-catalog runner
+    client: the system:vscode extension is a thin language client and holds no analysis
+  alternatives_rejected:
+    typescript_analyzer: needs a port of the parsers and drifts on every tinybind
+      release
+    shell_out_to_pw_generate: usable for a save-triggered check and too slow for keystrokes;
+      requirement:editor-diagnostics keeps it only as the stage-2 fallback
+    separate_lsp_binary: a second artifact in flow:cli-release and a second version
+      to reconcile with the project's pinned CLI
+  consequences:
+  - the editor needs pw on PATH or in the Devbox environment, which policy:editor-tool-execution
+    bounds
+  - a project pinning an older pw gets that version's analysis, which matches what
+    its api:cli-generate would do and is the correct answer
+  - JetBrains and Neovim reach every stage-2 and stage-3 feature with a client and
+    no analysis, per decision:vscode-first-editor-target
+  - api:cli-lsp joins the system:pw-cli command list and inherits requirement:cli-distribution
+  - a check whose inputs the editor cannot build is skipped and reported as skipped,
+    exactly as decision:shared-check-catalog already requires of api:cli-doctor
+relations:
+- relation: mentions
+  to: api:cli-doctor
+  resolution: resolved
+- relation: mentions
+  to: api:cli-generate
+  resolution: resolved
+- relation: mentions
+  to: api:cli-lsp
+  resolution: resolved
+- relation: mentions
+  to: concept:template-source-dialects
+  resolution: resolved
+- relation: mentions
+  to: data:project-config
+  resolution: resolved
+- relation: mentions
+  to: decision:host-tools-target-runtime
+  resolution: resolved
+- relation: mentions
+  to: decision:shared-check-catalog
+  resolution: resolved
+- relation: mentions
+  to: decision:vscode-first-editor-target
+  resolution: resolved
+- relation: mentions
+  to: flow:cli-release
+  resolution: resolved
+- relation: mentions
+  to: policy:editor-tool-execution
+  resolution: resolved
+- relation: mentions
+  to: requirement:cli-distribution
+  resolution: resolved
+- relation: mentions
+  to: requirement:editor-diagnostics
+  resolution: resolved
+- relation: mentions
+  to: system:pw-cli
+  resolution: resolved
+- relation: mentions
+  to: system:tinybind
+  resolution: resolved
+- relation: mentions
+  to: system:vscode
+  resolution: resolved

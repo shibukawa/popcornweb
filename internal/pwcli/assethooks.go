@@ -22,7 +22,7 @@ import (
 // It joins every cache key. An encoder upgrade that no key mentions serves
 // stale bytes from a cache that believes it is current, and this is the only
 // place that can say so.
-const scriptEncoderVersion = "esbuild/0.28.1"
+const scriptEncoderVersion = "esbuild/0.28.2"
 
 // assetReferenceHooks are the generation-time conversions this project
 // registers. Each one matches exactly one element and attribute pair: an image
@@ -35,7 +35,7 @@ func assetReferenceHooks(root string, assets assetsConfig) []htmlbind.ReferenceH
 		hooks = append(hooks, imageReferenceHook(root, assets))
 	}
 	if assets.Scripts {
-		hooks = append(hooks, scriptReferenceHook(root))
+		hooks = append(hooks, scriptReferenceHook(root, assets))
 	}
 	return hooks
 }
@@ -65,7 +65,7 @@ func imageReferenceHook(root string, assets assetsConfig) htmlbind.ReferenceHook
 		Attribute: "src",
 		Match:     func(value string) bool { return localReference(value) && convertibleImage(value) },
 		CacheKey: func(request htmlbind.ReferenceRequest) (htmlbind.ConversionInputs, error) {
-			source, err := authoredAssetPath(root, request.Value)
+			source, err := authoredAssetPath(root, request.Value, assets)
 			if err != nil {
 				return htmlbind.ConversionInputs{}, err
 			}
@@ -87,7 +87,7 @@ func imageReferenceHook(root string, assets assetsConfig) htmlbind.ReferenceHook
 type imageEncoder func(source string, lossless bool, quality int) ([]byte, error)
 
 func convertImageReference(root, reference string, assets assetsConfig, encode imageEncoder) (htmlbind.ReferenceResult, error) {
-	source, err := authoredAssetPath(root, reference)
+	source, err := authoredAssetPath(root, reference, assets)
 	if err != nil {
 		return htmlbind.ReferenceResult{}, err
 	}
@@ -160,14 +160,18 @@ func losslessSource(source string) bool {
 // because an entry imports other files, the outputs outnumber the rewrite
 // because a source map is written that no attribute names, and a stylesheet a
 // module imported has to be loaded by a tag the author never wrote.
-func scriptReferenceHook(root string) htmlbind.ReferenceHook {
+func scriptReferenceHook(root string, configs ...assetsConfig) htmlbind.ReferenceHook {
+	var assets assetsConfig
+	if len(configs) > 0 {
+		assets = configs[0]
+	}
 	return htmlbind.ReferenceHook{
 		Name:      "script-build",
 		Element:   "script",
 		Attribute: "src",
 		Match:     func(value string) bool { return localReference(value) && buildableEntry(value) },
 		CacheKey: func(request htmlbind.ReferenceRequest) (htmlbind.ConversionInputs, error) {
-			source, err := authoredAssetPath(root, request.Value)
+			source, err := authoredAssetPath(root, request.Value, assets)
 			if err != nil {
 				return htmlbind.ConversionInputs{}, err
 			}
@@ -177,13 +181,17 @@ func scriptReferenceHook(root string) htmlbind.ReferenceHook {
 			}, nil
 		},
 		Transform: func(request htmlbind.ReferenceRequest) (htmlbind.ReferenceResult, error) {
-			return buildScriptEntry(root, request.Value)
+			return buildScriptEntry(root, request.Value, assets)
 		},
 	}
 }
 
-func buildScriptEntry(root, reference string) (htmlbind.ReferenceResult, error) {
-	source, err := authoredAssetPath(root, reference)
+func buildScriptEntry(root, reference string, configs ...assetsConfig) (htmlbind.ReferenceResult, error) {
+	var assets assetsConfig
+	if len(configs) > 0 {
+		assets = configs[0]
+	}
+	source, err := authoredAssetPath(root, reference, assets)
 	if err != nil {
 		return htmlbind.ReferenceResult{}, err
 	}
@@ -347,14 +355,26 @@ func scriptReadSet(result api.BuildResult, root string) []string {
 // the trailing path is looked up under public, and a reference that resolves
 // nowhere is a generation error rather than a silent skip, because a hook that
 // cannot read cannot rewrite honestly.
-func authoredAssetPath(root, reference string) (string, error) {
+func authoredAssetPath(root, reference string, configs ...assetsConfig) (string, error) {
+	var assets assetsConfig
+	if len(configs) > 0 {
+		assets = configs[0]
+	}
+	public := filepath.Join(root, filepath.FromSlash(assets.locations().public))
 	tree := assetTreePath(reference)
 	if tree == "" {
 		return "", fmt.Errorf("reference %q names no file", reference)
 	}
-	candidate := filepath.Join(root, "public", filepath.FromSlash(tree))
-	if !strings.HasPrefix(candidate, filepath.Join(root, "public")+string(filepath.Separator)) {
+	candidate := filepath.Join(public, filepath.FromSlash(tree))
+	if !strings.HasPrefix(candidate, public+string(filepath.Separator)) {
 		return "", fmt.Errorf("reference %q leaves the public tree", reference)
+	}
+	relative, err := filepath.Rel(root, candidate)
+	if err != nil {
+		return "", err
+	}
+	if err := validateAssetPath(root, filepath.ToSlash(relative)); err != nil {
+		return "", err
 	}
 	info, err := os.Lstat(candidate)
 	if err != nil || !info.Mode().IsRegular() {

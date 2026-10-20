@@ -1,0 +1,9 @@
+id: source:bdf-printmanager-request
+title: BDF Print Manager public assets change request
+adapter: document
+location:
+  root: docs/requests
+  selection: filesystem
+  include:
+  - bdf-printmanager-public-assets.md
+depends_on: []

@@ -1,0 +1,278 @@
+id: requirement:package-project-scaffold
+type: requirement
+title: Package Preset Scaffold
+summary: The package preset of requirement:init-presets writes a concept:component-package
+  repository whose generated Go is tracked rather than ignored, and whose CI fails
+  on a stale artifact, because a consumer regenerates nothing and a stale commit is
+  what it links.
+facts:
+  legacy_body: "The package preset of requirement:init-presets writes a concept:component-package\
+    \ repository whose generated Go is tracked rather than ignored, and whose CI fails\
+    \ on a stale artifact, because a consumer regenerates nothing and a stale commit\
+    \ is what it links.\n\n```yaml\naudience: actor:application-developer publishing\
+    \ a capability rather than running one\nsame_scaffold_as: the pw init --kind package\
+    \ path of api:cli-package; this preset is that path named in the list rather than\
+    \ a second one\nwhy_in_the_list: a reader deciding what to create is looking at\
+    \ the preset list, and a --kind flag is discoverable only by someone who already\
+    \ knows the feature exists\nversion_control:\n  inverted_rule: decision:committed-package-artifacts,\
+    \ which is the one policy:generated-artifacts rule this project kind reverses\n\
+    \  gitignore:\n    omits: the **/*_pw_gen.go rule the application scaffold writes\n\
+    \    keeps: every other entry, including the public/**/*.zstd sidecar, which stays\
+    \ excluded because requirement:package-asset-delivery serves package assets from\
+    \ embedded bytes\n  vscode:\n    keeps: the .vscode/settings.json hide rule for\
+    \ **/*_pw_gen.go\n    reason: hiding a file from an explorer is not excluding\
+    \ it from a commit, and an author reads the source rather than the artifact either\
+    \ way\n  extracted_assets: a component style or script the generator extracts\
+    \ is tracked too, on the same reasoning\n  first_commit: the scaffold runs api:cli-generate,\
+    \ so the initial commit already carries the artifacts rather than teaching the\
+    \ author that an empty tree is the normal state\nstaleness_guard:\n  problem:\
+    \ the whole distribution model rests on the committed artifact matching the source,\
+    \ and nothing in the consumer can detect that it does not beyond a compile error\
+    \ naming the package\n  scaffolded: a CI workflow running api:cli-check over the\
+    \ package, which decision:committed-package-artifacts already names as the package's\
+    \ release gate and which nothing wrote until now\n  why_scaffolded_rather_than_documented:\
+    \ an author who forgets it publishes a package that fails to compile in somebody\
+    \ else's project, and the failure is discovered by that somebody\n  release: the\
+    \ same check is the tag gate, so a published version never carries an artifact\
+    \ its source does not produce\nwhat_is_not_written:\n  entry_point: no concept:application-entry-point\
+    \ and no generated registration linker, because the consumer owns the binary\n\
+    \  document_shell: none, per concept:component-package; decision:implicit-document-shell\
+    \ registers exactly one and it is the application's\n  environment_config: none,\
+    \ because policy:config-file-resolution resolves those in the consumer\n  devbox:\
+    \ none, unless the package's own tests need a service\n  queries: no generate.queries\
+    \ entry, per the requirement:component-package-distribution non-goal about .pw.sql\
+    \ in a package\nquestions_not_asked:\n  list: router, authentication, session\
+    \ storage, database, database engine, DynamoDB, Redis, Tailwind, TinyGo, and Devbox\n\
+    \  reason: each describes an application, and this project is not one\n  tinygo_specifically:\
+    \ there is no binary to compile, and the package stays inside rule:tinygo-runtime-compatibility\
+    \ whatever the consumer chose, so the answer would decide nothing\n  hub: decision:navigable-answer-hub\
+    \ shows the project name and nothing else for this kind\nwritten:\n  config: data:project-config\
+    \ with project.kind package, no project.main, and the data:component-package-manifest\
+    \ package section naming the pw and system:tinybind versions it generates against\n\
+    \  module: go.mod at the module path the author gives, which is the project name\
+    \ question asking for a module path here rather than a directory name\n  starter:\
+    \ one component or handler of the shape being authored, plus its generated artifact\n\
+    \  editor: .editorconfig and .vscode settings, unchanged from the application\
+    \ scaffold\n  readme: the install line a consumer pastes, since decision:declared-package-installation\
+    \ makes the install two lines the author has to state somewhere\n  generation_purposes:\
+    \ every purpose declared, with only templates non-empty, because none has a default\
+    \ and an omitted one is refused rather than inferred\n  linked_package:\n    key:\
+    \ package.import, naming the directory the starter sits in rather than the module\
+    \ root\n    why: a generation purpose may not name \".\", so the Go lives one\
+    \ level down; the consumer's generated bootstrap imports what this key says, and\
+    \ without it the import is the module root, which holds no Go\n    symptom_without_it:\
+    \ the consumer fails at go mod tidy with \"does not contain package\", naming\
+    \ a module whose own build succeeded\n    found_by: declaring a scaffolded package\
+    \ in a scaffolded application and building it\nmodule_resolution:\n  rule: a package\
+    \ resolves its module twice, once before generation and once after\n  why: a package's\
+    \ only Go is the generated Go, so the first resolution runs over a module with\
+    \ no imports to find and the artifacts generation then writes name packages nothing\
+    \ has required\n  contrast: an application has handwritten sources naming those\
+    \ same packages before its first resolution, which is why it needs one run\n \
+    \ found_by: building a scaffolded package, which failed on the generated file's\
+    \ own import\nproject_name_question:\n  differs: a package is named by its module\
+    \ path, because that is what a consumer types\n  effect: the validation is a module\
+    \ path rather than a directory name, and the directory is its last element\n \
+    \ reason: a package named myapp and published at github.com/someone/myapp would\
+    \ have to be renamed before its first release\nunavailable_afterwards:\n  commands:\
+    \ api:cli-dev and api:cli-build, which api:cli-package already reports as not\
+    \ applying to this kind\n  reason: there is nothing to run, and the package's\
+    \ tests are the loop\nacceptance:\n  - a project created from this preset commits\
+    \ its generated Go on the first commit\n  - its CI fails when a source is edited\
+    \ and the artifact is not regenerated\n  - a consumer naming the published module\
+    \ links it with go build alone, per requirement:component-package-distribution\n\
+    \  - the preset asks the module path and nothing else\n  - pw dev and pw build\
+    \ in the created project report that they do not apply to a package\nnon_goals:\n\
+    \  - publishing, tagging, or releasing the package\n  - a component-library package,\
+    \ which requirement:cross-package-components blocks upstream\n  - a template repository\
+    \ or a registry entry\n```"
+  audience: actor:application-developer publishing a capability rather than running
+    one
+  same_scaffold_as: the pw init --kind package path of api:cli-package; this preset
+    is that path named in the list rather than a second one
+  why_in_the_list: a reader deciding what to create is looking at the preset list,
+    and a --kind flag is discoverable only by someone who already knows the feature
+    exists
+  version_control:
+    inverted_rule: decision:committed-package-artifacts, which is the one policy:generated-artifacts
+      rule this project kind reverses
+    gitignore:
+      omits: the **/*_pw_gen.go rule the application scaffold writes
+      keeps: every other entry, including the public/**/*.zstd sidecar, which stays
+        excluded because requirement:package-asset-delivery serves package assets
+        from embedded bytes
+    vscode:
+      keeps: the .vscode/settings.json hide rule for **/*_pw_gen.go
+      reason: hiding a file from an explorer is not excluding it from a commit, and
+        an author reads the source rather than the artifact either way
+    extracted_assets: a component style or script the generator extracts is tracked
+      too, on the same reasoning
+    first_commit: the scaffold runs api:cli-generate, so the initial commit already
+      carries the artifacts rather than teaching the author that an empty tree is
+      the normal state
+  staleness_guard:
+    problem: the whole distribution model rests on the committed artifact matching
+      the source, and nothing in the consumer can detect that it does not beyond a
+      compile error naming the package
+    scaffolded: a CI workflow running api:cli-check over the package, which decision:committed-package-artifacts
+      already names as the package's release gate and which nothing wrote until now
+    why_scaffolded_rather_than_documented: an author who forgets it publishes a package
+      that fails to compile in somebody else's project, and the failure is discovered
+      by that somebody
+    release: the same check is the tag gate, so a published version never carries
+      an artifact its source does not produce
+  what_is_not_written:
+    entry_point: no concept:application-entry-point and no generated registration
+      linker, because the consumer owns the binary
+    document_shell: none, per concept:component-package; decision:implicit-document-shell
+      registers exactly one and it is the application's
+    environment_config: none, because policy:config-file-resolution resolves those
+      in the consumer
+    devbox: none, unless the package's own tests need a service
+    queries: no generate.queries entry, per the requirement:component-package-distribution
+      non-goal about .pw.sql in a package
+  questions_not_asked:
+    list: router, authentication, session storage, database, database engine, DynamoDB,
+      Redis, Tailwind, TinyGo, and Devbox
+    reason: each describes an application, and this project is not one
+    tinygo_specifically: there is no binary to compile, and the package stays inside
+      rule:tinygo-runtime-compatibility whatever the consumer chose, so the answer
+      would decide nothing
+    hub: decision:navigable-answer-hub shows the project name and nothing else for
+      this kind
+  written:
+    config: data:project-config with project.kind package, no project.main, and the
+      data:component-package-manifest package section naming the pw and system:tinybind
+      versions it generates against
+    module: go.mod at the module path the author gives, which is the project name
+      question asking for a module path here rather than a directory name
+    starter: one component or handler of the shape being authored, plus its generated
+      artifact
+    editor: .editorconfig and .vscode settings, unchanged from the application scaffold
+    readme: the install line a consumer pastes, since decision:declared-package-installation
+      makes the install two lines the author has to state somewhere
+    generation_purposes: every purpose declared, with only templates non-empty, because
+      none has a default and an omitted one is refused rather than inferred
+    linked_package:
+      key: package.import, naming the directory the starter sits in rather than the
+        module root
+      why: a generation purpose may not name ".", so the Go lives one level down;
+        the consumer's generated bootstrap imports what this key says, and without
+        it the import is the module root, which holds no Go
+      symptom_without_it: the consumer fails at go mod tidy with "does not contain
+        package", naming a module whose own build succeeded
+      found_by: declaring a scaffolded package in a scaffolded application and building
+        it
+  module_resolution:
+    rule: a package resolves its module twice, once before generation and once after
+    why: a package's only Go is the generated Go, so the first resolution runs over
+      a module with no imports to find and the artifacts generation then writes name
+      packages nothing has required
+    contrast: an application has handwritten sources naming those same packages before
+      its first resolution, which is why it needs one run
+    found_by: building a scaffolded package, which failed on the generated file's
+      own import
+  project_name_question:
+    differs: a package is named by its module path, because that is what a consumer
+      types
+    effect: the validation is a module path rather than a directory name, and the
+      directory is its last element
+    reason: a package named myapp and published at github.com/someone/myapp would
+      have to be renamed before its first release
+  unavailable_afterwards:
+    commands: api:cli-dev and api:cli-build, which api:cli-package already reports
+      as not applying to this kind
+    reason: there is nothing to run, and the package's tests are the loop
+  acceptance:
+  - a project created from this preset commits its generated Go on the first commit
+  - its CI fails when a source is edited and the artifact is not regenerated
+  - a consumer naming the published module links it with go build alone, per requirement:component-package-distribution
+  - the preset asks the module path and nothing else
+  - pw dev and pw build in the created project report that they do not apply to a
+    package
+  non_goals:
+  - publishing, tagging, or releasing the package
+  - a component-library package, which requirement:cross-package-components blocks
+    upstream
+  - a template repository or a registry entry
+acceptance:
+  item-4f5aa0c969dd0509:
+    text: a project created from this preset commits its generated Go on the first
+      commit
+  item-1cb92a908ee44d5c:
+    text: its CI fails when a source is edited and the artifact is not regenerated
+  item-574f6b9d4c906783:
+    text: a consumer naming the published module links it with go build alone, per
+      requirement:component-package-distribution
+  item-220d5820769d1016:
+    text: the preset asks the module path and nothing else
+  item-35786a4c6aaa7ed2:
+    text: pw dev and pw build in the created project report that they do not apply
+      to a package
+relations:
+- relation: mentions
+  to: actor:application-developer
+  resolution: resolved
+- relation: mentions
+  to: api:cli-build
+  resolution: resolved
+- relation: mentions
+  to: api:cli-check
+  resolution: resolved
+- relation: mentions
+  to: api:cli-dev
+  resolution: resolved
+- relation: mentions
+  to: api:cli-generate
+  resolution: resolved
+- relation: mentions
+  to: api:cli-package
+  resolution: resolved
+- relation: mentions
+  to: concept:application-entry-point
+  resolution: resolved
+- relation: mentions
+  to: concept:component-package
+  resolution: resolved
+- relation: mentions
+  to: data:component-package-manifest
+  resolution: resolved
+- relation: mentions
+  to: data:project-config
+  resolution: resolved
+- relation: mentions
+  to: decision:committed-package-artifacts
+  resolution: resolved
+- relation: mentions
+  to: decision:declared-package-installation
+  resolution: resolved
+- relation: mentions
+  to: decision:implicit-document-shell
+  resolution: resolved
+- relation: mentions
+  to: decision:navigable-answer-hub
+  resolution: resolved
+- relation: mentions
+  to: policy:config-file-resolution
+  resolution: resolved
+- relation: mentions
+  to: policy:generated-artifacts
+  resolution: resolved
+- relation: mentions
+  to: requirement:component-package-distribution
+  resolution: resolved
+- relation: mentions
+  to: requirement:cross-package-components
+  resolution: resolved
+- relation: mentions
+  to: requirement:init-presets
+  resolution: resolved
+- relation: mentions
+  to: requirement:package-asset-delivery
+  resolution: resolved
+- relation: mentions
+  to: rule:tinygo-runtime-compatibility
+  resolution: resolved
+- relation: mentions
+  to: system:tinybind
+  resolution: resolved

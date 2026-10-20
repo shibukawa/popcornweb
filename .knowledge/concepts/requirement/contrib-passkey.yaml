@@ -1,0 +1,89 @@
+id: requirement:contrib-passkey
+type: requirement
+title: TinyGo Passkey Relying Party
+summary: contrib/passkey implements bounded server-side WebAuthn registration and
+  authentication for passkeys using requirement:contrib-cbor.
+facts:
+  legacy_body: "contrib/passkey implements bounded server-side WebAuthn registration\
+    \ and authentication for passkeys using requirement:contrib-cbor.\n\n```yaml\n\
+    package: contrib/passkey\nscope: WebAuthn Relying Party\npublic_api:\n  - BeginRegistration(user,\
+    \ options) returns creation options and ceremony state\n  - FinishRegistration(ceremony\
+    \ state, credential response) returns credential record\n  - BeginAuthentication(user\
+    \ or discoverable mode, options) returns request options and ceremony state\n\
+    \  - FinishAuthentication(ceremony state, assertion response, credential record)\
+    \ returns assertion result\n  - JSON request and response records compatible with\
+    \ browser PublicKeyCredential data\n  - CeremonyStateCodec implements api:auth-state-codec\
+    \ without exporting ceremony secrets\ncredential_record:\n  - credential ID\n\
+    \  - user handle\n  - normalized public key and COSE algorithm\n  - sign count\n\
+    \  - backup eligibility and current backup state\n  - transports when supplied\n\
+    required:\n  - registration and authentication ceremonies\n  - ES256 registration\
+    \ and authentication succeed against two independent authenticator fixtures or\
+    \ implementations\n  - discoverable credentials and username-less authentication\n\
+    \  - exact challenge, origin, RP ID hash, client data type, UP, and configured\
+    \ UV verification\n  - authenticator data parsing and assertion signature verification\n\
+    \  - ES256 COSE keys and signatures\n  - excludeCredentials and allowCredentials\n\
+    \  - none attestation with explicit policy result\n  - single-use expiring ceremony\
+    \ state supplied to caller for storage\n  - counter risk is surfaced when the\
+    \ authenticator counter does not increase\n  - applications persist the accepted\
+    \ counter and backup state atomically with credential state\n  - RP/user display\
+    \ strings, origins, credential descriptor lists, and transport hints are bounded\
+    \ before options are generated\n  - policy:passkey-security\ndeferred:\n  - packed,\
+    \ TPM, Android, Apple, and FIDO U2F attestation trust validation\n  - metadata\
+    \ service integration and authenticator certification policy\n  - EdDSA and RSA\
+    \ algorithms until TinyGo interoperability is proven\n  - PRF, largeBlob, payment,\
+    \ related-origin, and legacy U2F extensions\n  - browser JavaScript framework\n\
+    standard: https://www.w3.org/TR/webauthn-3/\n```"
+  package: contrib/passkey
+  scope: WebAuthn Relying Party
+  public_api:
+  - BeginRegistration(user, options) returns creation options and ceremony state
+  - FinishRegistration(ceremony state, credential response) returns credential record
+  - BeginAuthentication(user or discoverable mode, options) returns request options
+    and ceremony state
+  - FinishAuthentication(ceremony state, assertion response, credential record) returns
+    assertion result
+  - JSON request and response records compatible with browser PublicKeyCredential
+    data
+  - CeremonyStateCodec implements api:auth-state-codec without exporting ceremony
+    secrets
+  credential_record:
+  - credential ID
+  - user handle
+  - normalized public key and COSE algorithm
+  - sign count
+  - backup eligibility and current backup state
+  - transports when supplied
+  required:
+  - registration and authentication ceremonies
+  - ES256 registration and authentication succeed against two independent authenticator
+    fixtures or implementations
+  - discoverable credentials and username-less authentication
+  - exact challenge, origin, RP ID hash, client data type, UP, and configured UV verification
+  - authenticator data parsing and assertion signature verification
+  - ES256 COSE keys and signatures
+  - excludeCredentials and allowCredentials
+  - none attestation with explicit policy result
+  - single-use expiring ceremony state supplied to caller for storage
+  - counter risk is surfaced when the authenticator counter does not increase
+  - applications persist the accepted counter and backup state atomically with credential
+    state
+  - RP/user display strings, origins, credential descriptor lists, and transport hints
+    are bounded before options are generated
+  - policy:passkey-security
+  deferred:
+  - packed, TPM, Android, Apple, and FIDO U2F attestation trust validation
+  - metadata service integration and authenticator certification policy
+  - EdDSA and RSA algorithms until TinyGo interoperability is proven
+  - PRF, largeBlob, payment, related-origin, and legacy U2F extensions
+  - browser JavaScript framework
+  standard: https://www.w3.org/TR/webauthn-3/
+relations:
+- relation: mentions
+  to: api:auth-state-codec
+  resolution: resolved
+- relation: mentions
+  to: policy:passkey-security
+  resolution: resolved
+- relation: mentions
+  to: requirement:contrib-cbor
+  resolution: resolved

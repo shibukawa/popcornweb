@@ -123,9 +123,9 @@ func generateProject(ctx context.Context, check bool, stdout io.Writer, listPath
 			return 0, err
 		}
 	}
-	options = withExtractedAssetDirs(options, root)
+	options = withExtractedAssetDirs(options, root, config.Assets)
 	if hooks := assetReferenceHooks(root, config.Assets); len(hooks) > 0 {
-		staging := filepath.Join(root, filepath.FromSlash(derivedStageDir))
+		staging := filepath.Join(root, filepath.FromSlash(config.Assets.locations().stage))
 		if !check {
 			// The staging directory is cleared first, because the asset build
 			// copies everything it finds there into the served tree. A file
@@ -140,7 +140,7 @@ func generateProject(ctx context.Context, check bool, stdout io.Writer, listPath
 		}
 		options.ReferenceHooks = hooks
 		options.DerivedAssetDir = staging
-		options.ConversionCacheDir = filepath.Join(root, filepath.FromSlash(conversionCacheDir))
+		options.ConversionCacheDir = filepath.Join(root, filepath.FromSlash(config.Assets.locations().cache))
 		options.ConversionWorkers = conversionWorkers()
 	}
 	// The derivation is opt-in and rides the same options the generation does, so
@@ -250,8 +250,12 @@ func generateProject(ctx context.Context, check bool, stdout io.Writer, listPath
 // It is a function rather than two lines at the one call site because the
 // fixture regeneration builds its own runner, and a setting present in only one
 // of them is a fixture that stops driving the path it claims to drive.
-func withExtractedAssetDirs(options generator.Options, root string) generator.Options {
-	options.PublicDir = filepath.Join(root, filepath.FromSlash(extractedAssetDir))
+func withExtractedAssetDirs(options generator.Options, root string, configs ...assetsConfig) generator.Options {
+	var assets assetsConfig
+	if len(configs) > 0 {
+		assets = configs[0]
+	}
+	options.PublicDir = filepath.Join(root, filepath.FromSlash(assets.locations().extracted))
 	options.PublicURLBase = generator.DefaultPublicURLBase
 	return options
 }
@@ -691,7 +695,7 @@ func reportSourcesOutsideScope(root string, config projectConfig, stdout io.Writ
 			// and it has to sit at the root because it is part of the package
 			// public.go declares there. Reporting it made every rebuild print
 			// a warning about a file the build had just written on purpose.
-			if relative == assetManifestFile {
+			if relative == config.Assets.locations().manifestGo {
 				return nil
 			}
 			// The message package belongs to no purpose for the same reason:
@@ -898,6 +902,11 @@ func planDirectory(ctx context.Context, runner *generator.Generator, directory s
 	// The parser error already names the file, the line, and the column.
 	if reason := firstUnparsableSource(directory); reason != nil {
 		return nil, reason
+	}
+	if purposes.config {
+		if err := pwgen.ValidateConfigDefaults(directory, runner.Options); err != nil {
+			return nil, err
+		}
 	}
 	artifacts, routes, err := generateArtifacts(ctx, runner, request)
 	collected.add(directory, routes)

@@ -1,0 +1,66 @@
+id: system:go-envparse
+type: system
+title: go-envparse
+summary: github.com/hashicorp/go-envparse is the dotenv parser behind policy:dotenv-resolution,
+  chosen over godotenv and gotenv because it builds and runs under TinyGo without
+  regexp and costs the requirement:cloudflare-workers-build-target bundle 22 KB rather
+  than 450 KB.
+facts:
+  legacy_body: "github.com/hashicorp/go-envparse is the dotenv parser behind policy:dotenv-resolution,\
+    \ chosen over godotenv and gotenv because it builds and runs under TinyGo without\
+    \ regexp and costs the requirement:cloudflare-workers-build-target bundle 22 KB\
+    \ rather than 450 KB.\n\n```yaml\nmodule: github.com/hashicorp/go-envparse v0.1.0\n\
+    license: MPL-2.0, a file-level copyleft that does not reach the program importing\
+    \ it\nimports: bufio, bytes, fmt, unicode/utf8, and unicode/utf16, nothing else\n\
+    grammar:\n  - NAME=value with an optional export prefix and # comments\n  - unquoted,\
+    \ single-quoted, and double-quoted text mixed within one value; double quotes\
+    \ take JSON escapes\n  - a later assignment of the same name wins\n  - no ${NAME}\
+    \ expansion, no shell quoting beyond the above, no YAML forms\n  - a parse error\
+    \ carries the line number, which the read reports beside the file name\nverified_2026_09_08:\n\
+    \  toolchain: tinygo 0.42.0 with go 1.27\n  builds: native darwin, -target wasm,\
+    \ and -target wasip1, each run with identical output\n  wasm_size: 744 KB, against\
+    \ 722 KB for a hand-written parser and 1166 KB for godotenv, which pulls regexp\
+    \ and os/exec\nrejected:\n  godotenv: the de facto library, but regexp and os/exec,\
+    \ and ${VAR} expansion the policy excludes\n  gotenv: regexp and x/text for the\
+    \ same grammar\n  hand_written: 22 KB smaller and no license question, but one\
+    \ more parser to keep correct\nhome: system:tinybind 0.5.31 reads LoadOptions.EnvFiles\
+    \ with this parser; the framework parses the same files once more, only for the\
+    \ token, the APP_ENV warning, and the environment its own array variables decode\
+    \ from\n```"
+  module: github.com/hashicorp/go-envparse v0.1.0
+  license: MPL-2.0, a file-level copyleft that does not reach the program importing
+    it
+  imports: bufio, bytes, fmt, unicode/utf8, and unicode/utf16, nothing else
+  grammar:
+  - NAME=value with an optional export prefix and
+  - unquoted, single-quoted, and double-quoted text mixed within one value; double
+    quotes take JSON escapes
+  - a later assignment of the same name wins
+  - no ${NAME} expansion, no shell quoting beyond the above, no YAML forms
+  - a parse error carries the line number, which the read reports beside the file
+    name
+  verified_2026_09_08:
+    toolchain: tinygo 0.42.0 with go 1.27
+    builds: native darwin, -target wasm, and -target wasip1, each run with identical
+      output
+    wasm_size: 744 KB, against 722 KB for a hand-written parser and 1166 KB for godotenv,
+      which pulls regexp and os/exec
+  rejected:
+    godotenv: the de facto library, but regexp and os/exec, and ${VAR} expansion the
+      policy excludes
+    gotenv: regexp and x/text for the same grammar
+    hand_written: 22 KB smaller and no license question, but one more parser to keep
+      correct
+  home: system:tinybind 0.5.31 reads LoadOptions.EnvFiles with this parser; the framework
+    parses the same files once more, only for the token, the APP_ENV warning, and
+    the environment its own array variables decode from
+relations:
+- relation: mentions
+  to: policy:dotenv-resolution
+  resolution: resolved
+- relation: mentions
+  to: requirement:cloudflare-workers-build-target
+  resolution: resolved
+- relation: mentions
+  to: system:tinybind
+  resolution: resolved

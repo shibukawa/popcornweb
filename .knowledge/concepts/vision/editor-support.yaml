@@ -1,0 +1,184 @@
+id: vision:editor-support
+type: vision
+title: Editor Support Vision
+summary: Popcorn Web ships editor support for its own source dialects, so a .pw.html,
+  .pw.sql, or .pw.dynamo file reads and edits as a known language instead of as plain
+  text.
+facts:
+  legacy_body: "Popcorn Web ships editor support for its own source dialects, so a\
+    \ .pw.html, .pw.sql, or .pw.dynamo file reads and edits as a known language instead\
+    \ of as plain text.\n\n```yaml\nstatus: stages 1, 1.5, and 2 shipped; stage 3\
+    \ shipped except for the browser-report source of requirement:editor-runtime-diagnostics,\
+    \ the web build of requirement:editor-web-host, and the four resolver-bound jumps\
+    \ requirement:editor-navigation still lists\nproblem: concept:template-source-dialects\
+    \ files open with no grammar, so a declaration header, an embedded expression,\
+    \ and the HTML or SQL body all render as one undifferentiated block\nprimary_actor:\
+    \ actor:application-developer\nfirst_target: system:vscode, per decision:vscode-first-editor-target\n\
+    staging:\n  1:\n    - requirement:editor-language-registration\n    - requirement:template-syntax-highlighting\n\
+    \    - requirement:extension-distribution\n    ships: an extension with no process\
+    \ of its own, per decision:textmate-grammar-first\n  1.5:\n    - requirement:editor-formatting\n\
+    \    ships: the system:tinybind formatter, embedded as WebAssembly and delegated\
+    \ to api:cli-fmt where it can be, per decision:formatter-delivery\n    why_not_stage_2:\
+    \ formatting reads one buffer and no project model, so it does not wait for requirement:pw-language-server\n\
+    \  2:\n    - requirement:pw-language-server\n    - requirement:editor-diagnostics\n\
+    \    - requirement:editor-tasks\n    - requirement:editor-workspace-symbols\n\
+    \    ships: api:cli-lsp, so the analysis is Go and reusable, per decision:language-server-in-pw-cli\n\
+    \    delivered: complete. api:cli-lsp serves syntax and placement diagnostics,\
+    \ documentSymbol, and workspace/symbol over a loaded project model; the extension\
+    \ starts it under policy:editor-tool-execution and reaches the CLI commands as\
+    \ tasks. What the editor still cannot report is a finding needing a resolved type,\
+    \ which is stage 3's own dependency\n  3:\n    - requirement:editor-navigation\n\
+    \    - requirement:editor-completion\n    - requirement:editor-inlay-hints\n \
+    \   - requirement:editor-generated-peek\n    - requirement:editor-route-explorer\n\
+    \    - requirement:editor-story-preview\n    - requirement:editor-runtime-diagnostics\n\
+    \    - requirement:editor-web-host\n    - requirement:additional-editor-clients\n\
+    \    ships: the features that need resolved types rather than only a parse tree,\
+    \ and the surfaces that make the framework's own indirection visible\n    delivered:\
+    \ the type graph and every LSP capability above it, plus the three pw/ methods\
+    \ LSP has no equivalent for. What is not delivered is named in each requirement's\
+    \ own status rather than summarized here, because each is missing a different\
+    \ input\n  4:\n    - requirement:editor-code-actions\n    - requirement:declaration-rename\n\
+    \    ships: the features that write; they are last because each edits source the\
+    \ developer did not open\n    delivered: requirement:declaration-rename in full,\
+    \ and requirement:editor-code-actions for the one finding with a mechanical repair,\
+    \ which is what its own gate leaves available today\noutside_the_staging:\n  requirement:template-source-positions:\
+    \ >\n    a generator property rather than an editor feature. requirement:editor-navigation,\n\
+    \    requirement:editor-generated-peek, and requirement:editor-runtime-diagnostics\
+    \ all resolve\n    through it, and the Go toolchain gains it with no editor running,\
+    \ so it does not wait for a stage\nprinciples:\n  - the editor never reimplements\
+    \ a parser; it runs upstream's own code, through api:cli-lsp or through the WebAssembly\
+    \ build of decision:formatter-delivery\n  - a stage ships alone and is useful\
+    \ alone, so stage 1 needs no binary and no configuration\n  - what the editor\
+    \ reports and what api:cli-generate reports are the same message, per decision:shared-check-catalog\n\
+    \  - generated artifacts are output, not source; policy:generated-artifacts decides\
+    \ what the editor offers to edit\n  - the extension runs project tools under policy:editor-tool-execution\
+    \ and downloads none\nnon_goals:\n  - a TypeScript reimplementation of the tinybind\
+    \ template parsers\n  - Go language support, which gopls already owns\n  - a debugger,\
+    \ a profiler, or a telemetry surface of Popcorn Web's own; requirement:dev-telemetry-viewer\
+    \ stays a browser tool, and requirement:template-source-positions makes Go's existing\
+    \ debugger name the template rather than adding one\n  - editor-only diagnostics\
+    \ that api:cli-doctor and api:cli-generate cannot also produce\n  - code actions\
+    \ before stage 4, and any layout rule of Popcorn Web's own; requirement:template-formatting\
+    \ keeps the layout upstream\nplacement: decision:extension-in-repository\n```"
+  legacy_parse_issues:
+  - kind: legacy_parse_error
+    block: 0
+    message: "while parsing a block collection\n  in \"<unicode string>\", line 7,\
+      \ column 5:\n        - requirement:editor-language-re ... \n        ^\nexpected\
+      \ <block end>, but found '?'\n  in \"<unicode string>\", line 10, column 5:\n\
+      \        ships: an extension with no proc ... \n        ^"
+relations:
+- relation: mentions
+  to: actor:application-developer
+  resolution: resolved
+- relation: mentions
+  to: api:cli-doctor
+  resolution: resolved
+- relation: mentions
+  to: api:cli-fmt
+  resolution: resolved
+- relation: mentions
+  to: api:cli-generate
+  resolution: resolved
+- relation: mentions
+  to: api:cli-lsp
+  resolution: resolved
+- relation: mentions
+  to: concept:template-source-dialects
+  resolution: resolved
+- relation: mentions
+  to: decision:extension-in-repository
+  resolution: resolved
+- relation: mentions
+  to: decision:formatter-delivery
+  resolution: resolved
+- relation: mentions
+  to: decision:language-server-in-pw-cli
+  resolution: resolved
+- relation: mentions
+  to: decision:shared-check-catalog
+  resolution: resolved
+- relation: mentions
+  to: decision:textmate-grammar-first
+  resolution: resolved
+- relation: mentions
+  to: decision:vscode-first-editor-target
+  resolution: resolved
+- relation: mentions
+  to: policy:editor-tool-execution
+  resolution: resolved
+- relation: mentions
+  to: policy:generated-artifacts
+  resolution: resolved
+- relation: mentions
+  to: requirement:additional-editor-clients
+  resolution: resolved
+- relation: mentions
+  to: requirement:declaration-rename
+  resolution: resolved
+- relation: mentions
+  to: requirement:dev-telemetry-viewer
+  resolution: resolved
+- relation: mentions
+  to: requirement:editor-code-actions
+  resolution: resolved
+- relation: mentions
+  to: requirement:editor-completion
+  resolution: resolved
+- relation: mentions
+  to: requirement:editor-diagnostics
+  resolution: resolved
+- relation: mentions
+  to: requirement:editor-formatting
+  resolution: resolved
+- relation: mentions
+  to: requirement:editor-generated-peek
+  resolution: resolved
+- relation: mentions
+  to: requirement:editor-inlay-hints
+  resolution: resolved
+- relation: mentions
+  to: requirement:editor-language-registration
+  resolution: resolved
+- relation: mentions
+  to: requirement:editor-navigation
+  resolution: resolved
+- relation: mentions
+  to: requirement:editor-route-explorer
+  resolution: resolved
+- relation: mentions
+  to: requirement:editor-runtime-diagnostics
+  resolution: resolved
+- relation: mentions
+  to: requirement:editor-story-preview
+  resolution: resolved
+- relation: mentions
+  to: requirement:editor-tasks
+  resolution: resolved
+- relation: mentions
+  to: requirement:editor-web-host
+  resolution: resolved
+- relation: mentions
+  to: requirement:editor-workspace-symbols
+  resolution: resolved
+- relation: mentions
+  to: requirement:extension-distribution
+  resolution: resolved
+- relation: mentions
+  to: requirement:pw-language-server
+  resolution: resolved
+- relation: mentions
+  to: requirement:template-formatting
+  resolution: resolved
+- relation: mentions
+  to: requirement:template-source-positions
+  resolution: resolved
+- relation: mentions
+  to: requirement:template-syntax-highlighting
+  resolution: resolved
+- relation: mentions
+  to: system:tinybind
+  resolution: resolved
+- relation: mentions
+  to: system:vscode
+  resolution: resolved

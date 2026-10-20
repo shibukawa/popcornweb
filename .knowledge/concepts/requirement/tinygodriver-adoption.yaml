@@ -1,0 +1,98 @@
+id: requirement:tinygodriver-adoption
+type: requirement
+title: tinygodriver Adoption
+summary: Popcorn Web consumes reusable TinyGo compatibility from system:tinygodriver
+  and must not retain duplicate implementations.
+facts:
+  legacy_body: "Popcorn Web consumes reusable TinyGo compatibility from system:tinygodriver\
+    \ and must not retain duplicate implementations.\n\n```yaml\nownership:\n  authoritative_source:\
+    \ system:tinygodriver\n  popcorn_web_role: consumer\nimports:\n  router: github.com/shibukawa/tinygodriver/httpmux\n\
+    \  reverse_proxy: github.com/shibukawa/tinygodriver/httprevproxy\n  host_network_driver:\
+    \ github.com/shibukawa/tinygodriver/netdev\n  zstd: github.com/shibukawa/tinygodriver/compress/zstd\n\
+    \  sqlite: github.com/shibukawa/tinygodriver/database/sql/sqlite\n  postgresql:\
+    \ github.com/shibukawa/tinygodriver/database/pgx/stdlib for tooling, database/pgx/pgxpool\
+    \ for the requirement:pgx-native-execution runtime path\n  mysql: github.com/shibukawa/tinygodriver/database/sql/mysql\n\
+    pinned_baseline:\n  version: v1.1.0\n  reason: the first release carrying both\
+    \ server SQL drivers required by decision:server-sql-support-tier\nrepository_boundary:\n\
+    \  - no local httpmux, httprevproxy, netdev, zstd, or database driver implementation\n\
+    \  - application examples import system:tinygodriver directly\ndependency_rule:\n\
+    \  - pin a tested tinygodriver version in go.mod\n  - do not vendor or fork these\
+    \ packages inside this repository\nbackward_compatibility:\n  legacy_import_paths:\
+    \ unsupported\n  forwarding_packages: forbidden\nacceptance:\n  - no tracked local\
+    \ implementation remains for httpmux, httprevproxy, netdev, zstd, or database\
+    \ drivers\n  - no source or generated project imports the removed popcornweb package\
+    \ paths\n  - host Go tests pass with httpmux resolving to net/http.ServeMux\n\
+    \  - TinyGo HTTP build and route fixtures pass with httpmux and netdev\n  - reverse\
+    \ proxy fixtures pass against the external httprevproxy package\n  - each rule:rdb-dsn-resolution\
+    \ scheme opens through its external package with no local driver code\n  - the\
+    \ MPL-2.0 notice of the requirement:contrib-mysql fork travels with every artifact\
+    \ that links it\n```"
+  ownership:
+    authoritative_source: system:tinygodriver
+    popcorn_web_role: consumer
+  imports:
+    router: github.com/shibukawa/tinygodriver/httpmux
+    reverse_proxy: github.com/shibukawa/tinygodriver/httprevproxy
+    host_network_driver: github.com/shibukawa/tinygodriver/netdev
+    zstd: github.com/shibukawa/tinygodriver/compress/zstd
+    sqlite: github.com/shibukawa/tinygodriver/database/sql/sqlite
+    postgresql: github.com/shibukawa/tinygodriver/database/pgx/stdlib for tooling,
+      database/pgx/pgxpool for the requirement:pgx-native-execution runtime path
+    mysql: github.com/shibukawa/tinygodriver/database/sql/mysql
+  pinned_baseline:
+    version: v1.1.0
+    reason: the first release carrying both server SQL drivers required by decision:server-sql-support-tier
+  repository_boundary:
+  - no local httpmux, httprevproxy, netdev, zstd, or database driver implementation
+  - application examples import system:tinygodriver directly
+  dependency_rule:
+  - pin a tested tinygodriver version in go.mod
+  - do not vendor or fork these packages inside this repository
+  backward_compatibility:
+    legacy_import_paths: unsupported
+    forwarding_packages: forbidden
+  acceptance:
+  - no tracked local implementation remains for httpmux, httprevproxy, netdev, zstd,
+    or database drivers
+  - no source or generated project imports the removed popcornweb package paths
+  - host Go tests pass with httpmux resolving to net/http.ServeMux
+  - TinyGo HTTP build and route fixtures pass with httpmux and netdev
+  - reverse proxy fixtures pass against the external httprevproxy package
+  - each rule:rdb-dsn-resolution scheme opens through its external package with no
+    local driver code
+  - the MPL-2.0 notice of the requirement:contrib-mysql fork travels with every artifact
+    that links it
+acceptance:
+  item-9d7307d67521f3f8:
+    text: no tracked local implementation remains for httpmux, httprevproxy, netdev,
+      zstd, or database drivers
+  item-0647f97925e315e6:
+    text: no source or generated project imports the removed popcornweb package paths
+  item-b6f7b391e1d9a8c4:
+    text: host Go tests pass with httpmux resolving to net/http.ServeMux
+  item-f7f7e77d604196f9:
+    text: TinyGo HTTP build and route fixtures pass with httpmux and netdev
+  item-f8e3eaa7e104ae9b:
+    text: reverse proxy fixtures pass against the external httprevproxy package
+  item-9de491aac571ee3d:
+    text: each rule:rdb-dsn-resolution scheme opens through its external package with
+      no local driver code
+  item-b8f3b978b3d65979:
+    text: the MPL-2.0 notice of the requirement:contrib-mysql fork travels with every
+      artifact that links it
+relations:
+- relation: mentions
+  to: decision:server-sql-support-tier
+  resolution: resolved
+- relation: mentions
+  to: requirement:contrib-mysql
+  resolution: resolved
+- relation: mentions
+  to: requirement:pgx-native-execution
+  resolution: resolved
+- relation: mentions
+  to: rule:rdb-dsn-resolution
+  resolution: resolved
+- relation: mentions
+  to: system:tinygodriver
+  resolution: resolved

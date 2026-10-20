@@ -1,0 +1,48 @@
+id: data:release-artifact
+type: data
+title: Release Artifact Set
+summary: One tag publishes one archive per supported target plus a single checksum
+  file; every channel of requirement:cli-distribution addresses these names.
+facts:
+  legacy_body: "One tag publishes one archive per supported target plus a single checksum\
+    \ file; every channel of requirement:cli-distribution addresses these names.\n\
+    \n```yaml\ntag: \"v{major}.{minor}.{patch}\" with an optional prerelease suffix\n\
+    archive_name: \"pw_{version}_{os}_{arch}.{ext}\"\nversion_in_name: the tag without\
+    \ the leading v\next:\n  darwin: tar.gz\n  linux: tar.gz\n  windows: zip\ncontents:\n\
+    \  - pw executable, pw.exe on windows\n  - README.md\n  - LICENSE\n  rule: no\
+    \ directory prefix; extraction yields the files directly\nlicense: Apache-2.0,\
+    \ declared by the Homebrew formula and the Nix derivation meta\nreproducibility:\n\
+    \  - archive member timestamps and ownership are fixed, not taken from the runner\n\
+    \  - gzip is invoked without a name or timestamp header\n  - the same tag and\
+    \ toolchain rebuild to byte-identical archives\nchecksum_file:\n  name: checksums.txt\n\
+    \  format: sha256sum lines over every archive of the same tag\n  scope: archives\
+    \ only; the file never lists itself\nbuild_flags:\n  cgo: CGO_ENABLED=0\n  trimpath:\
+    \ enabled\n  ldflags:\n    - -s -w\n    - -X github.com/shibukawa/popcornweb/internal/pwcli.version={version}\n\
+    \  target: ./cmd/pw\npublication:\n  host: GitHub releases of the repository\n\
+    \  producer: decision:cli-release-pipeline\n  consumers:\n    - decision:homebrew-tap-channel\
+    \ formula urls\n    - manual download\n  not_consumed_by: decision:nix-flake-packaging,\
+    \ which builds from source\nimmutability:\n  - a published archive is never replaced;\
+    \ a correction ships as a new patch tag\n  - the checksum file is written once\
+    \ with the archives\n  - a prerelease tag publishes a GitHub prerelease and never\
+    \ bumps the tap formula\n```"
+  legacy_parse_issues:
+  - kind: legacy_parse_error
+    block: 0
+    message: "while parsing a block mapping\n  in \"<unicode string>\", line 1, column\
+      \ 1:\n    tag: \"v{major}.{minor}.{patch}\"  ... \n    ^\nexpected <block end>,\
+      \ but found '<scalar>'\n  in \"<unicode string>\", line 1, column 33:\n    tag:\
+      \ \"v{major}.{minor}.{patch}\" with an optional prerelease suffix\n        \
+      \                            ^"
+relations:
+- relation: mentions
+  to: decision:cli-release-pipeline
+  resolution: resolved
+- relation: mentions
+  to: decision:homebrew-tap-channel
+  resolution: resolved
+- relation: mentions
+  to: decision:nix-flake-packaging
+  resolution: resolved
+- relation: mentions
+  to: requirement:cli-distribution
+  resolution: resolved

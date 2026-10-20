@@ -1,0 +1,35 @@
+id: requirement:classic-web-acceptance
+type: requirement
+title: Classic Web Acceptance
+summary: A classic-only build remains a small practical TinyGo target with complete
+  HTTP behavior and no modern UI dependency.
+facts:
+  legacy_body: "A classic-only build remains a small practical TinyGo target with\
+    \ complete HTTP behavior and no modern UI dependency.\n\n```yaml\ncriteria:\n\
+    \  - works without the Popcorn Web browser runtime\n  - uses standard requests\
+    \ and complete responses\n  - interoperates with net/http handlers and middleware\n\
+    \  - supports typed binding, configuration, errors, templates, and OpenAPI\n \
+    \ - optionally supports requirement:tailwind-css-integration without a browser\
+    \ runtime\n  - excludes component graph, patch protocol, and hydration dependencies\n\
+    dependencies:\n  - requirement:shared-web-runtime\n  - concept:classic-web-style\n\
+    ```"
+  criteria:
+  - works without the Popcorn Web browser runtime
+  - uses standard requests and complete responses
+  - interoperates with net/http handlers and middleware
+  - supports typed binding, configuration, errors, templates, and OpenAPI
+  - optionally supports requirement:tailwind-css-integration without a browser runtime
+  - excludes component graph, patch protocol, and hydration dependencies
+  dependencies:
+  - requirement:shared-web-runtime
+  - concept:classic-web-style
+relations:
+- relation: mentions
+  to: concept:classic-web-style
+  resolution: resolved
+- relation: mentions
+  to: requirement:shared-web-runtime
+  resolution: resolved
+- relation: mentions
+  to: requirement:tailwind-css-integration
+  resolution: resolved

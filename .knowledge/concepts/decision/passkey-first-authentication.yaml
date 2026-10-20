@@ -1,0 +1,45 @@
+id: decision:passkey-first-authentication
+type: decision
+title: Passkey-First Authentication Priority
+summary: Popcorn Web prioritizes phishing-resistant passkey support before password
+  hashing convenience packages.
+facts:
+  legacy_body: "Popcorn Web prioritizes phishing-resistant passkey support before\
+    \ password hashing convenience packages.\n\n```yaml\nstatus: accepted\npriority:\n\
+    \  foundation: requirement:contrib-cbor\n  authentication: requirement:contrib-passkey\n\
+    deprioritized:\n  - bcrypt password hashing helpers\n  - scrypt password hashing\
+    \ helpers\n  - Argon2id password hashing helpers\n  - PBKDF2 password hashing\
+    \ helpers\nconstraints:\n  - applications may use external password libraries\
+    \ independently\n  - Popcorn Web never implements new password hashing primitives\n\
+    \  - future password packages must wrap reviewed implementations and pass the\
+    \ TinyGo matrix\nrationale:\n  - passkeys provide origin-bound public-key challenge-response\
+    \ authentication\n  - CBOR is a reusable prerequisite for WebAuthn authenticator\
+    \ and COSE key data\n  - password fallback expands credential storage, rate limiting,\
+    \ breach response, and recovery scope\n```"
+  status: accepted
+  priority:
+    foundation: requirement:contrib-cbor
+    authentication: requirement:contrib-passkey
+  deprioritized:
+  - bcrypt password hashing helpers
+  - scrypt password hashing helpers
+  - Argon2id password hashing helpers
+  - PBKDF2 password hashing helpers
+  constraints:
+  - applications may use external password libraries independently
+  - Popcorn Web never implements new password hashing primitives
+  - future password packages must wrap reviewed implementations and pass the TinyGo
+    matrix
+  rationale:
+  - passkeys provide origin-bound public-key challenge-response authentication
+  - CBOR is a reusable prerequisite for WebAuthn authenticator and COSE key data
+  - password fallback expands credential storage, rate limiting, breach response,
+    and recovery scope
+lifecycle: accepted
+relations:
+- relation: mentions
+  to: requirement:contrib-cbor
+  resolution: resolved
+- relation: mentions
+  to: requirement:contrib-passkey
+  resolution: resolved

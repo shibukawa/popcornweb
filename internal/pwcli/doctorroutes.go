@@ -16,7 +16,7 @@ import (
 // the failure mode the whole Input mechanism exists to prevent — a report that
 // looks clean because it did not look.
 func (r *checkRun) checkRoutes() *doctorLimit {
-	table, err := pwroutes.Load(r.Root)
+	table, err := pwroutes.Load(r.Root, r.State.config.Assets.locations().routes)
 	switch {
 	case errors.Is(err, pwroutes.ErrAbsent):
 		return &doctorLimit{

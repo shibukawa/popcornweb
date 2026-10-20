@@ -1,0 +1,51 @@
+id: flow:handler-registration
+type: flow
+title: Handler Registration
+summary: A handler package owns one mux and lets each handler source register its
+  own literal route during package initialization.
+facts:
+  legacy_body: "A handler package owns one mux and lets each handler source register\
+    \ its own literal route during package initialization.\n\n```yaml\npackage_surface:\n\
+    \  tinygo_toolchain:\n    mux: var mux = pw.NewServeMux()\n    accessor: Handlers()\
+    \ *pw.ServeMux\n  host_go_toolchain:\n    mux: var mux = http.NewServeMux()\n\
+    \    accessor: Handlers() *http.ServeMux\n  selection: project.toolchain in data:project-config,\
+    \ chosen by api:cli-init\n  equivalence: api:application-lifecycle accepts any\
+    \ http.Handler, so only the mux type differs\nhandler_file:\n  - define request\
+    \ input types privately beside the handler by default\n  - register a literal\
+    \ method-and-path pattern in init()\n  - implement a standard func(http.ResponseWriter,\
+    \ *http.Request)\nrules:\n  - no central explicit handler list\n  - route discovery\
+    \ follows rule:static-route-discovery\n  - middleware remains outside the mux\n\
+    \  - package initialization registers routes before api:application-lifecycle\
+    \ starts\n```"
+  package_surface:
+    tinygo_toolchain:
+      mux: var mux = pw.NewServeMux()
+      accessor: Handlers() *pw.ServeMux
+    host_go_toolchain:
+      mux: var mux = http.NewServeMux()
+      accessor: Handlers() *http.ServeMux
+    selection: project.toolchain in data:project-config, chosen by api:cli-init
+    equivalence: api:application-lifecycle accepts any http.Handler, so only the mux
+      type differs
+  handler_file:
+  - define request input types privately beside the handler by default
+  - register a literal method-and-path pattern in init()
+  - implement a standard func(http.ResponseWriter, *http.Request)
+  rules:
+  - no central explicit handler list
+  - route discovery follows rule:static-route-discovery
+  - middleware remains outside the mux
+  - package initialization registers routes before api:application-lifecycle starts
+relations:
+- relation: mentions
+  to: api:application-lifecycle
+  resolution: resolved
+- relation: mentions
+  to: api:cli-init
+  resolution: resolved
+- relation: mentions
+  to: data:project-config
+  resolution: resolved
+- relation: mentions
+  to: rule:static-route-discovery
+  resolution: resolved

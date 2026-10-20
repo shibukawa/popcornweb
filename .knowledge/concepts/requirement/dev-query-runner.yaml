@@ -1,0 +1,255 @@
+id: requirement:dev-query-runner
+type: requirement
+title: Development Query Runner
+summary: The requirement:dev-data-pane runs a declared statement with supplied parameters,
+  and runs a statement the developer wrote, so a query can be tried and its effect
+  inspected without routing a request that reaches it.
+facts:
+  legacy_body: "The requirement:dev-data-pane runs a declared statement with supplied\
+    \ parameters, and runs a statement the developer wrote, so a query can be tried\
+    \ and its effect inspected without routing a request that reaches it.\n\n```yaml\n\
+    audience: actor:application-developer\npane_of: requirement:dev-data-pane, sharing\
+    \ its attachment and its page\nmechanism: decision:dev-application-attachment\n\
+    default: enabled\nconfiguration: data:project-config dev.console.queries\ndeclared:\n\
+    \  source: every .pw.sql under the data:project-config generate.queries purposes\n\
+    \  subjects:\n    - each exported statement, with the parameters its generated\
+    \ builder declares\n    - each unexported statement, reached the way requirement:template-storybook\
+    \ reaches an unexported template\n  form: a field per declared parameter, so a\
+    \ statement is tried without writing SQL\n  built_by: the generated builder, so\
+    \ the pane runs the statement the application would run rather than a second rendering\
+    \ of it\n  conditional_sql: a statement whose text is assembled from its arguments\
+    \ is assembled the same way here, because the builder is what assembles it\n \
+    \ shown: the built SQL beside the result, since that is the thing a developer\
+    \ is checking\n  registration:\n    shape: a pwdev-constrained file generated\
+    \ into the queries package, so an unexported builder registers from where it is\
+    \ reachable\n    same_technique: decision:dev-harness-process, which does this\
+    \ for templates\n    no_harness: the application is the process serving the pane,\
+    \ so registering at package initialisation is enough and no second process is\
+    \ built\n    linked_by: a pwdev-constrained import of every queries package, generated\
+    \ into the main package\n    why_linked: package initialisation runs only where\
+    \ something links the package, and a statement declared before the handler that\
+    \ will call it is linked from nowhere — which is exactly the statement worth trying\
+    \ here\n    naming: the statement name survives only in the internal builder generation\
+    \ emits; the callable builder's spelling follows from whether the statement was\
+    \ exported, and is confirmed present rather than assumed\n    arguments: a form\
+    \ field is text, so generation emits one converter call per parameter, named after\
+    \ the parameter, because a parse error without a field name is worse than the\
+    \ browser's own\n    unsupported_type: the statement is still listed and says\
+    \ why it cannot be run, rather than being absent from a list a developer is scanning\
+    \ for it\nstatement_console:\n  offered: yes\n  supersedes: the earlier refusal,\
+    \ which held that a free text box was a different tool with a different risk\n\
+    \  why_reversed: requirement:dev-data-pane edits rows, so a developer who can\
+    \ already change data gains nothing from being denied the text box, while losing\
+    \ the investigation the pane exists for\n  bounded: the number of rows returned,\
+    \ not what may be typed\n  classification:\n    rule: whether a statement returns\
+    \ rows is decided from its text before it runs, never by trying one call and falling\
+    \ back to the other\n    reason: SQLite accepts an UPDATE through the query call\
+    \ without complaint, so a fallback would report nothing for a write that already\
+    \ ran, and then run it a second time\n    returns_rows: SELECT, WITH, VALUES,\
+    \ TABLE, SHOW, EXPLAIN, PRAGMA, DESCRIBE, and any statement with a RETURNING clause\n\
+    \    returning: matched as a word, so a column named for it does not change how\
+    \ its statement runs\nexplain:\n  offered: on both halves, beside running\n  form:\
+    \ the plan-only prefix rule:explain-dialect-support names, which requirement:query-diagnostics\
+    \ already uses for a slow statement, so a plan read here and a plan attached to\
+    \ a record come from the same request\n  never_analyze: it would execute the statement\
+    \ a second time, which is wrong for a write and wasted on a read\n  declared:\
+    \ the plan is of the statement the generated builder produced with the supplied\
+    \ arguments, so it is the plan of what the application would run\n  unsupported_engine:\
+    \ reported as having no plan-only form, which loses the plan and nothing else\n\
+    instrumentation:\n  path: the api:instrumented-sql-executor of the running application,\
+    \ so a declared run produces a data:query-record indistinguishable from one a\
+    \ request produced\n  explain: a slow run attaches a plan through flow:query-diagnostics,\
+    \ unchanged\n  telemetry: the record reaches requirement:dev-telemetry-viewer\
+    \ like the application's own, which is where a run is read back\nwrites:\n  permitted:\
+    \ yes, for both halves\n  scope: whatever database the attached application opened,\
+    \ which is the development one because api:cli-dev started it\n  recovery: data\
+    \ reseeds through api:cli-seed, which the loop already runs after a migration\
+    \ cycle\n  transaction: no run holds one open, so the application's pool is never\
+    \ held by a page nobody is looking at\nnon_goals:\n  - editing a .pw.sql source\
+    \ from the browser\n  - saving, naming, or replaying past runs; requirement:dev-telemetry-viewer\
+    \ holds what ran\n  - running against anything but the database the running application\
+    \ opened\n  - a query builder, a schema designer, or anything aimed at authoring\
+    \ rather than trying\nacceptance:\n  - a declared statement with typed parameters\
+    \ is runnable without writing SQL\n  - a parameter that cannot be parsed names\
+    \ the field it came from\n  - a statement whose callable builder is absent generates\
+    \ nothing rather than a call that does not compile\n  - an unexported declared\
+    \ statement appears in the pane\n  - the SQL shown is the one the generated builder\
+    \ produced\n  - a declared run emits the same data:query-record an application\
+    \ call would\n  - a written statement returning rows shows them; one that writes\
+    \ reports its affected count\n  - a written UPDATE is executed exactly once and\
+    \ reports what it changed\n  - a failing statement reports the engine's own error\n\
+    \  - explaining a write reads its plan without executing it\n  - a binary produced\
+    \ by api:cli-build contains no part of the pane\n```"
+  audience: actor:application-developer
+  pane_of: requirement:dev-data-pane, sharing its attachment and its page
+  mechanism: decision:dev-application-attachment
+  default: enabled
+  configuration: data:project-config dev.console.queries
+  declared:
+    source: every .pw.sql under the data:project-config generate.queries purposes
+    subjects:
+    - each exported statement, with the parameters its generated builder declares
+    - each unexported statement, reached the way requirement:template-storybook reaches
+      an unexported template
+    form: a field per declared parameter, so a statement is tried without writing
+      SQL
+    built_by: the generated builder, so the pane runs the statement the application
+      would run rather than a second rendering of it
+    conditional_sql: a statement whose text is assembled from its arguments is assembled
+      the same way here, because the builder is what assembles it
+    shown: the built SQL beside the result, since that is the thing a developer is
+      checking
+    registration:
+      shape: a pwdev-constrained file generated into the queries package, so an unexported
+        builder registers from where it is reachable
+      same_technique: decision:dev-harness-process, which does this for templates
+      no_harness: the application is the process serving the pane, so registering
+        at package initialisation is enough and no second process is built
+      linked_by: a pwdev-constrained import of every queries package, generated into
+        the main package
+      why_linked: package initialisation runs only where something links the package,
+        and a statement declared before the handler that will call it is linked from
+        nowhere — which is exactly the statement worth trying here
+      naming: the statement name survives only in the internal builder generation
+        emits; the callable builder's spelling follows from whether the statement
+        was exported, and is confirmed present rather than assumed
+      arguments: a form field is text, so generation emits one converter call per
+        parameter, named after the parameter, because a parse error without a field
+        name is worse than the browser's own
+      unsupported_type: the statement is still listed and says why it cannot be run,
+        rather than being absent from a list a developer is scanning for it
+  statement_console:
+    offered: true
+    supersedes: the earlier refusal, which held that a free text box was a different
+      tool with a different risk
+    why_reversed: requirement:dev-data-pane edits rows, so a developer who can already
+      change data gains nothing from being denied the text box, while losing the investigation
+      the pane exists for
+    bounded: the number of rows returned, not what may be typed
+    classification:
+      rule: whether a statement returns rows is decided from its text before it runs,
+        never by trying one call and falling back to the other
+      reason: SQLite accepts an UPDATE through the query call without complaint, so
+        a fallback would report nothing for a write that already ran, and then run
+        it a second time
+      returns_rows: SELECT, WITH, VALUES, TABLE, SHOW, EXPLAIN, PRAGMA, DESCRIBE,
+        and any statement with a RETURNING clause
+      returning: matched as a word, so a column named for it does not change how its
+        statement runs
+  explain:
+    offered: on both halves, beside running
+    form: the plan-only prefix rule:explain-dialect-support names, which requirement:query-diagnostics
+      already uses for a slow statement, so a plan read here and a plan attached to
+      a record come from the same request
+    never_analyze: it would execute the statement a second time, which is wrong for
+      a write and wasted on a read
+    declared: the plan is of the statement the generated builder produced with the
+      supplied arguments, so it is the plan of what the application would run
+    unsupported_engine: reported as having no plan-only form, which loses the plan
+      and nothing else
+  instrumentation:
+    path: the api:instrumented-sql-executor of the running application, so a declared
+      run produces a data:query-record indistinguishable from one a request produced
+    explain: a slow run attaches a plan through flow:query-diagnostics, unchanged
+    telemetry: the record reaches requirement:dev-telemetry-viewer like the application's
+      own, which is where a run is read back
+  writes:
+    permitted: yes, for both halves
+    scope: whatever database the attached application opened, which is the development
+      one because api:cli-dev started it
+    recovery: data reseeds through api:cli-seed, which the loop already runs after
+      a migration cycle
+    transaction: no run holds one open, so the application's pool is never held by
+      a page nobody is looking at
+  non_goals:
+  - editing a .pw.sql source from the browser
+  - saving, naming, or replaying past runs; requirement:dev-telemetry-viewer holds
+    what ran
+  - running against anything but the database the running application opened
+  - a query builder, a schema designer, or anything aimed at authoring rather than
+    trying
+  acceptance:
+  - a declared statement with typed parameters is runnable without writing SQL
+  - a parameter that cannot be parsed names the field it came from
+  - a statement whose callable builder is absent generates nothing rather than a call
+    that does not compile
+  - an unexported declared statement appears in the pane
+  - the SQL shown is the one the generated builder produced
+  - a declared run emits the same data:query-record an application call would
+  - a written statement returning rows shows them; one that writes reports its affected
+    count
+  - a written UPDATE is executed exactly once and reports what it changed
+  - a failing statement reports the engine's own error
+  - explaining a write reads its plan without executing it
+  - a binary produced by api:cli-build contains no part of the pane
+acceptance:
+  item-ccaaea97c9ec95b3:
+    text: a declared statement with typed parameters is runnable without writing SQL
+  item-1558ce679bfbd72f:
+    text: a parameter that cannot be parsed names the field it came from
+  item-de0428b65ca9ad0d:
+    text: a statement whose callable builder is absent generates nothing rather than
+      a call that does not compile
+  item-db7a21611c1a4341:
+    text: an unexported declared statement appears in the pane
+  item-37b8c3cdf6665089:
+    text: the SQL shown is the one the generated builder produced
+  item-3fb7b89c6cc753f7:
+    text: a declared run emits the same data:query-record an application call would
+  item-9290b9a15d416907:
+    text: a written statement returning rows shows them; one that writes reports its
+      affected count
+  item-39f6b8eb2a2b3eb8:
+    text: a written UPDATE is executed exactly once and reports what it changed
+  item-84b006ae51842124:
+    text: a failing statement reports the engine's own error
+  item-fefabd93660e5015:
+    text: explaining a write reads its plan without executing it
+  item-d224103370b09066:
+    text: a binary produced by api:cli-build contains no part of the pane
+relations:
+- relation: mentions
+  to: actor:application-developer
+  resolution: resolved
+- relation: mentions
+  to: api:cli-build
+  resolution: resolved
+- relation: mentions
+  to: api:cli-dev
+  resolution: resolved
+- relation: mentions
+  to: api:cli-seed
+  resolution: resolved
+- relation: mentions
+  to: api:instrumented-sql-executor
+  resolution: resolved
+- relation: mentions
+  to: data:project-config
+  resolution: resolved
+- relation: mentions
+  to: data:query-record
+  resolution: resolved
+- relation: mentions
+  to: decision:dev-application-attachment
+  resolution: resolved
+- relation: mentions
+  to: decision:dev-harness-process
+  resolution: resolved
+- relation: mentions
+  to: flow:query-diagnostics
+  resolution: resolved
+- relation: mentions
+  to: requirement:dev-data-pane
+  resolution: resolved
+- relation: mentions
+  to: requirement:dev-telemetry-viewer
+  resolution: resolved
+- relation: mentions
+  to: requirement:query-diagnostics
+  resolution: resolved
+- relation: mentions
+  to: requirement:template-storybook
+  resolution: resolved
+- relation: mentions
+  to: rule:explain-dialect-support
+  resolution: resolved

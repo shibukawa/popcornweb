@@ -1,0 +1,261 @@
+id: decision:page-render-binding
+type: decision
+title: Page Render Binding
+summary: Generated page handlers reach the pw response path through symbol repointing
+  and the one render block system:tinybind v0.2.5 added, so no whole-file generation
+  template is replaced.
+facts:
+  legacy_body: "Generated page handlers reach the pw response path through symbol\
+    \ repointing and the one render block system:tinybind v0.2.5 added, so no whole-file\
+    \ generation template is replaced.\n\n```yaml\nstatus: accepted\nproblem: the\
+    \ built-in render call writes htmlbind.Render into an io.Writer, which has no\
+    \ request and therefore no document shell, bot classification, streaming choice,\
+    \ encoding, or error page\nseam_history:\n  v0_2_4: the render call was fixed\
+    \ inside the handler block and the composer file, so pw had to replace the handler\
+    \ block, the composer template, and the registry template\n  v0_2_5: the render\
+    \ call is the named render block, the composer entry takes a configurable writer\
+    \ and an optional request parameter, and the router type is its own symbol pair\n\
+    \  v0_2_6: the failure entry is a symbol rather than a fixed selector, and the\
+    \ generated header is settable with a paired prefix to register with discovery\n\
+    \  effect: this decision now uses only the cheapest tier system:tinybind advertises,\
+    \ symbols plus one block\nsymbols:\n  http: net/http, which the decoder needs\
+    \ for Request and PathValue\n  mux:\n    type: MuxType names the api:page-render-runtime\
+    \ router interface, written verbatim, so an interface needs no pointer\n    constructor:\
+    \ an empty MuxConstructor omits the constructor, which is right for a type generated\
+    \ code cannot build\n    import: MuxImport is left empty, because the registry\
+    \ adds the mux import beside the runtime one without checking whether they are\
+    \ the same package, and the runtime import is already there\n  runtime: RuntimeImport\
+    \ is api:page-render-runtime, supplying the wrapper type, the option type, and\
+    \ the render entry\n  error: ErrorImport is pw itself, with WriteError set to\
+    \ WriteProblem and BadRequest and Problem already spelled the way pw spells them\n\
+    \  why_two_packages: the error values are pw's ordinary public API and need no\
+    \ wrapper, while Option and Wrapper cannot come from pw because Option there is\
+    \ already the api:application-lifecycle option\n  constraint: generated page code\
+    \ imports net/http, pw, and api:page-render-runtime only, never system:tinybind\n\
+    composer_entry:\n  RenderWriterType: http.ResponseWriter, because the pw response\
+    \ path chooses status, encoding, and framing\n  RenderRequestParam: declared,\
+    \ so a handler-rung Load composes its layout chain through the same entry\n  imports:\
+    \ derived by the emitter from the signature, so naming the type is the whole configuration\n\
+    replaced_block:\n  render: the api:page-render-runtime entry taking the writer,\
+    \ the request, the chain, and the leaf\n  chain_not_wrappers: the block reads\
+    \ Chain rather than Wrappers, which is nil for a page with no ancestor layout,\
+    \ so one call shape covers both cases without a branch\n  error_typed: the block\
+    \ must yield an error expression, because the generated caller writes it through\
+    \ WriteError; this is why the entry returns an error even though the pw response\
+    \ path already answers a failure itself\nkept_defaults:\n  error_block: unchanged,\
+    \ because pw.Problem already carries the Code and Message fields the default block\
+    \ writes and pw.BadRequest returns a Problem value given one\n  decoder: unchanged\n\
+    \  registry: unchanged, including its variadic render options, which api:page-render-runtime\
+    \ appends after the values api:html-response derives from data:html-render-config\n\
+    generated_names:\n  component_suffix: _pw_gen.go, so page.pw.html and layout.pw.html\
+    \ emit page_pw_gen.go and layout_pw_gen.go\n  decoder: route_pw_gen.go\n  registry:\
+    \ routes_pw_gen.go\n  reason: policy:generated-artifacts already excludes **/*_pw_gen.go\
+    \ from version control and the editor, so the tree needs no new ignore rule\n\
+    generated_header:\n  rule: page tree output carries the Popcorn Web header api:cli-generate\
+    \ writes elsewhere, and the emitter's paired prefix is registered with the discovery\
+    \ pass\n  why_registration: discovery skips a generated file by header prefix,\
+    \ and it recognizes only system:tinybind's own; an unregistered generated registry\
+    \ is analyzed as hand-written code, which turns every page registration into a\
+    \ documented route\n  pairing: the prefix comes from the emitter rather than a\
+    \ second constant, so the registered string cannot drift from the header\n  since:\
+    \ v0.2.6, which made the header settable; before it the only safe choice was keeping\
+    \ the upstream header\n  second_guard: the pages purpose keeps no OpenAPI artifact,\
+    \ per flow:page-route-generation, so the exclusion holds even if the registration\
+    \ is lost\nreserved_file_names: page.pw.html, layout.pw.html, document.pw.html,\
+    \ and page.go, configured rather than defaulted because system:tinybind names\
+    \ them .tb.html\naction_attribute: data-pw-action, so the framework runtime rather\
+    \ than an external library owns the lowered attribute\ninherited_behavior:\n \
+    \ - decision:implicit-document-shell wraps every page in the registered document,\
+    \ so a page template holds page content only\n  - decision:automatic-async-render-selection\
+    \ decides streaming from the generated HasAwaitBlock flag, exactly as it does\
+    \ for a classic page\n  - decision:bot-client-classification keeps a crawler on\
+    \ the synchronous path\n  - api:error-renderer and flow:error-template-generation\
+    \ answer a decode or render failure with the project error pages\n  - policy:public-asset-negotiation\
+    \ encoding and requirement:external-boundary-runtime script reference come with\
+    \ the shell\nmux_parameter:\n  narrow_problem: api:serve-mux is a type alias of\
+    \ net/http.ServeMux in every build without the tinygo or decision:force-tinygo-logic\
+    \ tag, so the two mux types are one type on the host and a concrete signature\
+    \ only fails when building for TinyGo\n  chosen: a one-method router interface\
+    \ named by MuxType, which the built-in registry template writes verbatim\n  rejected:\n\
+    \    generics: a generic Register over a constrained type parameter, which the\
+    \ registry template has no type parameter slot for and would therefore cost a\
+    \ whole-file replacement; the boxing it avoids happens once per route at startup,\
+    \ and MuxType already gives the named exported contract that was the real argument\
+    \ for it\n    concrete_pw_servemux: correct wherever the alias collapses, but\
+    \ mismatched in a host build carrying the force_tinygo_logic tag\n  precedent:\
+    \ pw already accepts either mux structurally where it checks operational endpoint\
+    \ collisions, asserting the Handler method rather than a concrete mux type\nrationale:\n\
+    \  - a page and a classic handler that render differently would double every response\
+    \ policy the framework already owns\n  - keeping every generation template at\
+    \ its default means an upstream fix or improvement arrives without a merge\nnon_goals:\n\
+    \  - exposing the emitter or its templates to applications\n  - a project-level\
+    \ override of a generated file name\n```"
+  status: accepted
+  problem: the built-in render call writes htmlbind.Render into an io.Writer, which
+    has no request and therefore no document shell, bot classification, streaming
+    choice, encoding, or error page
+  seam_history:
+    v0_2_4: the render call was fixed inside the handler block and the composer file,
+      so pw had to replace the handler block, the composer template, and the registry
+      template
+    v0_2_5: the render call is the named render block, the composer entry takes a
+      configurable writer and an optional request parameter, and the router type is
+      its own symbol pair
+    v0_2_6: the failure entry is a symbol rather than a fixed selector, and the generated
+      header is settable with a paired prefix to register with discovery
+    effect: this decision now uses only the cheapest tier system:tinybind advertises,
+      symbols plus one block
+  symbols:
+    http: net/http, which the decoder needs for Request and PathValue
+    mux:
+      type: MuxType names the api:page-render-runtime router interface, written verbatim,
+        so an interface needs no pointer
+      constructor: an empty MuxConstructor omits the constructor, which is right for
+        a type generated code cannot build
+      import: MuxImport is left empty, because the registry adds the mux import beside
+        the runtime one without checking whether they are the same package, and the
+        runtime import is already there
+    runtime: RuntimeImport is api:page-render-runtime, supplying the wrapper type,
+      the option type, and the render entry
+    error: ErrorImport is pw itself, with WriteError set to WriteProblem and BadRequest
+      and Problem already spelled the way pw spells them
+    why_two_packages: the error values are pw's ordinary public API and need no wrapper,
+      while Option and Wrapper cannot come from pw because Option there is already
+      the api:application-lifecycle option
+    constraint: generated page code imports net/http, pw, and api:page-render-runtime
+      only, never system:tinybind
+  composer_entry:
+    RenderWriterType: http.ResponseWriter, because the pw response path chooses status,
+      encoding, and framing
+    RenderRequestParam: declared, so a handler-rung Load composes its layout chain
+      through the same entry
+    imports: derived by the emitter from the signature, so naming the type is the
+      whole configuration
+  replaced_block:
+    render: the api:page-render-runtime entry taking the writer, the request, the
+      chain, and the leaf
+    chain_not_wrappers: the block reads Chain rather than Wrappers, which is nil for
+      a page with no ancestor layout, so one call shape covers both cases without
+      a branch
+    error_typed: the block must yield an error expression, because the generated caller
+      writes it through WriteError; this is why the entry returns an error even though
+      the pw response path already answers a failure itself
+  kept_defaults:
+    error_block: unchanged, because pw.Problem already carries the Code and Message
+      fields the default block writes and pw.BadRequest returns a Problem value given
+      one
+    decoder: unchanged
+    registry: unchanged, including its variadic render options, which api:page-render-runtime
+      appends after the values api:html-response derives from data:html-render-config
+  generated_names:
+    component_suffix: _pw_gen.go, so page.pw.html and layout.pw.html emit page_pw_gen.go
+      and layout_pw_gen.go
+    decoder: route_pw_gen.go
+    registry: routes_pw_gen.go
+    reason: policy:generated-artifacts already excludes **/*_pw_gen.go from version
+      control and the editor, so the tree needs no new ignore rule
+  generated_header:
+    rule: page tree output carries the Popcorn Web header api:cli-generate writes
+      elsewhere, and the emitter's paired prefix is registered with the discovery
+      pass
+    why_registration: discovery skips a generated file by header prefix, and it recognizes
+      only system:tinybind's own; an unregistered generated registry is analyzed as
+      hand-written code, which turns every page registration into a documented route
+    pairing: the prefix comes from the emitter rather than a second constant, so the
+      registered string cannot drift from the header
+    since: v0.2.6, which made the header settable; before it the only safe choice
+      was keeping the upstream header
+    second_guard: the pages purpose keeps no OpenAPI artifact, per flow:page-route-generation,
+      so the exclusion holds even if the registration is lost
+  reserved_file_names: page.pw.html, layout.pw.html, document.pw.html, and page.go,
+    configured rather than defaulted because system:tinybind names them .tb.html
+  action_attribute: data-pw-action, so the framework runtime rather than an external
+    library owns the lowered attribute
+  inherited_behavior:
+  - decision:implicit-document-shell wraps every page in the registered document,
+    so a page template holds page content only
+  - decision:automatic-async-render-selection decides streaming from the generated
+    HasAwaitBlock flag, exactly as it does for a classic page
+  - decision:bot-client-classification keeps a crawler on the synchronous path
+  - api:error-renderer and flow:error-template-generation answer a decode or render
+    failure with the project error pages
+  - policy:public-asset-negotiation encoding and requirement:external-boundary-runtime
+    script reference come with the shell
+  mux_parameter:
+    narrow_problem: api:serve-mux is a type alias of net/http.ServeMux in every build
+      without the tinygo or decision:force-tinygo-logic tag, so the two mux types
+      are one type on the host and a concrete signature only fails when building for
+      TinyGo
+    chosen: a one-method router interface named by MuxType, which the built-in registry
+      template writes verbatim
+    rejected:
+      generics: a generic Register over a constrained type parameter, which the registry
+        template has no type parameter slot for and would therefore cost a whole-file
+        replacement; the boxing it avoids happens once per route at startup, and MuxType
+        already gives the named exported contract that was the real argument for it
+      concrete_pw_servemux: correct wherever the alias collapses, but mismatched in
+        a host build carrying the force_tinygo_logic tag
+    precedent: pw already accepts either mux structurally where it checks operational
+      endpoint collisions, asserting the Handler method rather than a concrete mux
+      type
+  rationale:
+  - a page and a classic handler that render differently would double every response
+    policy the framework already owns
+  - keeping every generation template at its default means an upstream fix or improvement
+    arrives without a merge
+  non_goals:
+  - exposing the emitter or its templates to applications
+  - a project-level override of a generated file name
+lifecycle: accepted
+relations:
+- relation: mentions
+  to: api:application-lifecycle
+  resolution: resolved
+- relation: mentions
+  to: api:cli-generate
+  resolution: resolved
+- relation: mentions
+  to: api:error-renderer
+  resolution: resolved
+- relation: mentions
+  to: api:html-response
+  resolution: resolved
+- relation: mentions
+  to: api:page-render-runtime
+  resolution: resolved
+- relation: mentions
+  to: api:serve-mux
+  resolution: resolved
+- relation: mentions
+  to: data:html-render-config
+  resolution: resolved
+- relation: mentions
+  to: decision:automatic-async-render-selection
+  resolution: resolved
+- relation: mentions
+  to: decision:bot-client-classification
+  resolution: resolved
+- relation: mentions
+  to: decision:force-tinygo-logic
+  resolution: resolved
+- relation: mentions
+  to: decision:implicit-document-shell
+  resolution: resolved
+- relation: mentions
+  to: flow:error-template-generation
+  resolution: resolved
+- relation: mentions
+  to: flow:page-route-generation
+  resolution: resolved
+- relation: mentions
+  to: policy:generated-artifacts
+  resolution: resolved
+- relation: mentions
+  to: policy:public-asset-negotiation
+  resolution: resolved
+- relation: mentions
+  to: requirement:external-boundary-runtime
+  resolution: resolved
+- relation: mentions
+  to: system:tinybind
+  resolution: resolved

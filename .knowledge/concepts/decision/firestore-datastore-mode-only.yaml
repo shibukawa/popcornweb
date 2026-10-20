@@ -1,0 +1,79 @@
+id: decision:firestore-datastore-mode-only
+type: decision
+title: The Firestore Store Is Datastore Mode Only, And Says So At Startup
+summary: Every Popcorn Web surface is named `firestore` after the product, and the
+  one thing the name does not say — that the database must have been created in Datastore
+  mode — is checked at startup rather than left to a runtime error.
+facts:
+  legacy_body: "Every Popcorn Web surface is named `firestore` after the product,\
+    \ and the one thing the name does not say — that the database must have been created\
+    \ in Datastore mode — is checked at startup rather than left to a runtime error.\n\
+    \n```yaml\nstatus: accepted\ndecided: 2026-08-05, following the firestorebind\
+    \ naming system:tinybind chose for the binding\nnaming:\n  config_section: middleware.firestore\n\
+    \  package: database/firestore, per api:firestore-package\n  stores: sessionstore/firestore,\
+    \ authstate/firestore, authstore/firestore, per rule:storage-package-layout\n\
+    \  backend_name: firestore, the value of session.backend and auth.backend\n  upstream_pairing:\
+    \ the driver package is datastore and the binding is firestorebind, so this side\
+    \ follows the binding\n  why_not_datastore: \"datastore\" is a common noun that\
+    \ names no product, and a configuration value a deployment types should name the\
+    \ service it is billed for\nthe_constraint_the_name_hides:\n  fact: Firestore\
+    \ is created in one of two modes, and the mode is chosen at database creation\
+    \ and cannot be changed afterward\n  datastore_mode: speaks the Datastore v1 API,\
+    \ which is what system:tinygodriver-firestore implements\n  native_mode: a different\
+    \ API with a different client, listeners included, which nothing in this stack\
+    \ speaks\n  the_trap: a deployment reading \"firestore\" in a configuration key\
+    \ and pointing it at an existing native-mode database has a correct-looking configuration\
+    \ and a store that cannot work\n  why_the_error_is_bad_on_its_own: a native-mode\
+    \ database answers the Datastore endpoint with FAILED_PRECONDITION, which is the\
+    \ same status a missing composite index produces, so the two failures are indistinguishable\
+    \ to a reader\nstartup_check:\n  what: one lookup of a reserved key in the configured\
+    \ database, per api:firestore-package\n  passes: any answer, including the ordinary\
+    \ miss, because a miss proves the project, the database, the credential, the token,\
+    \ and the mode\n  fails: FAILED_PRECONDITION, reported as a mode error naming\
+    \ the database and stating that Datastore mode is required and cannot be enabled\
+    \ on an existing database\n  the_ambiguity_is_resolvable_here: the reserved key\
+    \ carries no filter and no order, so a composite index cannot be what the service\
+    \ is complaining about; that is what makes this probe able to say \"mode\" rather\
+    \ than \"precondition\"\n  cost: one read per process start\nwhat_this_check_also_buys:\n\
+    \  replaces: the verify_schema of data:dynamodb-runtime-config, which has nothing\
+    \ to verify here per decision:firestore-no-schema-application\n  covers: a wrong\
+    \ project, a wrong named database, an unreadable credential file, a clock far\
+    \ enough out to mint a rejected token, and a service account with no Datastore\
+    \ permission\n  does_not_cover: whether any composite index a later query needs\
+    \ exists, which nothing can check before the query runs\ndocumentation_duty:\n\
+    \  what: the guide states the mode requirement where the backend is selected,\
+    \ and states that an existing native-mode database is not convertible\n  why:\
+    \ the remedy is to create a second database, which is a decision a reader should\
+    \ meet before configuring the store rather than after\nrelated:\n  - requirement:firestore-store\n\
+    \  - api:firestore-package\n  - system:tinygodriver-firestore\n  - decision:firestore-no-schema-application\n\
+    ```"
+  legacy_parse_issues:
+  - kind: legacy_parse_error
+    block: 0
+    message: "while parsing a block mapping\n  in \"<unicode string>\", line 4, column\
+      \ 3:\n      config_section: middleware.firestore\n      ^\nexpected <block end>,\
+      \ but found '<scalar>'\n  in \"<unicode string>\", line 9, column 34:\n    \
+      \  why_not_datastore: \"datastore\" is a common noun that names no p ... \n\
+      \                                     ^"
+relations:
+- relation: mentions
+  to: api:firestore-package
+  resolution: resolved
+- relation: mentions
+  to: data:dynamodb-runtime-config
+  resolution: resolved
+- relation: mentions
+  to: decision:firestore-no-schema-application
+  resolution: resolved
+- relation: mentions
+  to: requirement:firestore-store
+  resolution: resolved
+- relation: mentions
+  to: rule:storage-package-layout
+  resolution: resolved
+- relation: mentions
+  to: system:tinybind
+  resolution: resolved
+- relation: mentions
+  to: system:tinygodriver-firestore
+  resolution: resolved

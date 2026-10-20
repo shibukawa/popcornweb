@@ -1,0 +1,148 @@
+id: requirement:bot-synchronous-render
+type: requirement
+title: Bot Synchronous Render
+summary: A client that runs no boundary runtime receives the settled document instead
+  of committed fallbacks, by taking the buffered branch that requirement:async-html-rendering
+  already defines.
+facts:
+  legacy_body: "A client that runs no boundary runtime receives the settled document\
+    \ instead of committed fallbacks, by taking the buffered branch that requirement:async-html-rendering\
+    \ already defines.\n\n```yaml\nproblem:\n  mechanism: the streaming branch commits\
+    \ the shell and every fallback first, and each boundary applies only when requirement:external-boundary-runtime\
+    \ executes in the client\n  non_browser_effect: a client that runs no script keeps\
+    \ every fallback, so the fallback text is the final response body\n  who_pays:\n\
+    \    search_indexer: indexes the loading state instead of the page content\n \
+    \   ai_crawler: ingests the loading state as the page\n    preview_spider: falls\
+    \ back to loading text when it reads body content rather than head tags\n    cli_and_library:\
+    \ receives template and tb-apply framing around placeholder text, which is neither\
+    \ the page nor an error\n  was_not_a_browser_problem: a scriptless browser was\
+    \ held to be rare and degraded on purpose, and this requirement served only the\
+    \ clients above\n  no_longer_excluded: decision:scriptless-browser-detection asks\
+    \ that browser through a noscript redirect and routes it onto this same buffered\
+    \ branch, so the branch now has two ways in and one behavior\nsolution:\n  claim:\
+    \ no new render path is required\n  reason: decision:automatic-async-render-selection\
+    \ already documents that the buffered branch renders every await boundary correctly,\
+    \ blocking until each one settles\n  change: classify the client with decision:bot-client-classification\
+    \ and add its verdict as one more gate on the same branch selection\nlive_boundaries:\n\
+    \  behavior: the buffered branch renders a live boundary from its first delivery\
+    \ and stops watching, so a crawler receives one real render rather than a placeholder\
+    \ or an endless response\n  quiet_source: a source that delivers nothing inside\
+    \ the bound leaves the fallback, which is the honest answer and not a failure\n\
+    \  consequence: requirement:live-html-rendering needs no bot-aware path either,\
+    \ for the same reason this requirement needs no async one\nclassification: api:client-classification\
+    \ over data:bot-user-agent-catalog\nconfiguration: data:html-render-config\nbounds:\
+    \ policy:async-render-bounds\nnon_goals:\n  - different content, markup, or data\
+    \ for a classified bot; see the no-cloaking rule in decision:bot-client-classification\n\
+    \  - verifying that a declared crawler is the crawler it claims to be\n  - classification\
+    \ driven by anything other than the User-Agent header\n  - a bot-only render path,\
+    \ template variant, or prerender cache\ncriteria:\n  - a request whose User-Agent\
+    \ matches data:bot-user-agent-catalog renders buffered even when the chain reports\
+    \ an await block\n  - the buffered response for a bot carries Content-Length and\
+    \ no boundary framing, so no template or tb-apply element reaches it\n  - a browser\
+    \ request to the same route with the same data still streams and still applies\
+    \ every boundary\n  - the two branches produce the same text content once every\
+    \ boundary has settled\n  - an await-capable response carries Vary User-Agent\
+    \ on both branches\n  - html.bot_detection false makes a matching User-Agent stream\
+    \ like any browser\n  - html.streaming false makes classification irrelevant,\
+    \ since every response is already buffered\n  - a boundary that fails with no\
+    \ recover clause answers a bot with a real api:problem-response status rather\
+    \ than the 200 of decision:unhandled-boundary-escalation\n  - a boundary that\
+    \ exceeds html.bot_async_timeout renders its recover clause, so a bot never receives\
+    \ an unsettled placeholder as content\n  - classification reads the header only\
+    \ and starts no DNS lookup, no goroutine, and no external call\n```"
+  problem:
+    mechanism: the streaming branch commits the shell and every fallback first, and
+      each boundary applies only when requirement:external-boundary-runtime executes
+      in the client
+    non_browser_effect: a client that runs no script keeps every fallback, so the
+      fallback text is the final response body
+    who_pays:
+      search_indexer: indexes the loading state instead of the page content
+      ai_crawler: ingests the loading state as the page
+      preview_spider: falls back to loading text when it reads body content rather
+        than head tags
+      cli_and_library: receives template and tb-apply framing around placeholder text,
+        which is neither the page nor an error
+    was_not_a_browser_problem: a scriptless browser was held to be rare and degraded
+      on purpose, and this requirement served only the clients above
+    no_longer_excluded: decision:scriptless-browser-detection asks that browser through
+      a noscript redirect and routes it onto this same buffered branch, so the branch
+      now has two ways in and one behavior
+  solution:
+    claim: no new render path is required
+    reason: decision:automatic-async-render-selection already documents that the buffered
+      branch renders every await boundary correctly, blocking until each one settles
+    change: classify the client with decision:bot-client-classification and add its
+      verdict as one more gate on the same branch selection
+  live_boundaries:
+    behavior: the buffered branch renders a live boundary from its first delivery
+      and stops watching, so a crawler receives one real render rather than a placeholder
+      or an endless response
+    quiet_source: a source that delivers nothing inside the bound leaves the fallback,
+      which is the honest answer and not a failure
+    consequence: requirement:live-html-rendering needs no bot-aware path either, for
+      the same reason this requirement needs no async one
+  classification: api:client-classification over data:bot-user-agent-catalog
+  configuration: data:html-render-config
+  bounds: policy:async-render-bounds
+  non_goals:
+  - different content, markup, or data for a classified bot; see the no-cloaking rule
+    in decision:bot-client-classification
+  - verifying that a declared crawler is the crawler it claims to be
+  - classification driven by anything other than the User-Agent header
+  - a bot-only render path, template variant, or prerender cache
+  criteria:
+  - a request whose User-Agent matches data:bot-user-agent-catalog renders buffered
+    even when the chain reports an await block
+  - the buffered response for a bot carries Content-Length and no boundary framing,
+    so no template or tb-apply element reaches it
+  - a browser request to the same route with the same data still streams and still
+    applies every boundary
+  - the two branches produce the same text content once every boundary has settled
+  - an await-capable response carries Vary User-Agent on both branches
+  - html.bot_detection false makes a matching User-Agent stream like any browser
+  - html.streaming false makes classification irrelevant, since every response is
+    already buffered
+  - a boundary that fails with no recover clause answers a bot with a real api:problem-response
+    status rather than the 200 of decision:unhandled-boundary-escalation
+  - a boundary that exceeds html.bot_async_timeout renders its recover clause, so
+    a bot never receives an unsettled placeholder as content
+  - classification reads the header only and starts no DNS lookup, no goroutine, and
+    no external call
+relations:
+- relation: mentions
+  to: api:client-classification
+  resolution: resolved
+- relation: mentions
+  to: api:problem-response
+  resolution: resolved
+- relation: mentions
+  to: data:bot-user-agent-catalog
+  resolution: resolved
+- relation: mentions
+  to: data:html-render-config
+  resolution: resolved
+- relation: mentions
+  to: decision:automatic-async-render-selection
+  resolution: resolved
+- relation: mentions
+  to: decision:bot-client-classification
+  resolution: resolved
+- relation: mentions
+  to: decision:scriptless-browser-detection
+  resolution: resolved
+- relation: mentions
+  to: decision:unhandled-boundary-escalation
+  resolution: resolved
+- relation: mentions
+  to: policy:async-render-bounds
+  resolution: resolved
+- relation: mentions
+  to: requirement:async-html-rendering
+  resolution: resolved
+- relation: mentions
+  to: requirement:external-boundary-runtime
+  resolution: resolved
+- relation: mentions
+  to: requirement:live-html-rendering
+  resolution: resolved

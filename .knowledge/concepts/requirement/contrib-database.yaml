@@ -1,0 +1,78 @@
+id: requirement:contrib-database
+type: requirement
+title: TinyGo Database Drivers
+summary: system:tinygodriver provides portable SQLite, PostgreSQL, and MySQL drivers;
+  Popcorn Web consumes database/sql without retaining driver implementations.
+facts:
+  legacy_body: "system:tinygodriver provides portable SQLite, PostgreSQL, and MySQL\
+    \ drivers; Popcorn Web consumes database/sql without retaining driver implementations.\n\
+    \n```yaml\npackages:\n  core: github.com/shibukawa/tinygodriver/database\n  first_class_drivers:\n\
+    \    - requirement:contrib-sqlite\n    - requirement:contrib-postgresql\n    -\
+    \ requirement:contrib-mysql\ncontract: data:database-driver-contract\nstrategy:\n\
+    \  - implement database/sql/driver interfaces supported by TinyGo\n  - use database/sql\
+    \ pooling and transactions when target smoke tests pass\n  - keep wire protocol\
+    \ and C adapter packages independently importable\n  - select SQLite through decision:sqlite-backend-selection\n\
+    \  - resolve every engine through rule:rdb-dsn-resolution rather than through\
+    \ a driver name\n  - enforce decision:server-sql-support-tier in documentation,\
+    \ generation, and acceptance\n  - link only the engine a project selected, so\
+    \ an unused driver stays out of the binary\ncore_helpers:\n  - parse explicit\
+    \ driver configuration without reflection\n  - derive a secret-safe canonical\
+    \ connection identity for duplicate-pool detection\n  - open and ping with context\
+    \ deadline\n  - apply bounded pool settings\n  - redact credentials from errors\
+    \ and logs\nnon_goals:\n  - ORM\n  - migrations engine\n  - query builder\n  -\
+    \ distributed transactions\nevidence: https://tinygo.org/docs/reference/lang-support/stdlib/#databasesql\n\
+    ```"
+  packages:
+    core: github.com/shibukawa/tinygodriver/database
+    first_class_drivers:
+    - requirement:contrib-sqlite
+    - requirement:contrib-postgresql
+    - requirement:contrib-mysql
+  contract: data:database-driver-contract
+  strategy:
+  - implement database/sql/driver interfaces supported by TinyGo
+  - use database/sql pooling and transactions when target smoke tests pass
+  - keep wire protocol and C adapter packages independently importable
+  - select SQLite through decision:sqlite-backend-selection
+  - resolve every engine through rule:rdb-dsn-resolution rather than through a driver
+    name
+  - enforce decision:server-sql-support-tier in documentation, generation, and acceptance
+  - link only the engine a project selected, so an unused driver stays out of the
+    binary
+  core_helpers:
+  - parse explicit driver configuration without reflection
+  - derive a secret-safe canonical connection identity for duplicate-pool detection
+  - open and ping with context deadline
+  - apply bounded pool settings
+  - redact credentials from errors and logs
+  non_goals:
+  - ORM
+  - migrations engine
+  - query builder
+  - distributed transactions
+  evidence: https://tinygo.org/docs/reference/lang-support/stdlib/#databasesql
+relations:
+- relation: mentions
+  to: data:database-driver-contract
+  resolution: resolved
+- relation: mentions
+  to: decision:server-sql-support-tier
+  resolution: resolved
+- relation: mentions
+  to: decision:sqlite-backend-selection
+  resolution: resolved
+- relation: mentions
+  to: requirement:contrib-mysql
+  resolution: resolved
+- relation: mentions
+  to: requirement:contrib-postgresql
+  resolution: resolved
+- relation: mentions
+  to: requirement:contrib-sqlite
+  resolution: resolved
+- relation: mentions
+  to: rule:rdb-dsn-resolution
+  resolution: resolved
+- relation: mentions
+  to: system:tinygodriver
+  resolution: resolved

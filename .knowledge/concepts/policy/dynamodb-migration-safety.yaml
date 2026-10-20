@@ -1,0 +1,76 @@
+id: policy:dynamodb-migration-safety
+type: policy
+title: DynamoDB Migration Safety
+summary: Schema application for this store is additive; a destructive or unperformable
+  change is reported and the run stops, and no flag turns that into an action.
+facts:
+  legacy_body: "Schema application for this store is additive; a destructive or unperformable\
+    \ change is reported and the run stops, and no flag turns that into an action.\n\
+    \n```yaml\nallowed_without_confirmation:\n  - creating a table the account does\
+    \ not have\n  - reporting a plan\nrefused_always:\n  - deleting a table, whether\
+    \ or not the source still declares it\n  - deleting a secondary index, once indexes\
+    \ become expressible\n  - any action that would drop items\n  form: the run reports\
+    \ the difference and exits nonzero without sending the request\n  reason: DynamoDB\
+    \ has no transactional DDL and no rollback, so a destructive step is final; requirement:database-migration\
+    \ can confirm a down because a SQL rollback is a documented reverse statement,\
+    \ and this has none\n  no_escape_flag: no --allow-destructive; an operator who\
+    \ intends a deletion performs it with an AWS tool, where the account's own guard\
+    \ rails apply\nunperformable:\n  cases:\n    - a partition key, sort key, or key\
+    \ attribute type that differs from the deployed table\n  not_in_this_category:\
+    \ billing mode and capacity, which are not compared at all, per decision:dynamodb-operational-configuration\n\
+    \  form: an error naming the table, the attribute, the desired value, and the\
+    \ observed one\n  remedy: stated in the message as an operator action, since a\
+    \ rename or a rebuild is not this mechanism's to perform\nautomatic_apply:\n \
+    \ development: api:cli-dev applies, matching the SQL path\n  test: requirement:dynamodb-test-isolation\
+    \ applies into its own prefixed table set\n  startup:\n    default: disabled\n\
+    \    enable: data:dynamodb-runtime-config auto_migrate true, and only in development\n\
+    \    rejected_elsewhere: a non-development environment with auto_migrate set is\
+    \ a configuration error, not a warning, because production tables come from deployment\
+    \ tooling per requirement:dynamodb-migration\n    scope: create only, which is\
+    \ the whole of what apply can do\nstartup_verification:\n  default: enabled, unlike\
+    \ apply\n  action: read every registered table and compare its key schema\n  missing_or_mismatched:\
+    \ refuse to serve, naming the table, both shapes, and what would create it\n \
+    \ reason: it is the one check deployment tooling cannot make, since it knows what\
+    \ it created and not what the application assumes\n  cost: one read per registered\
+    \ table, once, before serving\nconcurrency:\n  - a duplicate CreateTable returns\
+    \ ErrTableInUse, which is read as already applied rather than as a failure\n \
+    \ - no advisory lock exists or is needed, because the only mutation is idempotent\n\
+    \  - two instances starting together converge on the same table set\ncredentials:\n\
+    \  - never passed as a process argument, including to the decision:dynamodb-table-registry\
+    \ framework action\n  - redacted from output, logs, errors, and policy:startup-summary\n\
+    observability:\n  - log each created table with its resolved physical name and\
+    \ elapsed time\n  - report the full plan before applying, so an operator sees\
+    \ what a run will do\n  - report a refused change at the same level as a failure,\
+    \ never as a warning that a run continues past\n```"
+  legacy_parse_issues:
+  - kind: legacy_parse_error
+    block: 0
+    message: "while parsing a block collection\n  in \"<unicode string>\", line 5,\
+      \ column 3:\n      - deleting a table, whether or n ... \n      ^\nexpected\
+      \ <block end>, but found '?'\n  in \"<unicode string>\", line 8, column 3:\n\
+      \      form: the run reports the differ ... \n      ^"
+relations:
+- relation: mentions
+  to: api:cli-dev
+  resolution: resolved
+- relation: mentions
+  to: data:dynamodb-runtime-config
+  resolution: resolved
+- relation: mentions
+  to: decision:dynamodb-operational-configuration
+  resolution: resolved
+- relation: mentions
+  to: decision:dynamodb-table-registry
+  resolution: resolved
+- relation: mentions
+  to: policy:startup-summary
+  resolution: resolved
+- relation: mentions
+  to: requirement:database-migration
+  resolution: resolved
+- relation: mentions
+  to: requirement:dynamodb-migration
+  resolution: resolved
+- relation: mentions
+  to: requirement:dynamodb-test-isolation
+  resolution: resolved

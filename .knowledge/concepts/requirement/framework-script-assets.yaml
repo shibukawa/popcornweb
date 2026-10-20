@@ -1,0 +1,225 @@
+id: requirement:framework-script-assets
+type: requirement
+title: Framework Script Assets
+summary: Framework-owned browser JavaScript is fixed per framework version and served
+  from one revision-stamped reserved path, so every file is immutably cacheable and
+  no per-project build step computes anything.
+facts:
+  legacy_body: "Framework-owned browser JavaScript is fixed per framework version\
+    \ and served from one revision-stamped reserved path, so every file is immutably\
+    \ cacheable and no per-project build step computes anything.\n\n```yaml\nmotivation:\
+    \ the boundary runtime is the first such script; flow:partial-refresh, api:server-action,\
+    \ and concept:client-component add more\nnature: the script set is framework source,\
+    \ identical for every project on one dependency set, and never derived from application\
+    \ code\nclass: the framework class of decision:dev-browser-runtime-scope; development\
+    \ scripts and application scripts are bounded elsewhere\nbuild_mode:\n  rule:\
+    \ the set is per build mode, so the pwdev set is the production set plus the requirement:dev-error-overlay\
+    \ module\n  revision: the digest is computed from the bytes actually served, so\
+    \ the two modes get different URLs with no constant to bump\n  guarantee: an api:cli-build\
+    \ artifact serves the production set, and no configuration reaches the development\
+    \ one\nlocation:\n  path: \"/_pw/<revision>/<name>.js\"\n  reserved: a fixed absolute\
+    \ path, ahead of application routing, rather than a subtree of the configurable\
+    \ public mount\n  rationale:\n    - these are framework assets rather than application\
+    \ assets, so the application mount has no say over them\n    - a stable prefix\
+    \ keeps the URL derivable without reading configuration, which matters because\
+    \ the document shell references it\n    - it stays available when requirement:public-asset-delivery\
+    \ is disabled, so no configuration combination can silently break rendering\n\
+    \  collision: an unknown path under the reserved prefix answers 404 rather than\
+    \ falling through to the application, which is why api:page-action-endpoint mounts\
+    \ outside it\n  as_built_ordering:\n    what: the asset handler claims exactly\
+    \ its own URL, every other reserved route is offered the request next, and one\
+    \ handler below them all answers 404 for whatever is left\n    why: the asset\
+    \ handler used to claim the whole prefix and refuse anything that was not the\
+    \ current revision, which made it the only route the namespace could ever hold\n\
+    \    found_by: serving the redraw endpoint of requirement:reloadable-component-endpoint\
+    \ end to end, where it answered 404 with the component correctly registered; every\
+    \ unit test had called its handler directly and so never crossed this\n    rule:\
+    \ a new route inside the prefix is registered above the closing handler, and the\
+    \ closing handler is what keeps the namespace from leaking into application routing\n\
+    \    unchanged: a stale revision still answers 404, now from the closing handler\
+    \ rather than from the asset one\ndelivery:\n  source: a constant in the framework,\
+    \ served directly rather than written into the project tree\n  rationale: nothing\
+    \ to generate, embed, precompress, or keep in sync with a dependency, and no way\
+    \ for a project to hold a stale copy\nrevision:\n  value: one digest over the\
+    \ script source, not one hash per file\n  computed: from the actual bytes at process\
+    \ start\n  rationale: deriving it from content means a dependency upgrade that\
+    \ changes the runtime changes the URL automatically, with no constant to forget\
+    \ to bump\n  determinism: identical dependency versions produce an identical URL\n\
+    naming_tradeoff:\n  chosen: one revision segment shared by the set, so cross-module\
+    \ imports stay ordinary relative specifiers and nothing rewrites them\n  rejected:\
+    \ a per-file content hash, which invalidates only what changed but forces import\
+    \ specifier rewriting\n  cost: a revision change refetches every framework script,\
+    \ which is acceptable because the set is small and only a dependency upgrade moves\
+    \ it\n  rejected_alternative: an inline import map, which would reintroduce the\
+    \ inline-script exposure this design removes\ncaching:\n  headers: public, max-age\
+    \ one year, immutable\n  soundness: a revision segment never serves different\
+    \ bytes, so the response is genuinely immutable\ncore_module:\n  name: popcornweb-runtime.js,\
+    \ the one asset requirement:unified-update-runtime merges every client capability\
+    \ into\n  exports: the boundary apply function every api:html-boundary-protocol\
+    \ envelope uses, so the parser path, the record path, and the fetch path share\
+    \ one implementation\n  adapter: the custom element registration is a thin wrapper\
+    \ the core installs, not a separate module\n  endpoints_beside_it: none since\
+    \ system:tinybind v0.3.5; the redraw route of requirement:reloadable-component-endpoint\
+    \ left the prefix for the page URL, so the asset is the only thing here\n  ordering_still_matters:\
+    \ the closing handler stays below the asset handler, because the rule it enforces\
+    \ is about the namespace rather than about how many routes are in it\nloading:\n\
+    \  tags: exactly one, the core module the framework contributes at the render\
+    \ call per decision:runtime-tag-injection, rather than one the document shell\
+    \ declares\n  capabilities: the core dynamically imports a capability module when\
+    \ it finds that capability's markup in the document\n  rationale: one tag per\
+    \ capability would make the shell accumulate tags and would load every capability\
+    \ on every page, and it would need a head-injection hook the framework does not\
+    \ have\n  cost: a capability module costs one extra round trip after the core\
+    \ loads, which suits progressive enhancement and not the streaming path, where\
+    \ the core is itself the boundary logic\n  csp: a dynamic import needs no allowance\
+    \ beyond script-src 'self'\nmodule_form:\n  type: ES module referenced with type=module\n\
+    \  parse: module scripts defer by default, so a reference never blocks parsing\n\
+    \  imports: ordinary relative specifiers inside the revision directory\nsecurity:\n\
+    \  - every script is framework-owned and carries no request data, so a page needs\
+    \ no inline script and no nonce\n  - policy:security-response-headers can enforce\
+    \ script-src 'self'\nfirst_consumer: requirement:external-boundary-runtime\n```"
+  motivation: the boundary runtime is the first such script; flow:partial-refresh,
+    api:server-action, and concept:client-component add more
+  nature: the script set is framework source, identical for every project on one dependency
+    set, and never derived from application code
+  class: the framework class of decision:dev-browser-runtime-scope; development scripts
+    and application scripts are bounded elsewhere
+  build_mode:
+    rule: the set is per build mode, so the pwdev set is the production set plus the
+      requirement:dev-error-overlay module
+    revision: the digest is computed from the bytes actually served, so the two modes
+      get different URLs with no constant to bump
+    guarantee: an api:cli-build artifact serves the production set, and no configuration
+      reaches the development one
+  location:
+    path: /_pw/<revision>/<name>.js
+    reserved: a fixed absolute path, ahead of application routing, rather than a subtree
+      of the configurable public mount
+    rationale:
+    - these are framework assets rather than application assets, so the application
+      mount has no say over them
+    - a stable prefix keeps the URL derivable without reading configuration, which
+      matters because the document shell references it
+    - it stays available when requirement:public-asset-delivery is disabled, so no
+      configuration combination can silently break rendering
+    collision: an unknown path under the reserved prefix answers 404 rather than falling
+      through to the application, which is why api:page-action-endpoint mounts outside
+      it
+    as_built_ordering:
+      what: the asset handler claims exactly its own URL, every other reserved route
+        is offered the request next, and one handler below them all answers 404 for
+        whatever is left
+      why: the asset handler used to claim the whole prefix and refuse anything that
+        was not the current revision, which made it the only route the namespace could
+        ever hold
+      found_by: serving the redraw endpoint of requirement:reloadable-component-endpoint
+        end to end, where it answered 404 with the component correctly registered;
+        every unit test had called its handler directly and so never crossed this
+      rule: a new route inside the prefix is registered above the closing handler,
+        and the closing handler is what keeps the namespace from leaking into application
+        routing
+      unchanged: a stale revision still answers 404, now from the closing handler
+        rather than from the asset one
+  delivery:
+    source: a constant in the framework, served directly rather than written into
+      the project tree
+    rationale: nothing to generate, embed, precompress, or keep in sync with a dependency,
+      and no way for a project to hold a stale copy
+  revision:
+    value: one digest over the script source, not one hash per file
+    computed: from the actual bytes at process start
+    rationale: deriving it from content means a dependency upgrade that changes the
+      runtime changes the URL automatically, with no constant to forget to bump
+    determinism: identical dependency versions produce an identical URL
+  naming_tradeoff:
+    chosen: one revision segment shared by the set, so cross-module imports stay ordinary
+      relative specifiers and nothing rewrites them
+    rejected: a per-file content hash, which invalidates only what changed but forces
+      import specifier rewriting
+    cost: a revision change refetches every framework script, which is acceptable
+      because the set is small and only a dependency upgrade moves it
+    rejected_alternative: an inline import map, which would reintroduce the inline-script
+      exposure this design removes
+  caching:
+    headers: public, max-age one year, immutable
+    soundness: a revision segment never serves different bytes, so the response is
+      genuinely immutable
+  core_module:
+    name: popcornweb-runtime.js, the one asset requirement:unified-update-runtime
+      merges every client capability into
+    exports: the boundary apply function every api:html-boundary-protocol envelope
+      uses, so the parser path, the record path, and the fetch path share one implementation
+    adapter: the custom element registration is a thin wrapper the core installs,
+      not a separate module
+    endpoints_beside_it: none since system:tinybind v0.3.5; the redraw route of requirement:reloadable-component-endpoint
+      left the prefix for the page URL, so the asset is the only thing here
+    ordering_still_matters: the closing handler stays below the asset handler, because
+      the rule it enforces is about the namespace rather than about how many routes
+      are in it
+  loading:
+    tags: exactly one, the core module the framework contributes at the render call
+      per decision:runtime-tag-injection, rather than one the document shell declares
+    capabilities: the core dynamically imports a capability module when it finds that
+      capability's markup in the document
+    rationale: one tag per capability would make the shell accumulate tags and would
+      load every capability on every page, and it would need a head-injection hook
+      the framework does not have
+    cost: a capability module costs one extra round trip after the core loads, which
+      suits progressive enhancement and not the streaming path, where the core is
+      itself the boundary logic
+    csp: a dynamic import needs no allowance beyond script-src 'self'
+  module_form:
+    type: ES module referenced with type=module
+    parse: module scripts defer by default, so a reference never blocks parsing
+    imports: ordinary relative specifiers inside the revision directory
+  security:
+  - every script is framework-owned and carries no request data, so a page needs no
+    inline script and no nonce
+  - policy:security-response-headers can enforce script-src 'self'
+  first_consumer: requirement:external-boundary-runtime
+relations:
+- relation: mentions
+  to: api:cli-build
+  resolution: resolved
+- relation: mentions
+  to: api:html-boundary-protocol
+  resolution: resolved
+- relation: mentions
+  to: api:page-action-endpoint
+  resolution: resolved
+- relation: mentions
+  to: api:server-action
+  resolution: resolved
+- relation: mentions
+  to: concept:client-component
+  resolution: resolved
+- relation: mentions
+  to: decision:dev-browser-runtime-scope
+  resolution: resolved
+- relation: mentions
+  to: decision:runtime-tag-injection
+  resolution: resolved
+- relation: mentions
+  to: flow:partial-refresh
+  resolution: resolved
+- relation: mentions
+  to: policy:security-response-headers
+  resolution: resolved
+- relation: mentions
+  to: requirement:dev-error-overlay
+  resolution: resolved
+- relation: mentions
+  to: requirement:external-boundary-runtime
+  resolution: resolved
+- relation: mentions
+  to: requirement:public-asset-delivery
+  resolution: resolved
+- relation: mentions
+  to: requirement:reloadable-component-endpoint
+  resolution: resolved
+- relation: mentions
+  to: requirement:unified-update-runtime
+  resolution: resolved
+- relation: mentions
+  to: system:tinybind
+  resolution: resolved

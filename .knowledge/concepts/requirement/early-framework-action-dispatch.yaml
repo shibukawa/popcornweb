@@ -1,0 +1,183 @@
+id: requirement:early-framework-action-dispatch
+type: requirement
+title: Framework Actions Before Application Resource Startup
+summary: Applications that initialize resources before pw.Run need a documented configuration-and-framework-action
+  sequence that lets config generation and probes exit before those resources open.
+authority: authored
+lifecycle: accepted
+review_state: confirmed
+facts:
+  origin:
+    request: concept:bdf-printmanager-integration
+    source: source:bdf-printmanager-request
+    section: Smaller notes from the same integration
+  requester_priority: nonblocking documentation note
+  implementation_status: Implemented and verified in this repository; no BDF deployment is claimed.
+  reported_sequence:
+  - Register application configuration.
+  - Call pw.ParseConfig().
+  - Call pwconfig.RunFrameworkAction() and honor its handled/error result.
+  - Only when normal startup continues, open resources and call pw.Run.
+  reported_premise: ParseConfig is idempotent, so parsing before pw.Run is supported.
+  reported_api_gap: RunFrameworkAction is exported from pwconfig, not from pw.
+  documentation_scope: Explain the ordering and early-exit handling for --generate-config and the health probe in
+    application startup/configuration documentation.
+  implementation_report: docs/requests/bdf-printmanager-implementation.md
+relations:
+- relation: requested_by
+  to: concept:bdf-printmanager-integration
+  resolution: resolved
+  evidence:
+    source_id: source:bdf-printmanager-request
+    path: bdf-printmanager-public-assets.md
+    heading: Smaller notes from the same integration
+    input_hash: a2df65a9a5a065a50b78c3559e0f9b0c559e18ff5d7c22f9a08352ad4674a426
+- relation: extends
+  to: requirement:built-in-config-generation
+  resolution: resolved
+  evidence:
+    source_id: source:bdf-printmanager-request
+    path: bdf-printmanager-public-assets.md
+    heading: Smaller notes from the same integration
+    input_hash: a2df65a9a5a065a50b78c3559e0f9b0c559e18ff5d7c22f9a08352ad4674a426
+- relation: affects
+  to: api:runtime-configuration
+  resolution: resolved
+  evidence:
+    source_id: source:bdf-printmanager-request
+    path: bdf-printmanager-public-assets.md
+    heading: Smaller notes from the same integration
+    input_hash: a2df65a9a5a065a50b78c3559e0f9b0c559e18ff5d7c22f9a08352ad4674a426
+- relation: affects
+  to: api:application-lifecycle
+  resolution: resolved
+  evidence:
+    source_id: source:bdf-printmanager-request
+    path: bdf-printmanager-public-assets.md
+    heading: Smaller notes from the same integration
+    input_hash: a2df65a9a5a065a50b78c3559e0f9b0c559e18ff5d7c22f9a08352ad4674a426
+acceptance:
+  resource-free-actions:
+    text: An example application opening a store before pw.Run handles --generate-config and its health probe before
+      the store opens.
+    authority: authored
+    evidence:
+      source_id: source:bdf-printmanager-request
+      path: bdf-printmanager-public-assets.md
+      heading: Smaller notes from the same integration
+      input_hash: a2df65a9a5a065a50b78c3559e0f9b0c559e18ff5d7c22f9a08352ad4674a426
+    verified_by:
+    - resource-free-actions
+  idempotent-parse:
+    text: Normal startup works with explicit pw.ParseConfig before pw.Run without repeated parsing side effects.
+    authority: authored
+    evidence:
+      source_id: source:bdf-printmanager-request
+      path: bdf-printmanager-public-assets.md
+      heading: Smaller notes from the same integration
+      input_hash: a2df65a9a5a065a50b78c3559e0f9b0c559e18ff5d7c22f9a08352ad4674a426
+    verified_by:
+    - idempotent-parse
+  startup-docs:
+    text: Documentation shows framework-action handling and its early return before application resource initialization.
+    authority: authored
+    evidence:
+      source_id: source:bdf-printmanager-request
+      path: bdf-printmanager-public-assets.md
+      heading: Smaller notes from the same integration
+      input_hash: a2df65a9a5a065a50b78c3559e0f9b0c559e18ff5d7c22f9a08352ad4674a426
+    verified_by:
+    - startup-docs
+verification:
+  resource-free-actions:
+    state: passed
+    method: integration
+    test: TestNestedApplicationPublicAssets
+    authority: observed
+    evidence:
+      path: internal/pwcli/assetlocations_test.go
+      locator: TestNestedApplicationPublicAssets
+    basis:
+    - path: go.mod
+      input_hash: 6395d43e84ea0b7fc07ade55b2846879f49afc2a2484ece5121ed4444ce5ed6f
+    - path: pw/toolmode.go
+      input_hash: eb173f7876c641c4c0d86eb2c4b64f48ce50ea1c86510510fe7fb006824ca2a3
+    - path: pwfast/toolmode.go
+      input_hash: 4990c41868804cd04eba8165b0d18174859b1f6a6a4b0348dbb46a461a106419
+    - path: pwconfig/command.go
+      input_hash: e5e68bb576c833137babff562ad5b3606998f86be0041d15fef3e09f0af1e66a
+    - path: internal/pwcli/assetlocations_test.go
+      input_hash: bcbf4509080639a19bfb8c853000387da2e5ef2b92ccf340288c8c21694a27c1
+  idempotent-parse:
+    state: passed
+    method: integration
+    test: TestNestedApplicationPublicAssets
+    authority: observed
+    evidence:
+      path: internal/pwcli/assetlocations_test.go
+      locator: TestNestedApplicationPublicAssets
+    basis:
+    - path: go.mod
+      input_hash: 6395d43e84ea0b7fc07ade55b2846879f49afc2a2484ece5121ed4444ce5ed6f
+    - path: pw/toolmode.go
+      input_hash: eb173f7876c641c4c0d86eb2c4b64f48ce50ea1c86510510fe7fb006824ca2a3
+    - path: pwfast/toolmode.go
+      input_hash: 4990c41868804cd04eba8165b0d18174859b1f6a6a4b0348dbb46a461a106419
+    - path: pwconfig/command.go
+      input_hash: e5e68bb576c833137babff562ad5b3606998f86be0041d15fef3e09f0af1e66a
+    - path: internal/pwcli/assetlocations_test.go
+      input_hash: bcbf4509080639a19bfb8c853000387da2e5ef2b92ccf340288c8c21694a27c1
+  startup-docs:
+    state: passed
+    method: static
+    test: 'Astro build: English/Japanese early startup sequence'
+    authority: observed
+    evidence:
+      path: website/src/content/docs/ja/guides/architecture/configuration.md
+      locator: 'Astro build: English/Japanese early startup sequence'
+    basis:
+    - path: go.mod
+      input_hash: 6395d43e84ea0b7fc07ade55b2846879f49afc2a2484ece5121ed4444ce5ed6f
+    - path: pw/toolmode.go
+      input_hash: eb173f7876c641c4c0d86eb2c4b64f48ce50ea1c86510510fe7fb006824ca2a3
+    - path: pwfast/toolmode.go
+      input_hash: 4990c41868804cd04eba8165b0d18174859b1f6a6a4b0348dbb46a461a106419
+    - path: pwconfig/command.go
+      input_hash: e5e68bb576c833137babff562ad5b3606998f86be0041d15fef3e09f0af1e66a
+    - path: internal/pwcli/assetlocations_test.go
+      input_hash: bcbf4509080639a19bfb8c853000387da2e5ef2b92ccf340288c8c21694a27c1
+    - path: website/src/content/docs/ja/guides/architecture/configuration.md
+      input_hash: 3611c41d5ec992c0b37dc1194618328aade6b801dee44d95719e9a4a34fd4357
+open_questions:
+  pw-action-wrapper:
+    text: Should pw expose a convenience wrapper for pwconfig.RunFrameworkAction?
+    state: answered
+    resolution: Expose RunFrameworkAction from pw and pwfast, delegating to pwconfig. Document ParseConfig, action
+      dispatch/early return, application resource initialization, then Run.
+capabilities:
+  requested-behavior:
+    state: implemented
+    authority: observed
+    verified_by:
+    - resource-free-actions
+    - idempotent-parse
+    - startup-docs
+    basis:
+    - path: go.mod
+      input_hash: 6395d43e84ea0b7fc07ade55b2846879f49afc2a2484ece5121ed4444ce5ed6f
+    - path: pw/toolmode.go
+      input_hash: eb173f7876c641c4c0d86eb2c4b64f48ce50ea1c86510510fe7fb006824ca2a3
+    - path: pwfast/toolmode.go
+      input_hash: 4990c41868804cd04eba8165b0d18174859b1f6a6a4b0348dbb46a461a106419
+    - path: pwconfig/command.go
+      input_hash: e5e68bb576c833137babff562ad5b3606998f86be0041d15fef3e09f0af1e66a
+    - path: internal/pwcli/assetlocations_test.go
+      input_hash: bcbf4509080639a19bfb8c853000387da2e5ef2b92ccf340288c8c21694a27c1
+    evidence:
+      path: docs/requests/bdf-printmanager-implementation.md
+history:
+  implementation:
+    summary: Implemented the requested behavior and documentation; acceptance verification records refer to local
+      fixtures and saved input hashes.
+    evidence:
+      path: docs/requests/bdf-printmanager-implementation.md

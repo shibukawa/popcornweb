@@ -1,0 +1,216 @@
+id: decision:outbound-trace-propagation
+type: decision
+title: traceparent Is Injected By Whatever Opened The Client Span
+summary: The seam that injects W3C traceparent into an outgoing request is the same
+  seam that opened the client span for it, because the injected span ID is the parent
+  the downstream service adopts.
+facts:
+  legacy_body: "The seam that injects W3C traceparent into an outgoing request is\
+    \ the same seam that opened the client span for it, because the injected span\
+    \ ID is the parent the downstream service adopts.\n\n```yaml\nstatus: accepted\n\
+    serves: requirement:contrib-otel, whose propagation entry requires extract and\
+    \ inject and named no owner for the second half\nimplemented: 2026-08-11, in contrib/otel/otelhttp\n\
+    what_was_wrong:\n  extract: middlewares.Otel called it per request, so an incoming\
+    \ traceparent became the parent of the server span\n  inject: implemented and\
+    \ tested in contrib/otel/propagation, with no caller outside its own test\n  effect:\
+    \ every trace ended at this process; a downstream service started a fresh trace,\
+    \ and the two halves of one request were two traces that nothing joined\n  not_a_gap_in_the_parser:\
+    \ the parser was complete and correct, so this was a wiring decision rather than\
+    \ a protocol one\nrule:\n  statement: the code that injects is the code that opened\
+    \ the client span, in one wrapper rather than two cooperating ones\n  why: the\
+    \ downstream service parents its server span onto the span ID it received, so\
+    \ injecting from anywhere that is not the client span names the server span instead\n\
+    \  what_that_costs: the downstream span and the client span both become children\
+    \ of the server span, siblings of each other, and the trace says the handler called\
+    \ the remote service directly rather than through the call that is sitting right\
+    \ there in the tree\n  corollary: a wrapper that injects without opening a span\
+    \ is wrong even though it produces a connected trace, because the connection it\
+    \ produces is to the wrong parent\nseam_per_transport:\n  net_http:\n    form:\
+    \ http.RoundTripper wrapping the transport the client would otherwise use\n  \
+    \  built: otelhttp.NewTransport wraps a RoundTripper and otelhttp.NewClient wraps\
+    \ an http.Client, copying it rather than mutating the caller's\n    precedent:\
+    \ decision:dynamodb-observability-seam already chose that shape for the driver's\
+    \ client, and the deadlineTransport of contrib/internal/authn is the same pattern\
+    \ already in the tree\n    consequence: one wrapper serves the DynamoDB seam,\
+    \ an application's own outbound calls, and contrib/oauth, which builds a bare\
+    \ http.Client today\n  fasthttp:\n    form: a wrapper type around Client.Do, because\
+    \ the transport api:pwfast-package names has no RoundTripper to decorate\n   \
+    \ why_it_differs: net/http splits the client from its transport and fasthttp does\
+    \ not, so the decorator position does not exist and the wrapper owns the call\
+    \ instead\n    unchanged: the rule above, which is about which span the header\
+    \ names rather than about the shape of the seam\n    not_built_yet: nothing in\
+    \ the tree makes an outbound call through that client, and shipping an unused\
+    \ wrapper is the defect this decision was written to remove; the form is recorded\
+    \ so the first caller does not have to decide it\nspan_covers_the_head_and_not_the_body:\n\
+    \  what: the span ends when RoundTrip returns, so it spans sending the request\
+    \ and receiving the response head\n  cost: a streamed or large response is transferred\
+    \ after the span closed, so the span is shorter than the transfer\n  why_not_end_on_body_close:\
+    \ it is the more accurate answer and it leaks a span whenever a caller does not\
+    \ close the body, which a bounded export queue pays for; a caller that needs the\
+    \ transfer timed opens its own span around the read\nerror_text_drops_the_url:\n\
+    \  why: RecordError stores the message verbatim, and a *url.Error prints the URL\
+    \ it failed on with the query string in it\n  what_instead: the wrapped error,\
+    \ which keeps the refused connection or the expired certificate and carries no\
+    \ URL\n  consistency: the same reasoning as the query redaction, applied to the\
+    \ one path that would have carried a raw value out — the path taken when something\
+    \ has gone wrong and the trace is read most closely\nexporter_is_never_wrapped:\n\
+    \  what: the http.Client that flow:telemetry-export posts through\n  why: wrapping\
+    \ it makes exporting a span open a span, which enqueues a record, which exports,\
+    \ and the queue never drains\n  where_the_exclusion_lives: with the exporter's\
+    \ client construction, not as a URL filter in the wrapper, so it cannot be defeated\
+    \ by a reconfigured endpoint\n  built: otlphttp.New strips tracing frames off\
+    \ the client it is handed, on a copy, so a caller that passes the application's\
+    \ shared instrumented client gets a working exporter rather than a silent stall\n\
+    \  bounded: it reaches tracing at the head of the chain; a tracing frame buried\
+    \ under another wrapper stays, because removing it would mean reassembling a chain\
+    \ out of wrapper types the exporter cannot construct\n  never_removes_anything_else:\
+    \ an authenticating or retrying frame is how the export reaches its endpoint,\
+    \ so dropping it would break the export in order to protect it\ninjects_toward_every_host:\n\
+    \  chosen: inject whenever the context carries a valid span context, with no destination\
+    \ allowlist\n  why: traceparent carries a trace ID, a span ID, and a sampling\
+    \ bit, and none of them is application data; the redaction that policy:query-log-safety\
+    \ and the query-string masking of requirement:modern-observability exist for has\
+    \ nothing to act on here\n  bound: an application that must not correlate with\
+    \ a specific third party gives that call an unwrapped client, which is a decision\
+    \ at the call site rather than a table in the framework\n  already_true: Inject\
+    \ writes nothing when the context has no valid span context, so an untraced process\
+    \ sends no header without any switch being read\nconsidered:\n  inject_at_each_call_site:\n\
+    \    why_not: it is the arrangement that produces the sibling defect above, since\
+    \ a call site holds the request context rather than the client span\n  inject_in_the_server_middleware:\n\
+    \    what: write the header onto some outbound-request template once per request\n\
+    \    why_not: there is no such template, and the span it would name is the server\
+    \ span, which is the defect stated as a design\nconsequences:\n  - requirement:contrib-otel\
+    \ gains an owner for its inject half, so the requirement stops being satisfiable\
+    \ by an unused function\n  - decision:dynamodb-observability-seam gains propagation\
+    \ without a second wrapper, since its RoundTripper is already the client-span\
+    \ seam this rule points at\n  - policy:outbound-transport-security is unaffected:\
+    \ the wrapper adds a header and does not choose the transport, the endpoint, or\
+    \ the verification\n```"
+  status: accepted
+  serves: requirement:contrib-otel, whose propagation entry requires extract and inject
+    and named no owner for the second half
+  implemented: 2026-08-11, in contrib/otel/otelhttp
+  what_was_wrong:
+    extract: middlewares.Otel called it per request, so an incoming traceparent became
+      the parent of the server span
+    inject: implemented and tested in contrib/otel/propagation, with no caller outside
+      its own test
+    effect: every trace ended at this process; a downstream service started a fresh
+      trace, and the two halves of one request were two traces that nothing joined
+    not_a_gap_in_the_parser: the parser was complete and correct, so this was a wiring
+      decision rather than a protocol one
+  rule:
+    statement: the code that injects is the code that opened the client span, in one
+      wrapper rather than two cooperating ones
+    why: the downstream service parents its server span onto the span ID it received,
+      so injecting from anywhere that is not the client span names the server span
+      instead
+    what_that_costs: the downstream span and the client span both become children
+      of the server span, siblings of each other, and the trace says the handler called
+      the remote service directly rather than through the call that is sitting right
+      there in the tree
+    corollary: a wrapper that injects without opening a span is wrong even though
+      it produces a connected trace, because the connection it produces is to the
+      wrong parent
+  seam_per_transport:
+    net_http:
+      form: http.RoundTripper wrapping the transport the client would otherwise use
+      built: otelhttp.NewTransport wraps a RoundTripper and otelhttp.NewClient wraps
+        an http.Client, copying it rather than mutating the caller's
+      precedent: decision:dynamodb-observability-seam already chose that shape for
+        the driver's client, and the deadlineTransport of contrib/internal/authn is
+        the same pattern already in the tree
+      consequence: one wrapper serves the DynamoDB seam, an application's own outbound
+        calls, and contrib/oauth, which builds a bare http.Client today
+    fasthttp:
+      form: a wrapper type around Client.Do, because the transport api:pwfast-package
+        names has no RoundTripper to decorate
+      why_it_differs: net/http splits the client from its transport and fasthttp does
+        not, so the decorator position does not exist and the wrapper owns the call
+        instead
+      unchanged: the rule above, which is about which span the header names rather
+        than about the shape of the seam
+      not_built_yet: nothing in the tree makes an outbound call through that client,
+        and shipping an unused wrapper is the defect this decision was written to
+        remove; the form is recorded so the first caller does not have to decide it
+  span_covers_the_head_and_not_the_body:
+    what: the span ends when RoundTrip returns, so it spans sending the request and
+      receiving the response head
+    cost: a streamed or large response is transferred after the span closed, so the
+      span is shorter than the transfer
+    why_not_end_on_body_close: it is the more accurate answer and it leaks a span
+      whenever a caller does not close the body, which a bounded export queue pays
+      for; a caller that needs the transfer timed opens its own span around the read
+  error_text_drops_the_url:
+    why: RecordError stores the message verbatim, and a *url.Error prints the URL
+      it failed on with the query string in it
+    what_instead: the wrapped error, which keeps the refused connection or the expired
+      certificate and carries no URL
+    consistency: the same reasoning as the query redaction, applied to the one path
+      that would have carried a raw value out — the path taken when something has
+      gone wrong and the trace is read most closely
+  exporter_is_never_wrapped:
+    what: the http.Client that flow:telemetry-export posts through
+    why: wrapping it makes exporting a span open a span, which enqueues a record,
+      which exports, and the queue never drains
+    where_the_exclusion_lives: with the exporter's client construction, not as a URL
+      filter in the wrapper, so it cannot be defeated by a reconfigured endpoint
+    built: otlphttp.New strips tracing frames off the client it is handed, on a copy,
+      so a caller that passes the application's shared instrumented client gets a
+      working exporter rather than a silent stall
+    bounded: it reaches tracing at the head of the chain; a tracing frame buried under
+      another wrapper stays, because removing it would mean reassembling a chain out
+      of wrapper types the exporter cannot construct
+    never_removes_anything_else: an authenticating or retrying frame is how the export
+      reaches its endpoint, so dropping it would break the export in order to protect
+      it
+  injects_toward_every_host:
+    chosen: inject whenever the context carries a valid span context, with no destination
+      allowlist
+    why: traceparent carries a trace ID, a span ID, and a sampling bit, and none of
+      them is application data; the redaction that policy:query-log-safety and the
+      query-string masking of requirement:modern-observability exist for has nothing
+      to act on here
+    bound: an application that must not correlate with a specific third party gives
+      that call an unwrapped client, which is a decision at the call site rather than
+      a table in the framework
+    already_true: Inject writes nothing when the context has no valid span context,
+      so an untraced process sends no header without any switch being read
+  considered:
+    inject_at_each_call_site:
+      why_not: it is the arrangement that produces the sibling defect above, since
+        a call site holds the request context rather than the client span
+    inject_in_the_server_middleware:
+      what: write the header onto some outbound-request template once per request
+      why_not: there is no such template, and the span it would name is the server
+        span, which is the defect stated as a design
+  consequences:
+  - requirement:contrib-otel gains an owner for its inject half, so the requirement
+    stops being satisfiable by an unused function
+  - decision:dynamodb-observability-seam gains propagation without a second wrapper,
+    since its RoundTripper is already the client-span seam this rule points at
+  - policy:outbound-transport-security is unaffected: the wrapper adds a header and
+      does not choose the transport, the endpoint, or the verification
+lifecycle: accepted
+relations:
+- relation: mentions
+  to: api:pwfast-package
+  resolution: resolved
+- relation: mentions
+  to: decision:dynamodb-observability-seam
+  resolution: resolved
+- relation: mentions
+  to: flow:telemetry-export
+  resolution: resolved
+- relation: mentions
+  to: policy:outbound-transport-security
+  resolution: resolved
+- relation: mentions
+  to: policy:query-log-safety
+  resolution: resolved
+- relation: mentions
+  to: requirement:contrib-otel
+  resolution: resolved
+- relation: mentions
+  to: requirement:modern-observability
+  resolution: resolved

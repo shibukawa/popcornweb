@@ -1,0 +1,81 @@
+id: data:bot-user-agent-catalog
+type: data
+title: Bot User Agent Catalog
+summary: The framework-owned token list decision:bot-client-classification matches
+  against, covering the bots that present a browser-shaped User-Agent.
+facts:
+  legacy_body: "The framework-owned token list decision:bot-client-classification\
+    \ matches against, covering the bots that present a browser-shaped User-Agent.\n\
+    \n```yaml\nmatching:\n  normalize: lowercase the header once per classification\n\
+    \  compare: substring containment against lowercase tokens\n  structure: tokens\
+    \ compiled once when data:html-render-config parses, never rebuilt per request\n\
+    \  cost: one lowercase pass plus a bounded scan, no allocation on the browser\
+    \ path\nmembership_rule:\n  requirement: no shipping browser User-Agent may contain\
+    \ the token\n  procedure: reject a token that is a bare word likely to appear\
+    \ in a device or product name, and prefer the vendor-qualified form\n  scope:\
+    \ browser-shaped bots only, because the shape rule in decision:bot-client-classification\
+    \ already covers every tool that omits the Mozilla prefix\ntokens:\n  search:\n\
+    \    - googlebot\n    - google-inspectiontool\n    - storebot-google\n    - adsbot-google\n\
+    \    - mediapartners-google\n    - bingbot\n    - bingpreview\n    - msnbot\n\
+    \    - slurp\n    - duckduckbot\n    - duckassistbot\n    - baiduspider\n    -\
+    \ yandexbot\n    - yandexrenderresourcesbot\n    - sogou\n    - seznambot\n  \
+    \  - qwantbot\n    - petalbot\n    - applebot\n    - naver\n    - yeti/\n  ai:\n\
+    \    - gptbot\n    - oai-searchbot\n    - chatgpt-user\n    - claudebot\n    -\
+    \ claude-web\n    - claude-user\n    - claude-searchbot\n    - anthropic-ai\n\
+    \    - perplexitybot\n    - perplexity-user\n    - ccbot\n    - bytespider\n \
+    \   - amazonbot\n    - meta-externalagent\n    - cohere-ai\n    - diffbot\n  \
+    \  - youbot\n    - timpibot\n    - omgili\n  social_preview:\n    - facebookexternalhit\n\
+    \    - facebookcatalog\n    - meta-externalfetcher\n    - twitterbot\n    - slackbot\n\
+    \    - slack-imgproxy\n    - discordbot\n    - telegrambot\n    - whatsapp\n \
+    \   - linkedinbot\n    - pinterest\n    - redditbot\n    - skypeuripreview\n \
+    \   - embedly\n    - iframely\n    - vkshare\n    - mastodon\n    - bitlybot\n\
+    \    - nuzzel\n    - quora link preview\n  windows_http_stacks:\n    note: the\
+    \ notable client libraries that do claim Mozilla, inherited from the Internet\
+    \ Explorer engine they were built beside, so the shape rule cannot reach them\n\
+    \    tokens:\n      - winhttp\n      - wininet\n      - ms-office\n      - microsoft\
+    \ office\n      - microsoft outlook\n  seo_and_monitoring:\n    - ahrefsbot\n\
+    \    - semrushbot\n    - mj12bot\n    - dotbot\n    - dataforseobot\n    - screaming\
+    \ frog\n    - w3c_validator\n    - pingdom\n    - uptimerobot\n    - statuscake\n\
+    \  generic_shape:\n    note: a browser-shaped agent that still names itself, kept\
+    \ last because these are the widest tokens in the list\n    tokens:\n      - \"\
+    +http\"\n      - crawler\n      - spider\n      - feedfetcher\n      - archive.org_bot\n\
+    \    caution: \"+http\" matches the contact URL convention that a well-behaved\
+    \ crawler follows, and no browser emits it\nexcluded:\n  robots_txt_only:\n  \
+    \  tokens: [google-extended, applebot-extended]\n    why: robots.txt control tokens\
+    \ that never appear as a request header, per decision:bot-client-classification\n\
+    \  bare_bot:\n    token: bot\n    why: device names such as CUBOT contain it,\
+    \ so it would misclassify real phones\n  headless_browsers:\n    tokens: [headlesschrome,\
+    \ chrome-lighthouse, puppeteer, playwright]\n    why: they execute requirement:external-boundary-runtime,\
+    \ so streaming already serves them\n    opt_in: add through html.bot_user_agents\
+    \ when a capture tool reads the page before the boundaries settle\nextension:\n\
+    \  key: html.bot_user_agents in data:html-render-config\n  semantics: appended\
+    \ to this list, never replacing it\n  removal: not supported, because a built-in\
+    \ token colliding with a real browser is a defect in this catalog rather than\
+    \ something an application should route around\nmaintenance:\n  ownership: framework,\
+    \ versioned with the module, so an application gains new crawlers by upgrading\n\
+    \  drift: a bot missing from this list still renders correctly, only progressively,\
+    \ so a stale list degrades rather than breaks\n  addition_test: every token is\
+    \ asserted against a fixture of current browser User-Agents, so a colliding addition\
+    \ fails at build time\nconsumers:\n  - api:client-classification\n  - decision:bot-client-classification\n\
+    ```"
+  legacy_parse_issues:
+  - kind: legacy_parse_error
+    block: 0
+    message: "while parsing a block mapping\n  in \"<unicode string>\", line 94, column\
+      \ 5:\n        note: a browser-shaped agent tha ... \n        ^\nexpected <block\
+      \ end>, but found '<scalar>'\n  in \"<unicode string>\", line 101, column 22:\n\
+      \        caution: \"+http\" matches the contact URL conventi ... \n        \
+      \                 ^"
+relations:
+- relation: mentions
+  to: api:client-classification
+  resolution: resolved
+- relation: mentions
+  to: data:html-render-config
+  resolution: resolved
+- relation: mentions
+  to: decision:bot-client-classification
+  resolution: resolved
+- relation: mentions
+  to: requirement:external-boundary-runtime
+  resolution: resolved

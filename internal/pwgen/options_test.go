@@ -96,8 +96,8 @@ func TestAMemoCallDrivesCacheKeyGeneration(t *testing.T) {
 		// key types holding equal field values cannot reach one entry and no
 		// author restates a name.
 		"/internal/pwgen/testdata/wrappers.itemSummary",
-		"cachekeybind.KeyString(v.ItemID)",
-		"cachekeybind.KeyInt(v.Page)",
+		"cachekeybind.AppendKeyString(b, v.ItemID)",
+		"cachekeybind.AppendKeyInt(b, v.Page)",
 		// The per-type assertion, so a drifting interface breaks the build
 		// rather than the cache.
 		"var _ cachekeybind.CacheKey = itemSummary{}",

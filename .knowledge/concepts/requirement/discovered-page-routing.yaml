@@ -1,0 +1,247 @@
+id: requirement:discovered-page-routing
+type: requirement
+title: Discovered Page Routing
+summary: Popcorn Web must serve an HTML website from a page tree whose directories
+  are the routes, alongside the registered router rather than instead of it.
+facts:
+  legacy_body: "Popcorn Web must serve an HTML website from a page tree whose directories\
+    \ are the routes, alongside the registered router rather than instead of it.\n\
+    \n```yaml\ndependency: system:tinybind v0.2.6 routetree, from v0.2.3 which is\
+    \ what the module pins today\nlayers:\n  tree: concept:page-tree and rule:page-directory-naming\n\
+    \  coexistence: decision:dual-router-coexistence\n  scaffold: decision:page-router-scaffold-choice\n\
+    \  rendering: decision:page-render-binding over api:page-render-runtime\n  surface:\
+    \ api:page-registry, data:page-route-table, and api:page-action-endpoint\n  generation:\
+    \ flow:page-route-generation\ndelivery:\n  order:\n    - api:page-render-runtime,\
+    \ then the emitter symbols and the render block, then one generated page served\
+    \ through api:html-response\n    - the api:cli-init router question and the page\
+    \ tree scaffold\n    - the generate.pages purpose in api:cli-generate, api:cli-dev,\
+    \ and api:cli-add\n    - api:page-action-endpoint registration, its binder run,\
+    \ and policy:csrf-protection over its prefix\n    - the action capability module\
+    \ of requirement:framework-script-assets\n  reason: a page that renders through\
+    \ the framework response path is what every later rung depends on, and the scaffold\
+    \ is worth nothing before it\n  upstream_effect: v0.2.5 turned the first item\
+    \ from three replaced generation templates into symbols, one block, and one small\
+    \ pw package\n  placement: this sits beside the classic layers of decision:web-runtime-delivery-order\
+    \ and needs none of the modern-UI rungs above streaming\nacceptance:\n  - a directory\
+    \ holding page.pw.html serves its route with no registration written by the application\n\
+    \  - a page renders inside the registered document shell and the project error\
+    \ pages answer a decode failure\n  - an ancestor layout wraps every page below\
+    \ it, outermost first\n  - a page binds its own loader in the template and a handler-rung\
+    \ Load owns its whole response, per decision:page-rung-ladder\n  - a page tree\
+    \ and a handlers tree serve from one mux in the same project\n  - a page route\
+    \ appears in neither the generated OpenAPI document nor the rule:static-route-discovery\
+    \ diagnostics, verified with a project whose page tree has been through the binder\
+    \ run\n  - an action handler reads a typed request through pw.Parse\n  - an absent\
+    \ query parameter is distinguishable from an explicit zero\n  - api:cli-init writes\
+    \ a page tree for the answers that ask for one and an empty generate.pages list\
+    \ for the ones that do not\n  - api:cli-check fails on a stale page tree artifact\n\
+    \  - api:cli-dev regenerates when a page directory is created, not only when a\
+    \ watched file changes\n  - a rejected directory name reports the reason rather\
+    \ than breaking the module build\n  - a page tree with no page.pw.html anywhere\
+    \ generates an empty registry rather than failing\nknown_gaps:\n  - scriptless\
+    \ form submission, without which adopting actions costs the no-runtime property\
+    \ of requirement:classic-web-acceptance\n  - typed and cache-invalidating actions,\
+    \ which remain api:server-action\n  - server-action outside a page tree, for which\
+    \ the upstream resolver seam now exists\n  - page metadata, sitemap, and robots\
+    \ artifacts, for which data:page-route-table is the material\n  - a query key\
+    \ reaching a form control again, and a repeated key reaching an input at all,\
+    \ per requirement:filter-form-state-round-trip and requirement:repeated-query-parameter\n\
+    closed_upstream:\n  v0_2_5:\n    - api:request-binding inside an action\n    -\
+    \ an optional query parameter distinguishable from a zero one\n    - the router\
+    \ type as its own symbol\n    - the render call as a replaceable block\n  v0_2_6:\n\
+    \    - a branded generated header that discovery still skips\n    - the failure\
+    \ entry as a symbol, so pw keeps the name WriteProblem\n  effect: nothing in this\
+    \ requirement needs a whole-file generation template or a renamed pw function\
+    \ any more\nnon_goals:\n  - replacing flow:handler-registration\n  - a page route\
+    \ with a method other than GET\n  - OpenAPI for page routes\n```"
+  dependency: system:tinybind v0.2.6 routetree, from v0.2.3 which is what the module
+    pins today
+  layers:
+    tree: concept:page-tree and rule:page-directory-naming
+    coexistence: decision:dual-router-coexistence
+    scaffold: decision:page-router-scaffold-choice
+    rendering: decision:page-render-binding over api:page-render-runtime
+    surface: api:page-registry, data:page-route-table, and api:page-action-endpoint
+    generation: flow:page-route-generation
+  delivery:
+    order:
+    - api:page-render-runtime, then the emitter symbols and the render block, then
+      one generated page served through api:html-response
+    - the api:cli-init router question and the page tree scaffold
+    - the generate.pages purpose in api:cli-generate, api:cli-dev, and api:cli-add
+    - api:page-action-endpoint registration, its binder run, and policy:csrf-protection
+      over its prefix
+    - the action capability module of requirement:framework-script-assets
+    reason: a page that renders through the framework response path is what every
+      later rung depends on, and the scaffold is worth nothing before it
+    upstream_effect: v0.2.5 turned the first item from three replaced generation templates
+      into symbols, one block, and one small pw package
+    placement: this sits beside the classic layers of decision:web-runtime-delivery-order
+      and needs none of the modern-UI rungs above streaming
+  acceptance:
+  - a directory holding page.pw.html serves its route with no registration written
+    by the application
+  - a page renders inside the registered document shell and the project error pages
+    answer a decode failure
+  - an ancestor layout wraps every page below it, outermost first
+  - a page binds its own loader in the template and a handler-rung Load owns its whole
+    response, per decision:page-rung-ladder
+  - a page tree and a handlers tree serve from one mux in the same project
+  - a page route appears in neither the generated OpenAPI document nor the rule:static-route-discovery
+    diagnostics, verified with a project whose page tree has been through the binder
+    run
+  - an action handler reads a typed request through pw.Parse
+  - an absent query parameter is distinguishable from an explicit zero
+  - api:cli-init writes a page tree for the answers that ask for one and an empty
+    generate.pages list for the ones that do not
+  - api:cli-check fails on a stale page tree artifact
+  - api:cli-dev regenerates when a page directory is created, not only when a watched
+    file changes
+  - a rejected directory name reports the reason rather than breaking the module build
+  - a page tree with no page.pw.html anywhere generates an empty registry rather than
+    failing
+  known_gaps:
+  - scriptless form submission, without which adopting actions costs the no-runtime
+    property of requirement:classic-web-acceptance
+  - typed and cache-invalidating actions, which remain api:server-action
+  - server-action outside a page tree, for which the upstream resolver seam now exists
+  - page metadata, sitemap, and robots artifacts, for which data:page-route-table
+    is the material
+  - a query key reaching a form control again, and a repeated key reaching an input
+    at all, per requirement:filter-form-state-round-trip and requirement:repeated-query-parameter
+  closed_upstream:
+    v0_2_5:
+    - api:request-binding inside an action
+    - an optional query parameter distinguishable from a zero one
+    - the router type as its own symbol
+    - the render call as a replaceable block
+    v0_2_6:
+    - a branded generated header that discovery still skips
+    - the failure entry as a symbol, so pw keeps the name WriteProblem
+    effect: nothing in this requirement needs a whole-file generation template or
+      a renamed pw function any more
+  non_goals:
+  - replacing flow:handler-registration
+  - a page route with a method other than GET
+  - OpenAPI for page routes
+acceptance:
+  item-97f86f68bd58604e:
+    text: a directory holding page.pw.html serves its route with no registration written
+      by the application
+  item-eb8bba6058a3b287:
+    text: a page renders inside the registered document shell and the project error
+      pages answer a decode failure
+  item-580848365676c573:
+    text: an ancestor layout wraps every page below it, outermost first
+  item-27a84d33a2ada8d6:
+    text: a page binds its own loader in the template and a handler-rung Load owns
+      its whole response, per decision:page-rung-ladder
+  item-1ef3811e74f34387:
+    text: a page tree and a handlers tree serve from one mux in the same project
+  item-a5d08290b74077fb:
+    text: a page route appears in neither the generated OpenAPI document nor the rule:static-route-discovery
+      diagnostics, verified with a project whose page tree has been through the binder
+      run
+  item-12e1b6ebfa0b6413:
+    text: an action handler reads a typed request through pw.Parse
+  item-609f79978c9fb155:
+    text: an absent query parameter is distinguishable from an explicit zero
+  item-a472fd4e9380fbf8:
+    text: api:cli-init writes a page tree for the answers that ask for one and an
+      empty generate.pages list for the ones that do not
+  item-8e3f0b19945c89e6:
+    text: api:cli-check fails on a stale page tree artifact
+  item-938b43ef59ec7d41:
+    text: api:cli-dev regenerates when a page directory is created, not only when
+      a watched file changes
+  item-6f83d82b5c0a1261:
+    text: a rejected directory name reports the reason rather than breaking the module
+      build
+  item-a9f384deac79363a:
+    text: a page tree with no page.pw.html anywhere generates an empty registry rather
+      than failing
+relations:
+- relation: mentions
+  to: api:cli-add
+  resolution: resolved
+- relation: mentions
+  to: api:cli-check
+  resolution: resolved
+- relation: mentions
+  to: api:cli-dev
+  resolution: resolved
+- relation: mentions
+  to: api:cli-generate
+  resolution: resolved
+- relation: mentions
+  to: api:cli-init
+  resolution: resolved
+- relation: mentions
+  to: api:html-response
+  resolution: resolved
+- relation: mentions
+  to: api:page-action-endpoint
+  resolution: resolved
+- relation: mentions
+  to: api:page-registry
+  resolution: resolved
+- relation: mentions
+  to: api:page-render-runtime
+  resolution: resolved
+- relation: mentions
+  to: api:request-binding
+  resolution: resolved
+- relation: mentions
+  to: api:server-action
+  resolution: resolved
+- relation: mentions
+  to: concept:page-tree
+  resolution: resolved
+- relation: mentions
+  to: data:page-route-table
+  resolution: resolved
+- relation: mentions
+  to: decision:dual-router-coexistence
+  resolution: resolved
+- relation: mentions
+  to: decision:page-render-binding
+  resolution: resolved
+- relation: mentions
+  to: decision:page-router-scaffold-choice
+  resolution: resolved
+- relation: mentions
+  to: decision:page-rung-ladder
+  resolution: resolved
+- relation: mentions
+  to: decision:web-runtime-delivery-order
+  resolution: resolved
+- relation: mentions
+  to: flow:handler-registration
+  resolution: resolved
+- relation: mentions
+  to: flow:page-route-generation
+  resolution: resolved
+- relation: mentions
+  to: policy:csrf-protection
+  resolution: resolved
+- relation: mentions
+  to: requirement:classic-web-acceptance
+  resolution: resolved
+- relation: mentions
+  to: requirement:filter-form-state-round-trip
+  resolution: resolved
+- relation: mentions
+  to: requirement:framework-script-assets
+  resolution: resolved
+- relation: mentions
+  to: requirement:repeated-query-parameter
+  resolution: resolved
+- relation: mentions
+  to: rule:page-directory-naming
+  resolution: resolved
+- relation: mentions
+  to: rule:static-route-discovery
+  resolution: resolved
+- relation: mentions
+  to: system:tinybind
+  resolution: resolved

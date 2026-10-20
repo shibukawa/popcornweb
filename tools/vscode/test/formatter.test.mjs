@@ -30,7 +30,7 @@ const LANGUAGE_BY_EXTENSION = {
   ".pw.dynamo": "pw-dynamo",
 };
 
-test("the module declares only the seven WASI imports the shim provides", async () => {
+test("the module declares only the eight WASI imports the shim provides", async () => {
   // If a toolchain bump adds an import, the shim silently fails to instantiate
   // in the extension host. Catching it here names the missing function.
   const module = await WebAssembly.compile(await readFile(wasmPath));
@@ -43,6 +43,7 @@ test("the module declares only the seven WASI imports the shim provides", async 
     "wasi_snapshot_preview1.clock_time_get",
     "wasi_snapshot_preview1.fd_read",
     "wasi_snapshot_preview1.fd_write",
+    "wasi_snapshot_preview1.poll_oneoff",
     "wasi_snapshot_preview1.proc_exit",
     "wasi_snapshot_preview1.random_get",
   ]);

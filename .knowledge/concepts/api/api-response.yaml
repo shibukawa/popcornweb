@@ -1,0 +1,45 @@
+id: api:api-response
+type: api
+title: API Response API
+summary: pw.WriteAPI owns content negotiation, optimized serialization, compression,
+  and structured error reporting for typed API values.
+facts:
+  legacy_body: "pw.WriteAPI owns content negotiation, optimized serialization, compression,\
+    \ and structured error reporting for typed API values.\n\n```yaml\nsurface:\n\
+    \  - WriteAPI(http.ResponseWriter, *http.Request, T)\nbehavior:\n  - negotiate\
+    \ an accepted representation\n  - set response headers\n  - apply configured compression,\
+    \ per policy:response-content-encoding, by wrapping the response writer before\
+    \ the registered writer sets its own type and status\n  - keep the wrapper chain\
+    \ walkable through Unwrap, so commit detection still reaches the writer underneath\n\
+    \  - discard an uncommitted frame and take the Content-Encoding header back off\
+    \ when serialization fails, so the api:problem-response body replacing it is not\
+    \ labelled with a coding it is not in\n  - use generated optimized JSON codecs\n\
+    \  - log and trace serialization failures\n  - use api:problem-response for safe\
+    \ errors when possible\nlow_level:\n  - pw does not re-export EncodeJSON or DecodeJSON\n\
+    \  - applications needing raw codecs may intentionally import TinyBind jsonbind\n\
+    ```"
+  surface:
+  - WriteAPI(http.ResponseWriter, *http.Request, T)
+  behavior:
+  - negotiate an accepted representation
+  - set response headers
+  - apply configured compression, per policy:response-content-encoding, by wrapping
+    the response writer before the registered writer sets its own type and status
+  - keep the wrapper chain walkable through Unwrap, so commit detection still reaches
+    the writer underneath
+  - discard an uncommitted frame and take the Content-Encoding header back off when
+    serialization fails, so the api:problem-response body replacing it is not labelled
+    with a coding it is not in
+  - use generated optimized JSON codecs
+  - log and trace serialization failures
+  - use api:problem-response for safe errors when possible
+  low_level:
+  - pw does not re-export EncodeJSON or DecodeJSON
+  - applications needing raw codecs may intentionally import TinyBind jsonbind
+relations:
+- relation: mentions
+  to: api:problem-response
+  resolution: resolved
+- relation: mentions
+  to: policy:response-content-encoding
+  resolution: resolved

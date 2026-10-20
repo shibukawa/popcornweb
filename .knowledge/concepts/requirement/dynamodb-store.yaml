@@ -1,0 +1,137 @@
+id: requirement:dynamodb-store
+type: requirement
+title: DynamoDB Store
+summary: DynamoDB is an optional store a project adds beside its relational database,
+  not a fourth answer to requirement:database-engine-selection.
+facts:
+  legacy_body: "DynamoDB is an optional store a project adds beside its relational\
+    \ database, not a fourth answer to requirement:database-engine-selection.\n\n\
+    ```yaml\nmotivation:\n  - system:tinybind dynamobind and system:tinygodriver-dynamodb\
+    \ together make a typed DynamoDB path that builds under TinyGo\n  - DynamoDB is\
+    \ not database/sql, so it shares no part of data:database-connection-set, api:database-selection,\
+    \ api:transaction-runner, or system:goose\n  - a project keeping sessions in SQLite\
+    \ and events in DynamoDB is the expected shape rather than an exception\nplacement:\n\
+    \  section: middleware.dynamo, its own data:dynamodb-runtime-config, unrelated\
+    \ to middleware.rdb\n  combinations: rdb only, dynamo only, and both are all valid\n\
+    \  engine_question: requirement:database-engine-selection keeps naming one SQL\
+    \ engine; DynamoDB is a separate capability answer\n  restated_non_goal: its \"\
+    more than one database in a project\" exclusion means more than one relational\
+    \ database, and never excluded a second kind of store\nrejected_alternative:\n\
+    \  form: dynamo as a project.database value beside sqlite, postgres, and mysql\n\
+    \  why_not:\n    - it would make plugin/session/rdb, system:goose, .pw.sql, and\
+    \ api:database-selection unreachable for that project\n    - rule:rdb-dsn-resolution\
+    \ resolves a DSN to a database/sql opener, and this client has no such opener\
+    \ to resolve to\n    - a project needing both stores could not say so\nsurfaces:\n\
+    \  package: api:dynamo-package\n  configuration: data:dynamodb-runtime-config\n\
+    \  generation: requirement:dynamodb-generation\n  queries: requirement:dynamodb-typed-queries\n\
+    \  work_allocation: decision:dynamodb-framework-scope\n  schema: requirement:dynamodb-migration\n\
+    \  tests: requirement:dynamodb-test-isolation\n  observability: decision:dynamodb-observability-seam\n\
+    \  runtime_abstraction: none, per decision:dynamodb-no-runtime-abstraction\nbounded_by_the_stack:\n\
+    \  - no transactions, PartiQL, Streams, or DAX; the driver does not implement\
+    \ them, which is what decision:dynamodb-auth-compensating-registration works around\n\
+    \  - no UpdateTable, so no table is altered in place and an index missing at creation\
+    \ stays missing\n  - no secondary index tags, because system:tinybind defers the\
+    \ gsi tag option; this bounds a generated definition, and a handwritten one may\
+    \ declare an index at creation, which requirement:dynamodb-auth-stores does\n\
+    \  effect: these bound requirement:dynamodb-migration by what exists upstream,\
+    \ not by a Popcorn Web choice\ntinygo:\n  buildable: the client and dynamobind\
+    \ both build under TinyGo, so no part of this store needs decision:migration-execution-split\
+    \ delegation\n  contrast: system:goose is host-only, which is the whole reason\
+    \ the SQL path has a delegated backend\n  size: the context client path costs\
+    \ about 37 KB on a wasip1 build, measured upstream; a size-critical program calls\
+    \ the driver with the generated methods and links none of it\nacceptance:\n  -\
+    \ a project with a dynamo section and no rdb section starts, applies its schema,\
+    \ and serves\n  - a project with both sections opens both and reports both in\
+    \ policy:startup-summary\n  - an application that never imports api:dynamo-package\
+    \ links no DynamoDB code and gains no configuration key\n  - the same application\
+    \ source builds and runs under host Go and under TinyGo\nexpected_upstream:\n\
+    \  version_tag: optimistic locking from a version tag, proposed in system:tinybind;\
+    \ nothing here changes when it lands\n  ttl_tag: an expiry attribute in the generated\
+    \ table definition, blocked until the driver can apply a TTL, per system:tinygodriver-dynamodb\n\
+    non_goals:\n  - a portable key-value facade over DynamoDB and any other store\n\
+    \  - routing a generated .pw.sql query to DynamoDB\n  - changing the relational\
+    \ default of decision:tinygo-storage-direction\n  - single-table design; system:tinybind\
+    \ states it as a non-goal, so one struct owns one table here too\n  - the session\
+    \ backend itself, which is requirement:dynamodb-session-store and depends on this\
+    \ rather than belonging to it\n  - the authentication backend, which is requirement:dynamodb-auth-backend\
+    \ and depends on this the same way\n```"
+  legacy_parse_issues:
+  - kind: legacy_parse_error
+    block: 0
+    message: "while parsing a block collection\n  in \"<unicode string>\", line 27,\
+      \ column 3:\n      - no transactions, PartiQL, Stre ... \n      ^\nexpected\
+      \ <block end>, but found '?'\n  in \"<unicode string>\", line 30, column 3:\n\
+      \      effect: these bound requirement: ... \n      ^"
+relations:
+- relation: mentions
+  to: api:database-selection
+  resolution: resolved
+- relation: mentions
+  to: api:dynamo-package
+  resolution: resolved
+- relation: mentions
+  to: api:transaction-runner
+  resolution: resolved
+- relation: mentions
+  to: data:database-connection-set
+  resolution: resolved
+- relation: mentions
+  to: data:dynamodb-runtime-config
+  resolution: resolved
+- relation: mentions
+  to: decision:dynamodb-auth-compensating-registration
+  resolution: resolved
+- relation: mentions
+  to: decision:dynamodb-framework-scope
+  resolution: resolved
+- relation: mentions
+  to: decision:dynamodb-no-runtime-abstraction
+  resolution: resolved
+- relation: mentions
+  to: decision:dynamodb-observability-seam
+  resolution: resolved
+- relation: mentions
+  to: decision:migration-execution-split
+  resolution: resolved
+- relation: mentions
+  to: decision:tinygo-storage-direction
+  resolution: resolved
+- relation: mentions
+  to: policy:startup-summary
+  resolution: resolved
+- relation: mentions
+  to: requirement:database-engine-selection
+  resolution: resolved
+- relation: mentions
+  to: requirement:dynamodb-auth-backend
+  resolution: resolved
+- relation: mentions
+  to: requirement:dynamodb-auth-stores
+  resolution: resolved
+- relation: mentions
+  to: requirement:dynamodb-generation
+  resolution: resolved
+- relation: mentions
+  to: requirement:dynamodb-migration
+  resolution: resolved
+- relation: mentions
+  to: requirement:dynamodb-session-store
+  resolution: resolved
+- relation: mentions
+  to: requirement:dynamodb-test-isolation
+  resolution: resolved
+- relation: mentions
+  to: requirement:dynamodb-typed-queries
+  resolution: resolved
+- relation: mentions
+  to: rule:rdb-dsn-resolution
+  resolution: resolved
+- relation: mentions
+  to: system:goose
+  resolution: resolved
+- relation: mentions
+  to: system:tinybind
+  resolution: resolved
+- relation: mentions
+  to: system:tinygodriver-dynamodb
+  resolution: resolved

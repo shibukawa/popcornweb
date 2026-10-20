@@ -1,0 +1,140 @@
+id: decision:config-verbosity-tag-adoption
+type: decision
+title: Config Verbosity Tag Adoption
+summary: Which framework config fields carry a value condition and which carry a detail
+  rating, so requirement:startup-summary-brevity is answered at the declaration rather
+  than in a renderer.
+facts:
+  legacy_body: "Which framework config fields carry a value condition and which carry\
+    \ a detail rating, so requirement:startup-summary-brevity is answered at the declaration\
+    \ rather than in a renderer.\n\n```yaml\nstatus: accepted\nstate: implemented\n\
+    mechanism: system:tinybind config tags, read at generation time\nwas_before_adoption:\n\
+    \  dependon: 87 tags, all the emptiness form, so no variant subtree was ever hidden\n\
+    \  summary: none, so every provenance entry arrived unrated\n  enum: 4 tags, none\
+    \ on a variant-selecting parent\nresult:\n  measured_on: requirement:startup-summary-brevity\
+    \ measured_case\n  provenance: 125 entries before, 99 after\n  boot_summary: 125\
+    \ lines before, 61 after\n  split: 26 lines removed by the applicability lever,\
+    \ 38 marked and skipped by the volume lever\nvalue_conditions:\n  form: 'dependon:\"\
+    <parent>=<value>,<value>\" or dependon:\"<parent>!=<value>\"'\n  replaces: 'the\
+    \ dependon:\".enabled\" now on each variant struct; the enabled gate arrives transitively\
+    \ through the parent'\n  why_transitive: the parent itself carries dependon on\
+    \ the feature switch, so a condition on the parent inherits it\n  session:\n \
+    \   parent: session.backend\n    values: rdb, cookie, dev-volatile, dev-persist,\
+    \ redis, dynamo, firestore\n    rdb: '.backend=rdb'\n    redis: '.backend=redis'\n\
+    \    dynamo: '.backend=dynamo'\n    firestore: '.backend=firestore'\n    cookie_store:\
+    \ '.backend=cookie'\n    keyring: '.backend!=cookie'\n    cookie: unchanged; the\
+    \ token cookie travels under every backend\n    why_not_equal_on_keyring: >\n\
+    \      a keyring serves every server backend, so an equal list would have to gain\n\
+    \      each backend that ships and a forgotten one hides a secret that is in force\n\
+    \    dev_backends: >\n      dev-volatile and dev-persist select no struct of their\
+    \ own, so no tag names\n      them; they are covered by the keyring's not-equal\
+    \ form\n  auth:\n    parent: auth.mode\n    values: oidc_only, oidc_passkey, passkey_only,\
+    \ jwt_only\n    oidc: '.mode=oidc_only,oidc_passkey'\n    passkey: '.mode=oidc_passkey,passkey_only'\n\
+    \    jwt: '.mode=jwt_only'\n    source_of_truth: the usesOIDC, usesPasskey, and\
+    \ usesJWT predicates in plugin/auth/config.go, which already state the same mapping\n\
+    \    correction: >\n      the worked example in system:tinybind lists three modes\
+    \ and gives passkey\n      only oidc_passkey; this deployment has four, and passkey_only\
+    \ would lose its\n      own subtree under that reading\n  ratelimit:\n    parent:\
+    \ ratelimit.backend\n    values: memory, redis\n    redis: '.backend=redis'\n\
+    \  unchanged:\n    - 'the emptiness form everywhere it already reads correctly,\
+    \ which is every subtree gated by a bool switch'\n    - 'auth.backend, which selects\
+    \ no struct of its own today'\n  gap_found_while_adopting:\n    where: auth.assurance.hint\
+    \ and auth.assurance.presence\n    what: >\n      both declare an Enabled switch,\
+    \ and neither had a dependon on any sibling,\n      so five keys printed as in\
+    \ force while their feature was off\n    fix: 'dependon:\".enabled\"' on every\
+    \ sibling of both switches\n    cost: 5 lines, and the same misreading the value\
+    \ conditions exist to stop\n    how_it_surfaced: >\n      reading the default-sourced\
+    \ keys of each rating candidate before rating it;\n      a subtree whose own switch\
+    \ is off and whose knobs still print is visible\n      there and invisible in\
+    \ a tag census\n    audit: >\n      the same check over every config struct with\
+    \ an Enabled field found no\n      other instance, so this was the last one\n\
+    enum_prerequisite:\n  rule: a parent named by a value condition declares enum,\
+    \ and generation rejects a value that is not a member\n  why: >\n    a mistyped\
+    \ value hides a whole subtree silently and forever, and it is the one\n    failure\
+    \ of this feature a reader cannot diagnose from the output\n  to_add:\n    - 'auth.mode:\
+    \ enum:\"oidc_only,oidc_passkey,passkey_only,jwt_only\"'\n    - 'session.backend:\
+    \ enum:\"rdb,cookie,dev-volatile,dev-persist,redis,dynamo,firestore\"'\n    -\
+    \ 'ratelimit.backend: enum:\"memory,redis\"'\n  note: >\n    each of the three\
+    \ already lists its values in help text and auth.mode also\n    validates them\
+    \ in Go, so the tag records what three places state informally\n  also_worth_it:\
+    \ auth.backend and observability.stdout_format, which name no condition but gain\
+    \ the same generation-time check\nsummary_ratings:\n  form: 'summary:\"omit\"\
+    '\n  meaning: the key is detail rather than headline; it leaves the short surface\
+    \ only while nothing but the default layer set it\n  polarity: opt-in, so a field\
+    \ nobody rates stays visible and a forgotten tag costs length rather than a hidden\
+    \ setting\n  prefer_struct_level: one tag on a nested struct field covers every\
+    \ leaf under it\n  test_applied:\n    rate: a knob that bounds how something behaves\
+    \ — a timeout, a size, an interval, a diagnostic verbosity\n    do_not_rate:\n\
+    \      - a key whose default is a security posture, since a reader checks those\
+    \ at their defaults\n      - a feature switch, which is the reason its subtree\
+    \ is present or absent\n      - an address or path the deployment answers on\n\
+    \      - a storage identity the deployment chose, such as a table or a kind\n\
+    \  applied:\n    struct_level: observability.query 9, observability.trace 5, auth.bootstrap\
+    \ 3, html.cache 2, session.redis 2\n    leaf_level: 'server 6 timeouts and the\
+    \ body cap, html 9 bounds, auth.recent_auth_max_age, middleware.request_timeout'\n\
+    \    total: 38 lines marked in the measured case\n  not_rated_though_ranked_high:\n\
+    \    security.headers: 6 lines, and every one of them is the posture a reader\
+    \ opens the summary to check\n    auth.oidc: >\n      8 lines including admission,\
+    \ auto_provision, and allow_loopback_http; the\n      permissive answers are exactly\
+    \ the ones that must not go unread\n    session.cookie: 5 lines, of which secure,\
+    \ http_only, and same_site are the cookie's security posture\n    server.public:\
+    \ 4 lines naming a mount the deployment answers on, plus two disclosure switches\n\
+    \    auth.session: 3 lines stating how long a proof of identity stays good\n \
+    \   the_switches: middleware.rdb, observability.otel, security.csrf, html.update,\
+    \ each one line naming whether a feature is on\n    consequence: >\n      the\
+    \ summary lands at 61 rather than the 45 a mechanical reading of the\n      ranking\
+    \ would have reached; the 16 lines are the price of not hiding a\n      posture,\
+    \ and they are the right price\n  correction: >\n    an earlier pass here ranked\
+    \ candidates by how many default lines each covers\n    and proposed the top 16.\
+    \ Ranking finds the volume, not the judgment: four of\n    those 16 are security\
+    \ postures and four more are feature switches. The ranking\n    is where to look,\
+    \ and the test above is what decides.\n  already_free: >\n    a field with no\
+    \ default and no source never reaches provenance at all, which\n    is why session.keyring\
+    \ contributes no line today\nrejected:\n  render_side_filter:\n    spelling: a\
+    \ renderer that drops every default-sourced key\n    why_not: >\n      it hides\
+    \ settings a reader came to read; an applicable key at its default is\n      often\
+    \ the answer, and only the author knows which default is load-bearing\n  hand_maintained_allowlist:\n\
+    \    why_not: it drifts the moment a field is added, and the drift is invisible\n\
+    related:\n  - requirement:startup-summary-brevity\n  - policy:startup-summary\n\
+    \  - api:cli-doctor\n  - api:runtime-configuration\n  - data:loaded-configuration\n\
+    \  - data:session-runtime-config\n  - data:rate-limit-runtime-config\n  - decision:auth-backend-selection\n\
+    \  - decision:assurance-scope-oidc-only\n  - system:tinybind\n```"
+  legacy_parse_issues:
+  - kind: legacy_parse_error
+    block: 0
+    message: "while parsing a block mapping\n  in \"<unicode string>\", line 52, column\
+      \ 5:\n        where: auth.assurance.hint and a ... \n        ^\nexpected <block\
+      \ end>, but found '<scalar>'\n  in \"<unicode string>\", line 56, column 32:\n\
+      \        fix: 'dependon:\".enabled\"' on every sibling of both switches\n  \
+      \                                 ^"
+relations:
+- relation: mentions
+  to: api:cli-doctor
+  resolution: resolved
+- relation: mentions
+  to: api:runtime-configuration
+  resolution: resolved
+- relation: mentions
+  to: data:loaded-configuration
+  resolution: resolved
+- relation: mentions
+  to: data:rate-limit-runtime-config
+  resolution: resolved
+- relation: mentions
+  to: data:session-runtime-config
+  resolution: resolved
+- relation: mentions
+  to: decision:assurance-scope-oidc-only
+  resolution: resolved
+- relation: mentions
+  to: decision:auth-backend-selection
+  resolution: resolved
+- relation: mentions
+  to: policy:startup-summary
+  resolution: resolved
+- relation: mentions
+  to: requirement:startup-summary-brevity
+  resolution: resolved
+- relation: mentions
+  to: system:tinybind
+  resolution: resolved

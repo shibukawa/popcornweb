@@ -1,0 +1,39 @@
+id: decision:tailwind-host-toolchain
+type: decision
+title: Tailwind Host Toolchain
+summary: Tailwind runs as an optional host asset tool; generated CSS is the only Tailwind
+  artifact consumed by Go or TinyGo application builds.
+facts:
+  legacy_body: "Tailwind runs as an optional host asset tool; generated CSS is the\
+    \ only Tailwind artifact consumed by Go or TinyGo application builds.\n\n```yaml\n\
+    preferred:\n  runtime: Tailwind standalone executable\n  provisioner: Devbox\n\
+    \  package: pinned tailwindcss_4\n  plugins: requirement:tailwind-plugin-integration\n\
+    extension:\n  runtime: user-managed Node.js toolchain\n  purpose: plugins unavailable\
+    \ as standalone-compatible local ES modules\nrules:\n  - Node.js and JavaScript\
+    \ packages are absent from the target runtime\n  - devbox.json and devbox.lock\
+    \ reproduce the selected Tailwind executable\n  - builds never install tools or\
+    \ download plugins implicitly\n  - reject a missing or incompatible CLI before\
+    \ writing CSS output\n  - do not promise bare npm package resolution or arbitrary\
+    \ npm plugin compatibility\nrationale: The Bun-compiled standalone executable\
+    \ removes the default Node project while local ES module plugins preserve Tailwind's\
+    \ standard CSS configuration model.\n```"
+  preferred:
+    runtime: Tailwind standalone executable
+    provisioner: Devbox
+    package: pinned tailwindcss_4
+    plugins: requirement:tailwind-plugin-integration
+  extension:
+    runtime: user-managed Node.js toolchain
+    purpose: plugins unavailable as standalone-compatible local ES modules
+  rules:
+  - Node.js and JavaScript packages are absent from the target runtime
+  - devbox.json and devbox.lock reproduce the selected Tailwind executable
+  - builds never install tools or download plugins implicitly
+  - reject a missing or incompatible CLI before writing CSS output
+  - do not promise bare npm package resolution or arbitrary npm plugin compatibility
+  rationale: The Bun-compiled standalone executable removes the default Node project
+    while local ES module plugins preserve Tailwind's standard CSS configuration model.
+relations:
+- relation: mentions
+  to: requirement:tailwind-plugin-integration
+  resolution: resolved

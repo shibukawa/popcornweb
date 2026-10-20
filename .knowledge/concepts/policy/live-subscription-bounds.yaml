@@ -1,0 +1,253 @@
+id: policy:live-subscription-bounds
+type: policy
+title: Live Subscription Bounds
+summary: A live connection is bounded in lifetime, count, and cost, because it is
+  the first response in the framework whose duration the server did not choose.
+facts:
+  legacy_body: "A live connection is bounded in lifetime, count, and cost, because\
+    \ it is the first response in the framework whose duration the server did not\
+    \ choose.\n\n```yaml\nstatus: implemented, except the per-boundary interval floor\n\
+    source: requirement:live-html-rendering\nextends: policy:async-render-bounds\n\
+    client_key:\n  rule: an authenticated subject where there is one, and the remote\
+    \ address otherwise\n  why_not_the_session: no session identifier reaches a response\
+    \ path, and grouping every anonymous visitor into one bucket would refuse the\
+    \ second one\n  known_weakness: clients behind one NAT share a bucket, so the\
+    \ anonymous bound is per address rather than per browser\n  understated:\n   \
+    \ fact: a proxy is not the corner case this weakness named; decision:local-tls-proxy-boundary\
+    \ makes a deployed listener see the proxy on every request, so the bound is one\
+    \ bucket per proxy node for every anonymous visitor\n    effect: the fifth concurrent\
+    \ anonymous visitor of a proxied deployment is refused at the default of four,\
+    \ which bounds nothing and refuses ordinary traffic\n    resolution: the client\
+    \ address of requirement:proxied-request-identity, which is the first consumer\
+    \ this policy owes that resolution\nnew_shape:\n  fact: every other render is\
+    \ bounded by a request; a live connection is bounded by how long a browser tab\
+    \ stays open\n  per_client_cost: one subscription is a goroutine, a source, and\
+    \ one rendered subtree per delivery, multiplied by the live boundaries on the\
+    \ screen\n  authorization_drift: a session that expires or a permission that is\
+    \ revoked must stop a connection authorized minutes or hours ago\nbounds:\n  max_duration:\
+    \ a maximum response lifetime, after which the server closes with the retry record\
+    \ and expects requirement:live-connection-recovery to re-establish it\n  jitter:\
+    \ spread each response's lifetime around the configured value, per response, so\
+    \ one restart does not produce a herd that repeats forever\n  idle_close: a response\
+    \ with no delivery for a configured period is closed\n  per_response_boundaries:\
+    \ a cap on live boundaries in one response, reported rather than truncated silently\n\
+    \  per_session_responses: a cap on concurrent live responses per session, so reopening\
+    \ cannot multiply subscriptions\n  min_interval: deferred; a floor on how often\
+    \ one boundary may re-render is still an open question upstream about whether\
+    \ pacing is declared on the source or configured per deployment\n  why_bounded_lifetime:\
+    \ it buys back authorization re-checks, deploy rollover, and load rebalancing;\
+    \ the price is one page execution per rollover\nauthorization:\n  on_open: full\
+    \ authentication and authorization, never inherited from the document request\n\
+    \  on_resume: the page's own checks run again because the page runs again, which\
+    \ is what makes max_duration a security control and not only a resource one\n\
+    \  revocation: the server may end a connection when it observes revoked access,\
+    \ so the client sees a closed connection rather than content it believes is live\n\
+    \  no_privilege_carry: live mode grants nothing a document request for the same\
+    \ URL would not have granted\ncancellation:\n  client_gone: the request context\
+    \ cancels, every subscription on that response breaks its pull loop, and each\
+    \ source observes the cancellation through its context\n  leak_rule: no source\
+    \ goroutine may outlive its request, which is why system:tinybind makes the leading\
+    \ context.Context mandatory on a live external\n  shutdown: close live responses\
+    \ with the retry record rather than dropping them, so clients resume against the\
+    \ next instance\nbackpressure:\n  mechanism: the pull sequence blocks the source\
+    \ in its own yield, so a fast source misses ticks rather than filling a queue\n\
+    \  slow_client: coalesces deliveries instead of growing a server-side buffer\n\
+    \  not_configurable: there is no delivery queue to size\nconcurrency:\n  fact:\
+    \ htmlbind excludes live subscriptions from the await concurrency limit, so html.async_concurrency\
+    \ caps nothing here\n  consequence: the useful unit is per process and per session,\
+    \ which this policy owns rather than the render option\ndegradation:\n  refuse_live:\
+    \ declining live requests stops the screen from updating and leaves a valid document,\
+    \ because the committed content is what a client with no script already receives;\
+    \ shedding this load never produces an error page\n  raise_min_interval: skipping\
+    \ deliveries is safe by construction under the whole-state delivery model, so\
+    \ the interval is a load dial\n  both_cost_freshness: neither dial costs correctness\n\
+    error_reporting:\n  resolved: system:tinybind v0.2.8 hands a failure to the reporter\
+    \ after releasing the delivery lock, per requirement:live-error-report-off-lock,\
+    \ so a blocking reporter no longer stalls the subscription it is reporting on\n\
+    \  before: a reporter that blocked held the clause's goroutines and sources, and\
+    \ cancellation did not free them\n  remaining: the reporter still takes no context,\
+    \ so it is the caller's job not to block forever; api:logger writes are what it\
+    \ does here\ncompression:\n  fact: flushing every few seconds through a compressing\
+    \ encoder keeps a long-lived stream at a poor ratio and emits a sync marker per\
+    \ delivery\n  secrets: a long-lived compressed stream mixing personalized content\
+    \ with anything request-influenced offers far more samples than one document does,\
+    \ so the decision:streaming-response-compression caution applies more strongly\
+    \ here\nobservability:\n  counters: open live responses, live subscriptions, page\
+    \ executions spent on reconnects, deliveries rendered, and connections closed\
+    \ by reason\n  per_boundary: render duration, because a periodic render is background\
+    \ load no request-latency metric will show\n  labels: the response mode belongs\
+    \ in request logs and metric labels, since one route now mixes a document render\
+    \ with a long-lived stream\nfan_out:\n  render_is_per_client: reconstructed inputs\
+    \ and authorization differ per client, so nothing is shared by default\n  source_is_shareable:\
+    \ one upstream feeding many subscriptions is the application's job inside the\
+    \ source\n  cost_statement: N clients watching one gauge cost N renders per tick,\
+    \ which an operator must be able to predict from the interval and the client count\n\
+    \  breaker: a failing upstream is best contained inside the source, where the\
+    \ fallback is structural — the boundary keeps its last rendered content and the\
+    \ page stays correct\nrules:\n  - pass the request context to every live render\
+    \ so disconnect and shutdown stop it\n  - close a bounded response with a terminal\
+    \ record, never by dropping the connection\n  - jitter every configured lifetime\n\
+    \  - count a reconnect as a page execution in capacity planning, because that\
+    \ is what it costs\n  - a live response is never cacheable and says so\nconfiguration:\
+    \ data:html-render-config\nopen_questions:\n  - default values for every bound,\
+    \ and whether any of them belongs on the render rather than in configuration\n\
+    \  - whether a per-boundary interval floor is declared in the template or configured\
+    \ per deployment\n  - resolved: process-wide admission control is the process_wide\
+    \ scope of requirement:rate-limit-enforcement, not this policy; what stays here\
+    \ is the per-response bound, and the shedding valve is one layer out\n```"
+  status: implemented, except the per-boundary interval floor
+  source: requirement:live-html-rendering
+  extends: policy:async-render-bounds
+  client_key:
+    rule: an authenticated subject where there is one, and the remote address otherwise
+    why_not_the_session: no session identifier reaches a response path, and grouping
+      every anonymous visitor into one bucket would refuse the second one
+    known_weakness: clients behind one NAT share a bucket, so the anonymous bound
+      is per address rather than per browser
+    understated:
+      fact: a proxy is not the corner case this weakness named; decision:local-tls-proxy-boundary
+        makes a deployed listener see the proxy on every request, so the bound is
+        one bucket per proxy node for every anonymous visitor
+      effect: the fifth concurrent anonymous visitor of a proxied deployment is refused
+        at the default of four, which bounds nothing and refuses ordinary traffic
+      resolution: the client address of requirement:proxied-request-identity, which
+        is the first consumer this policy owes that resolution
+  new_shape:
+    fact: every other render is bounded by a request; a live connection is bounded
+      by how long a browser tab stays open
+    per_client_cost: one subscription is a goroutine, a source, and one rendered subtree
+      per delivery, multiplied by the live boundaries on the screen
+    authorization_drift: a session that expires or a permission that is revoked must
+      stop a connection authorized minutes or hours ago
+  bounds:
+    max_duration: a maximum response lifetime, after which the server closes with
+      the retry record and expects requirement:live-connection-recovery to re-establish
+      it
+    jitter: spread each response's lifetime around the configured value, per response,
+      so one restart does not produce a herd that repeats forever
+    idle_close: a response with no delivery for a configured period is closed
+    per_response_boundaries: a cap on live boundaries in one response, reported rather
+      than truncated silently
+    per_session_responses: a cap on concurrent live responses per session, so reopening
+      cannot multiply subscriptions
+    min_interval: deferred; a floor on how often one boundary may re-render is still
+      an open question upstream about whether pacing is declared on the source or
+      configured per deployment
+    why_bounded_lifetime: it buys back authorization re-checks, deploy rollover, and
+      load rebalancing; the price is one page execution per rollover
+  authorization:
+    on_open: full authentication and authorization, never inherited from the document
+      request
+    on_resume: the page's own checks run again because the page runs again, which
+      is what makes max_duration a security control and not only a resource one
+    revocation: the server may end a connection when it observes revoked access, so
+      the client sees a closed connection rather than content it believes is live
+    no_privilege_carry: live mode grants nothing a document request for the same URL
+      would not have granted
+  cancellation:
+    client_gone: the request context cancels, every subscription on that response
+      breaks its pull loop, and each source observes the cancellation through its
+      context
+    leak_rule: no source goroutine may outlive its request, which is why system:tinybind
+      makes the leading context.Context mandatory on a live external
+    shutdown: close live responses with the retry record rather than dropping them,
+      so clients resume against the next instance
+  backpressure:
+    mechanism: the pull sequence blocks the source in its own yield, so a fast source
+      misses ticks rather than filling a queue
+    slow_client: coalesces deliveries instead of growing a server-side buffer
+    not_configurable: there is no delivery queue to size
+  concurrency:
+    fact: htmlbind excludes live subscriptions from the await concurrency limit, so
+      html.async_concurrency caps nothing here
+    consequence: the useful unit is per process and per session, which this policy
+      owns rather than the render option
+  degradation:
+    refuse_live: declining live requests stops the screen from updating and leaves
+      a valid document, because the committed content is what a client with no script
+      already receives; shedding this load never produces an error page
+    raise_min_interval: skipping deliveries is safe by construction under the whole-state
+      delivery model, so the interval is a load dial
+    both_cost_freshness: neither dial costs correctness
+  error_reporting:
+    resolved: system:tinybind v0.2.8 hands a failure to the reporter after releasing
+      the delivery lock, per requirement:live-error-report-off-lock, so a blocking
+      reporter no longer stalls the subscription it is reporting on
+    before: a reporter that blocked held the clause's goroutines and sources, and
+      cancellation did not free them
+    remaining: the reporter still takes no context, so it is the caller's job not
+      to block forever; api:logger writes are what it does here
+  compression:
+    fact: flushing every few seconds through a compressing encoder keeps a long-lived
+      stream at a poor ratio and emits a sync marker per delivery
+    secrets: a long-lived compressed stream mixing personalized content with anything
+      request-influenced offers far more samples than one document does, so the decision:streaming-response-compression
+      caution applies more strongly here
+  observability:
+    counters: open live responses, live subscriptions, page executions spent on reconnects,
+      deliveries rendered, and connections closed by reason
+    per_boundary: render duration, because a periodic render is background load no
+      request-latency metric will show
+    labels: the response mode belongs in request logs and metric labels, since one
+      route now mixes a document render with a long-lived stream
+  fan_out:
+    render_is_per_client: reconstructed inputs and authorization differ per client,
+      so nothing is shared by default
+    source_is_shareable: one upstream feeding many subscriptions is the application's
+      job inside the source
+    cost_statement: N clients watching one gauge cost N renders per tick, which an
+      operator must be able to predict from the interval and the client count
+    breaker: a failing upstream is best contained inside the source, where the fallback
+      is structural — the boundary keeps its last rendered content and the page stays
+      correct
+  rules:
+  - pass the request context to every live render so disconnect and shutdown stop
+    it
+  - close a bounded response with a terminal record, never by dropping the connection
+  - jitter every configured lifetime
+  - count a reconnect as a page execution in capacity planning, because that is what
+    it costs
+  - a live response is never cacheable and says so
+  configuration: data:html-render-config
+  open_questions:
+  - default values for every bound, and whether any of them belongs on the render
+    rather than in configuration
+  - whether a per-boundary interval floor is declared in the template or configured
+    per deployment
+  - resolved: process-wide admission control is the process_wide scope of requirement:rate-limit-enforcement,
+      not this policy; what stays here is the per-response bound, and the shedding
+      valve is one layer out
+relations:
+- relation: mentions
+  to: api:logger
+  resolution: resolved
+- relation: mentions
+  to: data:html-render-config
+  resolution: resolved
+- relation: mentions
+  to: decision:local-tls-proxy-boundary
+  resolution: resolved
+- relation: mentions
+  to: decision:streaming-response-compression
+  resolution: resolved
+- relation: mentions
+  to: policy:async-render-bounds
+  resolution: resolved
+- relation: mentions
+  to: requirement:live-connection-recovery
+  resolution: resolved
+- relation: mentions
+  to: requirement:live-error-report-off-lock
+  resolution: resolved
+- relation: mentions
+  to: requirement:live-html-rendering
+  resolution: resolved
+- relation: mentions
+  to: requirement:proxied-request-identity
+  resolution: resolved
+- relation: mentions
+  to: requirement:rate-limit-enforcement
+  resolution: resolved
+- relation: mentions
+  to: system:tinybind
+  resolution: resolved

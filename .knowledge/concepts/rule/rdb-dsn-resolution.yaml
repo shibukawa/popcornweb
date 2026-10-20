@@ -1,0 +1,120 @@
+id: rule:rdb-dsn-resolution
+type: rule
+title: RDB DSN Scheme Resolution
+summary: The rdb DSN scheme resolves to an opener and a dialect, not to a database/sql
+  driver name, because a first-class engine may register no name and may not accept
+  a URL.
+facts:
+  legacy_body: "The rdb DSN scheme resolves to an opener and a dialect, not to a database/sql\
+    \ driver name, because a first-class engine may register no name and may not accept\
+    \ a URL.\n\n```yaml\nsource: each data:database-connection-set element dsn, in\
+    \ the form scheme://rest\nregistry:\n  package: github.com/shibukawa/popcornweb/database\n\
+    \  form: an engine package registers its dialect, schemes, opener, and handoff\
+    \ form from init, per decision:import-registered-session-plugins\n  native_opener:\
+    \ an engine may additionally register a native opener that bypasses database/sql;\
+    \ requirement:pgx-native-execution defines the capability and its selection\n\
+    \  linking:\n    application: every selected engine is linked by an application\
+    \ blank import that api:cli-init scaffolds into the entry point\n    effect: a\
+    \ binary with no relational database carries no SQL driver, and one engine does\
+    \ not pull in the other two\n    pw_cli: links every engine, because one binary\
+    \ migrates and seeds any project\nschemes:\n  - api:rdb-middleware startup\n \
+    \ - api:migration-runner and api:cli-migrate dialect selection\n  - api:cli-seed\
+    \ and api:test-seed connector selection\n  - rule:savepoint-dialect-support and\
+    \ rule:explain-dialect-support\nengines:\n  sqlite:\n    engine: requirement:contrib-sqlite\n\
+    \    opener: sql.Open with the facade driver name\n    handoff: the remainder\
+    \ after the scheme, because the driver takes a path or :memory:\n    dialect:\
+    \ sqlite3\n  postgres:\n    engine: requirement:contrib-postgresql\n    aliases:\n\
+    \      - postgresql\n    opener: the package Open function, because the package\
+    \ registers no driver name\n    handoff: the whole configured string, which is\
+    \ already a libpq URL\n    dialect: postgres\n  d1:\n    engine: requirement:cloudflare-d1-engine\n\
+    \    opener: sql.Open with the d1 driver system:syumai-workers registers, inside\
+    \ a Worker only; the host build of database/d1 registers the scheme with an opener\
+    \ that refuses\n    handoff: the remainder after the scheme, which is the wrangler\
+    \ binding name\n    dialect: sqlite, so every dialect-keyed rule takes the SQLite\
+    \ path and only the opener differs\n  mysql:\n    engine: requirement:contrib-mysql\n\
+    \    opener: sql.Open with the registered mysql driver name\n    handoff: the\
+    \ remainder after the scheme, because a go-sql-driver DSN is not a URL\n    normalization:\
+    \ parseTime=true unless the DSN sets it, per requirement:contrib-mysql\n    dialect:\
+    \ mysql\nrules:\n  - resolve a scheme to an opener, since not every first-class\
+    \ engine registers a database/sql driver name\n  - derive the dialect from the\
+    \ resolved engine rather than from the scheme text, so an alias cannot produce\
+    \ a second dialect\n  - apply the data:middleware-runtime-config pool bounds identically\
+    \ to every opener result\n  - reject an unknown scheme at startup, naming the\
+    \ schemes this build registered\n  - a scheme whose engine is not linked into\
+    \ the build fails with that fact, not with a driver-not-found error\n  - keep\
+    \ the resolution table the single place a new engine is registered\n  - normalize\
+    \ an engine DSN default at the engine, so every caller inherits it rather than\
+    \ repeating it\n  - redact credentials from every error, log, and configuration\
+    \ view this resolution produces, in the rule:dsn-redaction form\nmigration_from_current:\n\
+    \  was: one sql.Open call that special-cased sqlite and passed every other configured\
+    \ string through unchanged\n  breaks_on: requirement:contrib-postgresql, which\
+    \ has no driver name to open, and requirement:contrib-mysql, whose DSN is rejected\
+    \ with the scheme still attached\n  becomes: a scheme table mapping to an opener,\
+    \ a handoff form, and a dialect\nverification:\n  - each scheme opens, pings,\
+    \ and reports its dialect\n  - postgresql resolves to the same engine and dialect\
+    \ as postgres, and sqlite3 as sqlite\n  - an unknown scheme names the schemes\
+    \ this binary serves\n  - a shipped engine that was not linked names the import\
+    \ to add\n  - a DSN carrying a password produces no output containing it\n  -\
+    \ the same resolution serves api:rdb-middleware and api:migration-runner, so a\
+    \ DSN that opens also migrates\n```"
+  legacy_parse_issues:
+  - kind: legacy_parse_error
+    block: 0
+    message: "mapping values are not allowed here\n  in \"<unicode string>\", line\
+      \ 19, column 88:\n     ... e driver takes a path or :memory:\n             \
+      \                            ^"
+relations:
+- relation: mentions
+  to: api:cli-init
+  resolution: resolved
+- relation: mentions
+  to: api:cli-migrate
+  resolution: resolved
+- relation: mentions
+  to: api:cli-seed
+  resolution: resolved
+- relation: mentions
+  to: api:migration-runner
+  resolution: resolved
+- relation: mentions
+  to: api:rdb-middleware
+  resolution: resolved
+- relation: mentions
+  to: api:test-seed
+  resolution: resolved
+- relation: mentions
+  to: data:database-connection-set
+  resolution: resolved
+- relation: mentions
+  to: data:middleware-runtime-config
+  resolution: resolved
+- relation: mentions
+  to: decision:import-registered-session-plugins
+  resolution: resolved
+- relation: mentions
+  to: requirement:cloudflare-d1-engine
+  resolution: resolved
+- relation: mentions
+  to: requirement:contrib-mysql
+  resolution: resolved
+- relation: mentions
+  to: requirement:contrib-postgresql
+  resolution: resolved
+- relation: mentions
+  to: requirement:contrib-sqlite
+  resolution: resolved
+- relation: mentions
+  to: requirement:pgx-native-execution
+  resolution: resolved
+- relation: mentions
+  to: rule:dsn-redaction
+  resolution: resolved
+- relation: mentions
+  to: rule:explain-dialect-support
+  resolution: resolved
+- relation: mentions
+  to: rule:savepoint-dialect-support
+  resolution: resolved
+- relation: mentions
+  to: system:syumai-workers
+  resolution: resolved

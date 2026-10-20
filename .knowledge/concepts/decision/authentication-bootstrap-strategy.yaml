@@ -1,0 +1,91 @@
+id: decision:authentication-bootstrap-strategy
+type: decision
+title: Authentication Bootstrap Strategy
+summary: Popcorn Web supports OIDC-backed account bootstrap with optional passkey
+  login as the recommended default, plus explicit passkey-only deployments.
+facts:
+  legacy_body: "Popcorn Web supports OIDC-backed account bootstrap with optional passkey\
+    \ login as the recommended default, plus explicit passkey-only deployments.\n\n\
+    ```yaml\nmodes:\n  oidc_passkey:\n    bootstrap: flow:oidc-account-login\n   \
+    \ convenience_login: flow:passkey-login\n    enrollment: flow:passkey-enrollment\n\
+    \    recovery: trusted OIDC reauthentication or administrator policy\n    recommendation:\
+    \ default\n  oidc_only:\n    bootstrap_and_login: flow:oidc-account-login\n  passkey_only:\n\
+    \    bootstrap: flow:passkey-only-registration\n    issued_proof: data:account-bootstrap-credential\n\
+    \    login: flow:passkey-login\n    recovery: explicit policy:account-recovery\
+    \ without implicit IdP fallback\ncommon:\n  account: data:user-account\n  external_identity:\
+    \ data:external-identity\n  passkey_credential: data:passkey-credential\n  session:\
+    \ api:session-manager\n  request_result: data:request-authentication\n  linking:\
+    \ policy:account-linking\n  recovery: policy:account-recovery\n  bootstrap_security:\
+    \ policy:bootstrap-credential-security\n  oidc_admission: policy:oidc-admission\n\
+    boundaries:\n  - application owns account and credential persistence\n  - framework\
+    \ does not require a repository type or fixed database schema\n```"
+  modes:
+    oidc_passkey:
+      bootstrap: flow:oidc-account-login
+      convenience_login: flow:passkey-login
+      enrollment: flow:passkey-enrollment
+      recovery: trusted OIDC reauthentication or administrator policy
+      recommendation: default
+    oidc_only:
+      bootstrap_and_login: flow:oidc-account-login
+    passkey_only:
+      bootstrap: flow:passkey-only-registration
+      issued_proof: data:account-bootstrap-credential
+      login: flow:passkey-login
+      recovery: explicit policy:account-recovery without implicit IdP fallback
+  common:
+    account: data:user-account
+    external_identity: data:external-identity
+    passkey_credential: data:passkey-credential
+    session: api:session-manager
+    request_result: data:request-authentication
+    linking: policy:account-linking
+    recovery: policy:account-recovery
+    bootstrap_security: policy:bootstrap-credential-security
+    oidc_admission: policy:oidc-admission
+  boundaries:
+  - application owns account and credential persistence
+  - framework does not require a repository type or fixed database schema
+relations:
+- relation: mentions
+  to: api:session-manager
+  resolution: resolved
+- relation: mentions
+  to: data:account-bootstrap-credential
+  resolution: resolved
+- relation: mentions
+  to: data:external-identity
+  resolution: resolved
+- relation: mentions
+  to: data:passkey-credential
+  resolution: resolved
+- relation: mentions
+  to: data:request-authentication
+  resolution: resolved
+- relation: mentions
+  to: data:user-account
+  resolution: resolved
+- relation: mentions
+  to: flow:oidc-account-login
+  resolution: resolved
+- relation: mentions
+  to: flow:passkey-enrollment
+  resolution: resolved
+- relation: mentions
+  to: flow:passkey-login
+  resolution: resolved
+- relation: mentions
+  to: flow:passkey-only-registration
+  resolution: resolved
+- relation: mentions
+  to: policy:account-linking
+  resolution: resolved
+- relation: mentions
+  to: policy:account-recovery
+  resolution: resolved
+- relation: mentions
+  to: policy:bootstrap-credential-security
+  resolution: resolved
+- relation: mentions
+  to: policy:oidc-admission
+  resolution: resolved

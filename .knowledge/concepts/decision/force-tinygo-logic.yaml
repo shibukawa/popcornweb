@@ -1,0 +1,23 @@
+id: decision:force-tinygo-logic
+type: decision
+title: Forced TinyGo Logic Build Tag
+summary: force_tinygo_logic selects TinyGo-compatible fallback implementations across
+  dual-backend contrib packages during host Go builds.
+facts:
+  legacy_body: "force_tinygo_logic selects TinyGo-compatible fallback implementations\
+    \ across dual-backend contrib packages during host Go builds.\n\n```yaml\ntag:\
+    \ force_tinygo_logic\nscope: every contrib package with distinct host and TinyGo\
+    \ implementations\nselection:\n  host_default: \"!tinygo && !force_tinygo_logic\"\
+    \n  tinygo_compatible: \"tinygo || force_tinygo_logic\"\nrules:\n  - one shared\
+    \ tag switches all applicable packages together\n  - forced and default implementations\
+    \ preserve public APIs\n  - host CI tests default and forced selections\n```"
+  tag: force_tinygo_logic
+  scope: every contrib package with distinct host and TinyGo implementations
+  selection:
+    host_default: '!tinygo && !force_tinygo_logic'
+    tinygo_compatible: tinygo || force_tinygo_logic
+  rules:
+  - one shared tag switches all applicable packages together
+  - forced and default implementations preserve public APIs
+  - host CI tests default and forced selections
+relations: []

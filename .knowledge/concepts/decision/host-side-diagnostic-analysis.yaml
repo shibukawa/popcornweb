@@ -1,0 +1,178 @@
+id: decision:host-side-diagnostic-analysis
+type: decision
+title: Host-Side Diagnostic Analysis
+summary: requirement:project-diagnostics inspects the project from outside with host
+  tooling, and neither builds nor runs the application.
+facts:
+  legacy_body: "requirement:project-diagnostics inspects the project from outside\
+    \ with host tooling, and neither builds nor runs the application.\n\n```yaml\n\
+    status: proposed\ndecision:\n  actor: system:pw-cli alone\n  inputs:\n    - the\
+    \ data:project-config project files\n    - the environment configuration file\
+    \ policy:config-file-resolution selects for the diagnosed token\n    - the resolved\
+    \ import graph of data:project-config project.main\n    - the generated configbind\
+    \ metadata api:cli-generate already wrote for the generate.config purpose\n  excluded:\
+    \ no application build and no application process, ever; no network or database\
+    \ connection unless the api:cli-doctor online option asks for one\n  checks: decision:shared-check-catalog,\
+    \ so a condition startup also validates is one definition rather than two\n  precedent:\
+    \ decision:host-tools-target-runtime already places Go AST analysis on the host,\
+    \ so this is the phase that reads source\nregistration_discovery:\n  mechanism:\
+    \ resolve the import graph, then analyze the registration call sites in each reachable\
+    \ package, the way rule:static-route-discovery reads route registrations\n  reads:\
+    \ pw.RegisterConfig prefixes, api:session-backend-plugin backend names, api:framework-extension\
+    \ registrations, and database/sql driver registrations\n  scope: a third-party\
+    \ plugin is discovered the same way as a first-party one, because the analysis\
+    \ reads the package rather than a catalog inside the CLI\n  blank_imports: a blank\
+    \ import is an edge in the graph like any other, which is what makes decision:import-registered-session-plugins\
+    \ statically visible\n  unresolvable: a registration behind a value the analysis\
+    \ cannot resolve becomes a limits entry, never a missing-import finding\nprovenance_boundary:\n\
+    \  layers:\n    defaults: read from the generated configbind metadata\n    file:\
+    \ the TOML the diagnosed token selects\n    environment: this host's own process\
+    \ environment, read as a layer and marked as coming from this host\n    cli: never\
+    \ determinable, because doctor's arguments are not the application's\n  host_modes:\n\
+    \    workstation: the deployment's variables are absent, so a field they would\
+    \ carry is undeterminable and its advisories are suppressed\n    deployment: a\
+    \ CI job or deployment shell that already holds those variables makes the same\
+    \ fields determinable, and the required-value checks become real\n    detection:\
+    \ the CI environment variable, which is what a pipeline sets and a workstation\
+    \ does not\n    distinction: doctor states which mode it ran in, because the same\
+    \ clean report means different things in each\n  handling: an undeterminable value\
+    \ is reported as unknown at this host per data:diagnostic-report, never as its\
+    \ default\n  honesty: running the application binary on a workstation would not\
+    \ recover the deployment's environment either, so this boundary is a property\
+    \ of where the command runs and not of how it collects\nrejected:\n  in_process_action:\n\
+    \    idea: a framework option making the application binary report its own registry,\
+    \ collected by the CLI\n    why_not: it costs a build, it fails exactly when the\
+    \ project is broken, its code would ship inside the binary under rule:tinygo-runtime-compatibility,\
+    \ and it still cannot see the deployment's environment variables\n    deferred:\
+    \ it remains the only way to observe a live process's actual resolved state, including\
+    \ reachability probes, and is left for a later need\n  toml_schema_only:\n   \
+    \ idea: validate the configuration file against a schema\n    why_not: a key's\
+    \ owner and a missing plugin import are invisible without the import graph\nconsequences:\n\
+    \  - the diagnosis is instant, side-effect free, and works on a project that does\
+    \ not compile\n  - any environment can be diagnosed from any host, because no\
+    \ secret of that environment is needed\n  - accuracy depends on the generated\
+    \ configbind metadata being current, so api:cli-doctor runs the api:cli-generate\
+    \ drift check first and downgrades the configuration sections when it fails\n\
+    \  - framework binding metadata is read from the popcornweb module version in\
+    \ the project build list, not from the version compiled into the CLI, so a CLI\
+    \ newer than the project does not report keys the project does not have\n  - the\
+    \ analysis models what would be registered instead of observing it, so every gap\
+    \ it cannot resolve is stated as a limit\n```"
+  status: proposed
+  decision:
+    actor: system:pw-cli alone
+    inputs:
+    - the data:project-config project files
+    - the environment configuration file policy:config-file-resolution selects for
+      the diagnosed token
+    - the resolved import graph of data:project-config project.main
+    - the generated configbind metadata api:cli-generate already wrote for the generate.config
+      purpose
+    excluded: no application build and no application process, ever; no network or
+      database connection unless the api:cli-doctor online option asks for one
+    checks: decision:shared-check-catalog, so a condition startup also validates is
+      one definition rather than two
+    precedent: decision:host-tools-target-runtime already places Go AST analysis on
+      the host, so this is the phase that reads source
+  registration_discovery:
+    mechanism: resolve the import graph, then analyze the registration call sites
+      in each reachable package, the way rule:static-route-discovery reads route registrations
+    reads: pw.RegisterConfig prefixes, api:session-backend-plugin backend names, api:framework-extension
+      registrations, and database/sql driver registrations
+    scope: a third-party plugin is discovered the same way as a first-party one, because
+      the analysis reads the package rather than a catalog inside the CLI
+    blank_imports: a blank import is an edge in the graph like any other, which is
+      what makes decision:import-registered-session-plugins statically visible
+    unresolvable: a registration behind a value the analysis cannot resolve becomes
+      a limits entry, never a missing-import finding
+  provenance_boundary:
+    layers:
+      defaults: read from the generated configbind metadata
+      file: the TOML the diagnosed token selects
+      environment: this host's own process environment, read as a layer and marked
+        as coming from this host
+      cli: never determinable, because doctor's arguments are not the application's
+    host_modes:
+      workstation: the deployment's variables are absent, so a field they would carry
+        is undeterminable and its advisories are suppressed
+      deployment: a CI job or deployment shell that already holds those variables
+        makes the same fields determinable, and the required-value checks become real
+      detection: the CI environment variable, which is what a pipeline sets and a
+        workstation does not
+      distinction: doctor states which mode it ran in, because the same clean report
+        means different things in each
+    handling: an undeterminable value is reported as unknown at this host per data:diagnostic-report,
+      never as its default
+    honesty: running the application binary on a workstation would not recover the
+      deployment's environment either, so this boundary is a property of where the
+      command runs and not of how it collects
+  rejected:
+    in_process_action:
+      idea: a framework option making the application binary report its own registry,
+        collected by the CLI
+      why_not: it costs a build, it fails exactly when the project is broken, its
+        code would ship inside the binary under rule:tinygo-runtime-compatibility,
+        and it still cannot see the deployment's environment variables
+      deferred: it remains the only way to observe a live process's actual resolved
+        state, including reachability probes, and is left for a later need
+    toml_schema_only:
+      idea: validate the configuration file against a schema
+      why_not: a key's owner and a missing plugin import are invisible without the
+        import graph
+  consequences:
+  - the diagnosis is instant, side-effect free, and works on a project that does not
+    compile
+  - any environment can be diagnosed from any host, because no secret of that environment
+    is needed
+  - accuracy depends on the generated configbind metadata being current, so api:cli-doctor
+    runs the api:cli-generate drift check first and downgrades the configuration sections
+    when it fails
+  - framework binding metadata is read from the popcornweb module version in the project
+    build list, not from the version compiled into the CLI, so a CLI newer than the
+    project does not report keys the project does not have
+  - the analysis models what would be registered instead of observing it, so every
+    gap it cannot resolve is stated as a limit
+lifecycle: proposed
+relations:
+- relation: mentions
+  to: api:cli-doctor
+  resolution: resolved
+- relation: mentions
+  to: api:cli-generate
+  resolution: resolved
+- relation: mentions
+  to: api:framework-extension
+  resolution: resolved
+- relation: mentions
+  to: api:session-backend-plugin
+  resolution: resolved
+- relation: mentions
+  to: data:diagnostic-report
+  resolution: resolved
+- relation: mentions
+  to: data:project-config
+  resolution: resolved
+- relation: mentions
+  to: decision:host-tools-target-runtime
+  resolution: resolved
+- relation: mentions
+  to: decision:import-registered-session-plugins
+  resolution: resolved
+- relation: mentions
+  to: decision:shared-check-catalog
+  resolution: resolved
+- relation: mentions
+  to: policy:config-file-resolution
+  resolution: resolved
+- relation: mentions
+  to: requirement:project-diagnostics
+  resolution: resolved
+- relation: mentions
+  to: rule:static-route-discovery
+  resolution: resolved
+- relation: mentions
+  to: rule:tinygo-runtime-compatibility
+  resolution: resolved
+- relation: mentions
+  to: system:pw-cli
+  resolution: resolved

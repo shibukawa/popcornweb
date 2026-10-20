@@ -1,0 +1,655 @@
+id: requirement:client-signal-registry
+type: requirement
+title: Client Signal Registry
+summary: One table of named callbacks the page registers at load, which both a server-authored
+  signal and this framework's own lifecycle names dispatch into, scoped so a handler
+  registered on one route is unreachable from another.
+facts:
+  legacy_body: "One table of named callbacks the page registers at load, which both\
+    \ a server-authored signal and this framework's own lifecycle names dispatch into,\
+    \ scoped so a handler registered on one route is unreachable from another.\n\n\
+    ```yaml\nstatus: shipped 2026-08-11, except the automatic emission of the scope\
+    \ element, which needs a generator change upstream\nas_built:\n  table: boundary.js\
+    \ holds the map and the active scope set, declared above the first customElements.define\n\
+    \  published: registerEvent, unregisterEvent, activeScope, and definePage on the\
+    \ framework's namespace object, beside subscribe rather than merged into it\n\
+    \  page_lifecycle:\n    shape: definePage(hash, {enter, leave}), with the pw-page\
+    \ element's reactions driving both\n    why: it separates a page's evaluation,\
+    \ which an ES module does once, from its activation, which happens on every entry;\
+    \ declaring the lifecycle is what lets setup run again with nothing re-evaluated\n\
+    \    handle: enter receives a handle whose registrations are released on leave,\
+    \ so the ordinary case needs no cleanup and a forgotten one cannot re-register\
+    \ on every revisit\n    responsibility_is_still_available: unregisterEvent and\
+    \ the release each registration returns, for a handler an author wants gone early\
+    \ or wants to outlive the page\n    two_bugs_the_harness_caught:\n      late_definition:\
+    \ an element upgrades while the document parses and a page's module is deferred,\
+    \ so the scope opens before any definition exists; without a catch-up in definePage,\
+    \ enter never ran at all\n      leave_ordering: closing the scope before running\
+    \ leave handed a leave handler a table its own registrations had already dropped\
+    \ out of, so the page is left first and the scope closes after\n  scope_element:\
+    \ a pw-page custom element whose connect and disconnect reactions are the whole\
+    \ page-scope lifecycle\n  lifecycle: document_committed, document_truncated, boundary_settled,\
+    \ live_opened, live_closed, and delivery_applied dispatch locally under the pw.\
+    \ prefix\n  record: the signal record is read in the live reader and dispatched\
+    \ by name\n  harness: pw/testdata/signal_harness.mjs loads boundary.js for real\
+    \ and covers resolution, scoping, the swap overlap, handler isolation, and reentrancy;\
+    \ the update harness stubs this half, so it needed its own\n  whole_lifecycle_set:\
+    \ all eight names dispatch; navigation_applied and directive_received fire on\
+    \ the update half's paths, which is the only place either is observable\n  signals_on_the_delta_stream:\
+    \ the navigation reader dispatches a signal record too, since the delta and the\
+    \ live stream are one record grammar written by one encoder upstream and a client\
+    \ reading only the live one would drop what the other carries\nimplements: the\
+    \ client obligations system:tinybind v0.5.3 specifies, which name registerEvent\
+    \ as this framework's spelling and decline to specify anything else about it\n\
+    runtime: requirement:unified-update-runtime, so this adds a table to one asset\
+    \ rather than an asset\nowned_here: the table, the registration API, the route\
+    \ scoping, the dispatch, and the lifecycle producer\nowned_upstream: the record\
+    \ shape, the name grammar, the reserved prefix, the ordering guarantee, the lifecycle\
+    \ name set, and every obligation below that is called normative\none_table:\n\
+    \  rule: a server-authored signal and a lifecycle name dispatch through the same\
+    \ registry\n  why: a handler cares what happened rather than which side noticed,\
+    \ and two registries would make every handler pick a side\n  supersedes: this\
+    \ framework's earlier split into a lifecycle subscribe surface beside an application\
+    \ registry, which was drafted before upstream settled the question and would have\
+    \ put the reserved names somewhere an author could shadow them\n  separation_is_the_prefix:\
+    \ enforced at emit rather than at dispatch, so a client trusts a reserved name\
+    \ without checking anything\nlifecycle_names:\n  producer: this runtime, locally;\
+    \ none of them crosses the wire, because each describes an arrival and the client\
+    \ is what observes one\n  vocabulary: upstream publishes the moments as suffixes\
+    \ to be reused verbatim, so pw.boundary_settled and tb.boundary_settled name one\
+    \ moment at two layers\n  set: document_committed, document_truncated, boundary_settled,\
+    \ live_opened, live_closed, delivery_applied, navigation_applied, directive_received\n\
+    \  under: this framework's own prefix, guarded by the constructor of requirement:signal-forwarding-seam\
+    \ so an application cannot emit one\n  after_not_before: a lifecycle name fires\
+    \ after the thing it describes is in the DOM, never before, since the whole use\
+    \ is reading or decorating what just arrived\n  the_focus_lesson_applies: requirement:update-navigation-continuity\
+    \ learned that acting on a node still inside a fragment does nothing at all, silently,\
+    \ which is the same failure a handler would hit\n  zero_server_side: every fact\
+    \ these carry is already on the wire, so this costs no Go and no bytes\n  local_extension:\n\
+    \    what: delivery_applied additionally reports whether the DOM changed\n   \
+    \ why: applyBoundary compares arriving markup against what the range holds and\
+    \ returns without refilling when they match, and the server suppresses that case\
+    \ ahead of it, so an arrival is not a change\n    legal: the client observed it,\
+    \ so reporting it needs nothing the wire does not carry, which is the test upstream\
+    \ sets for adding to this set\n    what_it_prevents: a handler flashing a region\
+    \ on every reconnect, and an analytics call reporting change counts as source\
+    \ yields\nplumbing:\n  where_the_table_belongs: boundary.js, because requirement:unified-update-runtime\
+    \ fixes the load order and boundary.js is first; update.js already imports applyHTML,\
+    \ readRecords, resolveNavigable, and stopLive from it\n  precedent: the shared\
+    \ client-state core, which both halves call and a test asserts is declared exactly\
+    \ once; the table is the second thing of that shape and takes the same guard\n\
+    \  why_it_cannot_be_the_update_half: the boundary half runs when updates are disabled,\
+    \ and a live page with no update surface still receives signals\n  relation_to_subscribe:\
+    \ api:client-update-api keeps its own lifecycle kinds for the update paths it\
+    \ already reports on; this table is not a rename of that surface and the two are\
+    \ not merged, because those kinds report an outcome to the caller that asked for\
+    \ it\nroute_scoping:\n  problem: a navigation delta reuses the live document rather\
+    \ than reparsing it, so the outgoing page's handlers stay registered and the incoming\
+    \ page's script does not run\n  verified: pw/update.js leaves a script already\
+    \ in the head alone, calling out that re-inserting would fetch and re-execute;\
+    \ so a page's module runs on first arrival and never again\n  re_execution_is_not_available:\
+    \ an ES module is evaluated once per URL and a dynamic import returns the cached\
+    \ instance, so any design depending on running a page's registrations again cannot\
+    \ work\n  chosen: a catalog of declaration to module URL on the wire, and the\
+    \ DOM as the mount list\n  per_instance_since_v0_5_7:\n    what_upstream_shipped:\
+    \ Scope normalized up to the package-qualified identity, and the same string written\
+    \ onto every rendered instance as static markup, which is what closed the identity\
+    \ mismatch that blocked this\n    why_the_marker_is_static_rather_than_beside_the_instance_id:\
+    \ an ordinary component call opens no update boundary, so a component rendered\
+    \ twenty times inside a page carries no instance id and appears in no manifest\
+    \ — precisely the case a per-instance lifecycle exists for; a static attribute\
+    \ also survives a render that collects nothing and a first load, where the client\
+    \ holds no manifest because the manifest is a header the client sends back\n \
+    \   catalog_not_a_mount_list: Assets reports what a composition could require,\
+    \ including a component below a slot that never rendered, so the wire carries\
+    \ it as a lookup table and the DOM decides what starts\n    ordering_falls_out:\
+    \ a tree walk finds an ancestor's marker before a descendant's, which is the outermost-first\
+    \ rule without an ordering on the wire\n    release_needed_no_wire_change: the\
+    \ subtree about to be replaced is still the one every setup inside it ran against,\
+    \ so the apply loop scans it and tears down before the incoming markup lands;\
+    \ upstream corrected its own earlier claim that this needed the component to become\
+    \ an update boundary\n    where_it_is_wired: the shared swap and the live refill,\
+    \ for the reason the client-state core lives there — a delta, a redraw, an action\
+    \ response and a delivery all destroy a region, and a release missing from one\
+    \ is a leak nobody would find\n    setup_signature: the element first, matching\
+    \ what a setup is for, and a scope second whose registrations release with the\
+    \ instance; a forgotten cleanup now leaks once per destroyed instance rather than\
+    \ once per visit\n    supersedes: the composition chain this framework shipped\
+    \ first, which was correct only for chain members because they have one instance\
+    \ each\n    verified: every wire mutation-checked through the apply loop rather\
+    \ than through the primitives, after a first pass tested the primitives alone\
+    \ and caught four of them not at all\n  element_is_now_the_escape_hatch: pw-page\
+    \ and a hand-written hash stay for a region that is not a chain member, which\
+    \ upstream explicitly leaves to the caller\n  why_the_element_beats_the_route_pattern:\n\
+    \    no_wire_change: the hash travels in markup the server already writes, where\
+    \ a pattern needed a new field on the head record and on the delta\n    the_lifecycle_is_the_platforms:\
+    \ connectedCallback and disconnectedCallback fire exactly when a region enters\
+    \ and leaves the document, so a delta that swaps the region holding the element\
+    \ resets the scope with nothing here matching a URL\n    it_scopes_the_right_thing:\
+    \ a route pattern names a URL shape, where a template names what actually registered\
+    \ the handlers; two routes rendering one template should share, and a page rendering\
+    \ through layouts should not collapse into one scope\n    nesting_is_free_and_meaningful:\
+    \ a layout's element and its page's element are both connected, so a layout-scoped\
+    \ handler outlives the pages that share it — which is the global form, falling\
+    \ out rather than being designed\n    verified: 2026-08-11; the idea is the user's,\
+    \ and the earlier pattern-on-the-wire proposal is withdrawn\n  overlap_during_a_swap:\
+    \ a delta may insert the replacement before removing the outgoing element, so\
+    \ a disconnect deactivates only when no other element still carries that hash\n\
+    \  where_the_hash_comes_from:\n    exists_already: the action endpoint path is\
+    \ sha256 of the declaring directory and the handler name, so a stable per-page\
+    \ digest is a thing generation already computes\n    not_yet_emitted: no generator\
+    \ writes a pw-page element, so an application writes the tag by hand today; the\
+    \ requirement on a hash is only that it be stable and unique per template, which\
+    \ a hand-written string satisfies\n    ask: emitting it per page template, which\
+    \ is where this stops being an application's job\n  how_a_module_learns_its_own_hash_resolved:\n\
+    \    inline_script: an intrinsic, which flow:template-generation already contemplates\
+    \ — concept:interaction-cost-ladder script_braces names an intrinsic as one of\
+    \ the ways a brace in script content is resolved, so the author writes the hash\
+    \ as an interpolation and generation supplies it\n    external_module: the element\
+    \ names the module rather than the module naming the hash, so there is nothing\
+    \ to inject; the contract is one named export, setup(page), optionally returning\
+    \ a teardown\n    why_not_rewriting_the_script_block:\n      it_means_parsing_javascript:\
+    \ definePage can be aliased, destructured, called through a variable, or appear\
+    \ in a string or a comment, so matching the call site in source works in a demo\
+    \ and fails in a project\n      it_reaches_only_inline_blocks: an external module\
+    \ is not in the template, and the external module is the path a strict script-src\
+    \ leaves open\n      it_edits_authored_code: this framework's line is that generated\
+    \ code is generated and authored code is authored, and rewriting the body of a\
+    \ script an author wrote crosses it\n    module_attribute_as_built:\n      import_is_cached:\
+    \ the module is evaluated once, as an ES module always is, and what runs per entry\
+    \ is the function it exported — which is the distinction the whole design rests\
+    \ on\n      same_origin_only: refused otherwise, so a templating mistake or an\
+    \ injected attribute cannot turn into a script host of somebody else's choosing,\
+    \ which is the one thing the upstream no-code-transfer obligation cannot survive\n\
+    \      loaded_once_per_hash: a second element carrying the same hash reuses the\
+    \ definition rather than importing again\n      release_guard_narrowed: the release\
+    \ build asserted no dynamic import at all, which held only while the development\
+    \ console was the sole reason to have one; it now asserts no dynamic import of\
+    \ a literal path, which is the shape the development import takes and the only\
+    \ one that can name a module outside the served set\n  how_a_module_learns_its_own_hash:\n\
+    \    the_gap: a page's module cannot read the hash off its own tag, since a module\
+    \ script has no document.currentScript, and cannot be handed it by an inline script\
+    \ under a strict script-src\n    not_blocking: policy:security-response-headers\
+    \ leaves the CSP to the application, and templates may carry script, so a project\
+    \ that allows inline script interpolates the hash directly\n    for_a_strict_csp:\
+    \ the resolution is a module attribute on the element, imported on connect and\
+    \ handed a scope object, which also makes setup run per activation rather than\
+    \ once; not built, and worth building only when a project needs it\n  reset_falls_out:\
+    \ a handler belonging to another page is unreachable, which is the reset behaviour\
+    \ with nothing cleared\n  return_falls_out: coming back makes the same closures\
+    \ reachable again, because they never went away and nothing has to re-run\n  global_form:\
+    \ a site-wide handler registered from a shell script says so, since it belongs\
+    \ to no one page\n  what_it_is_for: two pages both naming a signal finish or refresh\
+    \ is likely rather than exotic, and without a scope the second page's signal runs\
+    \ the first page's handler\n  not_for_stale_delivery: the live request is aborted\
+    \ before navigation operations are applied, so a signal for the outgoing page\
+    \ cannot fire against the incoming one; upstream states this as a normative obligation\n\
+    \  pattern_not_path:\n    chosen: room/2 and room/3 share one registration, which\
+    \ is correct rather than a compromise — the handler expresses what the application\
+    \ does when a room finishes, and that is the same in every room\n    the_instance_is_not_the_handlers_business:\
+    \ a source emitting from room 3 knows it is room 3 and says so in the payload,\
+    \ from the same execution that rendered the page\n    exact_path_rejected: it\
+    \ keeps one dead registration per room ever visited and leaves every room after\
+    \ the first with an empty registry\n    filtering_is_the_wrong_frame: there is\
+    \ no other room's signal to filter out, because the connection is opened against\
+    \ location.href and aborted on navigation; the defect it appeared to answer was\
+    \ a handler closing over an id at registration, which no dispatch test repairs\n\
+    \  answers_an_upstream_open_question: whether a registration may be replaced or\
+    \ removed after load is left open upstream, and route ownership is this framework's\
+    \ answer to the part of it that matters\n  accumulation: one closure per registration\
+    \ per route visited in a session, worth a bound only if a session can reach unboundedly\
+    \ many routes\ndispatch:\n  resolution: a byte-for-byte lookup in this table and\
+    \ nothing else — never eval, new Function, import, a global property lookup by\
+    \ name, or an attribute handler\n  why_it_is_the_whole_point: the flexibility\
+    \ comes from the payload varying, not from the instruction varying; what the client\
+    \ can be told to do is fixed at build time and is exactly what its table holds\n\
+    \  unknown_name: ignored and counted, never resolved dynamically; a deploy that\
+    \ adds a name to the server ahead of the client is ordinary\n  registration_before_dispatch:\
+    \ names are registered while the page loads, before any live-mode request is issued,\
+    \ since nothing is held to replay what arrived first\n  empty_registry_is_no_authority:\
+    \ a page that has published nothing grants nothing; deferring a signal until a\
+    \ handler appears would make the check pass on timing\n  at_most_once: dispatched\
+    \ once, and never for a request this client aborted\n  order: record order, synchronously\
+    \ with reading, which is what makes a source's signal fire before the delivery_applied\
+    \ of the delivery that followed it\n  handler_isolation: a throwing handler is\
+    \ caught and reported and the apply loop continues, because a bug in a toast handler\
+    \ must not stop deliveries from landing\n  no_veto: a handler observes and cannot\
+    \ cancel, defer, or alter what it was told about\ncapability_reading:\n  what_the_table_is:\
+    \ the published set of entry points a render may invoke, so the effects a server\
+    \ can cause are enumerable from the application's own source\n  what_it_is_not:\
+    \ a defense against a hostile same-origin server, which can serve different JavaScript;\
+    \ it bounds mistakes and blast radius, the same scoping api:client-update-api\
+    \ states about its own surface\n  the_authority_is_the_argument_surface: matching\
+    \ a name is checked and what a handler does with an arbitrary payload is not,\
+    \ which rule:client-event-authoring carries\n  scoping_narrows_it: the published\
+    \ set is route and name rather than name\nsupplied_handlers:\n  what: this framework\
+    \ ships handler implementations an author registers, rather than handlers it registers\
+    \ itself\n  why_not_pre_registered: a pre-registered handler is a capability the\
+    \ page never published, which is the ambient authority the model exists to remove\n\
+    \  first_one: a navigate handler resolving the target, refusing anything not same-origin,\
+    \ and taking the navigation delta path when updates are installed and an ordinary\
+    \ document load otherwise\n  what_it_saves: the origin check and the soft-or-hard\
+    \ branch, which is the part an author gets wrong rather than the part that expresses\
+    \ intent\n  origin_check_lives_in_it: resolveNavigable accepts any http or https\
+    \ origin plus mailto and tel, while api:client-update-api states same-origin only\
+    \ and never a URL derived from page content; a supplied handler settles that once\
+    \ instead of in every application\n  registered_per_route: like any other handler,\
+    \ so it is published where it is used\n  distinct_from_the_directive: navigate\
+    \ and reload are reserved control records the runtime already acts on; a supplied\
+    \ handler is what an application signal reaches\nconformance:\n  harness: the\
+    \ node suite of requirement:unified-update-runtime, extended over the record,\
+    \ the name grammar, unknown names, ordering against deliveries, abort discipline,\
+    \ and a throwing handler\n  why_here: upstream's harness refuses a JavaScript\
+    \ entry surface, so a client written against the contract is tested on this side\
+    \ or nowhere\n  registering_through_the_public_api: is the feature rather than\
+    \ an exposed internal, which upstream flags as needing to be stated rather than\
+    \ assumed\nacceptance:\n  - a page with a strict script-src carrying neither unsafe-eval\
+    \ nor unsafe-inline dispatches every signal with no violation\n  - an application\
+    \ registers one table and receives both a server-authored signal and a lifecycle\
+    \ name through it\n  - a name with no registration does nothing, is counted, and\
+    \ the stream continues\n  - two signals in one response fire in the order the\
+    \ server wrote them\n  - a signal on a request this client aborted is not dispatched\n\
+    \  - a handler for delivery_applied reads the new content from the DOM with no\
+    \ observer of its own, and learns whether anything changed\n  - a handler registered\
+    \ on one route is unreachable from another, and reachable again on return with\
+    \ nothing re-executed\n  - a throwing handler does not stop the next delivery\
+    \ from landing\nnon_goals:\n  - a declarative attribute naming a handler, which\
+    \ is inline script with the CSP protection removed\n  - replacing the api:client-update-api\
+    \ subscribe kinds, which report an outcome to the caller that asked for it\n \
+    \ - a client-to-server channel, which stays flow:partial-refresh and api:server-action\n\
+    open_questions:\n  - whether delivery_applied is worth per-instance subscription,\
+    \ since a busy dashboard fires it hundreds of times a minute and a handler filtering\
+    \ afterwards pays for every one\n  - whether an application may opt out of lifecycle\
+    \ dispatch to save the per-application call\n  - whether the route pattern on\
+    \ the wire is worth its string, or whether an exact-path key plus a documented\
+    \ re-registration idiom is cheaper than it looks\n```"
+  status: shipped 2026-08-11, except the automatic emission of the scope element,
+    which needs a generator change upstream
+  as_built:
+    table: boundary.js holds the map and the active scope set, declared above the
+      first customElements.define
+    published: registerEvent, unregisterEvent, activeScope, and definePage on the
+      framework's namespace object, beside subscribe rather than merged into it
+    page_lifecycle:
+      shape: definePage(hash, {enter, leave}), with the pw-page element's reactions
+        driving both
+      why: it separates a page's evaluation, which an ES module does once, from its
+        activation, which happens on every entry; declaring the lifecycle is what
+        lets setup run again with nothing re-evaluated
+      handle: enter receives a handle whose registrations are released on leave, so
+        the ordinary case needs no cleanup and a forgotten one cannot re-register
+        on every revisit
+      responsibility_is_still_available: unregisterEvent and the release each registration
+        returns, for a handler an author wants gone early or wants to outlive the
+        page
+      two_bugs_the_harness_caught:
+        late_definition: an element upgrades while the document parses and a page's
+          module is deferred, so the scope opens before any definition exists; without
+          a catch-up in definePage, enter never ran at all
+        leave_ordering: closing the scope before running leave handed a leave handler
+          a table its own registrations had already dropped out of, so the page is
+          left first and the scope closes after
+    scope_element: a pw-page custom element whose connect and disconnect reactions
+      are the whole page-scope lifecycle
+    lifecycle: document_committed, document_truncated, boundary_settled, live_opened,
+      live_closed, and delivery_applied dispatch locally under the pw. prefix
+    record: the signal record is read in the live reader and dispatched by name
+    harness: pw/testdata/signal_harness.mjs loads boundary.js for real and covers
+      resolution, scoping, the swap overlap, handler isolation, and reentrancy; the
+      update harness stubs this half, so it needed its own
+    whole_lifecycle_set: all eight names dispatch; navigation_applied and directive_received
+      fire on the update half's paths, which is the only place either is observable
+    signals_on_the_delta_stream: the navigation reader dispatches a signal record
+      too, since the delta and the live stream are one record grammar written by one
+      encoder upstream and a client reading only the live one would drop what the
+      other carries
+  implements: the client obligations system:tinybind v0.5.3 specifies, which name
+    registerEvent as this framework's spelling and decline to specify anything else
+    about it
+  runtime: requirement:unified-update-runtime, so this adds a table to one asset rather
+    than an asset
+  owned_here: the table, the registration API, the route scoping, the dispatch, and
+    the lifecycle producer
+  owned_upstream: the record shape, the name grammar, the reserved prefix, the ordering
+    guarantee, the lifecycle name set, and every obligation below that is called normative
+  one_table:
+    rule: a server-authored signal and a lifecycle name dispatch through the same
+      registry
+    why: a handler cares what happened rather than which side noticed, and two registries
+      would make every handler pick a side
+    supersedes: this framework's earlier split into a lifecycle subscribe surface
+      beside an application registry, which was drafted before upstream settled the
+      question and would have put the reserved names somewhere an author could shadow
+      them
+    separation_is_the_prefix: enforced at emit rather than at dispatch, so a client
+      trusts a reserved name without checking anything
+  lifecycle_names:
+    producer: this runtime, locally; none of them crosses the wire, because each describes
+      an arrival and the client is what observes one
+    vocabulary: upstream publishes the moments as suffixes to be reused verbatim,
+      so pw.boundary_settled and tb.boundary_settled name one moment at two layers
+    set: document_committed, document_truncated, boundary_settled, live_opened, live_closed,
+      delivery_applied, navigation_applied, directive_received
+    under: this framework's own prefix, guarded by the constructor of requirement:signal-forwarding-seam
+      so an application cannot emit one
+    after_not_before: a lifecycle name fires after the thing it describes is in the
+      DOM, never before, since the whole use is reading or decorating what just arrived
+    the_focus_lesson_applies: requirement:update-navigation-continuity learned that
+      acting on a node still inside a fragment does nothing at all, silently, which
+      is the same failure a handler would hit
+    zero_server_side: every fact these carry is already on the wire, so this costs
+      no Go and no bytes
+    local_extension:
+      what: delivery_applied additionally reports whether the DOM changed
+      why: applyBoundary compares arriving markup against what the range holds and
+        returns without refilling when they match, and the server suppresses that
+        case ahead of it, so an arrival is not a change
+      legal: the client observed it, so reporting it needs nothing the wire does not
+        carry, which is the test upstream sets for adding to this set
+      what_it_prevents: a handler flashing a region on every reconnect, and an analytics
+        call reporting change counts as source yields
+  plumbing:
+    where_the_table_belongs: boundary.js, because requirement:unified-update-runtime
+      fixes the load order and boundary.js is first; update.js already imports applyHTML,
+      readRecords, resolveNavigable, and stopLive from it
+    precedent: the shared client-state core, which both halves call and a test asserts
+      is declared exactly once; the table is the second thing of that shape and takes
+      the same guard
+    why_it_cannot_be_the_update_half: the boundary half runs when updates are disabled,
+      and a live page with no update surface still receives signals
+    relation_to_subscribe: api:client-update-api keeps its own lifecycle kinds for
+      the update paths it already reports on; this table is not a rename of that surface
+      and the two are not merged, because those kinds report an outcome to the caller
+      that asked for it
+  route_scoping:
+    problem: a navigation delta reuses the live document rather than reparsing it,
+      so the outgoing page's handlers stay registered and the incoming page's script
+      does not run
+    verified: pw/update.js leaves a script already in the head alone, calling out
+      that re-inserting would fetch and re-execute; so a page's module runs on first
+      arrival and never again
+    re_execution_is_not_available: an ES module is evaluated once per URL and a dynamic
+      import returns the cached instance, so any design depending on running a page's
+      registrations again cannot work
+    chosen: a catalog of declaration to module URL on the wire, and the DOM as the
+      mount list
+    per_instance_since_v0_5_7:
+      what_upstream_shipped: Scope normalized up to the package-qualified identity,
+        and the same string written onto every rendered instance as static markup,
+        which is what closed the identity mismatch that blocked this
+      why_the_marker_is_static_rather_than_beside_the_instance_id: an ordinary component
+        call opens no update boundary, so a component rendered twenty times inside
+        a page carries no instance id and appears in no manifest — precisely the case
+        a per-instance lifecycle exists for; a static attribute also survives a render
+        that collects nothing and a first load, where the client holds no manifest
+        because the manifest is a header the client sends back
+      catalog_not_a_mount_list: Assets reports what a composition could require, including
+        a component below a slot that never rendered, so the wire carries it as a
+        lookup table and the DOM decides what starts
+      ordering_falls_out: a tree walk finds an ancestor's marker before a descendant's,
+        which is the outermost-first rule without an ordering on the wire
+      release_needed_no_wire_change: the subtree about to be replaced is still the
+        one every setup inside it ran against, so the apply loop scans it and tears
+        down before the incoming markup lands; upstream corrected its own earlier
+        claim that this needed the component to become an update boundary
+      where_it_is_wired: the shared swap and the live refill, for the reason the client-state
+        core lives there — a delta, a redraw, an action response and a delivery all
+        destroy a region, and a release missing from one is a leak nobody would find
+      setup_signature: the element first, matching what a setup is for, and a scope
+        second whose registrations release with the instance; a forgotten cleanup
+        now leaks once per destroyed instance rather than once per visit
+      supersedes: the composition chain this framework shipped first, which was correct
+        only for chain members because they have one instance each
+      verified: every wire mutation-checked through the apply loop rather than through
+        the primitives, after a first pass tested the primitives alone and caught
+        four of them not at all
+    element_is_now_the_escape_hatch: pw-page and a hand-written hash stay for a region
+      that is not a chain member, which upstream explicitly leaves to the caller
+    why_the_element_beats_the_route_pattern:
+      no_wire_change: the hash travels in markup the server already writes, where
+        a pattern needed a new field on the head record and on the delta
+      the_lifecycle_is_the_platforms: connectedCallback and disconnectedCallback fire
+        exactly when a region enters and leaves the document, so a delta that swaps
+        the region holding the element resets the scope with nothing here matching
+        a URL
+      it_scopes_the_right_thing: a route pattern names a URL shape, where a template
+        names what actually registered the handlers; two routes rendering one template
+        should share, and a page rendering through layouts should not collapse into
+        one scope
+      nesting_is_free_and_meaningful: a layout's element and its page's element are
+        both connected, so a layout-scoped handler outlives the pages that share it
+        — which is the global form, falling out rather than being designed
+      verified: 2026-08-11; the idea is the user's, and the earlier pattern-on-the-wire
+        proposal is withdrawn
+    overlap_during_a_swap: a delta may insert the replacement before removing the
+      outgoing element, so a disconnect deactivates only when no other element still
+      carries that hash
+    where_the_hash_comes_from:
+      exists_already: the action endpoint path is sha256 of the declaring directory
+        and the handler name, so a stable per-page digest is a thing generation already
+        computes
+      not_yet_emitted: no generator writes a pw-page element, so an application writes
+        the tag by hand today; the requirement on a hash is only that it be stable
+        and unique per template, which a hand-written string satisfies
+      ask: emitting it per page template, which is where this stops being an application's
+        job
+    how_a_module_learns_its_own_hash_resolved:
+      inline_script: an intrinsic, which flow:template-generation already contemplates
+        — concept:interaction-cost-ladder script_braces names an intrinsic as one
+        of the ways a brace in script content is resolved, so the author writes the
+        hash as an interpolation and generation supplies it
+      external_module: the element names the module rather than the module naming
+        the hash, so there is nothing to inject; the contract is one named export,
+        setup(page), optionally returning a teardown
+      why_not_rewriting_the_script_block:
+        it_means_parsing_javascript: definePage can be aliased, destructured, called
+          through a variable, or appear in a string or a comment, so matching the
+          call site in source works in a demo and fails in a project
+        it_reaches_only_inline_blocks: an external module is not in the template,
+          and the external module is the path a strict script-src leaves open
+        it_edits_authored_code: this framework's line is that generated code is generated
+          and authored code is authored, and rewriting the body of a script an author
+          wrote crosses it
+      module_attribute_as_built:
+        import_is_cached: the module is evaluated once, as an ES module always is,
+          and what runs per entry is the function it exported — which is the distinction
+          the whole design rests on
+        same_origin_only: refused otherwise, so a templating mistake or an injected
+          attribute cannot turn into a script host of somebody else's choosing, which
+          is the one thing the upstream no-code-transfer obligation cannot survive
+        loaded_once_per_hash: a second element carrying the same hash reuses the definition
+          rather than importing again
+        release_guard_narrowed: the release build asserted no dynamic import at all,
+          which held only while the development console was the sole reason to have
+          one; it now asserts no dynamic import of a literal path, which is the shape
+          the development import takes and the only one that can name a module outside
+          the served set
+    how_a_module_learns_its_own_hash:
+      the_gap: a page's module cannot read the hash off its own tag, since a module
+        script has no document.currentScript, and cannot be handed it by an inline
+        script under a strict script-src
+      not_blocking: policy:security-response-headers leaves the CSP to the application,
+        and templates may carry script, so a project that allows inline script interpolates
+        the hash directly
+      for_a_strict_csp: the resolution is a module attribute on the element, imported
+        on connect and handed a scope object, which also makes setup run per activation
+        rather than once; not built, and worth building only when a project needs
+        it
+    reset_falls_out: a handler belonging to another page is unreachable, which is
+      the reset behaviour with nothing cleared
+    return_falls_out: coming back makes the same closures reachable again, because
+      they never went away and nothing has to re-run
+    global_form: a site-wide handler registered from a shell script says so, since
+      it belongs to no one page
+    what_it_is_for: two pages both naming a signal finish or refresh is likely rather
+      than exotic, and without a scope the second page's signal runs the first page's
+      handler
+    not_for_stale_delivery: the live request is aborted before navigation operations
+      are applied, so a signal for the outgoing page cannot fire against the incoming
+      one; upstream states this as a normative obligation
+    pattern_not_path:
+      chosen: room/2 and room/3 share one registration, which is correct rather than
+        a compromise — the handler expresses what the application does when a room
+        finishes, and that is the same in every room
+      the_instance_is_not_the_handlers_business: a source emitting from room 3 knows
+        it is room 3 and says so in the payload, from the same execution that rendered
+        the page
+      exact_path_rejected: it keeps one dead registration per room ever visited and
+        leaves every room after the first with an empty registry
+      filtering_is_the_wrong_frame: there is no other room's signal to filter out,
+        because the connection is opened against location.href and aborted on navigation;
+        the defect it appeared to answer was a handler closing over an id at registration,
+        which no dispatch test repairs
+    answers_an_upstream_open_question: whether a registration may be replaced or removed
+      after load is left open upstream, and route ownership is this framework's answer
+      to the part of it that matters
+    accumulation: one closure per registration per route visited in a session, worth
+      a bound only if a session can reach unboundedly many routes
+  dispatch:
+    resolution: a byte-for-byte lookup in this table and nothing else — never eval,
+      new Function, import, a global property lookup by name, or an attribute handler
+    why_it_is_the_whole_point: the flexibility comes from the payload varying, not
+      from the instruction varying; what the client can be told to do is fixed at
+      build time and is exactly what its table holds
+    unknown_name: ignored and counted, never resolved dynamically; a deploy that adds
+      a name to the server ahead of the client is ordinary
+    registration_before_dispatch: names are registered while the page loads, before
+      any live-mode request is issued, since nothing is held to replay what arrived
+      first
+    empty_registry_is_no_authority: a page that has published nothing grants nothing;
+      deferring a signal until a handler appears would make the check pass on timing
+    at_most_once: dispatched once, and never for a request this client aborted
+    order: record order, synchronously with reading, which is what makes a source's
+      signal fire before the delivery_applied of the delivery that followed it
+    handler_isolation: a throwing handler is caught and reported and the apply loop
+      continues, because a bug in a toast handler must not stop deliveries from landing
+    no_veto: a handler observes and cannot cancel, defer, or alter what it was told
+      about
+  capability_reading:
+    what_the_table_is: the published set of entry points a render may invoke, so the
+      effects a server can cause are enumerable from the application's own source
+    what_it_is_not: a defense against a hostile same-origin server, which can serve
+      different JavaScript; it bounds mistakes and blast radius, the same scoping
+      api:client-update-api states about its own surface
+    the_authority_is_the_argument_surface: matching a name is checked and what a handler
+      does with an arbitrary payload is not, which rule:client-event-authoring carries
+    scoping_narrows_it: the published set is route and name rather than name
+  supplied_handlers:
+    what: this framework ships handler implementations an author registers, rather
+      than handlers it registers itself
+    why_not_pre_registered: a pre-registered handler is a capability the page never
+      published, which is the ambient authority the model exists to remove
+    first_one: a navigate handler resolving the target, refusing anything not same-origin,
+      and taking the navigation delta path when updates are installed and an ordinary
+      document load otherwise
+    what_it_saves: the origin check and the soft-or-hard branch, which is the part
+      an author gets wrong rather than the part that expresses intent
+    origin_check_lives_in_it: resolveNavigable accepts any http or https origin plus
+      mailto and tel, while api:client-update-api states same-origin only and never
+      a URL derived from page content; a supplied handler settles that once instead
+      of in every application
+    registered_per_route: like any other handler, so it is published where it is used
+    distinct_from_the_directive: navigate and reload are reserved control records
+      the runtime already acts on; a supplied handler is what an application signal
+      reaches
+  conformance:
+    harness: the node suite of requirement:unified-update-runtime, extended over the
+      record, the name grammar, unknown names, ordering against deliveries, abort
+      discipline, and a throwing handler
+    why_here: upstream's harness refuses a JavaScript entry surface, so a client written
+      against the contract is tested on this side or nowhere
+    registering_through_the_public_api: is the feature rather than an exposed internal,
+      which upstream flags as needing to be stated rather than assumed
+  acceptance:
+  - a page with a strict script-src carrying neither unsafe-eval nor unsafe-inline
+    dispatches every signal with no violation
+  - an application registers one table and receives both a server-authored signal
+    and a lifecycle name through it
+  - a name with no registration does nothing, is counted, and the stream continues
+  - two signals in one response fire in the order the server wrote them
+  - a signal on a request this client aborted is not dispatched
+  - a handler for delivery_applied reads the new content from the DOM with no observer
+    of its own, and learns whether anything changed
+  - a handler registered on one route is unreachable from another, and reachable again
+    on return with nothing re-executed
+  - a throwing handler does not stop the next delivery from landing
+  non_goals:
+  - a declarative attribute naming a handler, which is inline script with the CSP
+    protection removed
+  - replacing the api:client-update-api subscribe kinds, which report an outcome to
+    the caller that asked for it
+  - a client-to-server channel, which stays flow:partial-refresh and api:server-action
+  open_questions:
+  - whether delivery_applied is worth per-instance subscription, since a busy dashboard
+    fires it hundreds of times a minute and a handler filtering afterwards pays for
+    every one
+  - whether an application may opt out of lifecycle dispatch to save the per-application
+    call
+  - whether the route pattern on the wire is worth its string, or whether an exact-path
+    key plus a documented re-registration idiom is cheaper than it looks
+acceptance:
+  item-01ab94e70b67c628:
+    text: a page with a strict script-src carrying neither unsafe-eval nor unsafe-inline
+      dispatches every signal with no violation
+  item-090a80178211b5e2:
+    text: an application registers one table and receives both a server-authored signal
+      and a lifecycle name through it
+  item-ef9a4fcd1e3b017a:
+    text: a name with no registration does nothing, is counted, and the stream continues
+  item-f2adc58910b1dd54:
+    text: two signals in one response fire in the order the server wrote them
+  item-47f3da0ef2124988:
+    text: a signal on a request this client aborted is not dispatched
+  item-c36f4173c5053621:
+    text: a handler for delivery_applied reads the new content from the DOM with no
+      observer of its own, and learns whether anything changed
+  item-a3efd63fdedfe5e1:
+    text: a handler registered on one route is unreachable from another, and reachable
+      again on return with nothing re-executed
+  item-cc733a2f5ad64210:
+    text: a throwing handler does not stop the next delivery from landing
+open_questions:
+  item-1b3fdc31dbe1f581:
+    text: whether delivery_applied is worth per-instance subscription, since a busy
+      dashboard fires it hundreds of times a minute and a handler filtering afterwards
+      pays for every one
+  item-987e49d28b3323c8:
+    text: whether an application may opt out of lifecycle dispatch to save the per-application
+      call
+  item-de0d2d0d320958fb:
+    text: whether the route pattern on the wire is worth its string, or whether an
+      exact-path key plus a documented re-registration idiom is cheaper than it looks
+relations:
+- relation: mentions
+  to: api:client-update-api
+  resolution: resolved
+- relation: mentions
+  to: api:server-action
+  resolution: resolved
+- relation: mentions
+  to: concept:interaction-cost-ladder
+  resolution: resolved
+- relation: mentions
+  to: flow:partial-refresh
+  resolution: resolved
+- relation: mentions
+  to: flow:template-generation
+  resolution: resolved
+- relation: mentions
+  to: policy:security-response-headers
+  resolution: resolved
+- relation: mentions
+  to: requirement:signal-forwarding-seam
+  resolution: resolved
+- relation: mentions
+  to: requirement:unified-update-runtime
+  resolution: resolved
+- relation: mentions
+  to: requirement:update-navigation-continuity
+  resolution: resolved
+- relation: mentions
+  to: rule:client-event-authoring
+  resolution: resolved
+- relation: mentions
+  to: system:tinybind
+  resolution: resolved

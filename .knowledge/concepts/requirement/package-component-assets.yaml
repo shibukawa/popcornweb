@@ -1,0 +1,123 @@
+id: requirement:package-component-assets
+type: requirement
+title: A Distributed Component Must Carry Its Own Assets
+summary: A component published in a module must declare the script and style it needs
+  and let the caller decide where they are served, because the package owns no route
+  and the consumer's document shell cannot name a file it has never seen.
+facts:
+  legacy_body: "A component published in a module must declare the script and style\
+    \ it needs and let the caller decide where they are served, because the package\
+    \ owns no route and the consumer's document shell cannot name a file it has never\
+    \ seen.\n\n```yaml\nowner: system:tinybind\nstatus: designed upstream and unbuilt;\
+    \ the upstream component asset requirement was accepted on 2026-07-31 with the\
+    \ library case left as an open question, and this is that question answered yes\n\
+    priority: should\ndepends_on: requirement:cross-package-components, because a\
+    \ component the consumer cannot call needs no asset path\nwhat_exists_upstream:\n\
+    \  authoring_case: a component's inline style and script are extracted into content-hashed\
+    \ files under a configured public directory, and the reference tag is merged into\
+    \ the head\n  library_case_open: that path serves a component declared in a template\
+    \ file of the generation unit being compiled, and the written file is a filesystem\
+    \ artifact\n  designed: an embedded asset table in generated Go, a static required\
+    \ set on the render plan, and a caller-supplied URL function, none of it built\n\
+    \  open_question_verbatim: whether a cross-package template component reaches\
+    \ this seam at all\nwhat_this_framework_needs:\n  embedded_table: the asset bytes,\
+    \ digest, and media type in generated Go rather than in written files, because\
+    \ requirement:package-asset-delivery serves from embedded bytes and a TinyGo target\
+    \ may have no filesystem\n  url_function: the framework supplies the reference\
+    \ URL, because only it knows the reserved prefix and the digest path; the package\
+    \ must not choose one\n  static_required_set: readable before rendering starts,\
+    \ because a requirement:html-fragment-rendering response and a live delivery can\
+    \ both insert a component whose script was not in the first render\n  fragment_path_report:\
+    \ a response with no document shell must report an asset it cannot deliver, matching\
+    \ how a fragment response already refuses head contributions\nwhy_it_matters_here:\n\
+    \  - without it the application writes one tag per package in its document shell,\
+    \ which works for two packages and not for ten\n  - a component added by a package\
+    \ upgrade reaches no existing project, because the shell is a file the application\
+    \ owns\n  - requirement:package-asset-delivery serves the file either way; what\
+    \ is missing is the component saying it needs one\ninterim:\n  what: the package\
+    \ documents its asset name, the application writes the tag, and requirement:package-asset-delivery\
+    \ resolves the URL\n  honest_limit: it does not scale, and it silently breaks\
+    \ when a package upgrade adds an asset\nacceptance:\n  - a component in an imported\
+    \ module contributes its script reference to the consumer's head with no application\
+    \ edit\n  - three components requiring one asset emit one tag\n  - the required\
+    \ set is readable before rendering, so a fragment swap needs no mid-swap fetch\n\
+    \  - a project using no such component regenerates byte-identical output\nrelated:\n\
+    \  - requirement:package-asset-delivery\n  - requirement:framework-script-assets\n\
+    ```"
+  owner: system:tinybind
+  status: designed upstream and unbuilt; the upstream component asset requirement
+    was accepted on 2026-07-31 with the library case left as an open question, and
+    this is that question answered yes
+  priority: should
+  depends_on: requirement:cross-package-components, because a component the consumer
+    cannot call needs no asset path
+  what_exists_upstream:
+    authoring_case: a component's inline style and script are extracted into content-hashed
+      files under a configured public directory, and the reference tag is merged into
+      the head
+    library_case_open: that path serves a component declared in a template file of
+      the generation unit being compiled, and the written file is a filesystem artifact
+    designed: an embedded asset table in generated Go, a static required set on the
+      render plan, and a caller-supplied URL function, none of it built
+    open_question_verbatim: whether a cross-package template component reaches this
+      seam at all
+  what_this_framework_needs:
+    embedded_table: the asset bytes, digest, and media type in generated Go rather
+      than in written files, because requirement:package-asset-delivery serves from
+      embedded bytes and a TinyGo target may have no filesystem
+    url_function: the framework supplies the reference URL, because only it knows
+      the reserved prefix and the digest path; the package must not choose one
+    static_required_set: readable before rendering starts, because a requirement:html-fragment-rendering
+      response and a live delivery can both insert a component whose script was not
+      in the first render
+    fragment_path_report: a response with no document shell must report an asset it
+      cannot deliver, matching how a fragment response already refuses head contributions
+  why_it_matters_here:
+  - without it the application writes one tag per package in its document shell, which
+    works for two packages and not for ten
+  - a component added by a package upgrade reaches no existing project, because the
+    shell is a file the application owns
+  - requirement:package-asset-delivery serves the file either way; what is missing
+    is the component saying it needs one
+  interim:
+    what: the package documents its asset name, the application writes the tag, and
+      requirement:package-asset-delivery resolves the URL
+    honest_limit: it does not scale, and it silently breaks when a package upgrade
+      adds an asset
+  acceptance:
+  - a component in an imported module contributes its script reference to the consumer's
+    head with no application edit
+  - three components requiring one asset emit one tag
+  - the required set is readable before rendering, so a fragment swap needs no mid-swap
+    fetch
+  - a project using no such component regenerates byte-identical output
+  related:
+  - requirement:package-asset-delivery
+  - requirement:framework-script-assets
+acceptance:
+  item-27d535a00c4e1824:
+    text: a component in an imported module contributes its script reference to the
+      consumer's head with no application edit
+  item-6d41a2229bba7fa7:
+    text: three components requiring one asset emit one tag
+  item-9cb79401694754e9:
+    text: the required set is readable before rendering, so a fragment swap needs
+      no mid-swap fetch
+  item-91b879d7549b94ee:
+    text: a project using no such component regenerates byte-identical output
+relations:
+- relation: mentions
+  to: requirement:cross-package-components
+  resolution: resolved
+- relation: mentions
+  to: requirement:framework-script-assets
+  resolution: resolved
+- relation: mentions
+  to: requirement:html-fragment-rendering
+  resolution: resolved
+- relation: mentions
+  to: requirement:package-asset-delivery
+  resolution: resolved
+- relation: mentions
+  to: system:tinybind
+  resolution: resolved

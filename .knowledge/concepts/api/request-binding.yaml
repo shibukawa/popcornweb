@@ -1,0 +1,36 @@
+id: api:request-binding
+type: api
+title: Request Binding API
+summary: Handlers call pw.Parse with a typed input and receive generated request binding
+  without importing TinyBind.
+facts:
+  legacy_body: "Handlers call pw.Parse with a typed input and receive generated request\
+    \ binding without importing TinyBind.\n\n```yaml\nsurface:\n  - Parse[T](*http.Request)\
+    \ (T, error)\ngenerator:\n  discovery: api:cli-generate scans Parse[T] call sites\n\
+    \  mapping: system:tinybind performs generated binding and validation\ninputs:\n\
+    \  - path parameters\n  - query parameters\n  - headers\n  - cookies\n  - forms\
+    \ and multipart forms\n  - JSON bodies\nrules:\n  - no runtime reflection requirement\
+    \ on TinyGo targets\n  - binding errors implement the structured problem contract\n\
+    ```"
+  surface:
+  - Parse[T](*http.Request) (T, error)
+  generator:
+    discovery: api:cli-generate scans Parse[T] call sites
+    mapping: system:tinybind performs generated binding and validation
+  inputs:
+  - path parameters
+  - query parameters
+  - headers
+  - cookies
+  - forms and multipart forms
+  - JSON bodies
+  rules:
+  - no runtime reflection requirement on TinyGo targets
+  - binding errors implement the structured problem contract
+relations:
+- relation: mentions
+  to: api:cli-generate
+  resolution: resolved
+- relation: mentions
+  to: system:tinybind
+  resolution: resolved

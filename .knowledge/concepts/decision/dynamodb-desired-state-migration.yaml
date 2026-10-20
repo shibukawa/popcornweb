@@ -1,0 +1,112 @@
+id: decision:dynamodb-desired-state-migration
+type: decision
+title: Desired State Instead Of Versioned Migrations
+summary: The DynamoDB schema is the set of table definitions generated from dynamo
+  tags, applied by comparison against the live account, with no migration files and
+  no version table.
+facts:
+  legacy_body: "The DynamoDB schema is the set of table definitions generated from\
+    \ dynamo tags, applied by comparison against the live account, with no migration\
+    \ files and no version table.\n\n```yaml\nstatus: accepted\ndecided: user 2026-07-31\n\
+    why_not_goose: system:goose is a SQL engine and host-only; neither its dialects\
+    \ nor decision:migration-execution-split reach this store\nalternatives_considered:\n\
+    \  versioned_declarative_files:\n    form: numbered YAML or TOML files under a\
+    \ directory, mirroring data:migration-source\n    for: it reuses the immutable,\
+    \ committed, reviewable convention the SQL path already teaches\n    against:\
+    \ it restates the key names the tags already carry, which is exactly the drift\
+    \ requirement:dynamodb-store consumes dynamobind to remove\n    rejected: yes\n\
+    \  go_function_migrations:\n    against: decision:goose-migration-engine restricts\
+    \ the SQL path to SQL so host and TinyGo stay equivalent, and an arbitrary Go\
+    \ step reintroduces the divergence it removed\n    rejected: yes\n  chosen: the\
+    \ generated table definitions as the desired state\n    for:\n      - the key\
+    \ names in the codec, the key builder, the schema, and the request come from one\
+    \ declaration\n      - DynamoDB is introspectable through DescribeTable, so the\
+    \ comparison needs no recorded history\n      - a schema this small has no ordering\
+    \ problem for a version sequence to solve\nwhy_no_version_table:\n  sql_reason_absent:\
+    \ goose records versions because a SQL schema cannot be reliably read back into\
+    \ the statements that produced it\n  here: a table is a partition key, an optional\
+    \ sort key, and their types, all reported by DescribeTable\n  effect: the plan\
+    \ is derived from what is actually deployed rather than from what a table claims\
+    \ was applied, so a hand-made change is visible rather than hidden\nthe_risk_this_creates:\n\
+    \  statement: a desired-state applier can act on a deletion that was only a source\
+    \ edit\n  today: not reachable; the only expressible changes are create and verify,\
+    \ because the driver has no UpdateTable and the tags carry no secondary index\n\
+    \  guarded_by: policy:dynamodb-migration-safety, which refuses every destructive\
+    \ change rather than confirming it\nwhen_update_table_lands:\n  paired_with: secondary\
+    \ index tags in system:tinybind; either change alone is worth little, because\
+    \ UpdateTable alone can only correct configuration drift and index tags alone\
+    \ produce a definition nothing can apply\n  ranking: system:tinygodriver-dynamodb\
+    \ places UpdateTable second, behind UpdateTimeToLive\n  still_unperformable: the\
+    \ partition key, the sort key, their attribute types, and every local secondary\
+    \ index stay immutable, so the policy:dynamodb-migration-safety unperformable\
+    \ category shrinks rather than disappears\n  becomes_a_sequenced_plan:\n    -\
+    \ one index operation per UpdateTable call, so a plan touching several is applied\
+    \ in order\n    - each step waits for the index to become active before the next,\
+    \ since the driver ships no waiter\n    - creating an index on a populated table\
+    \ backfills, which can take far longer than a schema statement ever does\n  blocking_question:\n\
+    \    decided: start the change and report it; do not wait for a backfill to finish\n\
+    \    reason: blocking would make api:cli-dev unable to start, and the mechanism\
+    \ stays idempotent either way because a re-run reports an in-progress index as\
+    \ in progress\n    surface: api:cli-migrate status reports a creating index, which\
+    \ is the state a version table would otherwise have had to remember\n  index_deletion:\
+    \ refused, per policy:dynamodb-migration-safety, which already states that an\
+    \ index disappearing from a struct is reported and never applied\n  capacity_correction:\
+    \ out of scope whether or not UpdateTable exists, because decision:dynamodb-operational-configuration\
+    \ leaves capacity to deployment tooling and the comparison never reads it\nscope_of_the_word_migration:\n\
+    \  kept: the api:cli-migrate verbs, the runner shape, and the api:cli-dev apply\
+    \ step, because the operator experience should not fork\n  dropped: version numbers,\
+    \ files, up-by-one, up-to, down, down-to, and create\n  narrowed_further: creation\
+    \ itself is a development and test step, per requirement:dynamodb-migration, so\
+    \ in production the same comparison is a check rather than an author\n  why_the_model_survives_that:\
+    \ a desired-state comparison is already the shape of a check; a versioned engine\
+    \ would have had to be rebuilt into one\nrelated:\n  - requirement:dynamodb-migration\n\
+    \  - policy:dynamodb-migration-safety\n  - decision:dynamodb-table-registry\n\
+    \  - requirement:database-migration\n```"
+  legacy_parse_issues:
+  - kind: legacy_parse_error
+    block: 0
+    message: "mapping values are not allowed here\n  in \"<unicode string>\", line\
+      \ 14, column 8:\n        for:\n           ^"
+relations:
+- relation: mentions
+  to: api:cli-dev
+  resolution: resolved
+- relation: mentions
+  to: api:cli-migrate
+  resolution: resolved
+- relation: mentions
+  to: data:migration-source
+  resolution: resolved
+- relation: mentions
+  to: decision:dynamodb-operational-configuration
+  resolution: resolved
+- relation: mentions
+  to: decision:dynamodb-table-registry
+  resolution: resolved
+- relation: mentions
+  to: decision:goose-migration-engine
+  resolution: resolved
+- relation: mentions
+  to: decision:migration-execution-split
+  resolution: resolved
+- relation: mentions
+  to: policy:dynamodb-migration-safety
+  resolution: resolved
+- relation: mentions
+  to: requirement:database-migration
+  resolution: resolved
+- relation: mentions
+  to: requirement:dynamodb-migration
+  resolution: resolved
+- relation: mentions
+  to: requirement:dynamodb-store
+  resolution: resolved
+- relation: mentions
+  to: system:goose
+  resolution: resolved
+- relation: mentions
+  to: system:tinybind
+  resolution: resolved
+- relation: mentions
+  to: system:tinygodriver-dynamodb
+  resolution: resolved

@@ -1,0 +1,124 @@
+id: api:testutil-idp
+type: api
+title: Test Identity Provider
+summary: testutil starts an in-process requirement:contrib-devidp beside an api:test-run
+  server and pre-selects the logged-in user, so flow:oidc-account-login runs in a
+  test without a browser.
+facts:
+  legacy_body: "testutil starts an in-process requirement:contrib-devidp beside an\
+    \ api:test-run server and pre-selects the logged-in user, so flow:oidc-account-login\
+    \ runs in a test without a browser.\n\n```yaml\npackage: github.com/shibukawa/popcornweb/testutil\n\
+    surface:\n  - WithIdentityProvider(options ...IdPOption) RunOption\n  - WithLoginUser(subject\
+    \ string) IdPOption\n  - WithIdPConfig(path string), WithIdPRoster(source string),\
+    \ and WithIdPUsers(users ...devidp.User) supply the roster\n  - WithIdPScopes(scopes\
+    \ ...string) IdPOption\n  - WithIdPClient(redirectURIs ...string) IdPOption registers\
+    \ an exact-match client instead of the default loopback client\n  - WithIdPBinding(func(*Config,\
+    \ IdPInfo)) IdPOption writes the issuer and generated credentials into the copied\
+    \ configuration\n  - (*Server).IdP() returns the running provider and (*Server).IdPInfo()\
+    \ returns the issuer and credentials\n  - (*Server).LoginAs(t, subject) changes\
+    \ the pre-selected user mid-test\nroster_source: exactly one of WithIdPConfig,\
+    \ WithIdPRoster, or WithIdPUsers\nrun_option_order:\n  - reserve a loopback port\
+    \ and start the provider before the application server\n  - write the resolved\
+    \ issuer and client credentials into the copied configuration\n  - continue with\
+    \ the api:test-run and api:test-seed order\nlogin_user:\n  default: none; without\
+    \ it the authorization endpoint renders ui:devidp-login, which a test must drive\
+    \ itself\n  effect: the authorization endpoint skips ui:devidp-login and redirects\
+    \ immediately with a code\n  scope: process-wide for the provider instance, so\
+    \ parallel subtests share it unless each starts its own server\nconfiguration_injection:\n\
+    \  client: the provider registers an ephemeral client for this run, so WithIdPClient\
+    \ is only needed for a second manually driven client\n  target: whatever configuration\
+    \ type WithIdPBinding writes, typically data:authentication-runtime-config oidc\
+    \ fields\n  mechanism: direct assignment into the copied configuration, because\
+    \ api:test-run already isolates it and no child process exists\n  ordering: the\
+    \ binding runs after customize, so it overwrites a placeholder the test left behind\n\
+    \  reason: the framework registers no auth binding yet, so the application names\
+    \ the type its own configuration uses\n  roster: WithIdPConfig reads data:devidp-config\
+    \ from disk, WithIdPRoster parses it from a string, and WithIdPUsers supplies\
+    \ it in memory\nlifecycle:\n  - the provider registers testing cleanup and closes\
+    \ before the application server\n  - Provider.Close destroys keys and pending\
+    \ authorizations\nfailure_reporting:\n  interface: decision:testutil-testing-interface\n\
+    \  startup: TestingT Fatalf on roster, client, or port failures\n  guardrails:\
+    \ policy:devidp-safety refusals are reported as test failures, never downgraded\
+    \ to warnings\nrules:\n  - the provider is not started unless WithIdentityProvider\
+    \ is supplied\n  - tests assert on verified claims, not on provider internals\n\
+    \  - no test may reuse an issuer or signing key across api:test-run servers\n\
+    ```"
+  package: github.com/shibukawa/popcornweb/testutil
+  surface:
+  - WithIdentityProvider(options ...IdPOption) RunOption
+  - WithLoginUser(subject string) IdPOption
+  - WithIdPConfig(path string), WithIdPRoster(source string), and WithIdPUsers(users
+    ...devidp.User) supply the roster
+  - WithIdPScopes(scopes ...string) IdPOption
+  - WithIdPClient(redirectURIs ...string) IdPOption registers an exact-match client
+    instead of the default loopback client
+  - WithIdPBinding(func(*Config, IdPInfo)) IdPOption writes the issuer and generated
+    credentials into the copied configuration
+  - (*Server).IdP() returns the running provider and (*Server).IdPInfo() returns the
+    issuer and credentials
+  - (*Server).LoginAs(t, subject) changes the pre-selected user mid-test
+  roster_source: exactly one of WithIdPConfig, WithIdPRoster, or WithIdPUsers
+  run_option_order:
+  - reserve a loopback port and start the provider before the application server
+  - write the resolved issuer and client credentials into the copied configuration
+  - continue with the api:test-run and api:test-seed order
+  login_user:
+    default: none; without it the authorization endpoint renders ui:devidp-login,
+      which a test must drive itself
+    effect: the authorization endpoint skips ui:devidp-login and redirects immediately
+      with a code
+    scope: process-wide for the provider instance, so parallel subtests share it unless
+      each starts its own server
+  configuration_injection:
+    client: the provider registers an ephemeral client for this run, so WithIdPClient
+      is only needed for a second manually driven client
+    target: whatever configuration type WithIdPBinding writes, typically data:authentication-runtime-config
+      oidc fields
+    mechanism: direct assignment into the copied configuration, because api:test-run
+      already isolates it and no child process exists
+    ordering: the binding runs after customize, so it overwrites a placeholder the
+      test left behind
+    reason: the framework registers no auth binding yet, so the application names
+      the type its own configuration uses
+    roster: WithIdPConfig reads data:devidp-config from disk, WithIdPRoster parses
+      it from a string, and WithIdPUsers supplies it in memory
+  lifecycle:
+  - the provider registers testing cleanup and closes before the application server
+  - Provider.Close destroys keys and pending authorizations
+  failure_reporting:
+    interface: decision:testutil-testing-interface
+    startup: TestingT Fatalf on roster, client, or port failures
+    guardrails: policy:devidp-safety refusals are reported as test failures, never
+      downgraded to warnings
+  rules:
+  - the provider is not started unless WithIdentityProvider is supplied
+  - tests assert on verified claims, not on provider internals
+  - no test may reuse an issuer or signing key across api:test-run servers
+relations:
+- relation: mentions
+  to: api:test-run
+  resolution: resolved
+- relation: mentions
+  to: api:test-seed
+  resolution: resolved
+- relation: mentions
+  to: data:authentication-runtime-config
+  resolution: resolved
+- relation: mentions
+  to: data:devidp-config
+  resolution: resolved
+- relation: mentions
+  to: decision:testutil-testing-interface
+  resolution: resolved
+- relation: mentions
+  to: flow:oidc-account-login
+  resolution: resolved
+- relation: mentions
+  to: policy:devidp-safety
+  resolution: resolved
+- relation: mentions
+  to: requirement:contrib-devidp
+  resolution: resolved
+- relation: mentions
+  to: ui:devidp-login
+  resolution: resolved

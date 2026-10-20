@@ -1,0 +1,137 @@
+id: data:locale-bindings
+type: data
+title: Locale Implicit Bindings
+summary: Three implicit bindings are registered with system:tinybind, and the split
+  among them is what decides where each may be written and what a cached component
+  keys on.
+facts:
+  legacy_body: "Three implicit bindings are registered with system:tinybind, and the\
+    \ split among them is what decides where each may be written and what a cached\
+    \ component keys on.\n\n```yaml\nregistration: the implicit binding list of the\
+    \ template generation options, per decision:upstream-message-surface item E\n\
+    entries:\n  message_locale:\n    kind: ordinary, with a typed provider returning\
+    \ pw.Locale\n    role: the leading argument of every generated message symbol,\
+    \ named as the message context binding\n    written_into_markup: never; upstream\
+    \ carries no escaping rule for a type it has not seen, and refuses it in a value\
+    \ position\n    why_it_exists_as_a_binding: it makes a reference an ordinary reader\
+    \ of a binding, so the cache-key walk finds it with no rule about messages anywhere\n\
+    \  lang:\n    kind: path segment\n    provider_result: string\n    value: the\
+    \ locale tag under decision:locale-url-modes path mode, empty under cookie and\
+    \ header mode, and empty for the default locale when prefix_default is false\n\
+    \    written_into: url attributes, where an empty value collapses one preceding\
+    \ separator\n  langtag:\n    kind: ordinary\n    provider_result: string\n   \
+    \ value: the resolved locale tag, never empty, in every mode\n    written_into:\
+    \ anywhere, being the document language attribute and the asset paths of requirement:localized-assets\n\
+    why_three_rather_than_two:\n  earlier_reading: two, a tag and a path segment,\
+    \ per decision:explicit-locale-in-links\n  what_added_the_third: the typed provider,\
+    \ which lets the message path carry pw.Locale rather than a tag string, so a generated\
+    \ symbol takes the catalog's own type\n  consequence: the value a message resolves\
+    \ against and the value written into a URL are different bindings of different\
+    \ types, and neither can stand in for the other\nvary_axis:\n  declared: per binding,\
+    \ named by this project rather than by upstream\n  folded_into: the response vary,\
+    \ through the path a builtin element already uses\n  by_mode:\n    path: empty\
+    \ axis on every binding, which is what an application carrying the value in its\
+    \ URL declares\n    cookie: the locale cookie and Accept-Language\n    header:\
+    \ Accept-Language\n  why_the_axis_lives_here: policy:locale-vary-correctness states\
+    \ what each mode must emit, and this is the mechanism that emits it\ncache_identity:\n\
+    \  rule: a cached component keys on the bindings its call graph reaches, not on\
+    \ every declared one\n  effect: a component rendering no message and writing no\
+    \ locale into markup keys exactly as it did before these bindings existed\n  interaction:\
+    \ policy:layered-cache gains the binding values in the key, which is what makes\
+    \ a cached component safe to reuse across readers of one locale and not across\
+    \ two\n  supersedes: the earlier constraint that a locale-varying component must\
+    \ take the locale as a declared parameter or not be cached\nredraw_path:\n  rule:\
+    \ a binding is an input the browser must not supply, so the component redraw endpoint\
+    \ derives it from the request rather than accepting it\n  why: the redraw contract\
+    \ otherwise passes every input, and a client-supplied locale would let a reader\
+    \ choose which cached representation they are served\n  where_it_is_checked: rule:locale-prefix-checks\n\
+    shadowing: a template parameter taking any of these names fails generation at\
+    \ the parameter, naming the binding and where it was declared\nunused_is_free:\
+    \ a project declaring these bindings and reading none generates byte-identical\
+    \ Go\n```"
+  registration: the implicit binding list of the template generation options, per
+    decision:upstream-message-surface item E
+  entries:
+    message_locale:
+      kind: ordinary, with a typed provider returning pw.Locale
+      role: the leading argument of every generated message symbol, named as the message
+        context binding
+      written_into_markup: never; upstream carries no escaping rule for a type it
+        has not seen, and refuses it in a value position
+      why_it_exists_as_a_binding: it makes a reference an ordinary reader of a binding,
+        so the cache-key walk finds it with no rule about messages anywhere
+    lang:
+      kind: path segment
+      provider_result: string
+      value: the locale tag under decision:locale-url-modes path mode, empty under
+        cookie and header mode, and empty for the default locale when prefix_default
+        is false
+      written_into: url attributes, where an empty value collapses one preceding separator
+    langtag:
+      kind: ordinary
+      provider_result: string
+      value: the resolved locale tag, never empty, in every mode
+      written_into: anywhere, being the document language attribute and the asset
+        paths of requirement:localized-assets
+  why_three_rather_than_two:
+    earlier_reading: two, a tag and a path segment, per decision:explicit-locale-in-links
+    what_added_the_third: the typed provider, which lets the message path carry pw.Locale
+      rather than a tag string, so a generated symbol takes the catalog's own type
+    consequence: the value a message resolves against and the value written into a
+      URL are different bindings of different types, and neither can stand in for
+      the other
+  vary_axis:
+    declared: per binding, named by this project rather than by upstream
+    folded_into: the response vary, through the path a builtin element already uses
+    by_mode:
+      path: empty axis on every binding, which is what an application carrying the
+        value in its URL declares
+      cookie: the locale cookie and Accept-Language
+      header: Accept-Language
+    why_the_axis_lives_here: policy:locale-vary-correctness states what each mode
+      must emit, and this is the mechanism that emits it
+  cache_identity:
+    rule: a cached component keys on the bindings its call graph reaches, not on every
+      declared one
+    effect: a component rendering no message and writing no locale into markup keys
+      exactly as it did before these bindings existed
+    interaction: policy:layered-cache gains the binding values in the key, which is
+      what makes a cached component safe to reuse across readers of one locale and
+      not across two
+    supersedes: the earlier constraint that a locale-varying component must take the
+      locale as a declared parameter or not be cached
+  redraw_path:
+    rule: a binding is an input the browser must not supply, so the component redraw
+      endpoint derives it from the request rather than accepting it
+    why: the redraw contract otherwise passes every input, and a client-supplied locale
+      would let a reader choose which cached representation they are served
+    where_it_is_checked: rule:locale-prefix-checks
+  shadowing: a template parameter taking any of these names fails generation at the
+    parameter, naming the binding and where it was declared
+  unused_is_free: a project declaring these bindings and reading none generates byte-identical
+    Go
+relations:
+- relation: mentions
+  to: decision:explicit-locale-in-links
+  resolution: resolved
+- relation: mentions
+  to: decision:locale-url-modes
+  resolution: resolved
+- relation: mentions
+  to: decision:upstream-message-surface
+  resolution: resolved
+- relation: mentions
+  to: policy:layered-cache
+  resolution: resolved
+- relation: mentions
+  to: policy:locale-vary-correctness
+  resolution: resolved
+- relation: mentions
+  to: requirement:localized-assets
+  resolution: resolved
+- relation: mentions
+  to: rule:locale-prefix-checks
+  resolution: resolved
+- relation: mentions
+  to: system:tinybind
+  resolution: resolved

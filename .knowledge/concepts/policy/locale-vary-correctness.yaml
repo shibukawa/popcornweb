@@ -1,0 +1,198 @@
+id: policy:locale-vary-correctness
+type: policy
+title: Locale Vary Correctness
+summary: A route in a negotiated mode varies on its negotiation inputs on every response,
+  whether or not this request carried them, because language has no correct default
+  representation.
+facts:
+  legacy_body: "A route in a negotiated mode varies on its negotiation inputs on every\
+    \ response, whether or not this request carried them, because language has no\
+    \ correct default representation.\n\n```yaml\nproblem:\n  what: one URL gains\
+    \ a representation per locale under decision:locale-url-modes cookie and header\
+    \ modes\n  failure_if_read_driven:\n    sequence:\n      - a reader with no cookie\
+    \ requests the page, the cookie is absent, nothing is recorded, no Vary is emitted\n\
+    \      - a shared cache stores the response without a Vary\n      - a reader whose\
+    \ cookie says another locale receives the stored copy\n    outcome: a page in\
+    \ a language the reader cannot read\nwhy_the_preference_rule_does_not_transfer:\n\
+    \  preference_rule: policy:preference-vary-correctness emits a Vary only for a\
+    \ signal an accessor resolved from on that request\n  what_makes_it_safe_there:\
+    \ decision:preference-signal-precedence records that CSS answers the unoverridden\
+    \ case, so the response built without the signal is correct for every reader and\
+    \ an unvaried cached copy harms nobody\n  what_is_missing_here: there is no floor;\
+    \ the response built without the signal is one locale's text, which is wrong content\
+    \ for the readers this exists for\n  conclusion: the same mechanism with a different\
+    \ failure, so this is a separate rule rather than an exception to that one\nrules:\n\
+    \  - a path mode route emits no locale Vary, because the URL already separates\
+    \ the representations\n  - a cookie mode route emits Vary on the locale cookie\
+    \ and on Accept-Language, on every response\n  - a header mode route emits Vary\
+    \ on Accept-Language, on every response\n  - the values compose with the Vary\
+    \ already set by decision:streaming-response-compression, decision:bot-client-classification,\
+    \ and api:problem-response rather than replacing it\n  - a negotiation redirect\
+    \ emits Vary on Accept-Language and uses 302, since a permanent status would cache\
+    \ one reader's negotiation for the next\nderived_from_configuration_not_from_reads:\n\
+    \  fact: the mode declaration of data:i18n-config states what a route negotiates\
+    \ on before any request arrives\n  effect: no request-scoped accumulation is needed\
+    \ for this signal\n  requirement: the locale is resolved before the first byte,\
+    \ which routing already does; a lazy resolution at the first message reference\
+    \ would be too late under flow:initial-streaming-render\nmechanism:\n  carrier:\
+    \ the vary axis of a data:locale-bindings entry, folded into the response vary\
+    \ by system:tinybind through the path a builtin element already uses\n  emitted_by_reach:\
+    \ a response carries the axis when its render actually reached the binding, which\
+    \ is narrower than the route declaration and never wider\n  why_that_is_still_unconditional_enough:\
+    \ every response of a negotiated route that renders text reaches the binding,\
+    \ so the reach walk and the route declaration agree wherever it matters; a page\
+    \ reaching neither renders no localized content and needs no axis\n  path_mode:\
+    \ an empty axis on every binding, which is the declaration an application carrying\
+    \ the value in its URL makes\n  no_downstream_vary_code: the axis is data on a\
+    \ binding declaration rather than a header this project writes, so there is one\
+    \ place a mode can be wrong\ncache_key_is_the_other_half:\n  fact: a cached component\
+    \ keys on the bindings it reaches, per data:locale-bindings\n  why_both_are_needed:\
+    \ the vary axis protects a cache outside the response, and the key protects the\
+    \ component cache inside it; either alone leaves one reader's locale reachable\
+    \ by another\n  precedent_replaced: the rule that a locale-varying component must\
+    \ take the locale as a declared parameter or not be cached, which was written\
+    \ when a parameter was the only way to carry such a value\ncost:\n  cookie_mode:\
+    \ Vary on Cookie splits the cache per session, since HTTP cannot vary on one cookie\n\
+    \  honest_reading: that is what private content already is under policy:layered-cache,\
+    \ so an authenticated route pays nothing new\n  public_content_in_a_negotiated_mode:\
+    \ gives up shared caching entirely, which is the reason decision:locale-url-modes\
+    \ points public content at the path mode\nno_collector_middleware:\n  considered:\
+    \ a middleware assembling every Vary contribution\n  why_not_possible: headers\
+    \ are final before the body under flow:initial-streaming-render, and data:request-context-capsule\
+    \ fixes its fields at handler dispatch\n  why_not_needed: of the contributing\
+    \ signals, compression derives from configuration under decision:response-encoders-are-unconditional,\
+    \ representation from the route under api:problem-response, render branch from\
+    \ the plan under decision:bot-client-classification, and locale from a binding\
+    \ declaration under this policy; only api:user-preference-accessors is read-driven\n\
+    \  what_remains: composition at write time, which policy:preference-vary-correctness\
+    \ already names\nfixed_set_rejected:\n  shape: always declaring Accept and Accept-Encoding\n\
+    \  why_not: the opposite_failure of policy:preference-vary-correctness, which\
+    \ collapses hit rate for responses that answer one way\n  near_miss: Accept-Encoding\
+    \ derives from configuration and is on in most deployments, so the outcome resembles\
+    \ a fixed set without being one\n```"
+  problem:
+    what: one URL gains a representation per locale under decision:locale-url-modes
+      cookie and header modes
+    failure_if_read_driven:
+      sequence:
+      - a reader with no cookie requests the page, the cookie is absent, nothing is
+        recorded, no Vary is emitted
+      - a shared cache stores the response without a Vary
+      - a reader whose cookie says another locale receives the stored copy
+      outcome: a page in a language the reader cannot read
+  why_the_preference_rule_does_not_transfer:
+    preference_rule: policy:preference-vary-correctness emits a Vary only for a signal
+      an accessor resolved from on that request
+    what_makes_it_safe_there: decision:preference-signal-precedence records that CSS
+      answers the unoverridden case, so the response built without the signal is correct
+      for every reader and an unvaried cached copy harms nobody
+    what_is_missing_here: there is no floor; the response built without the signal
+      is one locale's text, which is wrong content for the readers this exists for
+    conclusion: the same mechanism with a different failure, so this is a separate
+      rule rather than an exception to that one
+  rules:
+  - a path mode route emits no locale Vary, because the URL already separates the
+    representations
+  - a cookie mode route emits Vary on the locale cookie and on Accept-Language, on
+    every response
+  - a header mode route emits Vary on Accept-Language, on every response
+  - the values compose with the Vary already set by decision:streaming-response-compression,
+    decision:bot-client-classification, and api:problem-response rather than replacing
+    it
+  - a negotiation redirect emits Vary on Accept-Language and uses 302, since a permanent
+    status would cache one reader's negotiation for the next
+  derived_from_configuration_not_from_reads:
+    fact: the mode declaration of data:i18n-config states what a route negotiates
+      on before any request arrives
+    effect: no request-scoped accumulation is needed for this signal
+    requirement: the locale is resolved before the first byte, which routing already
+      does; a lazy resolution at the first message reference would be too late under
+      flow:initial-streaming-render
+  mechanism:
+    carrier: the vary axis of a data:locale-bindings entry, folded into the response
+      vary by system:tinybind through the path a builtin element already uses
+    emitted_by_reach: a response carries the axis when its render actually reached
+      the binding, which is narrower than the route declaration and never wider
+    why_that_is_still_unconditional_enough: every response of a negotiated route that
+      renders text reaches the binding, so the reach walk and the route declaration
+      agree wherever it matters; a page reaching neither renders no localized content
+      and needs no axis
+    path_mode: an empty axis on every binding, which is the declaration an application
+      carrying the value in its URL makes
+    no_downstream_vary_code: the axis is data on a binding declaration rather than
+      a header this project writes, so there is one place a mode can be wrong
+  cache_key_is_the_other_half:
+    fact: a cached component keys on the bindings it reaches, per data:locale-bindings
+    why_both_are_needed: the vary axis protects a cache outside the response, and
+      the key protects the component cache inside it; either alone leaves one reader's
+      locale reachable by another
+    precedent_replaced: the rule that a locale-varying component must take the locale
+      as a declared parameter or not be cached, which was written when a parameter
+      was the only way to carry such a value
+  cost:
+    cookie_mode: Vary on Cookie splits the cache per session, since HTTP cannot vary
+      on one cookie
+    honest_reading: that is what private content already is under policy:layered-cache,
+      so an authenticated route pays nothing new
+    public_content_in_a_negotiated_mode: gives up shared caching entirely, which is
+      the reason decision:locale-url-modes points public content at the path mode
+  no_collector_middleware:
+    considered: a middleware assembling every Vary contribution
+    why_not_possible: headers are final before the body under flow:initial-streaming-render,
+      and data:request-context-capsule fixes its fields at handler dispatch
+    why_not_needed: of the contributing signals, compression derives from configuration
+      under decision:response-encoders-are-unconditional, representation from the
+      route under api:problem-response, render branch from the plan under decision:bot-client-classification,
+      and locale from a binding declaration under this policy; only api:user-preference-accessors
+      is read-driven
+    what_remains: composition at write time, which policy:preference-vary-correctness
+      already names
+  fixed_set_rejected:
+    shape: always declaring Accept and Accept-Encoding
+    why_not: the opposite_failure of policy:preference-vary-correctness, which collapses
+      hit rate for responses that answer one way
+    near_miss: Accept-Encoding derives from configuration and is on in most deployments,
+      so the outcome resembles a fixed set without being one
+relations:
+- relation: mentions
+  to: api:problem-response
+  resolution: resolved
+- relation: mentions
+  to: api:user-preference-accessors
+  resolution: resolved
+- relation: mentions
+  to: data:i18n-config
+  resolution: resolved
+- relation: mentions
+  to: data:locale-bindings
+  resolution: resolved
+- relation: mentions
+  to: data:request-context-capsule
+  resolution: resolved
+- relation: mentions
+  to: decision:bot-client-classification
+  resolution: resolved
+- relation: mentions
+  to: decision:locale-url-modes
+  resolution: resolved
+- relation: mentions
+  to: decision:preference-signal-precedence
+  resolution: resolved
+- relation: mentions
+  to: decision:response-encoders-are-unconditional
+  resolution: resolved
+- relation: mentions
+  to: decision:streaming-response-compression
+  resolution: resolved
+- relation: mentions
+  to: flow:initial-streaming-render
+  resolution: resolved
+- relation: mentions
+  to: policy:layered-cache
+  resolution: resolved
+- relation: mentions
+  to: policy:preference-vary-correctness
+  resolution: resolved
+- relation: mentions
+  to: system:tinybind
+  resolution: resolved

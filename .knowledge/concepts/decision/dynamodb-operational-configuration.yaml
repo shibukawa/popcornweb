@@ -1,0 +1,72 @@
+id: decision:dynamodb-operational-configuration
+type: decision
+title: A Table's Operational Configuration Belongs To Deployment Tooling
+summary: Schema application owns whether a table exists and what its keys are; TTL,
+  retention, and everything else about how a table is operated is defined by CloudFormation
+  or its equivalent, and the framework touches none of it.
+facts:
+  legacy_body: "Schema application owns whether a table exists and what its keys are;\
+    \ TTL, retention, and everything else about how a table is operated is defined\
+    \ by CloudFormation or its equivalent, and the framework touches none of it.\n\
+    \n```yaml\nstatus: accepted\ndecided: user 2026-08-01, over TTL, and the reasoning\
+    \ covers the rest of the surface\npremise: a production DynamoDB table is defined\
+    \ by deployment tooling, so a framework that also defined it would be a second\
+    \ author of one resource\nframework_owns:\n  - whether the table exists\n  - the\
+    \ partition key, the sort key, and their attribute types\n  - agreeing with what\
+    \ is deployed, per requirement:dynamodb-migration\nframework_never_owns:\n  -\
+    \ TTL, including enabling it and reporting whether it is on\n  - point-in-time\
+    \ recovery, backup, and retention\n  - autoscaling and reserved capacity\n  -\
+    \ tags, encryption keys, and deletion protection\n  - global tables and replication\n\
+    \  mostly_already_true: system:tinygodriver-dynamodb excludes almost all of these,\
+    \ so this decision names an existing boundary rather than drawing a new one\n\
+    billing_and_capacity:\n  outcome: no configuration key, decided 2026-08-01\n \
+    \ reasoning: creation happens in development and test, where the target is an\
+    \ emulator that ignores both, so a key to set them would configure nothing\n \
+    \ created_with: the driver default, on-demand billing\n  not_compared: reporting\
+    \ a difference would fire on every correct production deployment, since deployment\
+    \ tooling legitimately provisions differently\nattributes_the_framework_still_maintains:\n\
+    \  what: a record field a deployment's TTL configuration points at, such as the\
+    \ dead_at of requirement:dynamodb-session-store\n  why: the value is per-record\
+    \ and only the writer can compute it; the policy over that value is the deployment's\n\
+    \  boundary: the framework guarantees the attribute is correct, and never that\
+    \ anything acts on it\ndocumentation_duty:\n  rule: where the framework maintains\
+    \ such an attribute, the guide states what a deployment must configure for it\
+    \ to have any effect\n  why: an attribute nothing acts on looks like a working\
+    \ feature, and silence would make retaining every record forever the default outcome\n\
+    withdrawn_upstream_ask:\n  what: UpdateTimeToLive and DescribeTimeToLive, previously\
+    \ ranked first in system:tinygodriver-dynamodb because they unlocked the session\
+    \ backend\n  now: not wanted here; the framework would not call them if it had\
+    \ them\n  still_wanted_elsewhere: system:tinybind has its own TTL tag requirement,\
+    \ which is a declaration rather than an apply step, so it is unaffected\nrelated:\n\
+    \  - requirement:dynamodb-migration\n  - decision:dynamodb-desired-state-migration\n\
+    \  - decision:dynamodb-session-expiry\n  - policy:dynamodb-migration-safety\n\
+    ```"
+  legacy_parse_issues:
+  - kind: legacy_parse_error
+    block: 0
+    message: "while parsing a block collection\n  in \"<unicode string>\", line 9,\
+      \ column 3:\n      - TTL, including enabling it and ... \n      ^\nexpected\
+      \ <block end>, but found '?'\n  in \"<unicode string>\", line 14, column 3:\n\
+      \      mostly_already_true: system:tiny ... \n      ^"
+relations:
+- relation: mentions
+  to: decision:dynamodb-desired-state-migration
+  resolution: resolved
+- relation: mentions
+  to: decision:dynamodb-session-expiry
+  resolution: resolved
+- relation: mentions
+  to: policy:dynamodb-migration-safety
+  resolution: resolved
+- relation: mentions
+  to: requirement:dynamodb-migration
+  resolution: resolved
+- relation: mentions
+  to: requirement:dynamodb-session-store
+  resolution: resolved
+- relation: mentions
+  to: system:tinybind
+  resolution: resolved
+- relation: mentions
+  to: system:tinygodriver-dynamodb
+  resolution: resolved

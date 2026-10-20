@@ -1,0 +1,115 @@
+id: decision:upstream-message-surface
+type: decision
+title: Upstream Message Surface
+summary: system:tinybind gained message syntax, symbol resolution, implicit bindings,
+  and a parse surface in v0.5.13, and learned no i18n semantics doing it.
+facts:
+  legacy_body: "system:tinybind gained message syntax, symbol resolution, implicit\
+    \ bindings, and a parse surface in v0.5.13, and learned no i18n semantics doing\
+    \ it.\n\n```yaml\nstatus: accepted upstream, consumed downstream as proposed\n\
+    requested: 2026-08-16\ndelivered: system:tinybind v0.5.13, recorded there under\
+    \ its own template-message-surface concept and the six requirements below it\n\
+    upstream_ids_are_not_referenced_here: an upstream catalog is a separate namespace,\
+    \ so this file names system:tinybind and describes what it holds rather than linking\
+    \ into it\nboundary:\n  upstream: how a message reference is spelled and what\
+    \ it resolves to\n  downstream: catalogs, locale resolution, plural rules, fallback,\
+    \ ID assignment, extraction policy, and code generation\n  test: a reader of the\
+    \ upstream source who can tell these features exist for translation is reading\
+    \ a boundary drawn in the wrong place\n  held: escaping was not changed in any\
+    \ form, which is the claim the rich-text design was reworked to preserve\ndialect_scope:\n\
+    \  intended: the html output kind of concept:template-source-dialects\n  as_built:\
+    \ the recognizer sits in the shared body grammar, so every dialect parses a reference\
+    \ and only html resolves one; the sql dialect refuses at analysis, naming the\
+    \ reference\n  lesson_worth_keeping: a shared-grammar addition reaches every dialect\
+    \ the moment it parses, so a scope line is a claim each dialect carries rather\
+    \ than a property of where the work was done\nitems:\n  A_scope_declaration:\n\
+    \    delivered: the header form, one per file, resolved in the compiler rather\
+    \ than the parser so a declaration may follow the component using it\n    owner_of_meaning:\
+    \ decision:message-scope-declaration\n    annotation_fallback: not taken, and\
+    \ recorded upstream as a real substitute rather than a degraded one\n  B_reference_syntax:\n\
+    \    delivered: \"{t <id>} as a contextual directive, evaluating to a plain string\"\
+    \n    keyword: t, so no fallback spelling was needed\n    ids_may_carry_hyphens:\
+    \ dot-separated segments of word characters and hyphens, no segment starting or\
+    \ ending in one\n    arguments_are_named_at_the_reference: \"{t item-count, n:\
+    \ count}, so a placeholder is bound explicitly rather than resolved from surrounding\
+    \ scope\"\n    represented_as_an_expression: legal in text, attribute, condition,\
+    \ component argument, and val positions with no rule of its own\n  C_qualified_ids:\
+    \ delivered, a dot is the marker and a bare name is never also a qualified one\n\
+    \  D_rich_text:\n    delivered: a block form whose holes are named by their bound\
+    \ element's tag\n    lowering_inverted: the framework returns segments and upstream\
+    \ interleaves them, per policy:message-rich-text\n    open_contract_answered_by_removal:\
+    \ the closure signature question disappeared with the closures\n  E_implicit_bindings:\n\
+    \    delivered: in full, including the path-segment kind and its collapse\n  \
+    \  provider_may_be_typed: so the binding carrying pw.Locale crosses the boundary\
+    \ without upstream learning the type; such a binding cannot be written into markup\n\
+    \    vary_axis: one optional axis per binding, folded into the response vary\n\
+    \    cache: a cached component keys on the bindings it reaches, per data:locale-bindings\n\
+    \  F_symbol_resolution:\n    delivered: arity and argument-name checking against\
+    \ a supplied symbol table\n    not_delivered: type checking of argument values\
+    \ against the symbol's Go types, deliberately, matching the syntactic path external\
+    \ declarations already take\n    consequence: a wrong argument type is a compile\
+    \ error in the generated Go rather than a generation diagnostic\n    locale_argument:\
+    \ supplied by a named implicit binding rather than read from context, which is\
+    \ what makes a message reference visible to the cache-key walk\n  G_H_parse_surface:\n\
+    \    delivered: MessageRefs reporting scope, written and resolved id, arguments,\
+    \ and position; start and end offsets on text nodes and attribute values\n   \
+    \ channel: a package-level report, because a caller needs it before it has anything\
+    \ to pass to generation\n    unresolvable_is_reported: a bare reference in a file\
+    \ declaring no scope returns an empty id rather than failing, so reconciling a\
+    \ tree sees all of it\ncorrections_to_the_request:\n  recognizer_rule_was_insufficient:\n\
+    \    claimed: an identifier followed by an identifier is unambiguous\n    actual:\
+    \ the existing dispatch is a prefix test, and \"{t == x}\", \"{t > n}\", and \"\
+    {t ?? d}\" all carry the same prefix while meaning the parameter\n    resolved_by:\
+    \ recognizing the directive only when the entire brace body parses as a reference,\
+    \ with a test covering every shape a parameter named t can take\n  the_compatibility_argument_for_scoping_by_kind_was_void:\n\
+    \    claimed: \"href=\\\"/search/{q}\\\" with an empty q yields /search/ today,\
+    \ so a rule stated over emptiness would change it\"\n    actual: that template\
+    \ does not compile for any q, because the url type gate runs per interpolated\
+    \ part and refuses a string\n    conclusion_survived_anyway: scoping to the binding\
+    \ kind is still right, so a future url-typed interpolation does not acquire collapsing\
+    \ it never asked for\n  E_was_not_additive:\n    finding: admitting a path-segment\
+    \ binding into a URL attribute amends the rule that keeps a raw string out of\
+    \ one\n    justification_accepted: the value is embedder-supplied rather than\
+    \ request-supplied\n    condition_attached: the rendered segment is percent-encoded,\
+    \ because a locale resolved from Accept-Language or a path prefix is attacker-influenced\
+    \ by definition\n    recorded_in: decision:explicit-locale-in-links, which is\
+    \ where the downstream obligation lands\n  offsets_were_not_already_exposed:\n\
+    \    claimed: positions exist internally and only need publishing\n    actual:\
+    \ a node carried line and column only, and a rewrite needs a range rather than\
+    \ a position, so both a start and an end were additions\n  a_new_expression_kind_is_not_additive:\n\
+    \    finding: every switch over an expression is a place that silently does the\
+    \ wrong thing rather than failing to compile\n    instances: binding-scope analysis\
+    \ missed a reference's arguments, three copies of position lookup reported line\
+    \ 1, and the emitter would have dropped a render context an argument needed\n\
+    \    worth_carrying: the same shape applies to any downstream analysis walking\
+    \ these templates\nwhat_downstream_now_owes:\n  - the id to symbol table, as data,\
+    \ since an id carrying a hyphen is not a Go identifier\n  - the segment list for\
+    \ a rich-text message, per policy:message-rich-text\n  - the binding declarations\
+    \ and their values, per data:locale-bindings\n  - reporting both directions of\
+    \ a hole mismatch, since both need the catalog\n  - percent-encoding is upstream's,\
+    \ but choosing what may become a locale tag is not\npin: system:tinybind moves\
+    \ to v0.5.13; a source using messages or a reference fails to parse on any earlier\
+    \ release\n```"
+  legacy_parse_issues:
+  - kind: legacy_parse_error
+    block: 0
+    message: Object of type date is not JSON serializable
+relations:
+- relation: mentions
+  to: concept:template-source-dialects
+  resolution: resolved
+- relation: mentions
+  to: data:locale-bindings
+  resolution: resolved
+- relation: mentions
+  to: decision:explicit-locale-in-links
+  resolution: resolved
+- relation: mentions
+  to: decision:message-scope-declaration
+  resolution: resolved
+- relation: mentions
+  to: policy:message-rich-text
+  resolution: resolved
+- relation: mentions
+  to: system:tinybind
+  resolution: resolved

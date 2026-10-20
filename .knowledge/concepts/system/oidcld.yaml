@@ -1,0 +1,40 @@
+id: system:oidcld
+type: system
+title: OIDCLD
+summary: OIDCLD is an external local development identity provider and edge platform
+  that requirement:contrib-devidp reduces to an embeddable subset.
+facts:
+  legacy_body: "OIDCLD is an external local development identity provider and edge\
+    \ platform that requirement:contrib-devidp reduces to an embeddable subset.\n\n\
+    ```yaml\nrepository: https://github.com/shibukawa/oidcld\nlicense: AGPL-3.0\n\
+    role: reference implementation and prior art, not a dependency\nshape:\n  identity:\
+    \ OIDC and EntraID-compatible provider with password-free user selection\n  configuration:\
+    \ YAML roster of users with extra claims and extra scopes\n  extras:\n    - managed\
+    \ local certificate authority and TLS termination\n    - reverse proxy, static\
+    \ hosting, and OpenAPI mock responses\n    - developer console and MCP surfaces\n\
+    \    - device authorization and client credentials grants\n    - refresh tokens\
+    \ and RP-initiated logout\nusage_rule: reimplement the required subset; do not\
+    \ vendor, fork, or link the upstream code\nreduction: decision:devidp-scope-reduction\n\
+    ```"
+  repository: https://github.com/shibukawa/oidcld
+  license: AGPL-3.0
+  role: reference implementation and prior art, not a dependency
+  shape:
+    identity: OIDC and EntraID-compatible provider with password-free user selection
+    configuration: YAML roster of users with extra claims and extra scopes
+    extras:
+    - managed local certificate authority and TLS termination
+    - reverse proxy, static hosting, and OpenAPI mock responses
+    - developer console and MCP surfaces
+    - device authorization and client credentials grants
+    - refresh tokens and RP-initiated logout
+  usage_rule: reimplement the required subset; do not vendor, fork, or link the upstream
+    code
+  reduction: decision:devidp-scope-reduction
+relations:
+- relation: mentions
+  to: decision:devidp-scope-reduction
+  resolution: resolved
+- relation: mentions
+  to: requirement:contrib-devidp
+  resolution: resolved

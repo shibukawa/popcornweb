@@ -1,0 +1,153 @@
+id: requirement:local-jsonl-log-capture
+type: requirement
+title: Local JSONL Log Capture
+summary: api:cli-dev persists structured api:logger records under `.log` so a developer
+  can analyze a run locally without replacing the readable terminal stream or installing
+  a collector.
+facts:
+  legacy_body: "api:cli-dev persists structured api:logger records under `.log` so\
+    \ a developer can analyze a run locally without replacing the readable terminal\
+    \ stream or installing a collector.\n\n```yaml\nscope: api:cli-dev application\
+    \ log records only\ndefault: enabled\nconfiguration: data:project-config dev.logs\n\
+    source:\n  - api:cli-dev selects the invocation file and injects its path only\
+    \ into each application process it starts\n  - persist from the api:logger structured\
+    \ pipeline before stdout formatting and independently of OTLP or requirement:dev-telemetry-viewer\n\
+    \  - never parse policy:log-emission plaintext stdout\ndestination:\n  directory:\
+    \ .log relative to the directory containing popcornweb.toml\n  file: one collision-resistant\
+    \ .jsonl file per pw dev invocation\n  lifetime: select before the application\
+    \ starts; reopen for append across every rebuild and application restart; close\
+    \ when each application process stops\n  creation: create the directory and file\
+    \ lazily on the first record\n  existing_files: never truncate or append to a\
+    \ file from an earlier invocation\nrecord: data:local-jsonl-log-record\nterminal:\n\
+    \  rule: policy:log-emission stdout behavior remains unchanged\n  consequence:\
+    \ each application record remains visible as plaintext in the pw dev console and\
+    \ is also queryable on disk\nfailure:\n  startup: an invalid or unwritable configured\
+    \ directory reports the path and continues pw dev with terminal logging\n  write:\
+    \ report a bounded diagnostic once, disable file capture for the run, and never\
+    \ stop the application\nretention:\n  automatic_deletion: none in the first release\n\
+    \  ownership: developers may remove closed files; the active file is owned by\
+    \ pw dev until shutdown\nrepository_hygiene:\n  - api:cli-init scaffolds `.log/`\
+    \ in .gitignore\n  - documentation tells existing projects to ignore `.log/`\n\
+    \  - no log file is a build input, generated source, or release artifact\nsecurity:\n\
+    \  - local persistence does not weaken data:log-attribute or policy:query-log-safety\n\
+    \  - documentation warns that custom attributes and enabled query bind values\
+    \ can contain sensitive data\n  - create directories and files with owner-only\
+    \ permissions\n```\n\n```yaml\nacceptance:\n  - a pw dev run creates no file before\
+    \ its first api:logger record\n  - the first record creates .log and one .jsonl\
+    \ file containing one valid data:local-jsonl-log-record line\n  - a rebuild keeps\
+    \ writing to the same invocation file\n  - a second pw dev invocation creates\
+    \ a different file and preserves the first\n  - stdout still receives the readable\
+    \ record while capture is enabled\n  - dev.logs.enabled false creates no directory\
+    \ or file and changes no stdout behavior\n  - capture still works when dev.otel.enabled\
+    \ is false or a developer-supplied OTLP endpoint suppresses the viewer\n  - child\
+    \ service stdout and pw progress lines never enter the JSONL file\n  - a file\
+    \ failure neither terminates nor restarts the application\nnon_goals:\n  - deployed\
+    \ runtime log files\n  - trace or metric persistence\n  - indexing, retention\
+    \ deletion, compression, or shipping\n  - parsing arbitrary stdout or stderr\n\
+    ```"
+  scope: api:cli-dev application log records only
+  default: enabled
+  configuration: data:project-config dev.logs
+  source:
+  - api:cli-dev selects the invocation file and injects its path only into each application
+    process it starts
+  - persist from the api:logger structured pipeline before stdout formatting and independently
+    of OTLP or requirement:dev-telemetry-viewer
+  - never parse policy:log-emission plaintext stdout
+  destination:
+    directory: .log relative to the directory containing popcornweb.toml
+    file: one collision-resistant .jsonl file per pw dev invocation
+    lifetime: select before the application starts; reopen for append across every
+      rebuild and application restart; close when each application process stops
+    creation: create the directory and file lazily on the first record
+    existing_files: never truncate or append to a file from an earlier invocation
+  record: data:local-jsonl-log-record
+  terminal:
+    rule: policy:log-emission stdout behavior remains unchanged
+    consequence: each application record remains visible as plaintext in the pw dev
+      console and is also queryable on disk
+  failure:
+    startup: an invalid or unwritable configured directory reports the path and continues
+      pw dev with terminal logging
+    write: report a bounded diagnostic once, disable file capture for the run, and
+      never stop the application
+  retention:
+    automatic_deletion: none in the first release
+    ownership: developers may remove closed files; the active file is owned by pw
+      dev until shutdown
+  repository_hygiene:
+  - api:cli-init scaffolds `.log/` in .gitignore
+  - documentation tells existing projects to ignore `.log/`
+  - no log file is a build input, generated source, or release artifact
+  security:
+  - local persistence does not weaken data:log-attribute or policy:query-log-safety
+  - documentation warns that custom attributes and enabled query bind values can contain
+    sensitive data
+  - create directories and files with owner-only permissions
+  acceptance:
+  - a pw dev run creates no file before its first api:logger record
+  - the first record creates .log and one .jsonl file containing one valid data:local-jsonl-log-record
+    line
+  - a rebuild keeps writing to the same invocation file
+  - a second pw dev invocation creates a different file and preserves the first
+  - stdout still receives the readable record while capture is enabled
+  - dev.logs.enabled false creates no directory or file and changes no stdout behavior
+  - capture still works when dev.otel.enabled is false or a developer-supplied OTLP
+    endpoint suppresses the viewer
+  - child service stdout and pw progress lines never enter the JSONL file
+  - a file failure neither terminates nor restarts the application
+  non_goals:
+  - deployed runtime log files
+  - trace or metric persistence
+  - indexing, retention deletion, compression, or shipping
+  - parsing arbitrary stdout or stderr
+acceptance:
+  item-985b92fe86829fcc:
+    text: a pw dev run creates no file before its first api:logger record
+  item-2f83b66b07230fef:
+    text: the first record creates .log and one .jsonl file containing one valid data:local-jsonl-log-record
+      line
+  item-a3e11de02927b9c3:
+    text: a rebuild keeps writing to the same invocation file
+  item-e3be8a127f036df8:
+    text: a second pw dev invocation creates a different file and preserves the first
+  item-142fe2cb6a427f29:
+    text: stdout still receives the readable record while capture is enabled
+  item-fe5e09713ea61848:
+    text: dev.logs.enabled false creates no directory or file and changes no stdout
+      behavior
+  item-5258df314b4dedf4:
+    text: capture still works when dev.otel.enabled is false or a developer-supplied
+      OTLP endpoint suppresses the viewer
+  item-ebc11a8fec44cc25:
+    text: child service stdout and pw progress lines never enter the JSONL file
+  item-0180b337a372da5c:
+    text: a file failure neither terminates nor restarts the application
+relations:
+- relation: mentions
+  to: api:cli-dev
+  resolution: resolved
+- relation: mentions
+  to: api:cli-init
+  resolution: resolved
+- relation: mentions
+  to: api:logger
+  resolution: resolved
+- relation: mentions
+  to: data:local-jsonl-log-record
+  resolution: resolved
+- relation: mentions
+  to: data:log-attribute
+  resolution: resolved
+- relation: mentions
+  to: data:project-config
+  resolution: resolved
+- relation: mentions
+  to: policy:log-emission
+  resolution: resolved
+- relation: mentions
+  to: policy:query-log-safety
+  resolution: resolved
+- relation: mentions
+  to: requirement:dev-telemetry-viewer
+  resolution: resolved

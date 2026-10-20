@@ -1,0 +1,85 @@
+id: api:error-renderer
+type: api
+title: Error Rendering Contract
+summary: Generated standard error templates implement the HTML branch of api:problem-response
+  while API clients retain RFC problem details.
+facts:
+  legacy_body: "Generated standard error templates implement the HTML branch of api:problem-response\
+    \ while API clients retain RFC problem details.\n\n```yaml\nmodel:\n  status:\
+    \ HTTP status\n  title: safe summary\n  detail: optional safe public detail\n\
+    \  code: stable machine code\n  request_id: optional diagnostic identifier\nselection:\n\
+    \  by: the request Accept header, per api:problem-response negotiation\n  html:\
+    \ generated 400, 401, 403, 404, 409, 413, or 500 .pw.html renderer\n  api: api:problem-response\
+    \ RFC problem details\ntemplate_parameters:\n  rule: an error template takes the\
+    \ model above as parameters and renders it, so the page says which request failed\
+    \ and why\n  registration: api:cli-init scaffolds the resolver that maps a status\
+    \ onto its template; without one the templates are generated and never reached\n\
+    \  fields: the field failures are a repeatable parameter, so a rejected form can\
+    \ name the field it rejected\n  bounded_by: api:problem-response detail_by_environment,\
+    \ which decides how much of the model is populated before the template sees it\n\
+    \  unpopulated: a parameter the environment withholds arrives empty rather than\
+    \ absent, so one template renders in both without a conditional per field\nfallback:\n\
+    \  - use a minimal safe built-in response when no HTML renderer is registered\n\
+    \  - do not recursively invoke an error renderer when it fails\n  - log the renderer\
+    \ failure and return a safe internal response if headers remain uncommitted\n\
+    async_escalation:\n  trigger: decision:unhandled-boundary-escalation\n  registration:\
+    \ pw.RegisterHTMLErrorPage, resolving a fragment from the mapped problem\n  streaming:\
+    \ the document is written into an already committed 200 response, so the status\
+    \ cannot carry the failure\n  buffered: nothing is committed, so the same page\
+    \ is answered with its real status through the wrapper chain\n  independent_of:\
+    \ the root package ErrorRenderer, which writes a whole response rather than a\
+    \ fragment\nrules:\n  - generated renderer fragments register during package import\n\
+    \  - renderers receive only sanitized policy:validation-errors output\n  - never\
+    \ expose stack traces, SQL, DSNs, tokens, or private error causes\n```"
+  model:
+    status: HTTP status
+    title: safe summary
+    detail: optional safe public detail
+    code: stable machine code
+    request_id: optional diagnostic identifier
+  selection:
+    by: the request Accept header, per api:problem-response negotiation
+    html: generated 400, 401, 403, 404, 409, 413, or 500 .pw.html renderer
+    api: api:problem-response RFC problem details
+  template_parameters:
+    rule: an error template takes the model above as parameters and renders it, so
+      the page says which request failed and why
+    registration: api:cli-init scaffolds the resolver that maps a status onto its
+      template; without one the templates are generated and never reached
+    fields: the field failures are a repeatable parameter, so a rejected form can
+      name the field it rejected
+    bounded_by: api:problem-response detail_by_environment, which decides how much
+      of the model is populated before the template sees it
+    unpopulated: a parameter the environment withholds arrives empty rather than absent,
+      so one template renders in both without a conditional per field
+  fallback:
+  - use a minimal safe built-in response when no HTML renderer is registered
+  - do not recursively invoke an error renderer when it fails
+  - log the renderer failure and return a safe internal response if headers remain
+    uncommitted
+  async_escalation:
+    trigger: decision:unhandled-boundary-escalation
+    registration: pw.RegisterHTMLErrorPage, resolving a fragment from the mapped problem
+    streaming: the document is written into an already committed 200 response, so
+      the status cannot carry the failure
+    buffered: nothing is committed, so the same page is answered with its real status
+      through the wrapper chain
+    independent_of: the root package ErrorRenderer, which writes a whole response
+      rather than a fragment
+  rules:
+  - generated renderer fragments register during package import
+  - renderers receive only sanitized policy:validation-errors output
+  - never expose stack traces, SQL, DSNs, tokens, or private error causes
+relations:
+- relation: mentions
+  to: api:cli-init
+  resolution: resolved
+- relation: mentions
+  to: api:problem-response
+  resolution: resolved
+- relation: mentions
+  to: decision:unhandled-boundary-escalation
+  resolution: resolved
+- relation: mentions
+  to: policy:validation-errors
+  resolution: resolved

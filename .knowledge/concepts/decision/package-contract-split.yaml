@@ -1,0 +1,161 @@
+id: decision:package-contract-split
+type: decision
+title: Package Contract Split
+summary: A concept:component-package declares itself twice, in Go for the runtime
+  and in a manifest for the tooling, because the two consumers read at different times
+  and neither can read the other's form.
+facts:
+  legacy_body: "A concept:component-package declares itself twice, in Go for the runtime\
+    \ and in a manifest for the tooling, because the two consumers read at different\
+    \ times and neither can read the other's form.\n\n```yaml\nstatus: accepted\n\
+    question: whether a package is described by an entry point function, by a generator\
+    \ manifest, or by both\naudiences:\n  runtime:\n    reader: the linked binary\n\
+    \    needs: assets, extension registration, and the identity a served URL is derived\
+    \ from\n    timing: package initialization, inside a process that has already\
+    \ compiled everything\n    form_it_can_read: Go values, because rule:tinygo-runtime-compatibility\
+    \ forbids reflection and a TinyGo target may have no filesystem\n  tooling:\n\
+    \    reader: api:cli-generate, api:cli-migrate, and api:cli-doctor in the consumer\
+    \ project\n    needs: the import path to link, the migration stream to locate,\
+    \ generator versions to compare, and the required capabilities to check\n    timing:\
+    \ before the consumer compiles, and specifically while generating the file that\
+    \ performs the import\n    form_it_can_read: a file in the module cache, because\
+    \ compiling a dependency to ask it a question is a build to answer a prompt\n\
+    \    circularity: the strongest case; api:cli-generate must know what to import\
+    \ in order to emit the import, so the answer cannot come from a linked binary\
+    \ at any price\nwhy_not_one:\n  manifest_only:\n    fails: the runtime needs an\
+    \ fs.FS of embedded assets, and a manifest cannot carry bytes into a TinyGo binary\n\
+    \    fails_also: a manifest-driven runtime is a registry keyed by strings, which\
+    \ is the reflection-free rule this framework keeps\n  entry_point_only:\n    fails:\
+    \ decision:declared-package-installation makes the generated blank import the\
+    \ install, and a generator cannot read a registration from a package it has not\
+    \ yet caused to be linked\n    fails_also: a Go source scan of a dependency is\
+    \ the whole-project discovery decision:explicit-generation-sources already replaced,\
+    \ and it would cross a module boundary to do it\n    fails_also_2: api:cli-migrate\
+    \ applies a package's stream without an application binary, per decision:goose-migration-engine,\
+    \ so it cannot ask a process that does not exist\n    partially_true: a linked\
+    \ application could expose its own registrations through a generated subcommand,\
+    \ but that answers only after the import, which is one step too late\ndivision:\n\
+    \  api:package-registration: what the process needs and what only bytes can carry\n\
+    \  data:component-package-manifest: what a command needs before there is a process,\
+    \ on both sides; the package publishes what it offers and the project declares\
+    \ what it uses\n  overlap: module path and version appear in both, and a mismatch\
+    \ is an api:cli-doctor finding rather than a runtime error\n  rule: no fact is\
+    \ authored twice; the manifest states the module path once and the Go value repeats\
+    \ it as the identity it registers under\nformat:\n  chosen: TOML, in the package's\
+    \ own data:project-config file under a package section\n  rejected_json: the project\
+    \ already reads TOML for both tooling and runtime configuration, and a second\
+    \ syntax buys nothing\n  rejected_separate_file: a second file drifts from the\
+    \ first, and both would be read by the same command in the same directory\n  reachability:\
+    \ go.mod ships every file in the module directory, so the consumer's CLI reads\
+    \ the manifest from the module cache with no network access\nprecedent:\n  api:framework-extension:\
+    \ an imported package contributes middleware from its init without pw importing\
+    \ it, which is this split's runtime half already in service\n  bootstrap_linker:\
+    \ concept:project-layout already generates a blank-import file into the main package\
+    \ to link registration packages, which is the mechanism decision:declared-package-installation\
+    \ extends rather than a new one\n```"
+  status: accepted
+  question: whether a package is described by an entry point function, by a generator
+    manifest, or by both
+  audiences:
+    runtime:
+      reader: the linked binary
+      needs: assets, extension registration, and the identity a served URL is derived
+        from
+      timing: package initialization, inside a process that has already compiled everything
+      form_it_can_read: Go values, because rule:tinygo-runtime-compatibility forbids
+        reflection and a TinyGo target may have no filesystem
+    tooling:
+      reader: api:cli-generate, api:cli-migrate, and api:cli-doctor in the consumer
+        project
+      needs: the import path to link, the migration stream to locate, generator versions
+        to compare, and the required capabilities to check
+      timing: before the consumer compiles, and specifically while generating the
+        file that performs the import
+      form_it_can_read: a file in the module cache, because compiling a dependency
+        to ask it a question is a build to answer a prompt
+      circularity: the strongest case; api:cli-generate must know what to import in
+        order to emit the import, so the answer cannot come from a linked binary at
+        any price
+  why_not_one:
+    manifest_only:
+      fails: the runtime needs an fs.FS of embedded assets, and a manifest cannot
+        carry bytes into a TinyGo binary
+      fails_also: a manifest-driven runtime is a registry keyed by strings, which
+        is the reflection-free rule this framework keeps
+    entry_point_only:
+      fails: decision:declared-package-installation makes the generated blank import
+        the install, and a generator cannot read a registration from a package it
+        has not yet caused to be linked
+      fails_also: a Go source scan of a dependency is the whole-project discovery
+        decision:explicit-generation-sources already replaced, and it would cross
+        a module boundary to do it
+      fails_also_2: api:cli-migrate applies a package's stream without an application
+        binary, per decision:goose-migration-engine, so it cannot ask a process that
+        does not exist
+      partially_true: a linked application could expose its own registrations through
+        a generated subcommand, but that answers only after the import, which is one
+        step too late
+  division:
+    api:package-registration: what the process needs and what only bytes can carry
+    data:component-package-manifest: what a command needs before there is a process,
+      on both sides; the package publishes what it offers and the project declares
+      what it uses
+    overlap: module path and version appear in both, and a mismatch is an api:cli-doctor
+      finding rather than a runtime error
+    rule: no fact is authored twice; the manifest states the module path once and
+      the Go value repeats it as the identity it registers under
+  format:
+    chosen: TOML, in the package's own data:project-config file under a package section
+    rejected_json: the project already reads TOML for both tooling and runtime configuration,
+      and a second syntax buys nothing
+    rejected_separate_file: a second file drifts from the first, and both would be
+      read by the same command in the same directory
+    reachability: go.mod ships every file in the module directory, so the consumer's
+      CLI reads the manifest from the module cache with no network access
+  precedent:
+    api:framework-extension: an imported package contributes middleware from its init
+      without pw importing it, which is this split's runtime half already in service
+    bootstrap_linker: concept:project-layout already generates a blank-import file
+      into the main package to link registration packages, which is the mechanism
+      decision:declared-package-installation extends rather than a new one
+lifecycle: accepted
+relations:
+- relation: mentions
+  to: api:cli-doctor
+  resolution: resolved
+- relation: mentions
+  to: api:cli-generate
+  resolution: resolved
+- relation: mentions
+  to: api:cli-migrate
+  resolution: resolved
+- relation: mentions
+  to: api:framework-extension
+  resolution: resolved
+- relation: mentions
+  to: api:package-registration
+  resolution: resolved
+- relation: mentions
+  to: concept:component-package
+  resolution: resolved
+- relation: mentions
+  to: concept:project-layout
+  resolution: resolved
+- relation: mentions
+  to: data:component-package-manifest
+  resolution: resolved
+- relation: mentions
+  to: data:project-config
+  resolution: resolved
+- relation: mentions
+  to: decision:declared-package-installation
+  resolution: resolved
+- relation: mentions
+  to: decision:explicit-generation-sources
+  resolution: resolved
+- relation: mentions
+  to: decision:goose-migration-engine
+  resolution: resolved
+- relation: mentions
+  to: rule:tinygo-runtime-compatibility
+  resolution: resolved

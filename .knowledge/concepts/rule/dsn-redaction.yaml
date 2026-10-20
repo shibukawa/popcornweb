@@ -1,0 +1,75 @@
+id: rule:dsn-redaction
+type: rule
+title: DSN Redaction
+summary: A reported DSN keeps the address and loses the credential, because hiding
+  it whole costs the reader the question the report is opened to answer.
+facts:
+  legacy_body: "A reported DSN keeps the address and loses the credential, because\
+    \ hiding it whole costs the reader the question the report is opened to answer.\n\
+    \n```yaml\napplies_to:\n  - policy:startup-summary, both the tree and the record\n\
+    \  - api:cli-doctor configuration view\n  - api:cli-migrate and api:cli-seed failure\
+    \ messages\n  - every key whose name ends in .dsn, so rdb connections, session\
+    \ rdb, and session redis read alike\nkept:\n  - scheme, which names the engine\
+    \ rule:rdb-dsn-resolution selects\n  - host and port, which name the server this\
+    \ process talks to\n  - the trailing path, which is the database name or the SQLite\
+    \ file, including :memory:\nremoved:\n  userinfo: the credential; its presence\
+    \ is marked so the reader sees one was configured\n  query: dropped whole, because\
+    \ an unrecognized parameter is where an unlisted secret would hide\nform:\n  with_credential:\
+    \ scheme://<mark>@host:port/name\n  without_credential: scheme://host:port/name\n\
+    \  mark: the same mask configbind writes, so one idea never shows two marks\n\
+    \  driver_address: a go-sql-driver protocol(host:port) is unwrapped to host:port,\
+    \ which is how every other engine writes it\nunparseable: hidden whole, because\
+    \ a half-read DSN is not worth the risk of printing\nreason:\n  - which database\
+    \ a process is attached to is an operational fact, not a secret\n  - a summary\
+    \ that answers nothing is one an operator stops reading\n  - the credential is\
+    \ the only part that grants access, so it is the only part removed\nverification:\n\
+    \  - a DSN carrying a password produces no output containing it\n  - the same\
+    \ DSN reads the same way in the startup summary, in doctor, and in a migrate failure\n\
+    \  - a sqlite path and :memory: survive unchanged, since neither can carry a credential\n\
+    ```"
+  applies_to:
+  - policy:startup-summary, both the tree and the record
+  - api:cli-doctor configuration view
+  - api:cli-migrate and api:cli-seed failure messages
+  - every key whose name ends in .dsn, so rdb connections, session rdb, and session
+    redis read alike
+  kept:
+  - scheme, which names the engine rule:rdb-dsn-resolution selects
+  - host and port, which name the server this process talks to
+  - the trailing path, which is the database name or the SQLite file, including :memory: null
+  removed:
+    userinfo: the credential; its presence is marked so the reader sees one was configured
+    query: dropped whole, because an unrecognized parameter is where an unlisted secret
+      would hide
+  form:
+    with_credential: scheme://<mark>@host:port/name
+    without_credential: scheme://host:port/name
+    mark: the same mask configbind writes, so one idea never shows two marks
+    driver_address: a go-sql-driver protocol(host:port) is unwrapped to host:port,
+      which is how every other engine writes it
+  unparseable: hidden whole, because a half-read DSN is not worth the risk of printing
+  reason:
+  - which database a process is attached to is an operational fact, not a secret
+  - a summary that answers nothing is one an operator stops reading
+  - the credential is the only part that grants access, so it is the only part removed
+  verification:
+  - a DSN carrying a password produces no output containing it
+  - the same DSN reads the same way in the startup summary, in doctor, and in a migrate
+    failure
+  - a sqlite path and :memory: survive unchanged, since neither can carry a credential
+relations:
+- relation: mentions
+  to: api:cli-doctor
+  resolution: resolved
+- relation: mentions
+  to: api:cli-migrate
+  resolution: resolved
+- relation: mentions
+  to: api:cli-seed
+  resolution: resolved
+- relation: mentions
+  to: policy:startup-summary
+  resolution: resolved
+- relation: mentions
+  to: rule:rdb-dsn-resolution
+  resolution: resolved

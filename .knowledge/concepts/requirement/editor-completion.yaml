@@ -1,0 +1,114 @@
+id: requirement:editor-completion
+type: requirement
+title: Template Completion
+summary: Completion offers what the current position can legally hold, which for these
+  dialects is a small closed set the server already knows exactly.
+facts:
+  legacy_body: "Completion offers what the current position can legally hold, which\
+    \ for these dialects is a small closed set the server already knows exactly.\n\
+    \n```yaml\nstatus: implemented at internal/pwlsp; the position is decided from\
+    \ the text around the caret rather than the body AST, so completion works in a\
+    \ buffer mid-keystroke that does not parse\nstage: 3 of vision:editor-support\n\
+    server: requirement:pw-language-server\npositions:\n  header:\n    - root keywords\
+    \ and modifiers valid at the start of a declaration\n    - primitive and declared\
+    \ type names in a parameter list\n    - the output types the root keyword allows,\
+    \ per concept:template-source-dialects\n    - an import path from the module's\
+    \ own package list\n  expression:\n    - parameters, record fields, and loop variables\
+    \ in scope\n    - declared and external function names, with their signatures\n\
+    \    - control forms, offered with their closing form\n  html_body:\n    - component\
+    \ references declared in the file or reachable through an import, with their parameters\n\
+    \    - slot names a slot-capable component declares\n    - the closing tag of\
+    \ an open element, which the embedded HTML grammar cannot resolve across a control\
+    \ form\n  sql_body:\n    - column and table names from data:migration-source,\
+    \ when the migration directory parses\n    - the parameters of the enclosing statement\
+    \ inside a \"{\" expression\n  dynamo_body:\n    - table names from decision:dynamodb-table-registry\n\
+    \    - attribute names from the result type's dynamo tags, filtered to key attributes\
+    \ inside a key clause\n    - the sort key predicates requirement:dynamodb-typed-queries\
+    \ allows\nsnippets:\n  - a component, statement, or dynamo declaration skeleton\n\
+    \  - an if, for, and await block with its closing form\n  - contributed as language\
+    \ snippets, so they exist from stage 1 even though resolution does not\nnon_goals:\n\
+    \  - HTML element and attribute completion, which the embedded language already\
+    \ provides\n  - general SQL keyword completion, which an installed SQL extension\
+    \ provides for the embedded region\n  - completion in a generated file\nacceptance:\n\
+    \  - completion inside a key clause offers only key attributes of the bound type\n\
+    \  - completion inside an expression offers the enclosing declaration's parameters\
+    \ and no unrelated identifier\n  - a component completion inserts its required\
+    \ parameters\n  - completion with no loaded project offers snippets and keywords\
+    \ only, and offers nothing that would need resolution\n```"
+  status: implemented at internal/pwlsp; the position is decided from the text around
+    the caret rather than the body AST, so completion works in a buffer mid-keystroke
+    that does not parse
+  stage: 3 of vision:editor-support
+  server: requirement:pw-language-server
+  positions:
+    header:
+    - root keywords and modifiers valid at the start of a declaration
+    - primitive and declared type names in a parameter list
+    - the output types the root keyword allows, per concept:template-source-dialects
+    - an import path from the module's own package list
+    expression:
+    - parameters, record fields, and loop variables in scope
+    - declared and external function names, with their signatures
+    - control forms, offered with their closing form
+    html_body:
+    - component references declared in the file or reachable through an import, with
+      their parameters
+    - slot names a slot-capable component declares
+    - the closing tag of an open element, which the embedded HTML grammar cannot resolve
+      across a control form
+    sql_body:
+    - column and table names from data:migration-source, when the migration directory
+      parses
+    - the parameters of the enclosing statement inside a "{" expression
+    dynamo_body:
+    - table names from decision:dynamodb-table-registry
+    - attribute names from the result type's dynamo tags, filtered to key attributes
+      inside a key clause
+    - the sort key predicates requirement:dynamodb-typed-queries allows
+  snippets:
+  - a component, statement, or dynamo declaration skeleton
+  - an if, for, and await block with its closing form
+  - contributed as language snippets, so they exist from stage 1 even though resolution
+    does not
+  non_goals:
+  - HTML element and attribute completion, which the embedded language already provides
+  - general SQL keyword completion, which an installed SQL extension provides for
+    the embedded region
+  - completion in a generated file
+  acceptance:
+  - completion inside a key clause offers only key attributes of the bound type
+  - completion inside an expression offers the enclosing declaration's parameters
+    and no unrelated identifier
+  - a component completion inserts its required parameters
+  - completion with no loaded project offers snippets and keywords only, and offers
+    nothing that would need resolution
+acceptance:
+  item-a8bb481f1108fde3:
+    text: completion inside a key clause offers only key attributes of the bound type
+  item-ae921ff0fcb08392:
+    text: completion inside an expression offers the enclosing declaration's parameters
+      and no unrelated identifier
+  item-30618507468ab1c3:
+    text: a component completion inserts its required parameters
+  item-696552c40ba0f777:
+    text: completion with no loaded project offers snippets and keywords only, and
+      offers nothing that would need resolution
+relations:
+- relation: mentions
+  to: concept:template-source-dialects
+  resolution: resolved
+- relation: mentions
+  to: data:migration-source
+  resolution: resolved
+- relation: mentions
+  to: decision:dynamodb-table-registry
+  resolution: resolved
+- relation: mentions
+  to: requirement:dynamodb-typed-queries
+  resolution: resolved
+- relation: mentions
+  to: requirement:pw-language-server
+  resolution: resolved
+- relation: mentions
+  to: vision:editor-support
+  resolution: resolved

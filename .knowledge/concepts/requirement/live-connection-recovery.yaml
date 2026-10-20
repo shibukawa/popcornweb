@@ -1,0 +1,249 @@
+id: requirement:live-connection-recovery
+type: requirement
+title: Live Connection Recovery
+summary: A screen whose live connection drops re-establishes it by re-requesting the
+  same page in live mode, repainting only the live regions and nothing else.
+facts:
+  legacy_body: "A screen whose live connection drops re-establishes it by re-requesting\
+    \ the same page in live mode, repainting only the live regions and nothing else.\n\
+    \n```yaml\nstatus: implemented in the runtime script requirement:external-boundary-runtime\
+    \ ships\nsource: requirement:live-html-rendering\nprotocol: api:live-delivery-protocol\n\
+    transport: decision:live-delivery-transport\nwhy_it_is_the_common_case: a connection\
+    \ held for as long as a tab stays open is closed by a proxy, a sleep, a deploy,\
+    \ and by policy:live-subscription-bounds itself, so reconnect is the steady state\
+    \ rather than the exception\nsame_path:\n  rule: the first live request and every\
+    \ reconnect are the same request to the same route\n  consequence: no second mechanism\
+    \ can drift from the first, and the server holds no per-client state a reconnect\
+    \ has to find\n  authorization: the page's own check runs again, because the page\
+    \ runs again\nselectivity:\n  transferred: live boundary deliveries only\n  untouched:\
+    \ static regions, settled await boundaries, and every ancestor receive nothing\
+    \ and cannot repaint\n  mechanism: skipping the body transfer, so the client never\
+    \ names what to preserve\nmissed_deliveries:\n  behavior: deliveries produced\
+    \ while disconnected are not queued and not replayed\n  safe_because: a delivery\
+    \ carries the whole state of its region, so the next one is sufficient\n  visible_cost:\
+    \ a chat list shows the current list after a reconnect, with no arrival animation\
+    \ for what was missed\nfirst_delivery: always sent in the first milestone, even\
+    \ when it matches what the client already displays, because the client sends no\
+    \ validator to suppress it\nunknown_boundary_id:\n  meaning: the ids are positional\
+    \ and the page executed again, so an id the client does not hold means the page\
+    \ structure itself changed\n  action: stop the connection and reload the page\
+    \ once\n  not_an_alert:\n    upstream_suggestion: tell the user to reload, with\
+    \ a plain alert as a defensible first implementation\n    chosen_instead: reload\
+    \ once, guarded per URL in session storage, because an alert leaves the screen\
+    \ in the state that caused it and asks the user to do what the runtime can do\
+    \ itself\n    why_the_guard_is_enough: the reload is what a user told to reload\
+    \ would do anyway, and the guard is what stops a server that keeps producing the\
+    \ condition from looping\n  why_not_reconcile: inserting a boundary correctly\
+    \ means placing it in a document the client did not render, which is the flow:partial-refresh\
+    \ problem rather than the reconnect one\n  why_not_silent: ignoring it leaves\
+    \ the user watching a screen missing a region the server believes is there\nwhen_to_connect:\n\
+    \  from_document: the api:live-delivery-protocol document marker says whether\
+    \ live work remains, so a page with no live boundary opens nothing\n  truncated_document:\n\
+    \    detection: readyState says when the question can be answered and the marker\
+    \ says what the answer is\n    loading: bytes are still arriving and the marker\
+    \ may be among them, so nothing is decided\n    complete_with_marker: an ordinary\
+    \ end, whatever the marker's state says about live work\n    complete_without_marker:\
+    \ the document was cut off\n    never_streamed: a document with no boundary placeholder\
+    \ and no applied range carries no marker either, so it is excluded rather than\
+    \ treated as truncated\n    trigger: readystatechange, plus one check when the\
+    \ runtime loads, since a module imported after the document settled sees no further\
+    \ event\n    recovery: reload, rather than open a live connection, which repairs\
+    \ neither a stranded fallback nor lost body content\n    guard: one reload per\
+    \ URL, so a server truncating every response cannot produce a loop\n  from_live:\
+    \ a retry close, or a stream that ended with no terminal record\n  never_from_transport:\
+    \ load, DOMContentLoaded, readyState, and a resolved fetch reader are not completion\
+    \ signals on their own\nretry_policy:\n  keyed_on_reason: the terminal record\
+    \ already distinguishes the cases, so one backoff for all of them would stall\
+    \ a healthy screen on every lifetime rollover\n  closed_retry: reconnect promptly\
+    \ with jitter\n  truncation_or_error: exponential backoff with jitter and a cap\n\
+    \  closed_done: no reconnect\n  reload: no reconnect; instruct a reload\n  storm:\
+    \ a restart or a rolling deploy reconnects every client at once, and each reconnect\
+    \ is a page execution, so jitter is required rather than optional\nnavigation_ordering:\n\
+    \  rule: the client aborts its live request before applying a same-document navigation\n\
+    \  why: aborting surfaces no further records, so a delivery for the outgoing page\
+    \ cannot land after the incoming one, whatever is still in flight\n  full_navigation:\
+    \ aborts by itself\n  server_view: an ordinary request cancellation\nduplicate_connections:\n\
+    \  case: a client opens a new connection before the previous one is torn down\
+    \ server-side\n  behavior: both are valid; the older one's deliveries are indistinguishable\
+    \ from the newer one's until boundary revisions exist\n  gap: without a revision,\
+    \ an in-flight delivery from the older connection can repaint a region with older\
+    \ content\n  containment: the abort rule above plus the short life of the overlap,\
+    \ until the record carries a revision\nhidden_tab: pausing or closing the connection\
+    \ is client policy; reconnect is what makes closing it attractive, at the price\
+    \ of one page execution when the tab returns\nacceptance:\n  - a dropped connection\
+    \ is re-established against the same URL with no separate endpoint involved\n\
+    \  - a dashboard with one live region and several static ones transfers nothing\
+    \ for the static ones\n  - boundary ids from a reconnect address the DOM the document\
+    \ render created, with nothing sent to align them\n  - a page whose render produced\
+    \ no live boundary opens no connection and costs no speculative page execution\n\
+    \  - a truncated document is detected from the missing marker rather than from\
+    \ a timeout\n  - a generated-version change across a deploy instructs a reload\
+    \ rather than applying records to a document that no longer matches\n  - an unknown\
+    \ boundary id stops the connection instead of guessing\nopen_questions:\n  - whether\
+    \ a long outage should prefer a full reload over a reconnect, given a truncated\
+    \ document already prefers one\n  - whether the server suggests a reconnect delay\
+    \ on the retry record, which is the only way to spread load before anything fails\n\
+    \  - whether a later milestone sends per-boundary revisions so an unchanged first\
+    \ delivery can be suppressed\n```"
+  status: implemented in the runtime script requirement:external-boundary-runtime
+    ships
+  source: requirement:live-html-rendering
+  protocol: api:live-delivery-protocol
+  transport: decision:live-delivery-transport
+  why_it_is_the_common_case: a connection held for as long as a tab stays open is
+    closed by a proxy, a sleep, a deploy, and by policy:live-subscription-bounds itself,
+    so reconnect is the steady state rather than the exception
+  same_path:
+    rule: the first live request and every reconnect are the same request to the same
+      route
+    consequence: no second mechanism can drift from the first, and the server holds
+      no per-client state a reconnect has to find
+    authorization: the page's own check runs again, because the page runs again
+  selectivity:
+    transferred: live boundary deliveries only
+    untouched: static regions, settled await boundaries, and every ancestor receive
+      nothing and cannot repaint
+    mechanism: skipping the body transfer, so the client never names what to preserve
+  missed_deliveries:
+    behavior: deliveries produced while disconnected are not queued and not replayed
+    safe_because: a delivery carries the whole state of its region, so the next one
+      is sufficient
+    visible_cost: a chat list shows the current list after a reconnect, with no arrival
+      animation for what was missed
+  first_delivery: always sent in the first milestone, even when it matches what the
+    client already displays, because the client sends no validator to suppress it
+  unknown_boundary_id:
+    meaning: the ids are positional and the page executed again, so an id the client
+      does not hold means the page structure itself changed
+    action: stop the connection and reload the page once
+    not_an_alert:
+      upstream_suggestion: tell the user to reload, with a plain alert as a defensible
+        first implementation
+      chosen_instead: reload once, guarded per URL in session storage, because an
+        alert leaves the screen in the state that caused it and asks the user to do
+        what the runtime can do itself
+      why_the_guard_is_enough: the reload is what a user told to reload would do anyway,
+        and the guard is what stops a server that keeps producing the condition from
+        looping
+    why_not_reconcile: inserting a boundary correctly means placing it in a document
+      the client did not render, which is the flow:partial-refresh problem rather
+      than the reconnect one
+    why_not_silent: ignoring it leaves the user watching a screen missing a region
+      the server believes is there
+  when_to_connect:
+    from_document: the api:live-delivery-protocol document marker says whether live
+      work remains, so a page with no live boundary opens nothing
+    truncated_document:
+      detection: readyState says when the question can be answered and the marker
+        says what the answer is
+      loading: bytes are still arriving and the marker may be among them, so nothing
+        is decided
+      complete_with_marker: an ordinary end, whatever the marker's state says about
+        live work
+      complete_without_marker: the document was cut off
+      never_streamed: a document with no boundary placeholder and no applied range
+        carries no marker either, so it is excluded rather than treated as truncated
+      trigger: readystatechange, plus one check when the runtime loads, since a module
+        imported after the document settled sees no further event
+      recovery: reload, rather than open a live connection, which repairs neither
+        a stranded fallback nor lost body content
+      guard: one reload per URL, so a server truncating every response cannot produce
+        a loop
+    from_live: a retry close, or a stream that ended with no terminal record
+    never_from_transport: load, DOMContentLoaded, readyState, and a resolved fetch
+      reader are not completion signals on their own
+  retry_policy:
+    keyed_on_reason: the terminal record already distinguishes the cases, so one backoff
+      for all of them would stall a healthy screen on every lifetime rollover
+    closed_retry: reconnect promptly with jitter
+    truncation_or_error: exponential backoff with jitter and a cap
+    closed_done: no reconnect
+    reload: no reconnect; instruct a reload
+    storm: a restart or a rolling deploy reconnects every client at once, and each
+      reconnect is a page execution, so jitter is required rather than optional
+  navigation_ordering:
+    rule: the client aborts its live request before applying a same-document navigation
+    why: aborting surfaces no further records, so a delivery for the outgoing page
+      cannot land after the incoming one, whatever is still in flight
+    full_navigation: aborts by itself
+    server_view: an ordinary request cancellation
+  duplicate_connections:
+    case: a client opens a new connection before the previous one is torn down server-side
+    behavior: both are valid; the older one's deliveries are indistinguishable from
+      the newer one's until boundary revisions exist
+    gap: without a revision, an in-flight delivery from the older connection can repaint
+      a region with older content
+    containment: the abort rule above plus the short life of the overlap, until the
+      record carries a revision
+  hidden_tab: pausing or closing the connection is client policy; reconnect is what
+    makes closing it attractive, at the price of one page execution when the tab returns
+  acceptance:
+  - a dropped connection is re-established against the same URL with no separate endpoint
+    involved
+  - a dashboard with one live region and several static ones transfers nothing for
+    the static ones
+  - boundary ids from a reconnect address the DOM the document render created, with
+    nothing sent to align them
+  - a page whose render produced no live boundary opens no connection and costs no
+    speculative page execution
+  - a truncated document is detected from the missing marker rather than from a timeout
+  - a generated-version change across a deploy instructs a reload rather than applying
+    records to a document that no longer matches
+  - an unknown boundary id stops the connection instead of guessing
+  open_questions:
+  - whether a long outage should prefer a full reload over a reconnect, given a truncated
+    document already prefers one
+  - whether the server suggests a reconnect delay on the retry record, which is the
+    only way to spread load before anything fails
+  - whether a later milestone sends per-boundary revisions so an unchanged first delivery
+    can be suppressed
+acceptance:
+  item-e6c09afac6ee1d37:
+    text: a dropped connection is re-established against the same URL with no separate
+      endpoint involved
+  item-7b321b2c04531343:
+    text: a dashboard with one live region and several static ones transfers nothing
+      for the static ones
+  item-325b8fc3ba93b88d:
+    text: boundary ids from a reconnect address the DOM the document render created,
+      with nothing sent to align them
+  item-b69a7384bdfb0158:
+    text: a page whose render produced no live boundary opens no connection and costs
+      no speculative page execution
+  item-48a42cbd3f47d697:
+    text: a truncated document is detected from the missing marker rather than from
+      a timeout
+  item-545dae34665cdc9f:
+    text: a generated-version change across a deploy instructs a reload rather than
+      applying records to a document that no longer matches
+  item-dfe28694c945da4d:
+    text: an unknown boundary id stops the connection instead of guessing
+open_questions:
+  item-76f7669b587501a4:
+    text: whether a long outage should prefer a full reload over a reconnect, given
+      a truncated document already prefers one
+  item-9ba6c7ccc55c1439:
+    text: whether the server suggests a reconnect delay on the retry record, which
+      is the only way to spread load before anything fails
+  item-7d854d341fc01b74:
+    text: whether a later milestone sends per-boundary revisions so an unchanged first
+      delivery can be suppressed
+relations:
+- relation: mentions
+  to: api:live-delivery-protocol
+  resolution: resolved
+- relation: mentions
+  to: decision:live-delivery-transport
+  resolution: resolved
+- relation: mentions
+  to: flow:partial-refresh
+  resolution: resolved
+- relation: mentions
+  to: policy:live-subscription-bounds
+  resolution: resolved
+- relation: mentions
+  to: requirement:external-boundary-runtime
+  resolution: resolved
+- relation: mentions
+  to: requirement:live-html-rendering
+  resolution: resolved

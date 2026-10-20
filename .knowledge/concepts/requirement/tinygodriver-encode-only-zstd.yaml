@@ -1,0 +1,148 @@
+id: requirement:tinygodriver-encode-only-zstd
+type: requirement
+title: What The fasthttp Build Would Ask Of tinygodriver
+summary: A TinyGo build should need no extra tag. tinygodriver's fasthttp fork should
+  select its zstd half on tinygo the way its own convention already says, and the
+  encode-only path that makes that work is one pw already runs.
+facts:
+  legacy_body: "A TinyGo build should need no extra tag. tinygodriver's fasthttp fork\
+    \ should select its zstd half on tinygo the way its own convention already says,\
+    \ and the encode-only path that makes that work is one pw already runs.\n\n```yaml\n\
+    status: delivered\ndelivered_by: tinygodriver v1.2.4, which took both asks at\
+    \ once — the fork encodes zstd through compress/zstd under TinyGo, so no tag is\
+    \ needed and the codec is kept rather than dropped\nmeasured_after: a TinyGo fasthttp\
+    \ helloworld links with -tags fasthttp alone at 5.59 MiB and serves\nserves: decision:tinygo-fasthttp-needs-nozstd\n\
+    scope: this concept records what popcornweb would ask of tinygodriver; the work\
+    \ and the decision are tinygodriver's\nalready_provided_nothing_to_add:\n  fasthttp_fork:\
+    \ a drop-in fasthttp whose patches are recorded in fasthttp/PATCHES.md\n  fasthttp_nozstd:\
+    \ the tag that makes the TinyGo build link, already present and already measured\
+    \ there\n  fasthttprouter: vendored, and popcornweb already imports it\n  fasthttpwebsocket:\
+    \ a fasthttp/websocket fork whose server half needed no patches, which is the\
+    \ library requirement:contrib-websocket would build on when that work starts\n\
+    first_ask_tag_the_split_on_tinygo:\n  change: zstd.go takes \"!fasthttp_nozstd\
+    \ && !tinygo\" and zstd_disabled.go takes \"fasthttp_nozstd || tinygo\"\n  effect:\
+    \ a TinyGo build links with no tag at all, which is what a user expects and what\
+    \ they meet a linker error instead of today\n  it_is_the_repository_own_convention:\
+    \ tinygodriver's build-tag-selection rule, in its own catalog, already states\
+    \ std_path \"!tinygo && !force_tinygo_logic\" against native_path \"(tinygo ||\
+    \ force_tinygo_logic)\", and names compress/zstd among its precedents\n  precedent_in_this_repository:\
+    \ pw/response_zstd_tinygo.go and pw/response_zstd_std.go split on exactly that\
+    \ pair for exactly this dependency, which is why TinyGo links the net/http build\
+    \ today\n  why_a_silent_drop_is_defensible_here: under TinyGo the current default\
+    \ does not build at all, so the choice is not zstd against no zstd but working\
+    \ against broken; a user who wants the codec can still pass noasm and pay 2.49\
+    \ MiB\n  not_absorbable_any_other_way: no module can force -tags noasm onto a\
+    \ dependency, so the importer declining the package is the only fix available\
+    \ below the build tool\nthe_second_ask:\n  name: encode-only zstd for the fasthttp\
+    \ fork\n  relation: this is what turns the first ask from \"TinyGo loses zstd\"\
+    \ into \"TinyGo emits zstd for 0.08 MB\"\n  today_the_choice_is_binary:\n    klauspost:\
+    \ 2.40 MB of TinyGo binary, encode and decode\n    fasthttp_nozstd: 0 MB, no zstd\
+    \ at all, and a client offering only zstd is served identity\n  proposed_middle:\
+    \ tinygodriver's own compress/zstd encoder at 0.08 MB, encode only\n  why_it_fits_a_web_framework:\
+    \ a server compresses responses and rarely reads a compressed request body, so\
+    \ the decode half is what popcornweb pays for and does not use\n  ratio_is_no_longer_the_objection:\
+    \ that encoder now fits FSE tables per block and codes literals, landing at 8.2%\
+    \ and 11.0% against deflate's 11.6% and 13.3%\n  what_blocks_it:\n    - compress/zstd\
+    \ excludes decoding, so BodyUnzstd, AppendUnzstdBytes and the FS pre-compressed\
+    \ .zst read have nothing to call\n    - it offers no Reset and no compression\
+    \ levels, which are what fasthttp's per-level encoder pools are built on\n  the_decode_half_already_has_a_landing_place:\
+    \ zstd_disabled.go returns ErrZstdUnsupported from everything whose signature\
+    \ carries an error, so an encode-only build is that file with its writers replaced\
+    \ rather than a new design\n  and_the_decoder_is_the_whole_problem: both symbols\
+    \ TinyGo cannot link are decoder-side, per decision:tinygo-fasthttp-needs-nozstd,\
+    \ so dropping decode is not a side effect of this ask but the point of it\n  recorded_upstream:\
+    \ tinygodriver fasthttp/PATCHES.md already names this as coherent to want and\
+    \ explicitly not what the tag does today, so this is a shared conclusion rather\
+    \ than a new proposal\nsmaller_asks:\n  discoverability: the tag is documented\
+    \ in PATCHES.md, which is not where someone building a popcornweb app looks; naming\
+    \ it in the fasthttp README's TinyGo section would have saved the wrong conclusion\
+    \ recorded in decision:tinygo-fasthttp-needs-nozstd\n  net_http_import: tinygodriver/fasthttp\
+    \ imports net/http, so a fasthttp binary still links it; whether that is separable\
+    \ is unmeasured here and may be load-bearing for the fork\nacceptance:\n  - a\
+    \ TinyGo fasthttp build can advertise zstd without linking klauspost\n  - or the\
+    \ framework narrows its compression default and the ask is withdrawn\n```"
+  status: delivered
+  delivered_by: tinygodriver v1.2.4, which took both asks at once — the fork encodes
+    zstd through compress/zstd under TinyGo, so no tag is needed and the codec is
+    kept rather than dropped
+  measured_after: a TinyGo fasthttp helloworld links with -tags fasthttp alone at
+    5.59 MiB and serves
+  serves: decision:tinygo-fasthttp-needs-nozstd
+  scope: this concept records what popcornweb would ask of tinygodriver; the work
+    and the decision are tinygodriver's
+  already_provided_nothing_to_add:
+    fasthttp_fork: a drop-in fasthttp whose patches are recorded in fasthttp/PATCHES.md
+    fasthttp_nozstd: the tag that makes the TinyGo build link, already present and
+      already measured there
+    fasthttprouter: vendored, and popcornweb already imports it
+    fasthttpwebsocket: a fasthttp/websocket fork whose server half needed no patches,
+      which is the library requirement:contrib-websocket would build on when that
+      work starts
+  first_ask_tag_the_split_on_tinygo:
+    change: zstd.go takes "!fasthttp_nozstd && !tinygo" and zstd_disabled.go takes
+      "fasthttp_nozstd || tinygo"
+    effect: a TinyGo build links with no tag at all, which is what a user expects
+      and what they meet a linker error instead of today
+    it_is_the_repository_own_convention: tinygodriver's build-tag-selection rule,
+      in its own catalog, already states std_path "!tinygo && !force_tinygo_logic"
+      against native_path "(tinygo || force_tinygo_logic)", and names compress/zstd
+      among its precedents
+    precedent_in_this_repository: pw/response_zstd_tinygo.go and pw/response_zstd_std.go
+      split on exactly that pair for exactly this dependency, which is why TinyGo
+      links the net/http build today
+    why_a_silent_drop_is_defensible_here: under TinyGo the current default does not
+      build at all, so the choice is not zstd against no zstd but working against
+      broken; a user who wants the codec can still pass noasm and pay 2.49 MiB
+    not_absorbable_any_other_way: no module can force -tags noasm onto a dependency,
+      so the importer declining the package is the only fix available below the build
+      tool
+  the_second_ask:
+    name: encode-only zstd for the fasthttp fork
+    relation: this is what turns the first ask from "TinyGo loses zstd" into "TinyGo
+      emits zstd for 0.08 MB"
+    today_the_choice_is_binary:
+      klauspost: 2.40 MB of TinyGo binary, encode and decode
+      fasthttp_nozstd: 0 MB, no zstd at all, and a client offering only zstd is served
+        identity
+    proposed_middle: tinygodriver's own compress/zstd encoder at 0.08 MB, encode only
+    why_it_fits_a_web_framework: a server compresses responses and rarely reads a
+      compressed request body, so the decode half is what popcornweb pays for and
+      does not use
+    ratio_is_no_longer_the_objection: that encoder now fits FSE tables per block and
+      codes literals, landing at 8.2% and 11.0% against deflate's 11.6% and 13.3%
+    what_blocks_it:
+    - compress/zstd excludes decoding, so BodyUnzstd, AppendUnzstdBytes and the FS
+      pre-compressed .zst read have nothing to call
+    - it offers no Reset and no compression levels, which are what fasthttp's per-level
+      encoder pools are built on
+    the_decode_half_already_has_a_landing_place: zstd_disabled.go returns ErrZstdUnsupported
+      from everything whose signature carries an error, so an encode-only build is
+      that file with its writers replaced rather than a new design
+    and_the_decoder_is_the_whole_problem: both symbols TinyGo cannot link are decoder-side,
+      per decision:tinygo-fasthttp-needs-nozstd, so dropping decode is not a side
+      effect of this ask but the point of it
+    recorded_upstream: tinygodriver fasthttp/PATCHES.md already names this as coherent
+      to want and explicitly not what the tag does today, so this is a shared conclusion
+      rather than a new proposal
+  smaller_asks:
+    discoverability: the tag is documented in PATCHES.md, which is not where someone
+      building a popcornweb app looks; naming it in the fasthttp README's TinyGo section
+      would have saved the wrong conclusion recorded in decision:tinygo-fasthttp-needs-nozstd
+    net_http_import: tinygodriver/fasthttp imports net/http, so a fasthttp binary
+      still links it; whether that is separable is unmeasured here and may be load-bearing
+      for the fork
+  acceptance:
+  - a TinyGo fasthttp build can advertise zstd without linking klauspost
+  - or the framework narrows its compression default and the ask is withdrawn
+acceptance:
+  item-d4912e65dbc998f5:
+    text: a TinyGo fasthttp build can advertise zstd without linking klauspost
+  item-d3b6deafcba98cb3:
+    text: or the framework narrows its compression default and the ask is withdrawn
+relations:
+- relation: mentions
+  to: decision:tinygo-fasthttp-needs-nozstd
+  resolution: resolved
+- relation: mentions
+  to: requirement:contrib-websocket
+  resolution: resolved

@@ -1,0 +1,92 @@
+id: decision:dynamodb-no-runtime-abstraction
+type: decision
+title: No pw Or pwruntime Abstraction For DynamoDB
+summary: Popcorn Web configures and owns the DynamoDB client and stops there; api:dynamo-package
+  is the whole surface, and neither pw nor pwruntime gains a DynamoDB symbol.
+facts:
+  legacy_body: "Popcorn Web configures and owns the DynamoDB client and stops there;\
+    \ api:dynamo-package is the whole surface, and neither pw nor pwruntime gains\
+    \ a DynamoDB symbol.\n\n```yaml\nstatus: accepted\ndecided: user 2026-07-31\n\
+    reason:\n  no_common_interface: database/sql is what lets pw hide three SQL engines\
+    \ behind one executor; DynamoDB has no such interface to hide behind, so a wrapper\
+    \ would abstract exactly one implementation\n  generated_code_needs_nothing: dynamobind\
+    \ helpers take a *dynamodb.Client argument, so there is no executor resolver to\
+    \ install and nothing for pwruntime to answer\n  passthrough: system:tinybind\
+    \ commits dynamobind to passing driver errors, retries, and page boundaries through\
+    \ untouched, and a pw facade would be the layer that breaks it\nwhat_pw_still_owns:\n\
+    \  - reading data:dynamodb-runtime-config and constructing the client\n  - installing\
+    \ the client into data:request-context-capsule\n  - closing it through api:application-lifecycle\n\
+    \  - the table name resolution of rule:dynamodb-table-naming\n  - requirement:dynamodb-migration\n\
+    \  reason: these are lifecycle and configuration, which the application should\
+    \ not repeat, and none of them wraps a driver call\nwhat_pw_does_not_own:\n  -\
+    \ a Load, Store, Query, or Scan wrapper; the application calls dynamobind directly\n\
+    \  - an error type over the driver sentinels\n  - a pwruntime executor resolver,\
+    \ connection group, or transaction scope\n  - a pw.SelectDynamo mirroring api:database-selection\n\
+    boundary_effects:\n  concept:public-package-boundaries: database/dynamo joins\
+    \ the public lower-level list and is deliberately absent from the pw surface\n\
+    \  import_style: a normal import, not a blank one; the same import both registers\
+    \ the configuration binding and provides the accessor\n  contrast_with_rdb: an\
+    \ rdb engine is blank-imported because the application never names it, while an\
+    \ application using DynamoDB names this package on every call\nupstream_removed_the_pressure:\n\
+    \  was: a generated query took the client and the table name, so a thin wrapper\
+    \ filling those two arguments looked tempting\n  now: system:tinybind carries\
+    \ the client in the context and resolves the table inside its own runtime entries,\
+    \ so a declared query takes context and parameters alone\n  effect: the wrapper\
+    \ that was being considered would have exactly nothing left to do\n  better_than_asked:\
+    \ the request from here was a generation option selecting a framework resolver,\
+    \ mirroring the SQL path; moving resolution into the runtime removes the generated\
+    \ call site a framework would have redirected, so no seam is configured at all\n\
+    \  what_pw_installs: the client and the name resolver, once, through the system:tinybind\
+    \ client setter in the api:dynamo-package middleware\naccepted_cost:\n  visibility:\
+    \ an application handler imports the binding package and the driver, which the\
+    \ SQL path would have let it skip\n  judged: acceptable, and now the only cost;\
+    \ the alternative is a facade that renames every driver symbol and still cannot\
+    \ remove either import from generated code\n  binary: the context client path\
+    \ costs about 37 KB on a TinyGo wasip1 build, measured upstream, from the context\
+    \ value and the assertion that reads it back\n  escape: a size-critical program\
+    \ calls the driver directly with the generated methods and links none of it\n\
+    remaining_argument:\n  what: an item operation still names a table, having no\
+    \ declaration to read one from\n  not_a_gap: it is the absence of a declaration\
+    \ rather than an inconsistency, and a wrapper hiding it would have to invent which\
+    \ table a type belongs to\nrevisit_if:\n  - a second document store arrives that\
+    \ could share one interface\n  - an item operation gains a declaration form, which\
+    \ would leave nothing named at any call site\nrelated:\n  - requirement:dynamodb-store\n\
+    \  - api:dynamo-package\n  - concept:public-package-boundaries\n```"
+  legacy_parse_issues:
+  - kind: legacy_parse_error
+    block: 0
+    message: "while parsing a block collection\n  in \"<unicode string>\", line 8,\
+      \ column 3:\n      - reading data:dynamodb-runtime- ... \n      ^\nexpected\
+      \ <block end>, but found '?'\n  in \"<unicode string>\", line 13, column 3:\n\
+      \      reason: these are lifecycle and  ... \n      ^"
+relations:
+- relation: mentions
+  to: api:application-lifecycle
+  resolution: resolved
+- relation: mentions
+  to: api:database-selection
+  resolution: resolved
+- relation: mentions
+  to: api:dynamo-package
+  resolution: resolved
+- relation: mentions
+  to: concept:public-package-boundaries
+  resolution: resolved
+- relation: mentions
+  to: data:dynamodb-runtime-config
+  resolution: resolved
+- relation: mentions
+  to: data:request-context-capsule
+  resolution: resolved
+- relation: mentions
+  to: requirement:dynamodb-migration
+  resolution: resolved
+- relation: mentions
+  to: requirement:dynamodb-store
+  resolution: resolved
+- relation: mentions
+  to: rule:dynamodb-table-naming
+  resolution: resolved
+- relation: mentions
+  to: system:tinybind
+  resolution: resolved

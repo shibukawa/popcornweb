@@ -1,0 +1,153 @@
+id: decision:generated-public-asset-version-control
+type: decision
+title: Generated Public Asset Version Control
+summary: The generated subtree of the authored public directory is excluded from version
+  control in an application and committed in a package, on the same reasoning policy:generated-artifacts
+  already applies to generated Go.
+facts:
+  legacy_body: "The generated subtree of the authored public directory is excluded\
+    \ from version control in an application and committed in a package, on the same\
+    \ reasoning policy:generated-artifacts already applies to generated Go.\n\n```yaml\n\
+    status: accepted\nstate: implemented\nimplementation:\n  scaffold: the application\
+    \ .gitignore api:cli-init writes, keyed off the same extractedAssetDir constant\
+    \ the extraction writes to, so the rule cannot drift from the producer\n  package_scaffold:\
+    \ unchanged, and the absence is now commented rather than merely true\n  guard:\
+    \ >\n    one test asserts both directions, because the package scaffold began\
+    \ as a copy\n    of the application one and has inherited a rule it should not\
+    \ have had once\n    before; a second asserts the ignore line covers the configured\
+    \ Tailwind output,\n    since those two constants live in different files and\
+    \ nothing else pairs them\n  migrated: auction, helloworld, and live_render, five\
+    \ files untracked and left on disk\n  safe_because: all three embed dist/public,\
+    \ so no bare-clone build reads the excluded tree\nsubject:\n  path: public/generated\n\
+    \  writers:\n    tailwind: requirement:tailwind-css-integration, whose default\
+    \ output is public/generated/app.css\n    extraction: requirement:component-asset-extraction,\
+    \ whose content-hashed styles and scripts land in the same directory\n  why_one_directory:\
+    \ >\n    the extraction writes where flow:tailwind-css-build already writes, so\
+    \ nothing\n    new has to be embedded or served; the placement is deliberate and\
+    \ this decision\n    does not move it\n  not_subject:\n    - the authored files\
+    \ of concept:derived-public-tree, which are input and are committed\n    - public-external,\
+    \ the second authored tree, which is not build output at all\n    - dist, already\
+    \ excluded entire except the dist/public/.keep sentinel\nthe_test:\n  rule: not\
+    \ \"is it generated\" but \"does something regenerate it from committed sources\"\
+    \n  regenerated: api:cli-generate rebuilds every file under public/generated from\
+    \ the authored CSS entry, the templates, and the scanned Go\n  precedent: >\n\
+    \    the same test already decides devbox.d the other way, and the scaffold says\
+    \ so\n    in a comment: it is generated output, but nothing regenerates it, so\
+    \ a commit\n    is the only thing that can carry it to the next checkout\n  consequence:\
+    \ a file that passes the test is excluded; one that fails it is committed whatever\
+    \ produced it\napplication_and_package:\n  application: excluded, per policy:generated-artifacts\n\
+    \  package: committed, per decision:committed-package-artifacts, which already\
+    \ states it for extracted assets\n  unchanged: the package inversion and its reasoning;\
+    \ this decision only supplies the application half a rule it never had\nwhy_it_was_missing:\n\
+    \  cause: >\n    the exclusion policy is written about generated Go and names\
+    \ one ignore rule,\n    **/*_pw_gen.go, which no .css or .js can match; nothing\
+    \ widened it when a\n    second artifact class started landing in the tree\n \
+    \ three_way_disagreement:\n    component_extraction: calls an extracted file a\
+    \ policy:generated-artifacts artifact, which implies exclusion\n    tailwind:\
+    \ says generated CSS is reproducible but is not policy:generated-artifacts generated\
+    \ Go, which implies nothing\n    policy: scopes itself to generated Go and rules\
+    \ on the Go ignore line only\n  resolution: >\n    the policy governs ownership\
+    \ of every generated artifact; the file-name ignore\n    rule it carries is one\
+    \ class's instance of a rule this decision states for the\n    other class\nobserved_before_deciding:\n\
+    \  measured_on: examples/auction, 2026-08-12\n  committed: 1212 lines\n  two_working_trees:\
+    \ 1132 and 1216 lines, from the same commit, neither matching it\n  cause: >\n\
+    \    Tailwind emits only the utilities its scan finds, so the output tracks the\n\
+    \    scanned sources; the committed copy still carries .collapse, .absolute, and\n\
+    \    .relative, which occur zero times in the sources it is generated from\n \
+    \ reading: >\n    concept:derived-public-tree predicted this as \"a sibling written\
+    \ into the\n    authored tree is stale forever\"; the prediction is now measured\
+    \ rather than\n    anticipated\n  second_symptom: an extracted asset is content-hashed,\
+    \ so a changed component orphans the previous file rather than replacing it\n\
+    \  third_symptom:\n    found: after the migration, by regenerating rather than\
+    \ by reading\n    what: the same key has two shapes, because pw build minifies\
+    \ the stylesheet and pw dev does not\n    measured: 1212 lines from the developer\
+    \ loop against one line and 24762 bytes from a production build\n    consequence:\
+    \ >\n      a tracked copy records whichever command ran last, so two developers\
+    \ on the\n      same commit disagree without either having edited anything; this\
+    \ is what the\n      stash named \"dev-loop unminified app.css rebuild\" was working\
+    \ around\nregeneration_verified:\n  date: 2026-08-12\n  pw_generate: rebuilds\
+    \ the extracted assets, and reproduced the identical content hash\n  pw_build:\
+    \ runs flow:tailwind-css-build and writes the stylesheet; pw dev is the other\
+    \ caller\n  note: >\n    the two halves of this directory are rebuilt by different\
+    \ commands, so a\n    clone needs a build rather than a generate before it serves\
+    \ styles\n  after: a rebuild leaves the tree clean, which is the state this decision\
+    \ exists to produce\ncost_accepted:\n  what: a project using Tailwind needs the\
+    \ pinned CLI to build, since decision:tailwind-host-toolchain never installs one\
+    \ implicitly and rejects a missing one\n  why_it_is_free: >\n    dist/public is\
+    \ already excluded down to a sentinel and is what the embed\n    reads, so a bare\
+    \ clone could not serve an example before this either; the bar\n    does not move\n\
+    \  not_free_for: a project that has no Tailwind and only extracted assets, which\
+    \ still needs api:cli-generate before a build; that is already true of *_pw_gen.go\n\
+    scaffold_obligation:\n  where: the .gitignore api:cli-init writes\n  line: public/generated/\n\
+    \  why_scaffolded: >\n    an author cannot be expected to derive this from two\
+    \ requirements that\n    disagree, and a project that starts without the line\
+    \ reproduces the drift\n    measured above\nmigration:\n  projects: the examples\
+    \ tracking the files today, which are auction, helloworld, and live_render\n \
+    \ action: add the ignore line and git rm --cached the tracked files\n  regenerate_check:\
+    \ api:cli-check still compares a working tree, so excluding the files does not\
+    \ weaken rule:project-integrity-checks\nrejected_alternatives:\n  commit_and_regenerate_in_ci:\n\
+    \    why_not: it makes every unrelated branch carry a CSS diff, which is the noise\
+    \ decision:committed-package-artifacts accepts only because a package consumer\
+    \ has no other option\n  move_the_directory_under_dist:\n    why_not: >\n    \
+    \  the extraction computes the URL at generation time and the tree is embedded\n\
+    \      and served from the authored side; moving it is a delivery change, not\
+    \ a\n      version-control one, and concept:derived-public-tree is where that\
+    \ belongs\n  ignore_only_app_css:\n    why_not: it fixes the file that happens\
+    \ to hurt today and leaves the content-hashed extracted assets to accumulate as\
+    \ orphans\nrelated:\n  - policy:generated-artifacts\n  - decision:committed-package-artifacts\n\
+    \  - requirement:tailwind-css-integration\n  - requirement:component-asset-extraction\n\
+    \  - concept:derived-public-tree\n  - decision:derived-tree-development\n  - decision:tailwind-host-toolchain\n\
+    \  - decision:development-public-assets\n  - requirement:public-asset-delivery\n\
+    \  - api:cli-init\n  - api:cli-generate\n  - rule:project-integrity-checks\nacceptance:\n\
+    \  - a project api:cli-init scaffolds carries public/generated/ in its .gitignore\n\
+    \  - no example tracks a file under public/generated\n  - a component package\
+    \ still commits its extracted assets, unchanged\n  - api:cli-check passes on a\
+    \ fresh clone after one generate run\n  - public-external and the authored files\
+    \ of public stay committed\n```"
+  legacy_parse_issues:
+  - kind: legacy_parse_error
+    block: 0
+    message: Object of type date is not JSON serializable
+relations:
+- relation: mentions
+  to: api:cli-check
+  resolution: resolved
+- relation: mentions
+  to: api:cli-generate
+  resolution: resolved
+- relation: mentions
+  to: api:cli-init
+  resolution: resolved
+- relation: mentions
+  to: concept:derived-public-tree
+  resolution: resolved
+- relation: mentions
+  to: decision:committed-package-artifacts
+  resolution: resolved
+- relation: mentions
+  to: decision:derived-tree-development
+  resolution: resolved
+- relation: mentions
+  to: decision:development-public-assets
+  resolution: resolved
+- relation: mentions
+  to: decision:tailwind-host-toolchain
+  resolution: resolved
+- relation: mentions
+  to: flow:tailwind-css-build
+  resolution: resolved
+- relation: mentions
+  to: policy:generated-artifacts
+  resolution: resolved
+- relation: mentions
+  to: requirement:component-asset-extraction
+  resolution: resolved
+- relation: mentions
+  to: requirement:public-asset-delivery
+  resolution: resolved
+- relation: mentions
+  to: requirement:tailwind-css-integration
+  resolution: resolved
+- relation: mentions
+  to: rule:project-integrity-checks
+  resolution: resolved

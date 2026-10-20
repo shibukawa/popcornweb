@@ -1,0 +1,201 @@
+id: requirement:dev-error-overlay
+type: requirement
+title: Development Error Overlay
+summary: A page served by api:cli-dev shows the loop's current failure over itself,
+  so a generation, migration, build, or startup diagnostic reaches the browser the
+  developer is already looking at instead of only the terminal behind it.
+facts:
+  legacy_body: "A page served by api:cli-dev shows the loop's current failure over\
+    \ itself, so a generation, migration, build, or startup diagnostic reaches the\
+    \ browser the developer is already looking at instead of only the terminal behind\
+    \ it.\n\n```yaml\naudience: actor:application-developer\nscope: api:cli-dev only,\
+    \ through the reserved pwdev build mode of policy:dev-console-boundary\ndefault:\
+    \ enabled\nconfiguration: data:project-config dev.console.overlay\nstate: data:dev-loop-state\n\
+    behavior: flow:dev-overlay-delivery\nruntime_class: decision:dev-browser-runtime-scope\
+    \ development class, delivered by the in-application exception it describes\n\
+    delivery:\n  module: shared with requirement:dev-console-launcher, which needs\
+    \ the same console address and the same stream\n  switch: a disabled overlay leaves\
+    \ the launcher its module; the address is injected while either wants it, and\
+    \ neither does when both are off, which is when the framework serves no development\
+    \ module and the core carries no import of one\n  consequence: turning both off\
+    \ is what makes the served page byte-identical to a production render, rather\
+    \ than something the browser decides not to show\n  isolation: the overlay is\
+    \ rendered into a shadow root, so the application's stylesheet cannot restyle\
+    \ it and it cannot restyle the application\n  text: the diagnostic is written\
+    \ as text rather than markup, so a diagnostic quoting the developer's own HTML\
+    \ is read rather than run\nshows:\n  - the phase that failed, named as api:cli-dev\
+    \ names it\n  - the diagnostic text unchanged, because a reformatted compiler\
+    \ error is harder to read than the original\n  - the source location when the\
+    \ diagnostic carries one, linked to an editor\n  - nothing at all while the loop\
+    \ is healthy\ncovers:\n  - api:cli-generate failure\n  - migration failure, including\
+    \ the down_required stop that leaves the schema alone\n  - Go build failure\n\
+    \  - CSS build failure, which today only reaches the terminal\n  - an application\
+    \ process that exited, whatever its status\nexcluded:\n  - a request that failed\
+    \ inside a healthy application, which is an error response and belongs to api:error-renderer\n\
+    \  - reason: the overlay reports the state of the loop, not the outcome of a request\n\
+    survives_the_application:\n  rule: the overlay's stream terminates at requirement:dev-console,\
+    \ never at the application\n  effect: a page already open keeps showing the failure\
+    \ while the application is down, which is when the failure matters most\n  limit:\
+    \ a page not yet loaded cannot be served at all, so requirement:dev-console also\
+    \ shows the state on its index\nreload:\n  default: on, and disabled by dev.console.overlay.reload\n\
+    \  trigger: a transition to healthy whose build identity differs from the one\
+    \ the page was served under\n  learned: the page takes its build from the first\
+    \ record it receives rather than from anything rendered into the document, which\
+    \ keeps the framework injecting nothing into a page it does not own\n  window:\
+    \ an application replaced between the page being served and the stream connecting\
+    \ is not detected, which is a sub-second gap and costs a stale page rather than\
+    \ a wrong one\n  rationale: a concept:classic-web-style page has no client state\
+    \ to preserve, so a full reload is the whole feature and costs nothing\n  restraint:\
+    \ never reload while the loop is failing, because it would replace a readable\
+    \ diagnostic with a connection error\nnon_goals:\n  - a debug toolbar, a query\
+    \ list, or a timing panel on the application page; requirement:dev-telemetry-viewer\
+    \ answers those in requirement:dev-console\n  - clarified: requirement:dev-console-launcher\
+    \ is a link and a status, not an answer, which is the distinction decision:dev-launcher-admission\
+    \ draws and the reason the toolbar stays refused\n  - preserving scroll position\
+    \ or form state across a reload\n  - any presence in an api:cli-build artifact\n\
+    acceptance:\n  - a syntax error introduced mid-edit appears over the open page\
+    \ without the developer leaving the browser\n  - the diagnostic is byte-identical\
+    \ to the one the terminal received\n  - a fixed error clears the overlay and reloads\
+    \ the page once\n  - the overlay stays visible while the application process is\
+    \ down\n  - a build produced by api:cli-build serves no overlay module and no\
+    \ stream reference\n  - dev.console.overlay false serves no overlay, and leaves\
+    \ every served page byte-identical to a production render once requirement:dev-console-launcher\
+    \ is off too, since either one alone still wants the module\n```"
+  audience: actor:application-developer
+  scope: api:cli-dev only, through the reserved pwdev build mode of policy:dev-console-boundary
+  default: enabled
+  configuration: data:project-config dev.console.overlay
+  state: data:dev-loop-state
+  behavior: flow:dev-overlay-delivery
+  runtime_class: decision:dev-browser-runtime-scope development class, delivered by
+    the in-application exception it describes
+  delivery:
+    module: shared with requirement:dev-console-launcher, which needs the same console
+      address and the same stream
+    switch: a disabled overlay leaves the launcher its module; the address is injected
+      while either wants it, and neither does when both are off, which is when the
+      framework serves no development module and the core carries no import of one
+    consequence: turning both off is what makes the served page byte-identical to
+      a production render, rather than something the browser decides not to show
+    isolation: the overlay is rendered into a shadow root, so the application's stylesheet
+      cannot restyle it and it cannot restyle the application
+    text: the diagnostic is written as text rather than markup, so a diagnostic quoting
+      the developer's own HTML is read rather than run
+  shows:
+  - the phase that failed, named as api:cli-dev names it
+  - the diagnostic text unchanged, because a reformatted compiler error is harder
+    to read than the original
+  - the source location when the diagnostic carries one, linked to an editor
+  - nothing at all while the loop is healthy
+  covers:
+  - api:cli-generate failure
+  - migration failure, including the down_required stop that leaves the schema alone
+  - Go build failure
+  - CSS build failure, which today only reaches the terminal
+  - an application process that exited, whatever its status
+  excluded:
+  - a request that failed inside a healthy application, which is an error response
+    and belongs to api:error-renderer
+  - reason: the overlay reports the state of the loop, not the outcome of a request
+  survives_the_application:
+    rule: the overlay's stream terminates at requirement:dev-console, never at the
+      application
+    effect: a page already open keeps showing the failure while the application is
+      down, which is when the failure matters most
+    limit: a page not yet loaded cannot be served at all, so requirement:dev-console
+      also shows the state on its index
+  reload:
+    default: on, and disabled by dev.console.overlay.reload
+    trigger: a transition to healthy whose build identity differs from the one the
+      page was served under
+    learned: the page takes its build from the first record it receives rather than
+      from anything rendered into the document, which keeps the framework injecting
+      nothing into a page it does not own
+    window: an application replaced between the page being served and the stream connecting
+      is not detected, which is a sub-second gap and costs a stale page rather than
+      a wrong one
+    rationale: a concept:classic-web-style page has no client state to preserve, so
+      a full reload is the whole feature and costs nothing
+    restraint: never reload while the loop is failing, because it would replace a
+      readable diagnostic with a connection error
+  non_goals:
+  - a debug toolbar, a query list, or a timing panel on the application page; requirement:dev-telemetry-viewer
+    answers those in requirement:dev-console
+  - clarified: requirement:dev-console-launcher is a link and a status, not an answer,
+      which is the distinction decision:dev-launcher-admission draws and the reason
+      the toolbar stays refused
+  - preserving scroll position or form state across a reload
+  - any presence in an api:cli-build artifact
+  acceptance:
+  - a syntax error introduced mid-edit appears over the open page without the developer
+    leaving the browser
+  - the diagnostic is byte-identical to the one the terminal received
+  - a fixed error clears the overlay and reloads the page once
+  - the overlay stays visible while the application process is down
+  - a build produced by api:cli-build serves no overlay module and no stream reference
+  - dev.console.overlay false serves no overlay, and leaves every served page byte-identical
+    to a production render once requirement:dev-console-launcher is off too, since
+    either one alone still wants the module
+acceptance:
+  item-7732a340f8d3a174:
+    text: a syntax error introduced mid-edit appears over the open page without the
+      developer leaving the browser
+  item-0dce14a726974306:
+    text: the diagnostic is byte-identical to the one the terminal received
+  item-dfc656363e5bbefb:
+    text: a fixed error clears the overlay and reloads the page once
+  item-95cccd0c156fa8ca:
+    text: the overlay stays visible while the application process is down
+  item-e18b2f27a0616320:
+    text: a build produced by api:cli-build serves no overlay module and no stream
+      reference
+  item-ac3e58faf6b95068:
+    text: dev.console.overlay false serves no overlay, and leaves every served page
+      byte-identical to a production render once requirement:dev-console-launcher
+      is off too, since either one alone still wants the module
+relations:
+- relation: mentions
+  to: actor:application-developer
+  resolution: resolved
+- relation: mentions
+  to: api:cli-build
+  resolution: resolved
+- relation: mentions
+  to: api:cli-dev
+  resolution: resolved
+- relation: mentions
+  to: api:cli-generate
+  resolution: resolved
+- relation: mentions
+  to: api:error-renderer
+  resolution: resolved
+- relation: mentions
+  to: concept:classic-web-style
+  resolution: resolved
+- relation: mentions
+  to: data:dev-loop-state
+  resolution: resolved
+- relation: mentions
+  to: data:project-config
+  resolution: resolved
+- relation: mentions
+  to: decision:dev-browser-runtime-scope
+  resolution: resolved
+- relation: mentions
+  to: decision:dev-launcher-admission
+  resolution: resolved
+- relation: mentions
+  to: flow:dev-overlay-delivery
+  resolution: resolved
+- relation: mentions
+  to: policy:dev-console-boundary
+  resolution: resolved
+- relation: mentions
+  to: requirement:dev-console
+  resolution: resolved
+- relation: mentions
+  to: requirement:dev-console-launcher
+  resolution: resolved
+- relation: mentions
+  to: requirement:dev-telemetry-viewer
+  resolution: resolved

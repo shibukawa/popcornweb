@@ -1,0 +1,63 @@
+id: flow:tailwind-css-build
+type: flow
+title: Tailwind CSS Build Flow
+summary: Popcorn Web supervises the configured Tailwind host process without importing
+  Tailwind into the application runtime.
+facts:
+  legacy_body: "Popcorn Web supervises the configured Tailwind host process without\
+    \ importing Tailwind into the application runtime.\n\n```yaml\ndevelopment:\n\
+    \  trigger: api:cli-dev\n  steps:\n    - validate decision:tailwind-host-toolchain\n\
+    \    - let Tailwind resolve requirement:tailwind-plugin-integration declarations\
+    \ from the CSS entry\n    - start Tailwind with input, output, and watch mode\n\
+    \    - report prefixed diagnostics beside Go generation and build diagnostics\n\
+    \    - let decision:development-public-assets serve output under public without\
+    \ a Go rebuild\n    - rebuild only when a configured output outside public is\
+    \ an application build input\n    - terminate the child process during restart\
+    \ or shutdown\nproduction:\n  trigger: api:cli-build\n  steps:\n    - validate\
+    \ locked tool availability\n    - fail when a declared local plugin module is\
+    \ missing\n    - write minified CSS to a temporary sibling path\n    - replace\
+    \ configured output atomically after success\n    - run the Go build only with\
+    \ current CSS\nfailure:\n  - preserve the previous successful CSS file\n  - return\
+    \ nonzero for production builds\n  - keep development supervision alive and wait\
+    \ for source correction\n```"
+  development:
+    trigger: api:cli-dev
+    steps:
+    - validate decision:tailwind-host-toolchain
+    - let Tailwind resolve requirement:tailwind-plugin-integration declarations from
+      the CSS entry
+    - start Tailwind with input, output, and watch mode
+    - report prefixed diagnostics beside Go generation and build diagnostics
+    - let decision:development-public-assets serve output under public without a Go
+      rebuild
+    - rebuild only when a configured output outside public is an application build
+      input
+    - terminate the child process during restart or shutdown
+  production:
+    trigger: api:cli-build
+    steps:
+    - validate locked tool availability
+    - fail when a declared local plugin module is missing
+    - write minified CSS to a temporary sibling path
+    - replace configured output atomically after success
+    - run the Go build only with current CSS
+  failure:
+  - preserve the previous successful CSS file
+  - return nonzero for production builds
+  - keep development supervision alive and wait for source correction
+relations:
+- relation: mentions
+  to: api:cli-build
+  resolution: resolved
+- relation: mentions
+  to: api:cli-dev
+  resolution: resolved
+- relation: mentions
+  to: decision:development-public-assets
+  resolution: resolved
+- relation: mentions
+  to: decision:tailwind-host-toolchain
+  resolution: resolved
+- relation: mentions
+  to: requirement:tailwind-plugin-integration
+  resolution: resolved

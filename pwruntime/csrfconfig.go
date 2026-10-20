@@ -14,7 +14,7 @@ import "time"
 // reads as protection that is not there.
 type CSRFConfig struct {
 	Enabled   bool     `default:"false"`
-	Include   []string `default:"[\"/**\"]" dependon:".enabled"`
+	Include   []string `default:"/**" dependon:".enabled"`
 	Exclude   []string `env:"-" dependon:".enabled"`
 	FormField string   `default:"_csrf" dependon:".enabled"`
 	Header    string   `default:"X-CSRF-Token" dependon:".enabled"`

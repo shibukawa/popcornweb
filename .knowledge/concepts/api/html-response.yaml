@@ -1,0 +1,83 @@
+id: api:html-response
+type: api
+title: HTML Response API
+summary: pw.WriteHTML completes the normal typed HTML response path so handlers do
+  not branch on routine renderer errors.
+facts:
+  legacy_body: "pw.WriteHTML completes the normal typed HTML response path so handlers\
+    \ do not branch on routine renderer errors.\n\n```yaml\nsurface:\n  - WriteHTML(http.ResponseWriter,\
+    \ *http.Request, pw.HTMLFragment)\nbehavior:\n  - select and set the HTML content\
+    \ type\n  - resolve decision:implicit-document-shell and execute it with the page\
+    \ through api:render-html-chain\n  - pick the buffered or streaming branch through\
+    \ decision:automatic-async-render-selection, which consults api:client-classification\n\
+    \  - add Vary User-Agent when the chain reports an await block, since requirement:bot-synchronous-render\
+    \ gives that URL two representations\n  - apply configured compression on both\
+    \ branches, per policy:response-content-encoding, flushing per settled boundary\
+    \ on the streaming one per decision:streaming-response-compression\n  - apply\
+    \ data:html-render-config bounds through policy:async-render-bounds\n  - record\
+    \ rendering failures in logs and traces\n  - render api:problem-response HTML\
+    \ error pages when the response is not committed\ncommit_rule: after response\
+    \ commitment, record the error without attempting a replacement body\nasync: an\
+    \ await-capable chain streams without changing this surface, per requirement:async-html-rendering\n\
+    return: no normal error return\nboundary: handwritten handlers see neither pw.HTMLWrapper\
+    \ nor templates/document.pw.html\npartial: api:html-fragment-response answers\
+    \ a swap request with one template and none of this composition\n```"
+  surface:
+  - WriteHTML(http.ResponseWriter, *http.Request, pw.HTMLFragment)
+  behavior:
+  - select and set the HTML content type
+  - resolve decision:implicit-document-shell and execute it with the page through
+    api:render-html-chain
+  - pick the buffered or streaming branch through decision:automatic-async-render-selection,
+    which consults api:client-classification
+  - add Vary User-Agent when the chain reports an await block, since requirement:bot-synchronous-render
+    gives that URL two representations
+  - apply configured compression on both branches, per policy:response-content-encoding,
+    flushing per settled boundary on the streaming one per decision:streaming-response-compression
+  - apply data:html-render-config bounds through policy:async-render-bounds
+  - record rendering failures in logs and traces
+  - render api:problem-response HTML error pages when the response is not committed
+  commit_rule: after response commitment, record the error without attempting a replacement
+    body
+  async: an await-capable chain streams without changing this surface, per requirement:async-html-rendering
+  return: no normal error return
+  boundary: handwritten handlers see neither pw.HTMLWrapper nor templates/document.pw.html
+  partial: api:html-fragment-response answers a swap request with one template and
+    none of this composition
+relations:
+- relation: mentions
+  to: api:client-classification
+  resolution: resolved
+- relation: mentions
+  to: api:html-fragment-response
+  resolution: resolved
+- relation: mentions
+  to: api:problem-response
+  resolution: resolved
+- relation: mentions
+  to: api:render-html-chain
+  resolution: resolved
+- relation: mentions
+  to: data:html-render-config
+  resolution: resolved
+- relation: mentions
+  to: decision:automatic-async-render-selection
+  resolution: resolved
+- relation: mentions
+  to: decision:implicit-document-shell
+  resolution: resolved
+- relation: mentions
+  to: decision:streaming-response-compression
+  resolution: resolved
+- relation: mentions
+  to: policy:async-render-bounds
+  resolution: resolved
+- relation: mentions
+  to: policy:response-content-encoding
+  resolution: resolved
+- relation: mentions
+  to: requirement:async-html-rendering
+  resolution: resolved
+- relation: mentions
+  to: requirement:bot-synchronous-render
+  resolution: resolved

@@ -1,0 +1,255 @@
+id: requirement:scriptless-action-forms
+type: requirement
+title: Scriptless Action Forms
+summary: A form carrying `server-action` submits to a working endpoint with no browser
+  runtime, so adopting a server action costs none of the no-JavaScript behaviour requirement:classic-web-acceptance
+  asks for.
+facts:
+  legacy_body: "A form carrying `server-action` submits to a working endpoint with\
+    \ no browser runtime, so adopting a server action costs none of the no-JavaScript\
+    \ behaviour requirement:classic-web-acceptance asks for.\n\n```yaml\nsource: the\
+    \ scriptless_forms note of api:page-action-endpoint, and the downstream_dependency\
+    \ system:tinybind records against its own script-free render mode\nthe_condition_this_restores:\
+    \ requirement:classic-web-acceptance criteria works without the Popcorn Web browser\
+    \ runtime, which a route adopting server actions cannot meet today\ntoday:\n \
+    \ emitted: data-pw-action alone, per the scripted lowering set system:tinybind\
+    \ applies\n  no_method: that lowering deliberately writes no action, method, hidden\
+    \ selector, or hidden token, because it assumes a runtime intercepts the submit\n\
+    \  what_a_browser_does_with_it: a form declaring no method is a GET form, so a\
+    \ native submit navigates to the current URL with the fields as a query string\
+    \ and the handler never runs\n  the_same_with_the_runtime: requirement:action-invocation-runtime\
+    \ records that the GET interception takes it too, so the failure is not specific\
+    \ to scripting being off\n  no_application_workaround: an author-written action\
+    \ on a form carrying server-action is a generation error, and the hash is not\
+    \ a value an author can compute\ncsrf_is_coupled_to_the_method:\n  fact: requirement:module-native-csrf\
+    \ has system:tinybind insert the hidden token into every unsafe form, meaning\
+    \ post, put, patch and delete\n  consequence: a form the lowering leaves without\
+    \ a method is a GET form to that insertion too, so no token field is written and\
+    \ none is needed\n  therefore: emitting method=post is what makes the token appear,\
+    \ and the two cannot be sequenced apart\n  get_form_refusal_still_holds: the module\
+    \ refuses a token on a GET form, so nothing here asks for one\nshipped_upstream_2026_08_12:\n\
+    \  version: system:tinybind v0.5.8, answering the request this requirement produced\n\
+    \  emitted: method=post, a hidden _action selector carrying hash and name, and\
+    \ the token the module then inserts, beside the runtime attribute, from one build\n\
+    \  no_action_attribute: none is written, deliberately; a form declaring none submits\
+    \ to the document URL, which already holds this page's path parameters and whose\
+    \ query a POST keeps\n  why_that_beats_what_was_asked_for: decision:action-entry-point-selection\
+    \ asked for the page pattern to be written into the attribute, and this reaches\
+    \ the same destination with nothing to write and no render-time channel carrying\
+    \ the request path\n  registration: the page registers POST beside its GET, and\
+    \ the generated dispatcher branches on the selector\n  selector_channel: the query\
+    \ is read before the body, so a submit button's formaction overrides the form's\
+    \ own field rather than merely coexisting with it\n  default_response_helper:\
+    \ httpbind.DispatchAction runs the handler and redirects only if it wrote nothing,\
+    \ observing the response rather than asking the handler for a flag\n  bare_button_unchanged:\
+    \ it registers nothing extra, because a button has no native submit to serve\n\
+    two_shapes_as_evaluated_before:\n  kept_for_the_reasoning: the choice was between\
+    \ the direct endpoint and the page pattern, and upstream took the page's own URL\
+    \ by omission rather than by writing it\n  the_deciding_argument_held: a handler\
+    \ must not be able to read its path parameters from one entry point and not the\
+    \ other\ndefault_response:\n  rule: a handler that wrote nothing gets a 303 back\
+    \ to the page URL\n  why: post-redirect-get, so a reload does not resubmit and\
+    \ the address bar keeps showing the page\n  override: a handler that wrote a status,\
+    \ a header, or a body has that response stand, which is how it redirects elsewhere\
+    \ or renders validation errors inline\n  mechanism: the generated wrapper observes\
+    \ whether the handler wrote anything, so the handler needs no flag and no framework\
+    \ type\n  unchanged_for_the_scripted_path: the direct entry point adds no redirect,\
+    \ since a fetch has nothing to navigate\na_bare_button_has_no_scriptless_form:\n\
+    \  fact: nothing invokes an element that is not a submit control, and the generator\
+    \ cannot wrap it in a form without knowing an ancestor chain it cannot see\n \
+    \ upstream_rule: under the script-free mode server-action on anything but a form\
+    \ is a generation error naming the position\n  the_choice_here: whether that error\
+    \ fires depends on whether both lowerings are emitted or one is selected per build,\
+    \ which is decision:action-entry-point-selection\n  authoring_consequence_either_way:\
+    \ a form works with and without a runtime and a bare button works only with one,\
+    \ which is what rule:server-action-authoring tells an author\nrelation_to_the_scriptless_render_path:\n\
+    \  what_exists: pw/scriptless.go detects a scripting-off browser at request time\
+    \ through a noscript redirect and renders that request buffered\n  what_it_is_for:\
+    \ making an async page arrive settled rather than as fallbacks nothing replaces\n\
+    \  what_it_is_not: a lowering switch; the markup a form carries is decided at\
+    \ generation and the same bytes reach both clients\n  why_that_matters: system:tinybind\
+    \ places its mode switch at generation and calls a per-request switch cloaking,\
+    \ and this framework's detection does not contradict that, because it selects\
+    \ a render entry rather than different markup\n  therefore: a form that works\
+    \ both ways has to work from one set of attributes, which is the whole argument\
+    \ of decision:action-entry-point-selection\ncaching:\n  rule: a component holding\
+    \ an unsafe form cannot be output-cached, which requirement:module-native-csrf\
+    \ already enforces at generation across the call graph\n  new_here: a form that\
+    \ was a GET form under the scripted lowering becomes an unsafe one, so a page\
+    \ cached today can start failing that check\n  reading: the check firing is correct\
+    \ and the shape it pushes is unchanged, which is to split the cacheable list from\
+    \ the form that carries the token\nacceptance:\n  - a form carrying server-action\
+    \ reaches its handler with scripting disabled\n  - the same form keeps the page\
+    \ URL in the address bar and survives a reload\n  - a handler that writes nothing\
+    \ redirects back to the page, and one that writes anything produces exactly that\n\
+    \  - one page holding several forms dispatches to the one that was submitted\n\
+    \  - a submitted form without a valid token is rejected before the handler runs\n\
+    \  - a form on a parameterized route reaches a handler that can read the route's\
+    \ parameters\n  - no form carrying server-action is ever submitted as a GET, with\
+    \ or without the runtime\n  - a project using no server action regenerates byte-identical\
+    \ output\nopen_questions:\n  - whether a submit button carrying its own action\
+    \ inside a form uses formaction with the selector in the query, which is the native\
+    \ per-button override and the shape system:tinybind chose\n  - whether a page\
+    \ rendering an inline validation response has to restate the whole page, given\
+    \ the handler owns its whole response and the page's Load already knows how to\
+    \ render it\n```"
+  source: the scriptless_forms note of api:page-action-endpoint, and the downstream_dependency
+    system:tinybind records against its own script-free render mode
+  the_condition_this_restores: requirement:classic-web-acceptance criteria works without
+    the Popcorn Web browser runtime, which a route adopting server actions cannot
+    meet today
+  today:
+    emitted: data-pw-action alone, per the scripted lowering set system:tinybind applies
+    no_method: that lowering deliberately writes no action, method, hidden selector,
+      or hidden token, because it assumes a runtime intercepts the submit
+    what_a_browser_does_with_it: a form declaring no method is a GET form, so a native
+      submit navigates to the current URL with the fields as a query string and the
+      handler never runs
+    the_same_with_the_runtime: requirement:action-invocation-runtime records that
+      the GET interception takes it too, so the failure is not specific to scripting
+      being off
+    no_application_workaround: an author-written action on a form carrying server-action
+      is a generation error, and the hash is not a value an author can compute
+  csrf_is_coupled_to_the_method:
+    fact: requirement:module-native-csrf has system:tinybind insert the hidden token
+      into every unsafe form, meaning post, put, patch and delete
+    consequence: a form the lowering leaves without a method is a GET form to that
+      insertion too, so no token field is written and none is needed
+    therefore: emitting method=post is what makes the token appear, and the two cannot
+      be sequenced apart
+    get_form_refusal_still_holds: the module refuses a token on a GET form, so nothing
+      here asks for one
+  shipped_upstream_2026_08_12:
+    version: system:tinybind v0.5.8, answering the request this requirement produced
+    emitted: method=post, a hidden _action selector carrying hash and name, and the
+      token the module then inserts, beside the runtime attribute, from one build
+    no_action_attribute: none is written, deliberately; a form declaring none submits
+      to the document URL, which already holds this page's path parameters and whose
+      query a POST keeps
+    why_that_beats_what_was_asked_for: decision:action-entry-point-selection asked
+      for the page pattern to be written into the attribute, and this reaches the
+      same destination with nothing to write and no render-time channel carrying the
+      request path
+    registration: the page registers POST beside its GET, and the generated dispatcher
+      branches on the selector
+    selector_channel: the query is read before the body, so a submit button's formaction
+      overrides the form's own field rather than merely coexisting with it
+    default_response_helper: httpbind.DispatchAction runs the handler and redirects
+      only if it wrote nothing, observing the response rather than asking the handler
+      for a flag
+    bare_button_unchanged: it registers nothing extra, because a button has no native
+      submit to serve
+  two_shapes_as_evaluated_before:
+    kept_for_the_reasoning: the choice was between the direct endpoint and the page
+      pattern, and upstream took the page's own URL by omission rather than by writing
+      it
+    the_deciding_argument_held: a handler must not be able to read its path parameters
+      from one entry point and not the other
+  default_response:
+    rule: a handler that wrote nothing gets a 303 back to the page URL
+    why: post-redirect-get, so a reload does not resubmit and the address bar keeps
+      showing the page
+    override: a handler that wrote a status, a header, or a body has that response
+      stand, which is how it redirects elsewhere or renders validation errors inline
+    mechanism: the generated wrapper observes whether the handler wrote anything,
+      so the handler needs no flag and no framework type
+    unchanged_for_the_scripted_path: the direct entry point adds no redirect, since
+      a fetch has nothing to navigate
+  a_bare_button_has_no_scriptless_form:
+    fact: nothing invokes an element that is not a submit control, and the generator
+      cannot wrap it in a form without knowing an ancestor chain it cannot see
+    upstream_rule: under the script-free mode server-action on anything but a form
+      is a generation error naming the position
+    the_choice_here: whether that error fires depends on whether both lowerings are
+      emitted or one is selected per build, which is decision:action-entry-point-selection
+    authoring_consequence_either_way: a form works with and without a runtime and
+      a bare button works only with one, which is what rule:server-action-authoring
+      tells an author
+  relation_to_the_scriptless_render_path:
+    what_exists: pw/scriptless.go detects a scripting-off browser at request time
+      through a noscript redirect and renders that request buffered
+    what_it_is_for: making an async page arrive settled rather than as fallbacks nothing
+      replaces
+    what_it_is_not: a lowering switch; the markup a form carries is decided at generation
+      and the same bytes reach both clients
+    why_that_matters: system:tinybind places its mode switch at generation and calls
+      a per-request switch cloaking, and this framework's detection does not contradict
+      that, because it selects a render entry rather than different markup
+    therefore: a form that works both ways has to work from one set of attributes,
+      which is the whole argument of decision:action-entry-point-selection
+  caching:
+    rule: a component holding an unsafe form cannot be output-cached, which requirement:module-native-csrf
+      already enforces at generation across the call graph
+    new_here: a form that was a GET form under the scripted lowering becomes an unsafe
+      one, so a page cached today can start failing that check
+    reading: the check firing is correct and the shape it pushes is unchanged, which
+      is to split the cacheable list from the form that carries the token
+  acceptance:
+  - a form carrying server-action reaches its handler with scripting disabled
+  - the same form keeps the page URL in the address bar and survives a reload
+  - a handler that writes nothing redirects back to the page, and one that writes
+    anything produces exactly that
+  - one page holding several forms dispatches to the one that was submitted
+  - a submitted form without a valid token is rejected before the handler runs
+  - a form on a parameterized route reaches a handler that can read the route's parameters
+  - no form carrying server-action is ever submitted as a GET, with or without the
+    runtime
+  - a project using no server action regenerates byte-identical output
+  open_questions:
+  - whether a submit button carrying its own action inside a form uses formaction
+    with the selector in the query, which is the native per-button override and the
+    shape system:tinybind chose
+  - whether a page rendering an inline validation response has to restate the whole
+    page, given the handler owns its whole response and the page's Load already knows
+    how to render it
+acceptance:
+  item-8310ba88491b88fb:
+    text: a form carrying server-action reaches its handler with scripting disabled
+  item-11a14bf41c43b450:
+    text: the same form keeps the page URL in the address bar and survives a reload
+  item-aac979c3e0bac586:
+    text: a handler that writes nothing redirects back to the page, and one that writes
+      anything produces exactly that
+  item-c1843b0e1bdda960:
+    text: one page holding several forms dispatches to the one that was submitted
+  item-c1812e5ab71dc6ff:
+    text: a submitted form without a valid token is rejected before the handler runs
+  item-e1dce4a3b2ccd4d5:
+    text: a form on a parameterized route reaches a handler that can read the route's
+      parameters
+  item-8191184f2453497c:
+    text: no form carrying server-action is ever submitted as a GET, with or without
+      the runtime
+  item-82accd13ce85948e:
+    text: a project using no server action regenerates byte-identical output
+open_questions:
+  item-6d9f7938acb2c22d:
+    text: whether a submit button carrying its own action inside a form uses formaction
+      with the selector in the query, which is the native per-button override and
+      the shape system:tinybind chose
+  item-1e6e6967997f367c:
+    text: whether a page rendering an inline validation response has to restate the
+      whole page, given the handler owns its whole response and the page's Load already
+      knows how to render it
+relations:
+- relation: mentions
+  to: api:page-action-endpoint
+  resolution: resolved
+- relation: mentions
+  to: decision:action-entry-point-selection
+  resolution: resolved
+- relation: mentions
+  to: requirement:action-invocation-runtime
+  resolution: resolved
+- relation: mentions
+  to: requirement:classic-web-acceptance
+  resolution: resolved
+- relation: mentions
+  to: requirement:module-native-csrf
+  resolution: resolved
+- relation: mentions
+  to: rule:server-action-authoring
+  resolution: resolved
+- relation: mentions
+  to: system:tinybind
+  resolution: resolved

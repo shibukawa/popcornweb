@@ -1,0 +1,154 @@
+id: decision:navigable-answer-hub
+type: decision
+title: Manual Bootstrap Edits an Answer Hub
+summary: The Manual preset of requirement:init-presets navigates a list of every question
+  and its current answer, opening one question at a time and returning to the list,
+  instead of walking the questions in order from first to last.
+facts:
+  legacy_body: "The Manual preset of requirement:init-presets navigates a list of\
+    \ every question and its current answer, opening one question at a time and returning\
+    \ to the list, instead of walking the questions in order from first to last.\n\
+    \n```yaml\nstatus: accepted\ndecided: user 2026-08-05\nscope: api:cli-init only;\
+    \ api:cli-add and api:cli-new keep the linear stepper of decision:post-init-scaffold-wizard\n\
+    prior_art: vue-cli, where a preset list and a feature editor sit in front of the\
+    \ same option set\nquestion: how an operator revisits the third answer after the\
+    \ eighth question changed what it should be\nanswer:\n  screen: one hub listing\
+    \ every applicable question with its current answer, plus a create row\n  navigate:\
+    \ up and down over the rows, digits to jump\n  open: enter on a row shows that\
+    \ question, which is the existing step screen unchanged\n  return: accepting or\
+    \ leaving a question returns to the hub, not to the next question\n  create: enter\
+    \ on the create row writes the project\n  cancel: ctrl+c, unchanged\nsame_screen_as_review:\n\
+    \  fact: the hub is the decision:preset-first-bootstrap review screen with its\
+    \ rows made editable\n  effect: Manual is the hub opened on the defaults, and\
+    \ a preset is the hub opened on the preset's answers\n  reason: two screens that\
+    \ list every question and its answer would drift, and the review already had the\
+    \ harder half\nconditional_rows:\n  rule: a row appears when its step applies\
+    \ to the current answers, per the decision:interactive-project-bootstrap conditional-step\
+    \ rule\n  recompute: after every accepted answer, because a step's condition reads\
+    \ the answers before it\n  disappearing_row: its answer is dropped, unchanged\
+    \ from the linear wizard\n  appearing_row: shows the default it would have been\
+    \ asked with, and is marked as never answered\n  cursor: stays on the row it was\
+    \ on when one appears or disappears above it, so an answer does not move the selection\n\
+    answered_marking:\n  rule: a row records whether the operator opened it or the\
+    \ value is a default\n  shown: an unopened row reads as the default rather than\
+    \ as a decision\n  why: a hub with no first-to-last order has no other way to\
+    \ say which answers were considered\nordering:\n  rule: the rows keep the linear\
+    \ order of decision:interactive-project-bootstrap\n  reason: the dependent-follows-dependant\
+    \ ordering is what makes the list readable top to bottom, and a hub is read that\
+    \ way even when it is not walked that way\n  not_grouped: no sections, because\
+    \ every grouping puts the router and the store questions in different places and\
+    \ they are one decision\nfirst_run_concern:\n  problem: a hub shows every question\
+    \ at once, which is what a first project was not able to answer\n  answer: a first\
+    \ project takes a preset and never opens the hub with nothing decided; Manual\
+    \ is the path for someone who already knows what they are choosing\nimplementation:\n\
+    \  reuse: the wizardStep list, the choice and text steps, the conditional wrapper,\
+    \ and the theme are unchanged\n  new: a hub model that owns the cursor, the answered\
+    \ set, and the open step, replacing the index walk for this command\n  library:\
+    \ github.com/charmbracelet/bubbletea, host-only per decision:host-tools-target-runtime\n\
+    rationale:\n  - the answers are dependent, so the run that most needs to go back\
+    \ is the run that understood the question only after seeing a later one\n  - esc-to-previous\
+    \ was a one-step undo, and reaching the third answer from the ninth meant six\
+    \ presses and six re-accepts\n  - a hub makes the whole answer set visible, which\
+    \ is what a reviewer of a preset wants as well\nrejected_esc_history:\n  form:\
+    \ keep the stepper and let esc walk further back\n  why_not: it is the same six\
+    \ presses with a shorter name, and it still shows one question at a time\nnon_goals:\n\
+    \  - editing an answer after the project is written\n  - a hub for api:cli-add\
+    \ or api:cli-new, whose review approves a file plan rather than an answer set\n\
+    \  - saving a hub session as a preset\n```"
+  status: accepted
+  decided: user 2026-08-05
+  scope: api:cli-init only; api:cli-add and api:cli-new keep the linear stepper of
+    decision:post-init-scaffold-wizard
+  prior_art: vue-cli, where a preset list and a feature editor sit in front of the
+    same option set
+  question: how an operator revisits the third answer after the eighth question changed
+    what it should be
+  answer:
+    screen: one hub listing every applicable question with its current answer, plus
+      a create row
+    navigate: up and down over the rows, digits to jump
+    open: enter on a row shows that question, which is the existing step screen unchanged
+    return: accepting or leaving a question returns to the hub, not to the next question
+    create: enter on the create row writes the project
+    cancel: ctrl+c, unchanged
+  same_screen_as_review:
+    fact: the hub is the decision:preset-first-bootstrap review screen with its rows
+      made editable
+    effect: Manual is the hub opened on the defaults, and a preset is the hub opened
+      on the preset's answers
+    reason: two screens that list every question and its answer would drift, and the
+      review already had the harder half
+  conditional_rows:
+    rule: a row appears when its step applies to the current answers, per the decision:interactive-project-bootstrap
+      conditional-step rule
+    recompute: after every accepted answer, because a step's condition reads the answers
+      before it
+    disappearing_row: its answer is dropped, unchanged from the linear wizard
+    appearing_row: shows the default it would have been asked with, and is marked
+      as never answered
+    cursor: stays on the row it was on when one appears or disappears above it, so
+      an answer does not move the selection
+  answered_marking:
+    rule: a row records whether the operator opened it or the value is a default
+    shown: an unopened row reads as the default rather than as a decision
+    why: a hub with no first-to-last order has no other way to say which answers were
+      considered
+  ordering:
+    rule: the rows keep the linear order of decision:interactive-project-bootstrap
+    reason: the dependent-follows-dependant ordering is what makes the list readable
+      top to bottom, and a hub is read that way even when it is not walked that way
+    not_grouped: no sections, because every grouping puts the router and the store
+      questions in different places and they are one decision
+  first_run_concern:
+    problem: a hub shows every question at once, which is what a first project was
+      not able to answer
+    answer: a first project takes a preset and never opens the hub with nothing decided;
+      Manual is the path for someone who already knows what they are choosing
+  implementation:
+    reuse: the wizardStep list, the choice and text steps, the conditional wrapper,
+      and the theme are unchanged
+    new: a hub model that owns the cursor, the answered set, and the open step, replacing
+      the index walk for this command
+    library: github.com/charmbracelet/bubbletea, host-only per decision:host-tools-target-runtime
+  rationale:
+  - the answers are dependent, so the run that most needs to go back is the run that
+    understood the question only after seeing a later one
+  - esc-to-previous was a one-step undo, and reaching the third answer from the ninth
+    meant six presses and six re-accepts
+  - a hub makes the whole answer set visible, which is what a reviewer of a preset
+    wants as well
+  rejected_esc_history:
+    form: keep the stepper and let esc walk further back
+    why_not: it is the same six presses with a shorter name, and it still shows one
+      question at a time
+  non_goals:
+  - editing an answer after the project is written
+  - a hub for api:cli-add or api:cli-new, whose review approves a file plan rather
+    than an answer set
+  - saving a hub session as a preset
+lifecycle: accepted
+relations:
+- relation: mentions
+  to: api:cli-add
+  resolution: resolved
+- relation: mentions
+  to: api:cli-init
+  resolution: resolved
+- relation: mentions
+  to: api:cli-new
+  resolution: resolved
+- relation: mentions
+  to: decision:host-tools-target-runtime
+  resolution: resolved
+- relation: mentions
+  to: decision:interactive-project-bootstrap
+  resolution: resolved
+- relation: mentions
+  to: decision:post-init-scaffold-wizard
+  resolution: resolved
+- relation: mentions
+  to: decision:preset-first-bootstrap
+  resolution: resolved
+- relation: mentions
+  to: requirement:init-presets
+  resolution: resolved

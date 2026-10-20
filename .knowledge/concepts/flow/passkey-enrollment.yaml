@@ -1,0 +1,48 @@
+id: flow:passkey-enrollment
+type: flow
+title: Passkey Enrollment
+summary: An authenticated account adds a passkey after recent strong authentication.
+facts:
+  legacy_body: "An authenticated account adds a passkey after recent strong authentication.\n\
+    \n```yaml\npreconditions:\n  - active data:user-account\n  - recent OIDC, existing\
+    \ passkey, or approved administrator bootstrap\nflow:\n  - require CSRF-protected\
+    \ authenticated session\n  - begin requirement:contrib-passkey registration with\
+    \ stable account user handle\n  - exclude existing data:passkey-credential IDs\n\
+    \  - persist single-use ceremony state in requirement:contrib-auth-state\n  -\
+    \ validate browser response and finish registration\n  - atomically persist the\
+    \ new credential against the same account\n  - rotate session when policy treats\
+    \ enrollment as an authentication-strength change\nrules:\n  - never enroll from\
+    \ an unauthenticated email or username claim\n  - require user verification according\
+    \ to data:authentication-runtime-config\n  - audit success and safe failure without\
+    \ logging credential material\n```"
+  preconditions:
+  - active data:user-account
+  - recent OIDC, existing passkey, or approved administrator bootstrap
+  flow:
+  - require CSRF-protected authenticated session
+  - begin requirement:contrib-passkey registration with stable account user handle
+  - exclude existing data:passkey-credential IDs
+  - persist single-use ceremony state in requirement:contrib-auth-state
+  - validate browser response and finish registration
+  - atomically persist the new credential against the same account
+  - rotate session when policy treats enrollment as an authentication-strength change
+  rules:
+  - never enroll from an unauthenticated email or username claim
+  - require user verification according to data:authentication-runtime-config
+  - audit success and safe failure without logging credential material
+relations:
+- relation: mentions
+  to: data:authentication-runtime-config
+  resolution: resolved
+- relation: mentions
+  to: data:passkey-credential
+  resolution: resolved
+- relation: mentions
+  to: data:user-account
+  resolution: resolved
+- relation: mentions
+  to: requirement:contrib-auth-state
+  resolution: resolved
+- relation: mentions
+  to: requirement:contrib-passkey
+  resolution: resolved

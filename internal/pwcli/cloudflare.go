@@ -36,7 +36,7 @@ import (
 // it is pinned rather than "today" so two builds of one project agree.
 const (
 	workersModule                  = "github.com/syumai/workers"
-	workersModuleVersion           = "v0.33.0"
+	workersModuleVersion           = "v0.36.0"
 	defaultCompatibilityDate       = "2025-08-01"
 	cloudflareBuildTag             = "pwcloudflare"
 	cloudflareWorkerEntry          = "build/worker.mjs"
@@ -232,7 +232,7 @@ func cloudflareSettings(document minitoml.Document, config projectConfig) (cloud
 func buildCloudflareDeployment(ctx context.Context, root, stage string, config projectConfig, options buildOptions, progress *progressRegion, stdout, stderr io.Writer) (deploymentManifest, error) {
 	progress.Phase("staging worker source")
 	applicationRoot := filepath.Join(stage, "app")
-	if err := copyProjectForFunction(root, applicationRoot); err != nil {
+	if err := copyProjectForFunction(root, applicationRoot, config.Main); err != nil {
 		return deploymentManifest{}, err
 	}
 	excluded, err := excludeNetdevRegistration(applicationRoot)
@@ -256,6 +256,9 @@ func buildCloudflareDeployment(ctx context.Context, root, stage string, config p
 		}
 	}
 	if err := copyTransformedMain(root, stage, "main", config.Main, options.backend); err != nil {
+		return deploymentManifest{}, err
+	}
+	if err := copyMainPublicAssets(root, stage, config); err != nil {
 		return deploymentManifest{}, err
 	}
 	rewritten, err := rewriteEngineImports(stage, applicationRoot)

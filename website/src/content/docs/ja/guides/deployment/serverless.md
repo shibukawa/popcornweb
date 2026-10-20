@@ -40,8 +40,10 @@ pw build --target=cloudflare-workers
 ```
 
 成果物は `.pw/build/<target>/<backend>/` に生成され、`deployment.json` が付属します。
-プロセス型と source 型の target では `config.prod.toml` が必須です。fasthttp build には
+プロセス型と source 型の target は `config.prod.toml` があれば同梱し、無ければ環境変数だけで設定できます。fasthttp build には
 `project.fasthttp = true` も必要です。Cloudflare target は `nethttp` だけを build します。
+
+設定ファイルが無い場合、生成するDockerfileにはその `COPY` を含めません。アセット構築とパッケージングは `[assets]` の配置に従います。
 
 ## AWS Lambda
 
@@ -56,7 +58,7 @@ COPY --from=public.ecr.aws/awsguru/aws-lambda-adapter:1.0.1 \
 
 アプリケーションの entry point はそのままです。アダプターは `AWS_LWA_PORT`、`PORT`、
 `8080` の順で転送先を決め、Popcorn Web の listener も同じ割り当てに従います。生成先には
-Linux `bootstrap`、`config.prod.toml`、adapter version を固定した Dockerfile が入り、
+Linux `bootstrap`、存在する場合の `config.prod.toml`、adapter version を固定した Dockerfile が入り、
 Dockerfile が `APP_ENV=prod` を設定します。
 
 フレームワーク自身が Lambda Runtime API client を持たないのは意図的です。Web Adapter は

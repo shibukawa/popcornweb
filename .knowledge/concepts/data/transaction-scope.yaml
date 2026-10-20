@@ -1,0 +1,101 @@
+id: data:transaction-scope
+type: data
+title: Transaction Scope
+summary: One private per-request value tracking the active transaction and its savepoint
+  nesting for decision:savepoint-nested-transaction.
+facts:
+  legacy_body: "One private per-request value tracking the active transaction and\
+    \ its savepoint nesting for decision:savepoint-nested-transaction.\n\n```yaml\n\
+    visibility:\n  type: private\n  context_key: private\n  owner: data:request-context-capsule\n\
+    fields:\n  tx: \"*sql.Tx opened at depth 0\"\n  group: data:database-connection-set\
+    \ group the transaction belongs to\n  connection: label of the one connection\
+    \ the transaction holds within that group\n  depth: int, 0 for the real transaction,\
+    \ incremented per savepoint\n  savepoints: active generated names, innermost last\n\
+    \  failed: bool, set when a savepoint or commit operation left state unknown\n\
+    \  dialect: rule:savepoint-dialect-support capability of that connection's driver\n\
+    \  readonly: bool, taken from the selected connection and applied to the depth\
+    \ 0 transaction\nnaming:\n  pattern: pw_sp_{depth}\n  properties:\n    - ASCII\
+    \ identifier safe on every supported dialect\n    - unique within one scope because\
+    \ depth is unique per live savepoint\n    - never derived from user input\nderived:\n\
+    \  sql_executor: the scope tx while the effective group equals the scope group,\
+    \ otherwise the api:database-selection pool\nlifecycle:\n  - created by the first\
+    \ depth 0 api:transaction-runner call or by an owner that begins the transaction\n\
+    \  - a bare *sql.Tx installed as a context executor without a scope is adopted\
+    \ into one, so nesting still uses savepoints\n  - api:rdb-middleware auto transaction\
+    \ creates it before handler dispatch\n  - api:test-run transaction option creates\
+    \ it once per test\n  - each nested call pushes one savepoint and pops it on release\
+    \ or rollback\n  - discarded after commit or rollback of the depth 0 transaction\n\
+    constraints:\n  - one scope per request context chain, bound to one group for\
+    \ its whole life\n  - a group is chosen once at depth 0; no nested call moves\
+    \ a scope to another group\n  - callers cannot read, replace, or mutate the scope\n\
+    \  - a scope is not shared across requests, except the one api:test-run scope\
+    \ shared by all requests of a single test\n  - concurrent statements on one scope\
+    \ serialize on the single underlying connection\n  - savepoint push and pop are\
+    \ sequential per scope; do not nest transactions from concurrent goroutines on\
+    \ one scope\n```"
+  visibility:
+    type: private
+    context_key: private
+    owner: data:request-context-capsule
+  fields:
+    tx: '*sql.Tx opened at depth 0'
+    group: data:database-connection-set group the transaction belongs to
+    connection: label of the one connection the transaction holds within that group
+    depth: int, 0 for the real transaction, incremented per savepoint
+    savepoints: active generated names, innermost last
+    failed: bool, set when a savepoint or commit operation left state unknown
+    dialect: rule:savepoint-dialect-support capability of that connection's driver
+    readonly: bool, taken from the selected connection and applied to the depth 0
+      transaction
+  naming:
+    pattern: pw_sp_{depth}
+    properties:
+    - ASCII identifier safe on every supported dialect
+    - unique within one scope because depth is unique per live savepoint
+    - never derived from user input
+  derived:
+    sql_executor: the scope tx while the effective group equals the scope group, otherwise
+      the api:database-selection pool
+  lifecycle:
+  - created by the first depth 0 api:transaction-runner call or by an owner that begins
+    the transaction
+  - a bare *sql.Tx installed as a context executor without a scope is adopted into
+    one, so nesting still uses savepoints
+  - api:rdb-middleware auto transaction creates it before handler dispatch
+  - api:test-run transaction option creates it once per test
+  - each nested call pushes one savepoint and pops it on release or rollback
+  - discarded after commit or rollback of the depth 0 transaction
+  constraints:
+  - one scope per request context chain, bound to one group for its whole life
+  - a group is chosen once at depth 0; no nested call moves a scope to another group
+  - callers cannot read, replace, or mutate the scope
+  - a scope is not shared across requests, except the one api:test-run scope shared
+    by all requests of a single test
+  - concurrent statements on one scope serialize on the single underlying connection
+  - savepoint push and pop are sequential per scope; do not nest transactions from
+    concurrent goroutines on one scope
+relations:
+- relation: mentions
+  to: api:database-selection
+  resolution: resolved
+- relation: mentions
+  to: api:rdb-middleware
+  resolution: resolved
+- relation: mentions
+  to: api:test-run
+  resolution: resolved
+- relation: mentions
+  to: api:transaction-runner
+  resolution: resolved
+- relation: mentions
+  to: data:database-connection-set
+  resolution: resolved
+- relation: mentions
+  to: data:request-context-capsule
+  resolution: resolved
+- relation: mentions
+  to: decision:savepoint-nested-transaction
+  resolution: resolved
+- relation: mentions
+  to: rule:savepoint-dialect-support
+  resolution: resolved

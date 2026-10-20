@@ -1,0 +1,304 @@
+id: api:html-update-options
+type: api
+title: HTML Update Options
+summary: One pw-owned value carries every setting the update surface needs, so an
+  application configures partial updates the way it configures the rest of the runtime
+  and never names system:tinybind.
+facts:
+  legacy_body: "One pw-owned value carries every setting the update surface needs,\
+    \ so an application configures partial updates the way it configures the rest\
+    \ of the runtime and never names system:tinybind.\n\n```yaml\nsource: decision:update-runtime-convergence\n\
+    backs: the upstream htmlupdate Options value, which pw constructs and never exposes\n\
+    audience: api:application-lifecycle wiring and api:page-registry, per concept:public-package-boundaries\n\
+    configuration:\n  owner: data:html-render-config, as the update section of the\
+    \ existing html block\n  keys:\n    html.update.enabled: whether the mode negotiation,\
+    \ the endpoints, and the runtime tag are installed; default follows requirement:incremental-project-capabilities\
+    \ rather than being on for every project\n    html.update.validator_key: the secret\
+    \ keying the frame and input validators\n    html.update.max_manifest_bytes: the\
+    \ cap on the hint header, with the upstream default when unset\n  framework_fixed:\n\
+    \    header_prefix: Pw, which from system:tinybind v0.3.1 reaches the browser\
+    \ as configuration rather than by rebuilding the runtime\n    path_prefix: the\
+    \ reserved prefix of requirement:framework-script-assets, so nothing the framework\
+    \ owns can move outside one routing rule\n    data_attribute_prefix: one value\
+    \ used by generation, by the boundary render option, and by the runtime, so one\
+    \ document holds one spelling\n    prefix_is_the_module_default_not_the_brand:\n\
+    \      why: system:tinybind routetree compiles a page tree's templates without\
+    \ threading the prefix option, so branding it would give a page tree the default\
+    \ while a registered-router template took the brand, and one document would hold\
+    \ both spellings\n      chosen: agreement over branding, since the runtime reads\
+    \ its prefix from configuration and gains nothing from the name\n      revisit:\
+    \ when the option reaches both generation paths; requirement:tinybind-update-composition-seams\
+    \ carries the ask\n    global_name: this framework's own namespace, per api:client-update-api\n\
+    \    runtime_serving: declared caller-owned, so the module serves no asset and\
+    \ emits no tag of its own\n    reason_they_are_fixed: they are contracts of requirement:unified-update-runtime\
+    \ rather than deployment choices, and a project changing one would describe a\
+    \ framework it is not running\nvalidator_key:\n  required_when: any page that\
+    \ is not public, since an unkeyed digest of low-entropy content lets a guess be\
+    \ confirmed by comparing digests\n  absent: startup rejects the configuration\
+    \ when updates are enabled, per the startup validation of requirement:shared-web-runtime,\
+    \ rather than serving unkeyed digests\n  rotation: not a break; comparisons miss\
+    \ and the next response is a complete document\n  secrecy: the key is secret configuration\
+    \ metadata, so policy:query-log-safety and rule:configuration-advisories treat\
+    \ it as data:session-runtime-config secrets are treated\nbuild_identity:\n  value:\
+    \ the vcs.revision stamp the binary carries, or the module's per-process value\
+    \ for a dirty or unstamped tree\n  same_question_as: api:live-delivery-protocol,\
+    \ which also asks whether the page requesting was rendered by this build\n  differs_when_unstamped:\n\
+    \    live: reports nothing, which disables the check rather than inventing a value\
+    \ that would differ per process and reload every client on every restart\n   \
+    \ update: falls back to the per-process value, which costs a complete document\
+    \ after a restart and never a wrong delta\n    why_the_split_is_right: a frozen\
+    \ live screen is worse than a re-transferred page, so the two failure modes are\
+    \ not the same trade\n  effect: a page from another build is served a complete\
+    \ document, and a redraw from one is refused\nheaders:\n  render: Pw-Render, carrying\
+    \ 'mode;v=N'\n  manifest: Pw-Manifest, carrying the validators the browser already\
+    \ holds\n  build: Pw-Build, carrying the build the page was rendered by\n  modes:\
+    \ document when absent, plus navigation, action, redraw, and the live token of\
+    \ api:live-delivery-protocol\n  oversized_manifest: dropped rather than rejected,\
+    \ so the response is a larger delta instead of an error\nmount:\n  what: the redraw\
+    \ endpoint of requirement:reloadable-component-endpoint; the runtime asset is\
+    \ this framework's, so the module registers none\n  how: the module's own Mount,\
+    \ whose router interface api:serve-mux satisfies unchanged from system:tinybind\
+    \ v0.3.1\n  where: under the reserved prefix, alongside the framework script route\n\
+    \  collision: an unknown path below the reserved prefix still answers 404 ahead\
+    \ of application routing, so the reserved-prefix handler must learn these routes\
+    \ rather than being bypassed\n  registry: the reloadable component set, nil when\
+    \ a project publishes none\nstartup_validation:\n  options: the module reports\
+    \ every unusable option at once, which folds into the startup validation of requirement:shared-web-runtime\
+    \ rather than failing on the first one\n  registration: a duplicate or unidentified\
+    \ reloadable component returns an error, so a generated registry reports a diagnostic\
+    \ instead of aborting the process\n  key: a missing validator key with updates\
+    \ enabled is refused here, before request acceptance\ncsrf:\n  field_and_header:\
+    \ the hidden field name generation writes and the header the runtime sends, kept\
+    \ at the module defaults; the header is deliberately outside the Pw namespace\
+    \ because it is a name middleware already looks for\n  verification: a module\
+    \ entry reads header first then body and compares in constant time, which policy:csrf-protection\
+    \ calls through rather than reimplementing\n  token_supply: requirement:module-native-csrf,\
+    \ which passes it as a render option rather than through this value\nvary:\n \
+    \ what: a composition reports the request properties its output varies on, readable\
+    \ before rendering\n  use: an honest Vary header on a document or delta response,\
+    \ instead of the fixed set this framework guesses today\n  source: declared by\
+    \ a registered element and folded across the call graph by system:tinybind v0.3.3\n\
+    failure_hook:\n  what: every refused redraw reaches this framework with its kind,\
+    \ status, message, cause, and the component and instance it named\n  routed_to:\
+    \ api:error-renderer for the response and the request-scoped logger of api:logger\
+    \ for the record, so a redraw failure is no longer invisible\n  observability:\
+    \ the kind is a stable token, so requirement:modern-observability can count refusals\
+    \ by cause and distinguish ordinary version skew from anything else\n  version_skew_is_normal:\
+    \ an unknown component after a deploy is the expected fallback path, so it is\
+    \ recorded rather than alerted on\nsurface:\n  Negotiate: what a request asked\
+    \ for, resolved before route execution\n  WantsUpdate: whether the caller can\
+    \ apply an action response, which is the one branch point of requirement:action-response-update\n\
+    \  WriteUpdate and WriteUpdateStatus: the changed regions, with the handler's\
+    \ real status\n  WriteNavigate: a directive replacing the region list when the\
+    \ action changed where the user belongs, selected on the caller's behalf by api:redirect-response\n\
+    \  ScriptTag: the element loading the merged runtime, emitted by pw rather than\
+    \ by the upstream helper\nrules:\n  - pw tests its own modes before delegating,\
+    \ per the ordering rule of decision:update-runtime-convergence\n  - every negotiated\
+    \ response varies on the render header, and a delta response is never stored by\
+    \ a shared cache\n  - an unrecognized mode, version, or build resolves to a complete\
+    \ document rather than an error, which is what lets each capability ship incomplete\
+    \ without ever being incorrect\n  - handwritten application code configures this\
+    \ through data:html-render-config and never constructs the value\n```"
+  source: decision:update-runtime-convergence
+  backs: the upstream htmlupdate Options value, which pw constructs and never exposes
+  audience: api:application-lifecycle wiring and api:page-registry, per concept:public-package-boundaries
+  configuration:
+    owner: data:html-render-config, as the update section of the existing html block
+    keys:
+      html.update.enabled: whether the mode negotiation, the endpoints, and the runtime
+        tag are installed; default follows requirement:incremental-project-capabilities
+        rather than being on for every project
+      html.update.validator_key: the secret keying the frame and input validators
+      html.update.max_manifest_bytes: the cap on the hint header, with the upstream
+        default when unset
+    framework_fixed:
+      header_prefix: Pw, which from system:tinybind v0.3.1 reaches the browser as
+        configuration rather than by rebuilding the runtime
+      path_prefix: the reserved prefix of requirement:framework-script-assets, so
+        nothing the framework owns can move outside one routing rule
+      data_attribute_prefix: one value used by generation, by the boundary render
+        option, and by the runtime, so one document holds one spelling
+      prefix_is_the_module_default_not_the_brand:
+        why: system:tinybind routetree compiles a page tree's templates without threading
+          the prefix option, so branding it would give a page tree the default while
+          a registered-router template took the brand, and one document would hold
+          both spellings
+        chosen: agreement over branding, since the runtime reads its prefix from configuration
+          and gains nothing from the name
+        revisit: when the option reaches both generation paths; requirement:tinybind-update-composition-seams
+          carries the ask
+      global_name: this framework's own namespace, per api:client-update-api
+      runtime_serving: declared caller-owned, so the module serves no asset and emits
+        no tag of its own
+      reason_they_are_fixed: they are contracts of requirement:unified-update-runtime
+        rather than deployment choices, and a project changing one would describe
+        a framework it is not running
+  validator_key:
+    required_when: any page that is not public, since an unkeyed digest of low-entropy
+      content lets a guess be confirmed by comparing digests
+    absent: startup rejects the configuration when updates are enabled, per the startup
+      validation of requirement:shared-web-runtime, rather than serving unkeyed digests
+    rotation: not a break; comparisons miss and the next response is a complete document
+    secrecy: the key is secret configuration metadata, so policy:query-log-safety
+      and rule:configuration-advisories treat it as data:session-runtime-config secrets
+      are treated
+  build_identity:
+    value: the vcs.revision stamp the binary carries, or the module's per-process
+      value for a dirty or unstamped tree
+    same_question_as: api:live-delivery-protocol, which also asks whether the page
+      requesting was rendered by this build
+    differs_when_unstamped:
+      live: reports nothing, which disables the check rather than inventing a value
+        that would differ per process and reload every client on every restart
+      update: falls back to the per-process value, which costs a complete document
+        after a restart and never a wrong delta
+      why_the_split_is_right: a frozen live screen is worse than a re-transferred
+        page, so the two failure modes are not the same trade
+    effect: a page from another build is served a complete document, and a redraw
+      from one is refused
+  headers:
+    render: Pw-Render, carrying 'mode;v=N'
+    manifest: Pw-Manifest, carrying the validators the browser already holds
+    build: Pw-Build, carrying the build the page was rendered by
+    modes: document when absent, plus navigation, action, redraw, and the live token
+      of api:live-delivery-protocol
+    oversized_manifest: dropped rather than rejected, so the response is a larger
+      delta instead of an error
+  mount:
+    what: the redraw endpoint of requirement:reloadable-component-endpoint; the runtime
+      asset is this framework's, so the module registers none
+    how: the module's own Mount, whose router interface api:serve-mux satisfies unchanged
+      from system:tinybind v0.3.1
+    where: under the reserved prefix, alongside the framework script route
+    collision: an unknown path below the reserved prefix still answers 404 ahead of
+      application routing, so the reserved-prefix handler must learn these routes
+      rather than being bypassed
+    registry: the reloadable component set, nil when a project publishes none
+  startup_validation:
+    options: the module reports every unusable option at once, which folds into the
+      startup validation of requirement:shared-web-runtime rather than failing on
+      the first one
+    registration: a duplicate or unidentified reloadable component returns an error,
+      so a generated registry reports a diagnostic instead of aborting the process
+    key: a missing validator key with updates enabled is refused here, before request
+      acceptance
+  csrf:
+    field_and_header: the hidden field name generation writes and the header the runtime
+      sends, kept at the module defaults; the header is deliberately outside the Pw
+      namespace because it is a name middleware already looks for
+    verification: a module entry reads header first then body and compares in constant
+      time, which policy:csrf-protection calls through rather than reimplementing
+    token_supply: requirement:module-native-csrf, which passes it as a render option
+      rather than through this value
+  vary:
+    what: a composition reports the request properties its output varies on, readable
+      before rendering
+    use: an honest Vary header on a document or delta response, instead of the fixed
+      set this framework guesses today
+    source: declared by a registered element and folded across the call graph by system:tinybind
+      v0.3.3
+  failure_hook:
+    what: every refused redraw reaches this framework with its kind, status, message,
+      cause, and the component and instance it named
+    routed_to: api:error-renderer for the response and the request-scoped logger of
+      api:logger for the record, so a redraw failure is no longer invisible
+    observability: the kind is a stable token, so requirement:modern-observability
+      can count refusals by cause and distinguish ordinary version skew from anything
+      else
+    version_skew_is_normal: an unknown component after a deploy is the expected fallback
+      path, so it is recorded rather than alerted on
+  surface:
+    Negotiate: what a request asked for, resolved before route execution
+    WantsUpdate: whether the caller can apply an action response, which is the one
+      branch point of requirement:action-response-update
+    WriteUpdate and WriteUpdateStatus: the changed regions, with the handler's real
+      status
+    WriteNavigate: a directive replacing the region list when the action changed where
+      the user belongs, selected on the caller's behalf by api:redirect-response
+    ScriptTag: the element loading the merged runtime, emitted by pw rather than by
+      the upstream helper
+  rules:
+  - pw tests its own modes before delegating, per the ordering rule of decision:update-runtime-convergence
+  - every negotiated response varies on the render header, and a delta response is
+    never stored by a shared cache
+  - an unrecognized mode, version, or build resolves to a complete document rather
+    than an error, which is what lets each capability ship incomplete without ever
+    being incorrect
+  - handwritten application code configures this through data:html-render-config and
+    never constructs the value
+relations:
+- relation: mentions
+  to: api:application-lifecycle
+  resolution: resolved
+- relation: mentions
+  to: api:client-update-api
+  resolution: resolved
+- relation: mentions
+  to: api:error-renderer
+  resolution: resolved
+- relation: mentions
+  to: api:live-delivery-protocol
+  resolution: resolved
+- relation: mentions
+  to: api:logger
+  resolution: resolved
+- relation: mentions
+  to: api:page-registry
+  resolution: resolved
+- relation: mentions
+  to: api:redirect-response
+  resolution: resolved
+- relation: mentions
+  to: api:serve-mux
+  resolution: resolved
+- relation: mentions
+  to: concept:public-package-boundaries
+  resolution: resolved
+- relation: mentions
+  to: data:html-render-config
+  resolution: resolved
+- relation: mentions
+  to: data:session-runtime-config
+  resolution: resolved
+- relation: mentions
+  to: decision:update-runtime-convergence
+  resolution: resolved
+- relation: mentions
+  to: policy:csrf-protection
+  resolution: resolved
+- relation: mentions
+  to: policy:query-log-safety
+  resolution: resolved
+- relation: mentions
+  to: requirement:action-response-update
+  resolution: resolved
+- relation: mentions
+  to: requirement:framework-script-assets
+  resolution: resolved
+- relation: mentions
+  to: requirement:incremental-project-capabilities
+  resolution: resolved
+- relation: mentions
+  to: requirement:modern-observability
+  resolution: resolved
+- relation: mentions
+  to: requirement:module-native-csrf
+  resolution: resolved
+- relation: mentions
+  to: requirement:reloadable-component-endpoint
+  resolution: resolved
+- relation: mentions
+  to: requirement:shared-web-runtime
+  resolution: resolved
+- relation: mentions
+  to: requirement:tinybind-update-composition-seams
+  resolution: resolved
+- relation: mentions
+  to: requirement:unified-update-runtime
+  resolution: resolved
+- relation: mentions
+  to: rule:configuration-advisories
+  resolution: resolved
+- relation: mentions
+  to: system:tinybind
+  resolution: resolved

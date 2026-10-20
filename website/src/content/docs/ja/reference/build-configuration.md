@@ -57,6 +57,8 @@ dynamo = []
 firestore = []
 ```
 
+クエリがないプロジェクトでも `queries = []` を明示します。`generate.queries` の省略と、空の対象リストは別の意味です。
+
 各 purpose は、[`pw generate`](/ja/pw/project/generate/) が*その purpose のために*読んで
 よいディレクトリを列挙します。それ以外は読みません。`queries` が挙げていないディレクトリの
 `.pw.sql` は、生成処理から見えません。そのため、設定された用途のディレクトリ外に置かれた
@@ -159,6 +161,37 @@ max = 0
 
 `dir` はツール側のパスです。ファイルの場所を `pw` に伝えるだけで、ランタイムの意味は
 ありません。
+
+## `[assets]`
+
+```toml
+[assets]
+public = "cmd/app/public"
+derived = "cmd/app/dist/public"
+embed = "cmd/app/public.go"
+```
+
+| キー | 既定値 | 用途 |
+| --- | --- | --- |
+| `assets.public` | `"public"` | 編集する入力ツリー |
+| `assets.derived` | `"dist/public"` | 配信・埋め込み対象のビルド済みツリー |
+| `assets.embed` | `"public.go"` | アセット構築前に検査する、手書きのGo埋め込みファイル |
+
+すべて `popcornweb.toml` があるディレクトリからの相対パスです。ルート外へ出るパス、
+途中の要素を含むシンボリックリンク、入力と出力が重なる配置は拒否します。
+`go:embed` の制約により、派生ツリーは埋め込みファイルのディレクトリ配下に置きます。
+上の例では `cmd/app/public.go` に `//go:embed all:dist/public` と
+`fs.Sub(embeddedPublic, "dist/public")` を記述します。
+
+`public_manifest_pw_gen.go` は埋め込みファイルと同じディレクトリ・パッケージに生成します。
+`manifest.json`、`routes.json`、中間出力の `derived/`、変換キャッシュの `cache/` は
+派生ツリーの隣、上の例なら `cmd/app/dist/` に出力します。コンポーネントから抽出した
+ファイルは入力ツリーの `generated/` 配下です。Tailwindの入出力は引き続きプロジェクト相対です。
+
+`pw dev` は `assets.derived` を `SERVER_PUBLIC_LOCAL_ROOT` としてアプリに渡します。
+直接 `go run -tags=pwdev` する場合は `server.public.local_root` を指定できます。
+既定値は `dist/public` です。プロジェクトルート、生成するimportパス、設定ファイル、
+dotenvの探索基準は変わりません。
 
 ## `[assets.tailwind]`
 

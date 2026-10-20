@@ -1,0 +1,237 @@
+id: data:session-runtime-config
+type: data
+title: Session Runtime Config
+summary: The `[session]` binding selects where per-browser state lives and how its
+  token cookie travels, and declares no duration at all.
+facts:
+  legacy_body: "The `[session]` binding selects where per-browser state lives and\
+    \ how its token cookie travels, and declares no duration at all.\n\n```yaml\n\
+    registration: automatically registered by pw\ndeclaration: the struct lives in\
+    \ popcornweb/sessionconfig and pw re-exports it as a true alias, per decision:framework-owned-session-extension\n\
+    scope: placement and cookie policy; every lifetime is declared by data:authentication-runtime-config,\
+    \ per decision:session-lifetime-owned-by-auth\nfields:\n  enabled: bool\n  backend:\
+    \ rdb, cookie, redis, dynamo, firestore, dev-volatile, or dev-persist; general\
+    \ storage backend or development intent mode per decision:development-session-modes\n\
+    \  retention: how long the store may hold one record, default 720h, narrowed by\
+    \ the auth.session lifetime, per decision:storage-bounded-session-record\n  cookie.name:\
+    \ string\n  cookie.path: string\n  cookie.domain: optional string\n  cookie.secure:\
+    \ bool\n  cookie.http_only: bool\n  cookie.same_site: strict, lax, or none\n \
+    \ cookie_store.name: cookie holding the sealed record under backend cookie\n \
+    \ keyring.secret: base64 secret of at least 256 bits, read from SESSION_KEYRING_SECRET\
+    \ or a ${NAME} reference\n  keyring.previous_secrets: retired secrets kept readable\
+    \ during a rotation\nkeyring:\n  serves: session.ReadOnly signing and session.Private\
+    \ sealing alike, because session.Keyring derives one purpose-separated subkey\
+    \ per mode from one secret, per policy:cookie-value-protection\n  required_when:\
+    \ a registered slot remains signed or sealed in a browser cookie; dev-volatile\
+    \ Private and ServerOnly records need no keyring\n  classification: secret, so\
+    \ policy:log-emission redaction and the rule:configuration-advisories literal-secret-in-config-file\
+    \ check both apply without naming the field\n  renamed_from:\n    keys: cookie_store.secret\
+    \ and cookie_store.previous_secrets\n    reason: the prefix said the key belonged\
+    \ to the cookie backend, and decision:slot-declared-placement made it the session-wide\
+    \ keyring that a deployment on rdb or redis also needs\n    kept: cookie_store.name,\
+    \ which really is the cookie backend's own record cookie\n    transitional: a\
+    \ configuration still carrying cookie_store.secret fails startup naming keyring.secret,\
+    \ rather than being ignored\ndevelopment_generation:\n  problem: requiring an\
+    \ authored secret to run a scaffolded project puts a deployment concern in the\
+    \ way of getting started\n  applies_when: dev-persist, explicit cookie storage,\
+    \ or declared cookie-protected slots require a keyring\n  generation: api:cli-init\
+    \ generates a per-project keyring from crypto/rand only for dev-persist, explicit\
+    \ cookie storage, or another development configuration with protected cookie slots\n\
+    \  persistence: on disk, so it survives restarting the developer loop, the machine,\
+    \ and the day\n  rejected_startup_generation_for_persistent_mode:\n    shape:\
+    \ generating per process, or per developer loop, and discarding it at shutdown\n\
+    \    defect: every signed and sealed value dies with the process, so restarting\
+    \ the loop logs the developer out and empties every cart and preference being\
+    \ worked on\n    note: the requirement:contrib-devidp client credentials are generated\
+    \ that way for good reason, because they mean nothing beyond one run; a keyring\
+    \ means the opposite\n  scope: protected development cookies only; dev-volatile\
+    \ with no signed cookie slots generates nothing\n  cost:\n    fact: config.dev.toml\
+    \ is normally committed, so one generated secret is shared by every clone of the\
+    \ project\n    accepted: the value protects localhost development cookies, and\
+    \ rule:configuration-advisories already grades a dev literal as a note rather\
+    \ than a finding to act on\n    override: a developer wanting a private one sets\
+    \ SESSION_KEYRING_SECRET, which data:loaded-configuration ranks above TOML\n \
+    \ guardrail: the same file diagnosed as any other token reports literal-secret-in-config-file\
+    \ as an error, so the dev convenience cannot travel to a deployment unnoticed\n\
+    \  not_a_placeholder: the value is random per project, so it is not what the rule:configuration-advisories\
+    \ scaffolded-or-placeholder-secret check looks for; that check still covers a\
+    \ fixed value shipped in a template\nplugin_fields:\n  sessionstore/redis:\n \
+    \   redis.dsn: redis or rediss URL, read from SESSION_REDIS_DSN or a ${NAME} reference\n\
+    \    redis.key_prefix: string\n    redis.connect_timeout: duration bounding the\
+    \ startup ping and per-command deadlines\n  sessionstore/<engine>:\n    rdb.source:\
+    \ middleware or dedicated\n    rdb.group: middleware-only data:database-connection-set\
+    \ group holding the session tables\n    rdb.dsn: dedicated-only URL such as sqlite://app.db\
+    \ or sqlite://:memory:\n    rdb.table: string\n    rdb.busy_timeout: duration\n\
+    \  sessionstore/dynamo:\n    dynamo.table: declared table name, default popcornweb_session,\
+    \ resolved by rule:dynamodb-table-naming\n    dynamo_has_no_endpoint: data:dynamodb-runtime-config\
+    \ already opens the client this backend borrows\n    dynamo.consistent_read: bool,\
+    \ default false, per decision:dynamodb-session-read-consistency\nmoved_out:\n\
+    \  keys: ttl, idle_timeout, and renewal_interval\n  to: the auth.session binding,\
+    \ whose struct lives in popcornweb/sessionconfig and which popcornweb/plugin/auth\
+    \ binds\n  reason: decision:session-lifetime-owned-by-auth\n  read_by: pw, which\
+    \ enforces the durations without importing the plugin that declares them\n  transitional:\
+    \ a configuration still carrying session.ttl fails startup naming the auth.session\
+    \ key that replaced it, rather than being ignored\nimplemented:\n  binding: enabled,\
+    \ backend, and every cookie, cookie_store, and keyring key; the durations are\
+    \ under auth.session\n  rdb_keys: rdb.source, rdb.dsn, and rdb.table are declared\
+    \ by pw rather than by the plugin\n  backend: rdb, cookie, redis, dynamo, firestore,\
+    \ dev-volatile, and dev-persist\n  legacy_memory: rejected as unregistered public\
+    \ configuration; process-local memory remains an internal implementation of dev-volatile\n\
+    \  redis_keys: redis.dsn, redis.key_prefix, and redis.connect_timeout are declared\
+    \ by pw rather than by the plugin\n  source: middleware only\ndeferred:\n  - dedicated\
+    \ rdb source and rdb.busy_timeout\n  - plugin-owned registration of backend-specific\
+    \ keys\nrules:\n  - all keys are declared under one session binding\n  - retention\
+    \ is the one duration here, and it bounds the table rather than a proof; every\
+    \ other duration is a misplaced auth.session key\n  - reject a non-positive retention\
+    \ for a server backend, because the sweep reads a zero expiry as already past\
+    \ and the renewal statement never matches one\n  - related fields share cookie,\
+    \ cookie_store, keyring, redis, or rdb prefixes\n  - the cookie backend needs\
+    \ no storage and reuses the cookie policy for its record cookie\n  - the backend\
+    \ key names which server backend to use; api:session-registry decides which slots\
+    \ go there, per decision:slot-declared-placement\n  - reject an empty or under-length\
+    \ keyring.secret when any registered slot remains signed or sealed in a browser\
+    \ cookie\n  - reject dev-volatile and dev-persist outside the resolved dev environment\n\
+    \  - resolve dev-volatile to decision:development-memory-session-backend and dev-persist\
+    \ to decision:cookie-session-storage\n  - do not accept memory as public configuration\
+    \ vocabulary\n  - the requirement is not new with decision:slot-declared-placement;\
+    \ session.ReadOnly already needed it to sign, and that decision only added session.Private\
+    \ under a server backend\n  - reject an unset keyring.secret only when the resolved\
+    \ placement uses a signed or sealed browser cookie\n  - reject a keyring.secret\
+    \ literal in the TOML outside dev, which rule:configuration-advisories reports\
+    \ as literal-secret-in-config-file\n  - reject backend cookie when any session.ServerOnly\
+    \ slot is registered, naming the slot, because that slot asked for revocation\
+    \ the cookie backend cannot give\n  - reject an empty redis.dsn, a non-redis scheme,\
+    \ or a server that fails the startup ping when backend is redis\n  - report a\
+    \ malformed redis.dsn by shape only, because the URL can carry a password\n  -\
+    \ keep the keyring out of the file itself for every token but dev; development_generation\
+    \ writes one only when the selected development mode or slot placement needs it\n\
+    \  - rdb, redis, dynamo, and firestore require blank imports that register them,\
+    \ per decision:import-registered-session-plugins; cookie and both development\
+    \ modes are built in\n  - a selected backend with no registered factory fails\
+    \ startup with the missing import line named\n  - validate only fields used by\
+    \ the selected imported backend\n  - redis accepts Redis or Valkey endpoints through\
+    \ requirement:contrib-redis-valkey\n  - middleware source reuses a *sql.DB owned\
+    \ by api:rdb-middleware and forbids session.rdb.dsn\n  - middleware source resolves\
+    \ its group through policy:connection-group-selection and rejects a readonly one\n\
+    \  - dedicated source opens a separately owned pool and requires session.rdb.dsn\n\
+    \  - dedicated source delegates DSN handling to separately imported database/sql\
+    \ drivers\n  - reject dedicated source when its canonical connection identity\
+    \ equals middleware.rdb.dsn; select middleware source instead\n  - Popcorn Web\
+    \ initially guarantees rdb with requirement:contrib-sqlite, including sqlite://:memory:\n\
+    \  - reject unimported backends and unregistered RDB drivers at startup\n  - the\
+    \ dynamo backend carries no endpoint or credential of its own, because data:dynamodb-runtime-config\
+    \ already holds them\n  - the dynamo backend rejects a configured ttl longer than\
+    \ what the deployment can expire, since decision:dynamodb-session-expiry leaves\
+    \ removal to TTL\n  - redact Redis and RDB DSN credentials and sensitive query\
+    \ values\ncontracts:\n  tiers: requirement:state-storage-tiers\n  registry: api:session-registry\n\
+    \  store: api:session-store\n  manager: api:session-manager\n  plugin: api:session-backend-plugin\n\
+    \  lifecycle: flow:session-lifecycle\n  security: policy:session-security\nboundary:\n\
+    \  - session storage is distinct from login, per concept:session-storage-boundary\n\
+    \  - login sessions are distinct from single-use requirement:contrib-auth-state\
+    \ ceremony records\n```"
+  legacy_parse_issues:
+  - kind: legacy_parse_error
+    block: 0
+    message: "mapping values are not allowed here\n  in \"<unicode string>\", line\
+      \ 50, column 76:\n     ... ite://app.db or sqlite://:memory:\n             \
+      \                            ^"
+relations:
+- relation: mentions
+  to: api:cli-init
+  resolution: resolved
+- relation: mentions
+  to: api:rdb-middleware
+  resolution: resolved
+- relation: mentions
+  to: api:session-backend-plugin
+  resolution: resolved
+- relation: mentions
+  to: api:session-manager
+  resolution: resolved
+- relation: mentions
+  to: api:session-registry
+  resolution: resolved
+- relation: mentions
+  to: api:session-store
+  resolution: resolved
+- relation: mentions
+  to: concept:session-storage-boundary
+  resolution: resolved
+- relation: mentions
+  to: data:authentication-runtime-config
+  resolution: resolved
+- relation: mentions
+  to: data:database-connection-set
+  resolution: resolved
+- relation: mentions
+  to: data:dynamodb-runtime-config
+  resolution: resolved
+- relation: mentions
+  to: data:loaded-configuration
+  resolution: resolved
+- relation: mentions
+  to: decision:cookie-session-storage
+  resolution: resolved
+- relation: mentions
+  to: decision:development-memory-session-backend
+  resolution: resolved
+- relation: mentions
+  to: decision:development-session-modes
+  resolution: resolved
+- relation: mentions
+  to: decision:dynamodb-session-expiry
+  resolution: resolved
+- relation: mentions
+  to: decision:dynamodb-session-read-consistency
+  resolution: resolved
+- relation: mentions
+  to: decision:framework-owned-session-extension
+  resolution: resolved
+- relation: mentions
+  to: decision:import-registered-session-plugins
+  resolution: resolved
+- relation: mentions
+  to: decision:session-lifetime-owned-by-auth
+  resolution: resolved
+- relation: mentions
+  to: decision:slot-declared-placement
+  resolution: resolved
+- relation: mentions
+  to: decision:storage-bounded-session-record
+  resolution: resolved
+- relation: mentions
+  to: flow:session-lifecycle
+  resolution: resolved
+- relation: mentions
+  to: policy:connection-group-selection
+  resolution: resolved
+- relation: mentions
+  to: policy:cookie-value-protection
+  resolution: resolved
+- relation: mentions
+  to: policy:log-emission
+  resolution: resolved
+- relation: mentions
+  to: policy:session-security
+  resolution: resolved
+- relation: mentions
+  to: requirement:contrib-auth-state
+  resolution: resolved
+- relation: mentions
+  to: requirement:contrib-devidp
+  resolution: resolved
+- relation: mentions
+  to: requirement:contrib-redis-valkey
+  resolution: resolved
+- relation: mentions
+  to: requirement:contrib-sqlite
+  resolution: resolved
+- relation: mentions
+  to: requirement:state-storage-tiers
+  resolution: resolved
+- relation: mentions
+  to: rule:configuration-advisories
+  resolution: resolved
+- relation: mentions
+  to: rule:dynamodb-table-naming
+  resolution: resolved

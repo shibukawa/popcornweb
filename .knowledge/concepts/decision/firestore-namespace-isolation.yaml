@@ -1,0 +1,65 @@
+id: decision:firestore-namespace-isolation
+type: decision
+title: A Namespace Replaces The Table Prefix
+summary: Where DynamoDB isolates a deployment or a test run by resolving every declared
+  table name onto a deployed one, Firestore carries a namespace on every key, so the
+  isolation dimension is configuration on the client and no store builds a name.
+facts:
+  legacy_body: "Where DynamoDB isolates a deployment or a test run by resolving every\
+    \ declared table name onto a deployed one, Firestore carries a namespace on every\
+    \ key, so the isolation dimension is configuration on the client and no store\
+    \ builds a name.\n\n```yaml\nstatus: accepted\ndecided: 2026-08-05\nwhat_rule_dynamodb_table_naming_solved:\n\
+    \  problem: a declared table name and a deployed one differ, and every call site\
+    \ would otherwise build the deployed string\n  answer: a resolver function installed\
+    \ once, composed from a prefix and an explicit map\nwhy_it_has_no_counterpart:\n\
+    \  a_kind_is_intrinsic: an entity of kind popcornweb_session is one wherever it\
+    \ is stored, which is why system:tinybind puts the kind on the type rather than\
+    \ in configuration; a deployment does not rename it\n  nothing_to_resolve: firestorebind\
+    \ offers no table resolver for exactly this reason, unlike the dynamobind option\
+    \ rule:dynamodb-table-naming needs\n  so_the_kind_stays_literal: one constant\
+    \ per store, and no mapping layer between the source and the wire\nwhat_the_namespace_does_instead:\n\
+    \  scope: every key in the database, across every kind at once\n  set_by: datastore.WithNamespace\
+    \ on the client for a process-wide value, and firestorebind's per-request resolver\
+    \ for a tenant that varies\n  framework_use: one process-wide namespace from data:firestore-runtime-config,\
+    \ and nothing per request\n  effect: one configuration value isolates a whole\
+    \ deployment's framework kinds, where the DynamoDB prefix isolates them one declared\
+    \ name at a time\ntests: requirement:firestore-test-isolation, which is the same\
+    \ argument reached with the namespace instead of the prefix\nwhat_is_better_than_a_prefix:\n\
+    \  one_value_covers_every_kind: a run cannot half-isolate itself by forgetting\
+    \ a name\n  the_service_understands_it: a namespace is part of the key the service\
+    \ stores, unlike a table name, which rule:dynamodb-table-naming records as a string\
+    \ the service reads no structure in\n  no_validation_surface: there is no per-name\
+    \ length or character rule to check at startup over an enumerated set, because\
+    \ there is no enumerated set\nwhat_is_worse:\n  no_bulk_removal: there is no API\
+    \ that deletes a namespace, so cleanup is a keys-only query per kind followed\
+    \ by a batch delete; a DynamoDB test run deletes its tables instead\n  shared_billing_and_quota:\
+    \ two namespaces are one database, so a runaway test run competes with its neighbours\
+    \ for the same per-database write limits; two prefixed DynamoDB table sets do\
+    \ not\n  no_per_tenant_isolation_claim: a namespace is a partitioning of keys\
+    \ and not a security boundary, so the framework never presents it as one\nwhat_stays_configurable:\n\
+    \  database: a named database is selected by data:firestore-runtime-config and\
+    \ is a second client rather than a second namespace\n  when_to_use_which: a namespace\
+    \ separates runs and tenants inside one database; a named database separates environments\
+    \ that should not share quota\nrelated:\n  - requirement:firestore-store\n  -\
+    \ requirement:firestore-test-isolation\n  - rule:dynamodb-table-naming\n  - data:firestore-runtime-config\n\
+    ```"
+  legacy_parse_issues:
+  - kind: legacy_parse_error
+    block: 0
+    message: Object of type date is not JSON serializable
+relations:
+- relation: mentions
+  to: data:firestore-runtime-config
+  resolution: resolved
+- relation: mentions
+  to: requirement:firestore-store
+  resolution: resolved
+- relation: mentions
+  to: requirement:firestore-test-isolation
+  resolution: resolved
+- relation: mentions
+  to: rule:dynamodb-table-naming
+  resolution: resolved
+- relation: mentions
+  to: system:tinybind
+  resolution: resolved

@@ -1,0 +1,107 @@
+id: decision:dynamodb-session-expiry
+type: decision
+title: Expiry Is Decided On Read, Deletion Is Left To TTL
+summary: The DynamoDB session store never depends on a record being deleted; correctness
+  comes from the read check and the update condition, and physical removal is DynamoDB
+  TTL or nothing.
+facts:
+  legacy_body: "The DynamoDB session store never depends on a record being deleted;\
+    \ correctness comes from the read check and the update condition, and physical\
+    \ removal is DynamoDB TTL or nothing.\n\n```yaml\nstatus: accepted\ndecided: user\
+    \ 2026-08-01\ntwo_questions:\n  correctness: is this record still valid\n  storage:\
+    \ when do the bytes go away\n  point: the relational store answers both with one\
+    \ DELETE, and here they are unrelated\ncorrectness:\n  read: a record whose dead_at\
+    \ has passed is reported as not found, whatever the item says\n  touch: the UpdateItem\
+    \ condition requires the record to exist and to be alive, so a renewal cannot\
+    \ revive it\n  authority: this satisfies policy:session-security, where server-side\
+    \ expiry outranks anything the browser presents\n  independent_of_deletion: DynamoDB\
+    \ TTL deletes asynchronously and is documented as taking up to two days, so a\
+    \ store that trusted deletion would serve expired sessions for that long\nstorage:\n\
+    \  mechanism: DynamoDB TTL on the dead_at attribute\n  cost: free; TTL deletion\
+    \ consumes no write capacity\n  enabling_it: deployment tooling, per decision:dynamodb-operational-configuration\n\
+    \  what_the_framework_does: maintain dead_at so a deployment has one correct attribute\
+    \ to point TTL at, and nothing else\nno_sweep:\n  rejected: a Prune that scans\
+    \ for expired records, as the relational backend has\n  why: a Scan reads every\
+    \ item in the table, so removing a million expired sessions costs a million item\
+    \ reads, while TTL removes them for nothing\n  sharper: TTL exists precisely so\
+    \ nobody writes that scan, and a session table is the workload it was built for\n\
+    \  asymmetry_with_rdb: deliberate; there a DELETE with a predicate is one cheap\
+    \ statement, and here the equivalent is the most expensive read in the API\n \
+    \ consequence_accepted: without TTL enabled the table grows without bound, and\
+    \ that is a storage bill rather than a correctness fault\nnot_blocked_on_the_driver:\n\
+    \  earlier_reading: the missing UpdateTimeToLive was recorded here as a gap holding\
+    \ the store back\n  correction: it is not a gap, because enabling TTL was never\
+    \ going to be the framework's job; a production table is defined by deployment\
+    \ tooling, per decision:dynamodb-operational-configuration\n  effect: this store\
+    \ needs no driver change to be complete, and the framework neither enables nor\
+    \ verifies expiry at any point\ndocumentation_duty:\n  what: the guide states\
+    \ that the deployed table needs TTL enabled on dead_at, and that a table without\
+    \ it retains every session forever\n  why_it_must_be_loud: an attribute the record\
+    \ maintains and nothing acts on looks like a working feature\n  where: beside\
+    \ the table definition the guide already publishes for deployment tooling to copy\n\
+    related:\n  - requirement:dynamodb-session-store\n  - api:session-store\n  - policy:session-security\n\
+    ```"
+  status: accepted
+  decided: user 2026-08-01
+  two_questions:
+    correctness: is this record still valid
+    storage: when do the bytes go away
+    point: the relational store answers both with one DELETE, and here they are unrelated
+  correctness:
+    read: a record whose dead_at has passed is reported as not found, whatever the
+      item says
+    touch: the UpdateItem condition requires the record to exist and to be alive,
+      so a renewal cannot revive it
+    authority: this satisfies policy:session-security, where server-side expiry outranks
+      anything the browser presents
+    independent_of_deletion: DynamoDB TTL deletes asynchronously and is documented
+      as taking up to two days, so a store that trusted deletion would serve expired
+      sessions for that long
+  storage:
+    mechanism: DynamoDB TTL on the dead_at attribute
+    cost: free; TTL deletion consumes no write capacity
+    enabling_it: deployment tooling, per decision:dynamodb-operational-configuration
+    what_the_framework_does: maintain dead_at so a deployment has one correct attribute
+      to point TTL at, and nothing else
+  no_sweep:
+    rejected: a Prune that scans for expired records, as the relational backend has
+    why: a Scan reads every item in the table, so removing a million expired sessions
+      costs a million item reads, while TTL removes them for nothing
+    sharper: TTL exists precisely so nobody writes that scan, and a session table
+      is the workload it was built for
+    asymmetry_with_rdb: deliberate; there a DELETE with a predicate is one cheap statement,
+      and here the equivalent is the most expensive read in the API
+    consequence_accepted: without TTL enabled the table grows without bound, and that
+      is a storage bill rather than a correctness fault
+  not_blocked_on_the_driver:
+    earlier_reading: the missing UpdateTimeToLive was recorded here as a gap holding
+      the store back
+    correction: it is not a gap, because enabling TTL was never going to be the framework's
+      job; a production table is defined by deployment tooling, per decision:dynamodb-operational-configuration
+    effect: this store needs no driver change to be complete, and the framework neither
+      enables nor verifies expiry at any point
+  documentation_duty:
+    what: the guide states that the deployed table needs TTL enabled on dead_at, and
+      that a table without it retains every session forever
+    why_it_must_be_loud: an attribute the record maintains and nothing acts on looks
+      like a working feature
+    where: beside the table definition the guide already publishes for deployment
+      tooling to copy
+  related:
+  - requirement:dynamodb-session-store
+  - api:session-store
+  - policy:session-security
+lifecycle: accepted
+relations:
+- relation: mentions
+  to: api:session-store
+  resolution: resolved
+- relation: mentions
+  to: decision:dynamodb-operational-configuration
+  resolution: resolved
+- relation: mentions
+  to: policy:session-security
+  resolution: resolved
+- relation: mentions
+  to: requirement:dynamodb-session-store
+  resolution: resolved

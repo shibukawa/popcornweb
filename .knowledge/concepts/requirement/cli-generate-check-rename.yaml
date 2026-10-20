@@ -1,0 +1,158 @@
+id: requirement:cli-generate-check-rename
+type: requirement
+title: pw generate And pw check Renaming
+summary: The command that leaves a compilable tree is named pw generate and the command
+  that verifies generated drift is named pw check, so the name every caller guesses
+  first is the one that leaves nothing missing.
+facts:
+  legacy_body: "The command that leaves a compilable tree is named pw generate and\
+    \ the command that verifies generated drift is named pw check, so the name every\
+    \ caller guesses first is the one that leaves nothing missing.\n\n```yaml\nproblem:\n\
+    \  trap: generate is the name a reader guesses for \"make a tree the compiler\
+    \ can read\", and it named the command that wrote only the generated Go; dist/public\
+    \ was absent, so the compiler failed on a go:embed directive over a directory\
+    \ nothing built, and a requirement:tailwind-css-integration project rendered unstyled\
+    \ instead of failing at all\n  evidence: the prepare documentation page carried\
+    \ a section titled \"pw generate is not enough\" and the api:cli-build page repeats\
+    \ the same split; a trap needing a section on two pages is a naming defect rather\
+    \ than a documentation gap\n  prepare_is_unguessable: nothing in the word prepare\
+    \ names any of its four steps, so a caller who has not read the page cannot tell\
+    \ it from generate, and the one that fails is the one they reach for\n  check_is_hidden:\
+    \ generated drift is the gate every CI runs, and it lives as a flag on a command\
+    \ whose default writes, so a reader scanning the command list does not find it\n\
+    naming:\n  pw_generate: every host step the prepare command ran, stopping before\
+    \ the compiler\n  pw_check: what the --check flag did, unchanged in what it compares,\
+    \ as api:cli-check\n  code_only_flag: --code-only on pw generate runs the code-generation\
+    \ step alone, which is what the narrower generate did\n  rejected_no_assets: --no-assets\
+    \ names what is skipped; the reader of a CI line wants what is produced\n  rejected_alias:\
+    \ keeping prepare as an alias keeps two names for one job, which is the defect\
+    \ being removed\nconcept_split:\n  api:cli-generate: the command — its steps,\
+    \ its flags, its package-kind behavior, its callers; the prepare body moved here\n\
+    \  api:cli-check: taken from the api:cli-generate check_mode block\n  concept:code-generation:\
+    \ the contract moved out of api:cli-generate — discovery scope, artifacts, two_pass_ordering,\
+    \ unparsable_source — because four callers share it: the first step of the command,\
+    \ api:cli-check, api:cli-dev, and api:cli-build through the command\n  deleted:\
+    \ the api concept for prepare, whose id no longer resolves and is not linked from\
+    \ here for that reason\n  reference_rule: an existing api:cli-generate reference\
+    \ stays valid and is left alone, because the renamed command is a superset of\
+    \ the old one — everything said about what it reads, warns about, or writes is\
+    \ still true of it; only a reference naming --check, check mode, or prepare is\
+    \ wrong and gets edited\ncheck_scope:\n  compares: generated Go only, unchanged\n\
+    \  excluded: dist/public and the generated stylesheet, because decision:generated-public-asset-version-control\
+    \ keeps both out of version control, so no committed content exists to compare\
+    \ against\n  asymmetry: pw check verifies less than pw generate writes; its page\
+    \ states this rather than leaving a reader to infer that a passing check means\
+    \ a compilable tree\n  neighbours: api:cli-fmt --check keeps template formatting\
+    \ and api:cli-doctor keeps configuration and wiring, so pw check answers generated\
+    \ drift alone\n  supersedes: the system:pw-cli initial_exclusions entry ruling\
+    \ out a standalone pw check, which held only while --check was a flag on the command\
+    \ that writes\ncode_only_flag:\n  runs: the code-generation step alone, writing\
+    \ no asset tree and no stylesheet\n  keeps: the development-only import rejection,\
+    \ because a flag must not be the way past a security gate, and its cost is a dependency-graph\
+    \ load rather than a compile\n  for: the requirement:editor-tasks generate command,\
+    \ and a developer who wants generated Go without waiting for a minified stylesheet\n\
+    \  not_for: a tree handed to a compiler, which is the unflagged command\npackage_projects:\n\
+    \  problem: the prepare command was refused in a package project, while api:cli-generate\
+    \ is the command a concept:component-package generates and releases with, so the\
+    \ renamed command must run there\n  generate: runs, and reaches only the code-generation\
+    \ step — there is no project.main whose imports could be rejected, no asset tree,\
+    \ and no stylesheet; the same result --code-only gives, selected by project.kind\
+    \ rather than by flag\n  check: runs, and stays the package release gate of decision:committed-package-artifacts\n\
+    \  refusal: the package refusal stays on api:cli-build and leaves the renamed\
+    \ command\ncompatibility:\n  aliases: none; pw prepare and the --check flag are\
+    \ removed in the same change\n  breakage: a scaffolded CI workflow and a Dockerfile.tinygo\
+    \ in an existing project stop working, accepted because system:pw-cli publishes\
+    \ no compatibility window for command names\n  retired_names: no diagnostic mentions\
+    \ them; pw prepare meets the generic unknown command error and --check the generic\
+    \ unknown argument error, the same as any name the CLI never had\n  no_residue:\
+    \ nothing in the dispatch, the flag parsing, or the help text names a removed\
+    \ command, so there is no entry a later reader has to decide whether to keep\n\
+    affected_surfaces:\n  dispatch: the internal/pwcli command switch and its summary\
+    \ table, which are the two places a name lives; the prepare entry became generate,\
+    \ the check half of the generate entry became check, and check is listed beside\
+    \ generate rather than with the diagnostics because it answers a question about\
+    \ generate's output\n  usage_strings: the build usage string named prepare, and\
+    \ the generate usage string named --check\n  flags: --target stays api:cli-build\
+    \ only and its rejection moved to generate; --code-only is refused on build, and\
+    \ refused alongside --debug\n  scaffolds: the package CI workflow api:cli-init\
+    \ writes, and the Dockerfile.tinygo recipe of requirement:container-image-scaffold,\
+    \ which ran the retired names\n  docs:\n    renamed: the pw prepare page became\
+    \ the pw generate page, keeping the what-it-reads and what-it-writes sections\
+    \ of the old generate page so the anchor api:cli-new links to still resolves;\
+    \ the check half became a pw check page\n    redirects: the retired prepare URL\
+    \ and its Japanese counterpart, in the website redirect table\n    deleted: the\
+    \ \"pw generate is not enough\" section, whose reason to exist is gone\n    mostly_unchanged:\
+    \ most pages naming pw generate need no edit, because the new command is a superset\
+    \ and an instruction to run it stays correct; only a page describing what it does\
+    \ not write is wrong\n    parity: every English edit has its Japanese counterpart\n\
+    \  skills: the repository Popcorn Web skill, and the example READMEs that ran\
+    \ prepare before a TinyGo compile\n  catalog: every concept naming the retired\
+    \ flag or the retired command, per the concept_split reference_rule\nacceptance:\n\
+    \  - pw generate in an application project leaves a tree host go build compiles\
+    \ from a clean clone, with no second command to remember\n  - pw generate --code-only\
+    \ writes generated Go and neither dist/public nor a stylesheet\n  - pw generate\
+    \ in a package project succeeds and writes generated Go only\n  - pw check writes\
+    \ nothing and fails on a stale or missing generated file, in an application and\
+    \ in a package project\n  - pw prepare and pw generate --check each fail as an\
+    \ unknown command and an unknown argument\n  - help lists generate and check,\
+    \ and no longer lists prepare or --check\n  - no documentation page tells a reader\
+    \ that pw generate is not enough\n  - the website documentation checks report\
+    \ no broken link and no English or Japanese drift\nnon_goals:\n  - folding api:cli-fmt\
+    \ --check or api:cli-doctor into pw check\n  - changing what the code-generation\
+    \ step reads or writes\n  - changing api:cli-build, which stays defined as api:cli-generate\
+    \ plus the compiler\n```"
+  legacy_parse_issues:
+  - kind: legacy_parse_error
+    block: 0
+    message: "mapping values are not allowed here\n  in \"<unicode string>\", line\
+      \ 15, column 169:\n     ...  — because four callers share it: the first step\
+      \ of the command, ... \n                                         ^"
+relations:
+- relation: mentions
+  to: api:cli-build
+  resolution: resolved
+- relation: mentions
+  to: api:cli-check
+  resolution: resolved
+- relation: mentions
+  to: api:cli-dev
+  resolution: resolved
+- relation: mentions
+  to: api:cli-doctor
+  resolution: resolved
+- relation: mentions
+  to: api:cli-fmt
+  resolution: resolved
+- relation: mentions
+  to: api:cli-generate
+  resolution: resolved
+- relation: mentions
+  to: api:cli-init
+  resolution: resolved
+- relation: mentions
+  to: api:cli-new
+  resolution: resolved
+- relation: mentions
+  to: concept:code-generation
+  resolution: resolved
+- relation: mentions
+  to: concept:component-package
+  resolution: resolved
+- relation: mentions
+  to: decision:committed-package-artifacts
+  resolution: resolved
+- relation: mentions
+  to: decision:generated-public-asset-version-control
+  resolution: resolved
+- relation: mentions
+  to: requirement:container-image-scaffold
+  resolution: resolved
+- relation: mentions
+  to: requirement:editor-tasks
+  resolution: resolved
+- relation: mentions
+  to: requirement:tailwind-css-integration
+  resolution: resolved
+- relation: mentions
+  to: system:pw-cli
+  resolution: resolved

@@ -1,0 +1,107 @@
+id: requirement:locale-switching-surface
+type: requirement
+title: Locale Switching Surface
+summary: One accessor answers what languages this page is available in, and the switcher
+  control, the alternate links, and the canonical all read it.
+facts:
+  legacy_body: "One accessor answers what languages this page is available in, and\
+    \ the switcher control, the alternate links, and the canonical all read it.\n\n\
+    ```yaml\nstatus: proposed\ndata:\n  per_locale:\n    - the locale tag\n    - a\
+    \ label written in that language itself\n    - the URL of this same page in that\
+    \ locale, under decision:locale-url-modes path mode only\n    - whether it is\
+    \ the current one\n  surface: api:locale-accessors LocaleChoices\none_source_three_consumers:\n\
+    \  switcher: the control an application renders, as anchors or a select\n  alternates:\
+    \ the hreflang link elements, emitted through the head channel of decision:runtime-tag-injection\n\
+    \  canonical: the self-referencing link, and the x-default target\n  why_it_matters:\
+    \ a page whose switcher and hreflang are computed separately drifts, and the drift\
+    \ is invisible until a crawler reports it\nby_mode:\n  path: every entry carries\
+    \ a URL, which is this path with its prefix replaced\n  cookie: no URL exists,\
+    \ so switching is an api:server-action writing the cookie and redirecting back\n\
+    \  header: nothing is produced, because the client decides and no server control\
+    \ would be honest\nlabels_are_declared:\n  where: data:i18n-config\n  why_not_generated_from_CLDR:\
+    \ shipping display-name tables repeats the dictionary weight decision:message-id-assignment\
+    \ refused, for a value an application often wants to word itself\n  why_not_a_message:\
+    \ the label is written in its own language regardless of the current one, so per-locale\
+    \ catalogs would hold the same value N times over\n  missing: reported at generation,\
+    \ because falling back to the raw tag puts en in front of a reader instead of\
+    \ English\nframework_and_application_split:\n  framework: the data, and SetLocale\
+    \ writing the cookie through api:cookie-jar with the value validated against the\
+    \ declared set\n  application: the markup, the control, and the action handler\n\
+    \  precedent: requirement:user-preference-rendering divides an override the same\
+    \ way, keeping the control application-owned\ncriteria:\n  - a page in path mode\
+    \ lists one URL per declared locale, each resolving to the same page\n  - the\
+    \ alternate links and the switcher never disagree, because one call produced both\n\
+    \  - a header mode route produces no switcher data and emits no alternate links\n\
+    \  - a locale with no declared label fails generation rather than rendering its\
+    \ tag\n  - switching in cookie mode leaves the reader on the page they were reading\n\
+    ```"
+  status: proposed
+  data:
+    per_locale:
+    - the locale tag
+    - a label written in that language itself
+    - the URL of this same page in that locale, under decision:locale-url-modes path
+      mode only
+    - whether it is the current one
+    surface: api:locale-accessors LocaleChoices
+  one_source_three_consumers:
+    switcher: the control an application renders, as anchors or a select
+    alternates: the hreflang link elements, emitted through the head channel of decision:runtime-tag-injection
+    canonical: the self-referencing link, and the x-default target
+    why_it_matters: a page whose switcher and hreflang are computed separately drifts,
+      and the drift is invisible until a crawler reports it
+  by_mode:
+    path: every entry carries a URL, which is this path with its prefix replaced
+    cookie: no URL exists, so switching is an api:server-action writing the cookie
+      and redirecting back
+    header: nothing is produced, because the client decides and no server control
+      would be honest
+  labels_are_declared:
+    where: data:i18n-config
+    why_not_generated_from_CLDR: shipping display-name tables repeats the dictionary
+      weight decision:message-id-assignment refused, for a value an application often
+      wants to word itself
+    why_not_a_message: the label is written in its own language regardless of the
+      current one, so per-locale catalogs would hold the same value N times over
+    missing: reported at generation, because falling back to the raw tag puts en in
+      front of a reader instead of English
+  framework_and_application_split:
+    framework: the data, and SetLocale writing the cookie through api:cookie-jar with
+      the value validated against the declared set
+    application: the markup, the control, and the action handler
+    precedent: requirement:user-preference-rendering divides an override the same
+      way, keeping the control application-owned
+  criteria:
+  - a page in path mode lists one URL per declared locale, each resolving to the same
+    page
+  - the alternate links and the switcher never disagree, because one call produced
+    both
+  - a header mode route produces no switcher data and emits no alternate links
+  - a locale with no declared label fails generation rather than rendering its tag
+  - switching in cookie mode leaves the reader on the page they were reading
+lifecycle: proposed
+relations:
+- relation: mentions
+  to: api:cookie-jar
+  resolution: resolved
+- relation: mentions
+  to: api:locale-accessors
+  resolution: resolved
+- relation: mentions
+  to: api:server-action
+  resolution: resolved
+- relation: mentions
+  to: data:i18n-config
+  resolution: resolved
+- relation: mentions
+  to: decision:locale-url-modes
+  resolution: resolved
+- relation: mentions
+  to: decision:message-id-assignment
+  resolution: resolved
+- relation: mentions
+  to: decision:runtime-tag-injection
+  resolution: resolved
+- relation: mentions
+  to: requirement:user-preference-rendering
+  resolution: resolved

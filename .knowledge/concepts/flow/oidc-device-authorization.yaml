@@ -1,0 +1,89 @@
+id: flow:oidc-device-authorization
+type: flow
+title: OIDC Device Authorization Flow
+summary: The constrained client starts RFC 8628 authorization, presents instructions,
+  and polls until a separately authenticated user approves, denies, or lets the request
+  expire.
+facts:
+  legacy_body: "The constrained client starts RFC 8628 authorization, presents instructions,\
+    \ and polls until a separately authenticated user approves, denies, or lets the\
+    \ request expire.\n\n```yaml\nflow:\n  trigger: user starts requirement:oidc-device-authorization\
+    \ on the constrained device\n  steps:\n    - id: request\n      actor: constrained\
+    \ device\n      action: POST client_id and requested scopes to the discovered\
+    \ device_authorization_endpoint\n    - id: issue\n      actor: authorization server\n\
+    \      output: data:device-authorization containing device_code, user_code, verification\
+    \ URIs, expiry, and polling interval\n    - id: present\n      actor: constrained\
+    \ device\n      action: show verification_uri and user_code; optionally expose\
+    \ verification_uri_complete without hiding the textual values\n    - id: verify\n\
+    \      actor: user on separate browser device\n      action: enter or confirm\
+    \ user_code, authenticate, inspect client and scopes, then approve or deny\n \
+    \   - id: poll\n      actor: constrained device\n      action: POST the device-code\
+    \ grant to the token endpoint no faster than the effective interval\n    - id:\
+    \ verify-token\n      actor: requirement:contrib-oidc\n      action: verify the\
+    \ returned ID Token through policy:oidc-security without browser nonce correlation\n\
+    \    - id: return\n      output: bounded TokenSet and verified IDToken\n  failure:\n\
+    \    authorization_pending: wait the current interval and continue\n    slow_down:\
+    \ increase every later interval by at least five seconds and continue\n    timeout:\
+    \ apply increasing backoff before retrying within the absolute expiry\n    access_denied:\
+    \ stop without tokens\n    expired_token: stop without automatically starting\
+    \ another authorization\n    other: stop without tokens or secrets\nrules:\n \
+    \ - the device initiates only after user action, never automatically at application\
+    \ startup\n  - cancellation and absolute expiry stop both waiting and network\
+    \ activity\n  - only authorization_pending and slow_down permit continued polling\n\
+    \  - device_code is never displayed; user_code is never sent to the token endpoint\n\
+    ```"
+  flow:
+    trigger: user starts requirement:oidc-device-authorization on the constrained
+      device
+    steps:
+    - id: request
+      actor: constrained device
+      action: POST client_id and requested scopes to the discovered device_authorization_endpoint
+    - id: issue
+      actor: authorization server
+      output: data:device-authorization containing device_code, user_code, verification
+        URIs, expiry, and polling interval
+    - id: present
+      actor: constrained device
+      action: show verification_uri and user_code; optionally expose verification_uri_complete
+        without hiding the textual values
+    - id: verify
+      actor: user on separate browser device
+      action: enter or confirm user_code, authenticate, inspect client and scopes,
+        then approve or deny
+    - id: poll
+      actor: constrained device
+      action: POST the device-code grant to the token endpoint no faster than the
+        effective interval
+    - id: verify-token
+      actor: requirement:contrib-oidc
+      action: verify the returned ID Token through policy:oidc-security without browser
+        nonce correlation
+    - id: return
+      output: bounded TokenSet and verified IDToken
+    failure:
+      authorization_pending: wait the current interval and continue
+      slow_down: increase every later interval by at least five seconds and continue
+      timeout: apply increasing backoff before retrying within the absolute expiry
+      access_denied: stop without tokens
+      expired_token: stop without automatically starting another authorization
+      other: stop without tokens or secrets
+  rules:
+  - the device initiates only after user action, never automatically at application
+    startup
+  - cancellation and absolute expiry stop both waiting and network activity
+  - only authorization_pending and slow_down permit continued polling
+  - device_code is never displayed; user_code is never sent to the token endpoint
+relations:
+- relation: mentions
+  to: data:device-authorization
+  resolution: resolved
+- relation: mentions
+  to: policy:oidc-security
+  resolution: resolved
+- relation: mentions
+  to: requirement:contrib-oidc
+  resolution: resolved
+- relation: mentions
+  to: requirement:oidc-device-authorization
+  resolution: resolved

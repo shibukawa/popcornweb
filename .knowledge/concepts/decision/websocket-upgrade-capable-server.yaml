@@ -1,0 +1,127 @@
+id: decision:websocket-upgrade-capable-server
+type: decision
+title: pw Serves Through The Upgrade-Capable Server Itself
+summary: Serve the net/http build through the tinygodriver httpserver entry inside
+  pw.Run rather than documenting it for the application, because this framework owns
+  the bootstrap the module deliberately does not, and the failure it prevents is a
+  hang with no log line.
+facts:
+  legacy_body: "Serve the net/http build through the tinygodriver httpserver entry\
+    \ inside pw.Run rather than documenting it for the application, because this framework\
+    \ owns the bootstrap the module deliberately does not, and the failure it prevents\
+    \ is a hang with no log line.\n\n```yaml\nstatus: implemented 2026-08-11, per\
+    \ requirement:typed-websocket\nconstraint: system:tinybind-websocket tinygo_serving\
+    \ — TinyGo's net/http starts a background read before the handler and cancels\
+    \ it with a deadline netdev cannot apply to a recv already in flight, so Hijack\
+    \ blocks forever\nsymptom_if_unaddressed: the handshake hangs, the client times\
+    \ out, and the server logs nothing\nmodule_stance_and_why_it_differs_here:\n \
+    \ module: documents the line and does not re-export, because the import edge would\
+    \ land in the graph of every net/http build to serve the ones with no socket\n\
+    \  here: pw owns pw/lifecycle.go, which already constructs the http.Server and\
+    \ the listener, so there is no application line to forget\n  import_cost: pw/mux.go\
+    \ already imports tinygodriver httpmux, so the module is in pw's graph and this\
+    \ adds one package rather than a dependency\n  host_go_cost: none; that entry\
+    \ sets a head timeout default and calls srv.Serve\nchange:\n  from: \"server.Serve(listener)\"\
+    \n  to: \"httpserver.Serve(listener, server)\"\n  where: the serve closure of\
+    \ pw.Run\n  second_build: unaffected, because RequestCtx.Hijack is a synchronous\
+    \ handoff with no background read\nshutdown_must_be_fixed_with_it:\n  found_2026_08_11:\
+    \ by reading the serving path, not by running it\n  fact: on the TinyGo path that\
+    \ entry accepts on the listener itself and gives the http.Server an internal handoff\
+    \ listener instead\n  consequence: \"server.Shutdown closes what the server owns,\
+    \ which is no longer the real listener, so the accept loop keeps running and serveUntilContext\
+    \ blocks on a serve call that never returns\"\n  therefore: the shutdown path\
+    \ closes the listener itself rather than relying on the server to close it\n \
+    \ under_host_go: closing a listener the server also closes is harmless, so one\
+    \ path covers both\n  severity: this turns a graceful shutdown into a hang, which\
+    \ is worse than the defect being fixed, so it is part of the change rather than\
+    \ after it\ninherited_limits_worth_recording:\n  first_request_only: only a connection's\
+    \ first request head is inspected; an upgrade arriving later on a reused connection\
+    \ is answered 501 rather than deadlocking, and a browser opens a fresh connection\
+    \ for a handshake\n  bypass_writer: the hijackable writer implements Header, Write,\
+    \ WriteHeader and Hijack and nothing else, so api:typed-stream must never be routed\
+    \ through the bypass predicate\n  predicate: the Connection upgrade token, so\
+    \ it covers a socket without naming one\n  per_connection_cost_on_tinygo: one\
+    \ head read and a replay for every connection, including those of a build that\
+    \ opens no socket\nunconditional:\n  decided_by: owner, 2026-08-11\n  what: every\
+    \ net/http bootstrap takes this path, whether or not the application opens a socket\n\
+    \  scope_of_the_cost: TinyGo only; the host Go entry is srv.Serve, so no ordinary\
+    \ deployment pays anything\n  for: one bootstrap with nothing to configure, and\
+    \ no way to earn a silent hang by forgetting a flag\n  against: a TinyGo deployment\
+    \ with no socket pays one head read and a replay per connection\n  rejected_configuration_flag:\
+    \ forgetting it produces exactly the hang this change exists to remove, and pw.WebSocket\
+    \ is already the application saying it wants a socket\n  deferred_alternative:\
+    \ a marker emitted by the generation pass that already discovers socket calls,\
+    \ which would cost nothing and cannot be forgotten\n  why_deferred: the cost is\
+    \ unmeasured, and moving from here to that marker changes no published surface,\
+    \ so measuring first is free\n```"
+  status: implemented 2026-08-11, per requirement:typed-websocket
+  constraint: system:tinybind-websocket tinygo_serving — TinyGo's net/http starts
+    a background read before the handler and cancels it with a deadline netdev cannot
+    apply to a recv already in flight, so Hijack blocks forever
+  symptom_if_unaddressed: the handshake hangs, the client times out, and the server
+    logs nothing
+  module_stance_and_why_it_differs_here:
+    module: documents the line and does not re-export, because the import edge would
+      land in the graph of every net/http build to serve the ones with no socket
+    here: pw owns pw/lifecycle.go, which already constructs the http.Server and the
+      listener, so there is no application line to forget
+    import_cost: pw/mux.go already imports tinygodriver httpmux, so the module is
+      in pw's graph and this adds one package rather than a dependency
+    host_go_cost: none; that entry sets a head timeout default and calls srv.Serve
+  change:
+    from: server.Serve(listener)
+    to: httpserver.Serve(listener, server)
+    where: the serve closure of pw.Run
+    second_build: unaffected, because RequestCtx.Hijack is a synchronous handoff with
+      no background read
+  shutdown_must_be_fixed_with_it:
+    found_2026_08_11: by reading the serving path, not by running it
+    fact: on the TinyGo path that entry accepts on the listener itself and gives the
+      http.Server an internal handoff listener instead
+    consequence: server.Shutdown closes what the server owns, which is no longer the
+      real listener, so the accept loop keeps running and serveUntilContext blocks
+      on a serve call that never returns
+    therefore: the shutdown path closes the listener itself rather than relying on
+      the server to close it
+    under_host_go: closing a listener the server also closes is harmless, so one path
+      covers both
+    severity: this turns a graceful shutdown into a hang, which is worse than the
+      defect being fixed, so it is part of the change rather than after it
+  inherited_limits_worth_recording:
+    first_request_only: only a connection's first request head is inspected; an upgrade
+      arriving later on a reused connection is answered 501 rather than deadlocking,
+      and a browser opens a fresh connection for a handshake
+    bypass_writer: the hijackable writer implements Header, Write, WriteHeader and
+      Hijack and nothing else, so api:typed-stream must never be routed through the
+      bypass predicate
+    predicate: the Connection upgrade token, so it covers a socket without naming
+      one
+    per_connection_cost_on_tinygo: one head read and a replay for every connection,
+      including those of a build that opens no socket
+  unconditional:
+    decided_by: owner, 2026-08-11
+    what: every net/http bootstrap takes this path, whether or not the application
+      opens a socket
+    scope_of_the_cost: TinyGo only; the host Go entry is srv.Serve, so no ordinary
+      deployment pays anything
+    for: one bootstrap with nothing to configure, and no way to earn a silent hang
+      by forgetting a flag
+    against: a TinyGo deployment with no socket pays one head read and a replay per
+      connection
+    rejected_configuration_flag: forgetting it produces exactly the hang this change
+      exists to remove, and pw.WebSocket is already the application saying it wants
+      a socket
+    deferred_alternative: a marker emitted by the generation pass that already discovers
+      socket calls, which would cost nothing and cannot be forgotten
+    why_deferred: the cost is unmeasured, and moving from here to that marker changes
+      no published surface, so measuring first is free
+relations:
+- relation: mentions
+  to: api:typed-stream
+  resolution: resolved
+- relation: mentions
+  to: requirement:typed-websocket
+  resolution: resolved
+- relation: mentions
+  to: system:tinybind-websocket
+  resolution: resolved

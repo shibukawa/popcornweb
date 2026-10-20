@@ -1,0 +1,181 @@
+id: requirement:firestore-store
+type: requirement
+title: Firestore Store
+summary: 'Firestore in Datastore mode is a third kind of store a project adds beside
+  its relational database and beside DynamoDB, on the same terms requirement:dynamodb-store
+  set: its own configuration section, no relation to middleware.rdb, and no runtime
+  abstraction over the two key-value stores.'
+facts:
+  legacy_body: "Firestore in Datastore mode is a third kind of store a project adds\
+    \ beside its relational database and beside DynamoDB, on the same terms requirement:dynamodb-store\
+    \ set: its own configuration section, no relation to middleware.rdb, and no runtime\
+    \ abstraction over the two key-value stores.\n\n```yaml\nmotivation:\n  - system:tinybind\
+    \ firestorebind and system:tinygodriver-firestore together make a typed Datastore\
+    \ path that builds under TinyGo, which is the same pairing requirement:dynamodb-store\
+    \ rests on\n  - a deployment on Google Cloud that already pays for Firestore should\
+    \ not add a relational database for five framework tables, which is the argument\
+    \ requirement:dynamodb-session-store made for AWS\n  - decision:tinygo-storage-direction\
+    \ points at deployments where a relational database is the odd dependency, and\
+    \ until now the only non-relational answer was AWS-shaped\nplacement:\n  section:\
+    \ middleware.firestore, its own data:firestore-runtime-config\n  combinations:\
+    \ rdb only, dynamo only, firestore only, and any pair or all three are valid\n\
+    \  engine_question: requirement:database-engine-selection keeps naming one SQL\
+    \ engine; this is a separate capability answer, exactly as DynamoDB is\n  no_second_key:\
+    \ nothing chooses between DynamoDB and Firestore in general; each capability that\
+    \ can be backed by either names its own backend, per decision:auth-backend-selection\
+    \ and requirement:state-storage-tiers\nmode: decision:firestore-datastore-mode-only\n\
+    surfaces:\n  package: api:firestore-package\n  configuration: data:firestore-runtime-config\n\
+    \  session_backend: requirement:firestore-session-store\n  auth_backend: requirement:firestore-auth-backend\n\
+    \  auth_stores: requirement:firestore-auth-stores\n  ceremony_store: requirement:contrib-auth-state-firestore\n\
+    \  generation: requirement:firestore-generation\n  tests: requirement:firestore-test-isolation\n\
+    \  isolation: decision:firestore-namespace-isolation\n  conditional_writes: decision:firestore-conditional-writes\n\
+    \  expiry: decision:firestore-expiry-policy\n  schema: none, per decision:firestore-no-schema-application\n\
+    \  observability: decision:dynamodb-observability-seam, which is an HTTP-client\
+    \ seam and not DynamoDB-specific; this driver exposes the same WithHTTPClient\n\
+    \  runtime_abstraction: none, on the reasoning of decision:dynamodb-no-runtime-abstraction\n\
+    scope_of_the_first_cut:\n  in: the five framework stores of decision:auth-backend-selection,\
+    \ plus the client, the configuration, and the middleware they need\n  in_now:\
+    \ the application-facing codec and declared-query path too, per requirement:firestore-generation,\
+    \ built once the framework stores were serving\n  order: the framework stores\
+    \ went first because they need only the client, the context seam and the typed\
+    \ entries, so they did not wait on the generator\nupstream_dependency:\n  binding:\
+    \ system:tinybind firestorebind, which owns the context client, the namespace\
+    \ resolution, the typed entity entries, and the typed transaction wrapper\n  state_on_2026_08_05:\
+    \ released\n  minimum_versions: tinybind-go v0.3.7 and system:tinygodriver-firestore\
+    \ v1.1.9, which is what v0.3.7 itself requires, so the two move together\n  retired:\
+    \ the tinygodriver v1.1.3 requirement this repository carried before this\n  what_this_repository_needs_from_it:\
+    \ WithClient, WithNamespace, Load, Store, Insert, Update, Remove, LoadAll, QueryPage,\
+    \ QueryKeysPage, Run, Tx.Load and the Tx write methods; nothing generated, per\
+    \ the scope split above\n  no_fallback_needed: the earlier plan to carry our own\
+    \ context key if the package slipped is withdrawn, since the package exists\n\
+    \  asks_answered: every one, per the upstream_requests of system:tinygodriver-firestore,\
+    \ so RemoveKeys, KeyFor and the Expirer contract exist and none of the code they\
+    \ replace had to be written\nbounded_by_the_stack:\n  - no partial update, so\
+    \ a renewal rewrites a whole entity, per requirement:firestore-session-store\n\
+    \  - no condition expression, so every predicate over a stored value is a transaction,\
+    \ per decision:firestore-conditional-writes\n  - no table admin, so nothing creates\
+    \ or verifies a kind, per decision:firestore-no-schema-application\n  - no TTL\
+    \ on the wire, so expiry deletion is a policy the deployment applies, per decision:firestore-expiry-policy\n\
+    \  - no response integrity check, unlike the x-amz-crc32 layer of system:tinygodriver-dynamodb\n\
+    \  - a transaction costs one round trip more than the reads it performs, which\
+    \ is the lazy start of system:tinygodriver-firestore rather than a fixed three\n\
+    \  effect: these bound the stores by what the service and the driver offer, not\
+    \ by a Popcorn Web choice\ntinygo:\n  buildable: the client and firestorebind\
+    \ both build under TinyGo, so no part of this store needs decision:migration-execution-split\
+    \ delegation, and there is no migration to delegate anyway\n  credential_cost:\
+    \ the JWT path links RSA signing, which is native on TinyGo builds and 583 KB\
+    \ against 1040 KB for the pure-Go path; a deployment using the metadata server\
+    \ links none of it\n  guidance: on Cloud Run or GKE, name the metadata token source,\
+    \ which is both smaller and one fewer secret to carry\nacceptance:\n  - a project\
+    \ with a firestore section and no rdb section starts and serves\n  - a project\
+    \ with all three sections opens all three and reports each in policy:startup-summary\n\
+    \  - an application that never imports api:firestore-package links no Datastore\
+    \ code and gains no configuration key\n  - the same application source builds\
+    \ and runs under host Go and under TinyGo\n  - a native-mode database is refused\
+    \ at startup with the mode named, per decision:firestore-datastore-mode-only\n\
+    \  - credentials and the credential file path never reach a log, an error, or\
+    \ policy:startup-summary unredacted\nimplemented:\n  built: 2026-08-05\n  packages:\
+    \ [database/firestore, sessionstore/firestore, authstate/firestore, authstore/firestore]\n\
+    \  generation: 2026-08-05, per requirement:firestore-generation\n  verified: a\
+    \ scaffolded passkey_only project with middleware.rdb absent and middleware.firestore\
+    \ enabled starts, passes the mode probe, and serves\n  test_server: internal/firestoretest,\
+    \ an in-process Datastore server over lookup, commit, beginTransaction, rollback\
+    \ and runQuery; the gcloud emulator is a Java process inside the Cloud SDK image\
+    \ and contention cannot be provoked against it, so the unit suite runs against\
+    \ this instead\n  found_along_the_way:\n    explicit_endpoint_wants_a_credential:\
+    \ the driver treats an endpoint as an emulator only when DATASTORE_EMULATOR_HOST\
+    \ is set and no endpoint is configured, so a dev config naming the emulator address\
+    \ is asked for a credential; api:firestore-package resolves a placeholder token\
+    \ for a plain-http endpoint rather than failing startup on a key nobody needs\n\
+    non_goals:\n  - a portable key-value facade over Firestore, DynamoDB, and any\
+    \ other store\n  - Firestore native mode, which is a different API this stack\
+    \ does not speak\n  - routing a generated .pw.sql query to Firestore\n  - changing\
+    \ the relational default of decision:tinygo-storage-direction\n  - one kind shared\
+    \ by several stores, which is the single-table design system:tinybind declines\n\
+    \  - migrating existing relational or DynamoDB records into Firestore\n```"
+  legacy_parse_issues:
+  - kind: legacy_parse_error
+    block: 0
+    message: "while parsing a block collection\n  in \"<unicode string>\", line 39,\
+      \ column 3:\n      - no partial update, so a renewa ... \n      ^\nexpected\
+      \ <block end>, but found '?'\n  in \"<unicode string>\", line 45, column 3:\n\
+      \      effect: these bound the stores b ... \n      ^"
+relations:
+- relation: mentions
+  to: api:firestore-package
+  resolution: resolved
+- relation: mentions
+  to: data:firestore-runtime-config
+  resolution: resolved
+- relation: mentions
+  to: decision:auth-backend-selection
+  resolution: resolved
+- relation: mentions
+  to: decision:dynamodb-no-runtime-abstraction
+  resolution: resolved
+- relation: mentions
+  to: decision:dynamodb-observability-seam
+  resolution: resolved
+- relation: mentions
+  to: decision:firestore-conditional-writes
+  resolution: resolved
+- relation: mentions
+  to: decision:firestore-datastore-mode-only
+  resolution: resolved
+- relation: mentions
+  to: decision:firestore-expiry-policy
+  resolution: resolved
+- relation: mentions
+  to: decision:firestore-namespace-isolation
+  resolution: resolved
+- relation: mentions
+  to: decision:firestore-no-schema-application
+  resolution: resolved
+- relation: mentions
+  to: decision:migration-execution-split
+  resolution: resolved
+- relation: mentions
+  to: decision:tinygo-storage-direction
+  resolution: resolved
+- relation: mentions
+  to: policy:startup-summary
+  resolution: resolved
+- relation: mentions
+  to: requirement:contrib-auth-state-firestore
+  resolution: resolved
+- relation: mentions
+  to: requirement:database-engine-selection
+  resolution: resolved
+- relation: mentions
+  to: requirement:dynamodb-session-store
+  resolution: resolved
+- relation: mentions
+  to: requirement:dynamodb-store
+  resolution: resolved
+- relation: mentions
+  to: requirement:firestore-auth-backend
+  resolution: resolved
+- relation: mentions
+  to: requirement:firestore-auth-stores
+  resolution: resolved
+- relation: mentions
+  to: requirement:firestore-generation
+  resolution: resolved
+- relation: mentions
+  to: requirement:firestore-session-store
+  resolution: resolved
+- relation: mentions
+  to: requirement:firestore-test-isolation
+  resolution: resolved
+- relation: mentions
+  to: requirement:state-storage-tiers
+  resolution: resolved
+- relation: mentions
+  to: system:tinybind
+  resolution: resolved
+- relation: mentions
+  to: system:tinygodriver-dynamodb
+  resolution: resolved
+- relation: mentions
+  to: system:tinygodriver-firestore
+  resolution: resolved

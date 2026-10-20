@@ -1,0 +1,154 @@
+id: requirement:contrib-zstd
+type: requirement
+title: Zstandard Response Encoder
+summary: system:tinygodriver selects an optimized host encoder or bounded TinyGo encoder
+  while preserving one response and cache-identity API.
+facts:
+  legacy_body: "system:tinygodriver selects an optimized host encoder or bounded TinyGo\
+    \ encoder while preserving one response and cache-identity API.\n\n```yaml\npackage:\
+    \ github.com/shibukawa/tinygodriver/compress/zstd\nrole: the zstd half of policy:response-content-encoding,\
+    \ beside requirement:response-gzip-encoder; the two share one writer interface\
+    \ and one negotiation path\npublic_api:\n  - NewWriter(io.Writer, options) returns\
+    \ Writer\n  - \"Writer.Flush() error emits buffered input as complete blocks without\
+    \ ending the frame, for decision:streaming-response-compression\"\n  - Writer.Result\
+    \ returns encoded size and SHA-256 after successful Close\n  - EncodeAll(src,\
+    \ options) returns encoded bytes and Result\n  - WithETag(bool) controls cache\
+    \ hash generation; default true\n  - Result.ETag returns a quoted strong HTTP\
+    \ entity-tag or empty when disabled\netag_disabled:\n  - do not allocate or update\
+    \ SHA-256\n  - Result.ETagEnabled is false\n  - Result.SHA256 is zero and Result.ETag\
+    \ is empty\n  - use for Cache-Control no-store responses\nimplementation_selection:\n\
+    \  host_go:\n    condition: \"!tinygo && !force_tinygo_logic\"\n    backend: github.com/klauspost/compress/zstd\n\
+    \    settings: concurrency 1, 128 KiB window, lower memory, frame checksum disabled\n\
+    \    level:\n      dynamic: SpeedFastest, because a response body is encoded while\
+    \ a request waits\n      static: maximum, since policy:public-asset-precompression\
+    \ pays build CPU and not request latency\n  tinygodriver:\n    condition: \"tinygo\
+    \ || force_tinygo_logic\"\n    backend: bounded internal encoder\n  force_policy:\
+    \ decision:force-tinygo-logic\ninvariants:\n  - public API and lifecycle errors\
+    \ match across backends\n  - enabled SHA-256 and ETag cover the backend's emitted\
+    \ encoded representation\n  - NewWriter emits nothing; the frame header waits\
+    \ for the first Write, per lazy_frame_header\nlazy_frame_header:\n  rule: constructing\
+    \ an encoder writes zero bytes to its destination\n  why: the destination is an\
+    \ http.ResponseWriter, so a byte written at construction commits the response,\
+    \ and a render that then fails pre-commit can no longer be replaced by api:problem-response\n\
+    \  symptom: a streamed page whose chain fails validation answered 200 with a 6-byte\
+    \ truncated frame instead of a 500 problem document\n  fixed: system:tinygodriver\
+    \ v1.2.2, which gates the header behind a wroteHeader flag\n  applies_to: every\
+    \ backend of policy:response-content-encoding, not this package alone; the klauspost\
+    \ and standard library encoders already satisfied it, which is why the defect\
+    \ appeared on one target only\nencoder_required:\n  - standard frames\n  - flush\
+    \ at block boundaries without ending the frame\n  - bounded raw and RLE blocks\n\
+    \  - low-memory single-match compressed blocks with RLE sequence tables\n  - enabled\
+    \ SHA-256 updated only for bytes successfully emitted\nlimits:\n  tinygodriver:\
+    \ 128 KiB window and retained input block plus 16 KiB match table\nflush_semantics:\n\
+    \  available: tinygodriver v1.0.4\n  model: compress/flate and compress/gzip Flush\
+    \ semantics\n  host_go: delegate to the klauspost encoder Flush\n  tinygodriver:\
+    \ emit the retained buffer as non-last blocks and reset it; matches never cross\
+    \ a block boundary, so a split stays self-contained\n  rules:\n    - emitted blocks\
+    \ decode everything written so far\n    - the frame stays open, so Close still\
+    \ finishes it\n    - Flush after Close returns ErrClosed\n    - flushed bytes\
+    \ stay inside the enabled SHA-256 and size accounting\n    - Flush with nothing\
+    \ buffered emits nothing and succeeds\n    - Flush does not flush the destination\
+    \ writer; the caller chains that\n    - flushing before a block fills reduces\
+    \ the ratio, so flush per chunk rather than per Write\ndeferred:\n  - Huffman\
+    \ literals, general FSE tables, multi-match blocks, and additional compression\
+    \ levels\n  - trained dictionaries\n  - seekable format\n  - assembly optimizations\n\
+    \  - decoding\nstandard: https://www.rfc-editor.org/rfc/rfc8878\n```"
+  package: github.com/shibukawa/tinygodriver/compress/zstd
+  role: the zstd half of policy:response-content-encoding, beside requirement:response-gzip-encoder;
+    the two share one writer interface and one negotiation path
+  public_api:
+  - NewWriter(io.Writer, options) returns Writer
+  - Writer.Flush() error emits buffered input as complete blocks without ending the
+    frame, for decision:streaming-response-compression
+  - Writer.Result returns encoded size and SHA-256 after successful Close
+  - EncodeAll(src, options) returns encoded bytes and Result
+  - WithETag(bool) controls cache hash generation; default true
+  - Result.ETag returns a quoted strong HTTP entity-tag or empty when disabled
+  etag_disabled:
+  - do not allocate or update SHA-256
+  - Result.ETagEnabled is false
+  - Result.SHA256 is zero and Result.ETag is empty
+  - use for Cache-Control no-store responses
+  implementation_selection:
+    host_go:
+      condition: '!tinygo && !force_tinygo_logic'
+      backend: github.com/klauspost/compress/zstd
+      settings: concurrency 1, 128 KiB window, lower memory, frame checksum disabled
+      level:
+        dynamic: SpeedFastest, because a response body is encoded while a request
+          waits
+        static: maximum, since policy:public-asset-precompression pays build CPU and
+          not request latency
+    tinygodriver:
+      condition: tinygo || force_tinygo_logic
+      backend: bounded internal encoder
+    force_policy: decision:force-tinygo-logic
+  invariants:
+  - public API and lifecycle errors match across backends
+  - enabled SHA-256 and ETag cover the backend's emitted encoded representation
+  - NewWriter emits nothing; the frame header waits for the first Write, per lazy_frame_header
+  lazy_frame_header:
+    rule: constructing an encoder writes zero bytes to its destination
+    why: the destination is an http.ResponseWriter, so a byte written at construction
+      commits the response, and a render that then fails pre-commit can no longer
+      be replaced by api:problem-response
+    symptom: a streamed page whose chain fails validation answered 200 with a 6-byte
+      truncated frame instead of a 500 problem document
+    fixed: system:tinygodriver v1.2.2, which gates the header behind a wroteHeader
+      flag
+    applies_to: every backend of policy:response-content-encoding, not this package
+      alone; the klauspost and standard library encoders already satisfied it, which
+      is why the defect appeared on one target only
+  encoder_required:
+  - standard frames
+  - flush at block boundaries without ending the frame
+  - bounded raw and RLE blocks
+  - low-memory single-match compressed blocks with RLE sequence tables
+  - enabled SHA-256 updated only for bytes successfully emitted
+  limits:
+    tinygodriver: 128 KiB window and retained input block plus 16 KiB match table
+  flush_semantics:
+    available: tinygodriver v1.0.4
+    model: compress/flate and compress/gzip Flush semantics
+    host_go: delegate to the klauspost encoder Flush
+    tinygodriver: emit the retained buffer as non-last blocks and reset it; matches
+      never cross a block boundary, so a split stays self-contained
+    rules:
+    - emitted blocks decode everything written so far
+    - the frame stays open, so Close still finishes it
+    - Flush after Close returns ErrClosed
+    - flushed bytes stay inside the enabled SHA-256 and size accounting
+    - Flush with nothing buffered emits nothing and succeeds
+    - Flush does not flush the destination writer; the caller chains that
+    - flushing before a block fills reduces the ratio, so flush per chunk rather than
+      per Write
+  deferred:
+  - Huffman literals, general FSE tables, multi-match blocks, and additional compression
+    levels
+  - trained dictionaries
+  - seekable format
+  - assembly optimizations
+  - decoding
+  standard: https://www.rfc-editor.org/rfc/rfc8878
+relations:
+- relation: mentions
+  to: api:problem-response
+  resolution: resolved
+- relation: mentions
+  to: decision:force-tinygo-logic
+  resolution: resolved
+- relation: mentions
+  to: decision:streaming-response-compression
+  resolution: resolved
+- relation: mentions
+  to: policy:public-asset-precompression
+  resolution: resolved
+- relation: mentions
+  to: policy:response-content-encoding
+  resolution: resolved
+- relation: mentions
+  to: requirement:response-gzip-encoder
+  resolution: resolved
+- relation: mentions
+  to: system:tinygodriver
+  resolution: resolved

@@ -1,0 +1,46 @@
+id: flow:passkey-login
+type: flow
+title: Passkey Login
+summary: Passkey login resolves a verified credential to its local account and creates
+  a normal Popcorn Web session.
+facts:
+  legacy_body: "Passkey login resolves a verified credential to its local account\
+    \ and creates a normal Popcorn Web session.\n\n```yaml\nflow:\n  - begin requirement:contrib-passkey\
+    \ authentication in discoverable or account-selected mode\n  - persist single-use\
+    \ ceremony state in requirement:contrib-auth-state\n  - resolve data:passkey-credential\
+    \ by credential ID\n  - verify assertion, origin, RP ID, user presence, and configured\
+    \ user verification\n  - reject inactive account or credential\n  - evaluate counter\
+    \ risk and atomically persist accepted counter and backup state\n  - create or\
+    \ rotate api:session-manager session\n  - record data:request-authentication method\
+    \ as passkey\nrules:\n  - credential possession alone does not bypass account\
+    \ state or authorization checks\n  - repeated or superseded ceremony state fails\
+    \ closed\n```"
+  flow:
+  - begin requirement:contrib-passkey authentication in discoverable or account-selected
+    mode
+  - persist single-use ceremony state in requirement:contrib-auth-state
+  - resolve data:passkey-credential by credential ID
+  - verify assertion, origin, RP ID, user presence, and configured user verification
+  - reject inactive account or credential
+  - evaluate counter risk and atomically persist accepted counter and backup state
+  - create or rotate api:session-manager session
+  - record data:request-authentication method as passkey
+  rules:
+  - credential possession alone does not bypass account state or authorization checks
+  - repeated or superseded ceremony state fails closed
+relations:
+- relation: mentions
+  to: api:session-manager
+  resolution: resolved
+- relation: mentions
+  to: data:passkey-credential
+  resolution: resolved
+- relation: mentions
+  to: data:request-authentication
+  resolution: resolved
+- relation: mentions
+  to: requirement:contrib-auth-state
+  resolution: resolved
+- relation: mentions
+  to: requirement:contrib-passkey
+  resolution: resolved

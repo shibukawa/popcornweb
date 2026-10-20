@@ -1,0 +1,109 @@
+id: requirement:parallel-database-tests
+type: requirement
+title: Parallel Database Tests
+summary: Tests share one database and stay independent by running each test inside
+  its own transaction that is always rolled back, while framework transactions inside
+  the test become savepoints.
+facts:
+  legacy_body: "Tests share one database and stay independent by running each test\
+    \ inside its own transaction that is always rolled back, while framework transactions\
+    \ inside the test become savepoints.\n\n```yaml\ngoal: run database-backed tests\
+    \ with t.Parallel against one prepared database without per-test database provisioning\n\
+    mechanism:\n  test_boundary: api:test-run opens one *sql.Tx per test and rolls\
+    \ it back at cleanup\n  application_boundary: api:transaction-runner and api:rdb-middleware\
+    \ auto transaction nest as savepoints under decision:savepoint-nested-transaction\n\
+    \  visibility: no test writes ever commit, so no test observes another test's\
+    \ rows\nflow: flow:test-transaction-isolation\nswitch:\n  option: api:test-run\
+    \ WithTransaction RunOption\n  default: off, opt in per test server\n  off_guidance:\
+    \ run with test parallelism 1 and clean data explicitly\n  rationale: drivers\
+    \ without savepoint support cannot host framework transactions inside a test transaction\n\
+    engines:\n  scope: every decision:server-sql-support-tier first-class engine supports\
+    \ savepoints, so the mechanism works on all three\n  sqlite: parallel writers\
+    \ to one file serialize and then fail, per the rule:savepoint-dialect-support\
+    \ caveat, so a writing suite needs one file per test\n  server: one shared server\
+    \ database hosts parallel tests directly, which is the case sqlite could not serve\n\
+    \  mysql: DDL inside a test transaction commits implicitly and drops the savepoints,\
+    \ so schema work stays outside the test transaction\ntest_author_responsibility:\n\
+    \  - avoid unique-key and row-lock collisions between parallel tests by using\
+    \ per-test distinct data\n  - size the pool for at least one connection per concurrently\
+    \ running test, and against the server's own connection limit\n  - do not assert\
+    \ on committed state, since the test transaction never commits\n  - apply schema\
+    \ once before parallel tests, outside any test transaction\n  - keep application\
+    \ code resolving its executor from the request context\nacceptance:\n  - nested\
+    \ api:transaction-runner rollback leaves outer test transaction usable\n  - a\
+    \ passing and a failing test both leave the database unchanged\n  - parallel tests\
+    \ on one shared database produce stable results\n  - transaction option off restores\
+    \ plain pooled *sql.DB behavior\nnon_goals:\n  - per-test database or schema provisioning\n\
+    \  - cross-test isolation beyond the database isolation level\n  - distributed\
+    \ transactions\n```"
+  goal: run database-backed tests with t.Parallel against one prepared database without
+    per-test database provisioning
+  mechanism:
+    test_boundary: api:test-run opens one *sql.Tx per test and rolls it back at cleanup
+    application_boundary: api:transaction-runner and api:rdb-middleware auto transaction
+      nest as savepoints under decision:savepoint-nested-transaction
+    visibility: no test writes ever commit, so no test observes another test's rows
+  flow: flow:test-transaction-isolation
+  switch:
+    option: api:test-run WithTransaction RunOption
+    default: off, opt in per test server
+    off_guidance: run with test parallelism 1 and clean data explicitly
+    rationale: drivers without savepoint support cannot host framework transactions
+      inside a test transaction
+  engines:
+    scope: every decision:server-sql-support-tier first-class engine supports savepoints,
+      so the mechanism works on all three
+    sqlite: parallel writers to one file serialize and then fail, per the rule:savepoint-dialect-support
+      caveat, so a writing suite needs one file per test
+    server: one shared server database hosts parallel tests directly, which is the
+      case sqlite could not serve
+    mysql: DDL inside a test transaction commits implicitly and drops the savepoints,
+      so schema work stays outside the test transaction
+  test_author_responsibility:
+  - avoid unique-key and row-lock collisions between parallel tests by using per-test
+    distinct data
+  - size the pool for at least one connection per concurrently running test, and against
+    the server's own connection limit
+  - do not assert on committed state, since the test transaction never commits
+  - apply schema once before parallel tests, outside any test transaction
+  - keep application code resolving its executor from the request context
+  acceptance:
+  - nested api:transaction-runner rollback leaves outer test transaction usable
+  - a passing and a failing test both leave the database unchanged
+  - parallel tests on one shared database produce stable results
+  - transaction option off restores plain pooled *sql.DB behavior
+  non_goals:
+  - per-test database or schema provisioning
+  - cross-test isolation beyond the database isolation level
+  - distributed transactions
+acceptance:
+  item-96acebbd19024833:
+    text: nested api:transaction-runner rollback leaves outer test transaction usable
+  item-369f77908f22a769:
+    text: a passing and a failing test both leave the database unchanged
+  item-b4ee1e4dd06aac13:
+    text: parallel tests on one shared database produce stable results
+  item-102dd10f2a43b72e:
+    text: transaction option off restores plain pooled *sql.DB behavior
+relations:
+- relation: mentions
+  to: api:rdb-middleware
+  resolution: resolved
+- relation: mentions
+  to: api:test-run
+  resolution: resolved
+- relation: mentions
+  to: api:transaction-runner
+  resolution: resolved
+- relation: mentions
+  to: decision:savepoint-nested-transaction
+  resolution: resolved
+- relation: mentions
+  to: decision:server-sql-support-tier
+  resolution: resolved
+- relation: mentions
+  to: flow:test-transaction-isolation
+  resolution: resolved
+- relation: mentions
+  to: rule:savepoint-dialect-support
+  resolution: resolved

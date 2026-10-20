@@ -1,0 +1,165 @@
+id: policy:reauthentication
+type: policy
+title: Reauthentication Policy
+summary: Re-proof refreshes the assurance of the session already in the browser, so
+  it either ends on the same account or fails closed.
+facts:
+  legacy_body: "Re-proof refreshes the assurance of the session already in the browser,\
+    \ so it either ends on the same account or fails closed.\n\n```yaml\nsame_identity:\n\
+    \  check: the identity the re-proof verified resolves to the account the session\
+    \ already holds\n  compare: the issuer, key claim, and key of data:external-identity,\
+    \ or the credential owner for a passkey\n  mismatch: fail closed, leave the original\
+    \ session unchanged, and never offer a silent account switch\n  reason: a step-up\
+    \ that accepts any successful login is an account swap with the previous account's\
+    \ guarded operation already staged\nprovider_request:\n  max_age: send the remaining\
+    \ age budget, so an old single sign-on session at the provider does not satisfy\
+    \ the request\n  verify: verify auth_time in the returned ID Token rather than\
+    \ trusting that the provider honored max_age\n  missing_auth_time: treat as a\
+    \ failed re-proof, because OpenID Connect requires auth_time whenever max_age\
+    \ was sent\n  untouched: the provider session itself, which only policy:provider-session-scope\
+    \ global mode ends\nprompt_values:\n  login: re-authenticate the end user, returning\
+    \ login_required when the provider cannot\n  select_account: show the accounts\
+    \ the provider holds sessions for, which is the identified level of concept:assurance-axes\
+    \ supplied by the provider rather than by local state\n  consent: re-approve the\
+    \ grant of this client, which re-confirms authorization rather than identity\n\
+    \  combining: prompt is a space-delimited list, so login and select_account may\
+    \ travel together; none may not be combined with anything\n  relation: most providers\
+    \ collapse max_age=0 into prompt=login, so a deployment sends max_age for a budget\
+    \ and prompt for an interaction it wants regardless of age\n  unverifiable: prompt\
+    \ is a SHOULD, and no claim reports whether the provider honored it, so a relying\
+    \ party cannot check the outcome\n  consequence: a freshness requirement rests\
+    \ on max_age and the verified auth_time; prompt is an interaction hint beside\
+    \ it and never the proof\n  trap: a step-up built on prompt=login alone counts\
+    \ a silently reused single sign-on session as a completed re-proof\n  safe_use:\
+    \ policy:provider-session-scope reconfirm mode, where prompt failing costs a user-experience\
+    \ improvement and nothing more\n  withheld: select_account is omitted entirely\
+    \ under policy:shared-device-mode, because it exists to surface what that mode\
+    \ hides\nsession_effect:\n  - rotate the token, because an assurance change is\
+    \ an authentication-strength change under policy:session-security\n  - rotation\
+    \ is revoke-and-create, so idle and absolute expiry both restart, per data:session-assurance-state\n\
+    \  - preserve the account, the external identity link, and the application payload\n\
+    \  - update data:session-assurance-state within the same rotation\n  - rotate\
+    \ the policy:csrf-protection secret with the session\nfailure:\n  - a failed or\
+    \ abandoned re-proof leaves the original session at its previous assurance\n \
+    \ - the guarded operation is not performed, and its staged intent is discarded\
+    \ on expiry\n  - repeated failures are rate-limited per session and per account,\
+    \ through the failure_counting surface of requirement:rate-limit-enforcement rather\
+    \ than a middleware, because what is counted is an outcome no middleware has seen\
+    \ yet\nrules:\n  - re-proof never provisions an account, never links an identity,\
+    \ and never changes an admission decision\n  - policy:oidc-admission still evaluates,\
+    \ so an identity that lost admission fails re-proof instead of refreshing it\n\
+    \  - passkey re-proof requires user verification when the deployment configured\
+    \ it, per policy:passkey-security\n  - the recent strong proof policy:account-linking\
+    \ and policy:account-recovery already require is this policy, not a second mechanism\n\
+    \  - audit each attempt with account, method, outcome, and reason, and without\
+    \ tokens, claims, credential IDs, or cookie values\n  - a cookie backend cannot\
+    \ revoke the pre-rotation record, per decision:cookie-session-storage, so a copy\
+    \ taken earlier keeps its old assurance until its sealed expiry\n```"
+  same_identity:
+    check: the identity the re-proof verified resolves to the account the session
+      already holds
+    compare: the issuer, key claim, and key of data:external-identity, or the credential
+      owner for a passkey
+    mismatch: fail closed, leave the original session unchanged, and never offer a
+      silent account switch
+    reason: a step-up that accepts any successful login is an account swap with the
+      previous account's guarded operation already staged
+  provider_request:
+    max_age: send the remaining age budget, so an old single sign-on session at the
+      provider does not satisfy the request
+    verify: verify auth_time in the returned ID Token rather than trusting that the
+      provider honored max_age
+    missing_auth_time: treat as a failed re-proof, because OpenID Connect requires
+      auth_time whenever max_age was sent
+    untouched: the provider session itself, which only policy:provider-session-scope
+      global mode ends
+  prompt_values:
+    login: re-authenticate the end user, returning login_required when the provider
+      cannot
+    select_account: show the accounts the provider holds sessions for, which is the
+      identified level of concept:assurance-axes supplied by the provider rather than
+      by local state
+    consent: re-approve the grant of this client, which re-confirms authorization
+      rather than identity
+    combining: prompt is a space-delimited list, so login and select_account may travel
+      together; none may not be combined with anything
+    relation: most providers collapse max_age=0 into prompt=login, so a deployment
+      sends max_age for a budget and prompt for an interaction it wants regardless
+      of age
+    unverifiable: prompt is a SHOULD, and no claim reports whether the provider honored
+      it, so a relying party cannot check the outcome
+    consequence: a freshness requirement rests on max_age and the verified auth_time;
+      prompt is an interaction hint beside it and never the proof
+    trap: a step-up built on prompt=login alone counts a silently reused single sign-on
+      session as a completed re-proof
+    safe_use: policy:provider-session-scope reconfirm mode, where prompt failing costs
+      a user-experience improvement and nothing more
+    withheld: select_account is omitted entirely under policy:shared-device-mode,
+      because it exists to surface what that mode hides
+  session_effect:
+  - rotate the token, because an assurance change is an authentication-strength change
+    under policy:session-security
+  - rotation is revoke-and-create, so idle and absolute expiry both restart, per data:session-assurance-state
+  - preserve the account, the external identity link, and the application payload
+  - update data:session-assurance-state within the same rotation
+  - rotate the policy:csrf-protection secret with the session
+  failure:
+  - a failed or abandoned re-proof leaves the original session at its previous assurance
+  - the guarded operation is not performed, and its staged intent is discarded on
+    expiry
+  - repeated failures are rate-limited per session and per account, through the failure_counting
+    surface of requirement:rate-limit-enforcement rather than a middleware, because
+    what is counted is an outcome no middleware has seen yet
+  rules:
+  - re-proof never provisions an account, never links an identity, and never changes
+    an admission decision
+  - policy:oidc-admission still evaluates, so an identity that lost admission fails
+    re-proof instead of refreshing it
+  - passkey re-proof requires user verification when the deployment configured it,
+    per policy:passkey-security
+  - the recent strong proof policy:account-linking and policy:account-recovery already
+    require is this policy, not a second mechanism
+  - audit each attempt with account, method, outcome, and reason, and without tokens,
+    claims, credential IDs, or cookie values
+  - a cookie backend cannot revoke the pre-rotation record, per decision:cookie-session-storage,
+    so a copy taken earlier keeps its old assurance until its sealed expiry
+relations:
+- relation: mentions
+  to: concept:assurance-axes
+  resolution: resolved
+- relation: mentions
+  to: data:external-identity
+  resolution: resolved
+- relation: mentions
+  to: data:session-assurance-state
+  resolution: resolved
+- relation: mentions
+  to: decision:cookie-session-storage
+  resolution: resolved
+- relation: mentions
+  to: policy:account-linking
+  resolution: resolved
+- relation: mentions
+  to: policy:account-recovery
+  resolution: resolved
+- relation: mentions
+  to: policy:csrf-protection
+  resolution: resolved
+- relation: mentions
+  to: policy:oidc-admission
+  resolution: resolved
+- relation: mentions
+  to: policy:passkey-security
+  resolution: resolved
+- relation: mentions
+  to: policy:provider-session-scope
+  resolution: resolved
+- relation: mentions
+  to: policy:session-security
+  resolution: resolved
+- relation: mentions
+  to: policy:shared-device-mode
+  resolution: resolved
+- relation: mentions
+  to: requirement:rate-limit-enforcement
+  resolution: resolved

@@ -18,48 +18,85 @@ func init() {
 	jsonbind.RegisterDecode[actionProfileInput](decodeactionProfileInputBytes)
 }
 
-func decoderenameRequestBytes(data []byte) (renameRequest, error) {
+func decoderenameRequestInto(data []byte, out *renameRequest) error {
 	if jsonbind.IsBlank(data) {
-		var out renameRequest
-		return out, nil
+		return nil
 	}
 	var p jsonbind.Parser
 	p.Reset(data)
-	out, err := decoderenameRequestJSON(&p)
-	if err != nil {
-		return out, err
+	_, err := decoderenameRequestJSON(&p, out)
+	if err == nil {
+		err = p.End()
 	}
-	if err := p.End(); err != nil {
-		return out, err
-	}
-	return out, nil
+	p.Release()
+	return err
 }
 
-func decoderenameRequestJSON(p *jsonbind.Parser) (renameRequest, error) {
+func decoderenameRequestBytes(data []byte) (renameRequest, error) {
 	var out renameRequest
-	null, err := p.ObjectStart()
-	if err != nil || null {
-		return out, err
-	}
-	for n := 0; ; n++ {
-		key, ok, err := p.ObjectKey(n)
+	err := decoderenameRequestInto(data, &out)
+	return out, err
+}
+
+func decoderenameRequestJSON(p *jsonbind.Parser, out *renameRequest) (*renameRequest, error) {
+	if !p.ObjectStartFast() {
+		null, err := p.ObjectStart()
 		if err != nil {
 			return out, err
 		}
-		if !ok {
+		if null {
+			*out = renameRequest{}
 			return out, nil
 		}
-		switch string(key) {
-		case "name":
-			v, err := p.String()
+	}
+	for n := 0; ; n++ {
+		var rest []byte
+		if p.KeyFast(n) {
+			rest = p.Rest()
+		} else {
+			var ok bool
+			var err error
+			rest, ok, err = p.ObjectKeyRest(n)
+			if err != nil {
+				return out, err
+			}
+			if !ok {
+				return out, nil
+			}
+		}
+		idx, k := -1, 0
+		if len(rest) >= 6 && string(rest[:6]) == "\"name\"" {
+			idx, k = 0, 6
+		}
+		if idx >= 0 {
+			p.Skip(k)
+			if !p.ColonFast() {
+				if err := p.Colon(); err != nil {
+					return out, err
+				}
+			}
+		} else {
+			key, err := p.ObjectKeyName()
+			if err != nil {
+				return out, err
+			}
+			switch string(key) {
+			case "name":
+				idx = 0
+			default:
+				if err := p.SkipValue(); err != nil {
+					return out, err
+				}
+				continue
+			}
+		}
+		switch idx {
+		case 0:
+			v0, err := p.String()
 			if err != nil {
 				return out, jsonbind.FieldError("name", "invalid string", err)
 			}
-			out.Name = v
-		default:
-			if err := p.SkipValue(); err != nil {
-				return out, err
-			}
+			out.Name = v0
 		}
 	}
 }
@@ -92,15 +129,48 @@ func bindrenameRequest(r *http.Request) (renameRequest, error) {
 					return out, httpbind.JSONBodyNotObject()
 				}
 				for n := 0; ; n++ {
-					key, ok, err := p.ObjectKey(n)
-					if err != nil {
-						return out, httpbind.JSONBodyError(err)
+					var rest []byte
+					if p.KeyFast(n) {
+						rest = p.Rest()
+					} else {
+						var ok bool
+						var err error
+						rest, ok, err = p.ObjectKeyRest(n)
+						if err != nil {
+							return out, httpbind.JSONBodyError(err)
+						}
+						if !ok {
+							break
+						}
 					}
-					if !ok {
-						break
+					idx, k := -1, 0
+					if len(rest) >= 6 && string(rest[:6]) == "\"name\"" {
+						idx, k = 0, 6
 					}
-					switch string(key) {
-					case "name":
+					if idx >= 0 {
+						p.Skip(k)
+						if !p.ColonFast() {
+							if err := p.Colon(); err != nil {
+								return out, httpbind.JSONBodyError(err)
+							}
+						}
+					} else {
+						key, err := p.ObjectKeyName()
+						if err != nil {
+							return out, httpbind.JSONBodyError(err)
+						}
+						switch string(key) {
+						case "name":
+							idx = 0
+						default:
+							if err := p.SkipValue(); err != nil {
+								return out, httpbind.JSONBodyError(err)
+							}
+							continue
+						}
+					}
+					switch idx {
+					case 0:
 						if !needName {
 							if err := p.SkipValue(); err != nil {
 								return out, httpbind.JSONBodyError(err)
@@ -108,17 +178,14 @@ func bindrenameRequest(r *http.Request) (renameRequest, error) {
 							continue
 						}
 						presentName = true
-						v, err := p.String()
+						v0, err := p.String()
 						if err != nil {
 							return out, jsonbind.FieldError("name", "invalid string", err)
 						}
-						out.Name = v
-					default:
-						if err := p.SkipValue(); err != nil {
-							return out, httpbind.JSONBodyError(err)
-						}
+						out.Name = v0
 					}
 				}
+				p.Release()
 				if err := p.End(); err != nil {
 					return out, httpbind.JSONBodyError(err)
 				}
@@ -128,8 +195,8 @@ func bindrenameRequest(r *http.Request) (renameRequest, error) {
 			if err != nil {
 				return out, err
 			}
-			if needName && formBody != nil {
-				if fv, ok := formBody["name"]; ok {
+			if needName && formBody.Present() {
+				if fv, ok := httpbind.FormLookup(formBody, "name"); ok {
 					presentName = true
 					out.Name = fv
 				}
@@ -189,48 +256,85 @@ func encodeProfile(w io.Writer, v Profile) error {
 	return err
 }
 
-func decodeactionProfileInputBytes(data []byte) (actionProfileInput, error) {
+func decodeactionProfileInputInto(data []byte, out *actionProfileInput) error {
 	if jsonbind.IsBlank(data) {
-		var out actionProfileInput
-		return out, nil
+		return nil
 	}
 	var p jsonbind.Parser
 	p.Reset(data)
-	out, err := decodeactionProfileInputJSON(&p)
-	if err != nil {
-		return out, err
+	_, err := decodeactionProfileInputJSON(&p, out)
+	if err == nil {
+		err = p.End()
 	}
-	if err := p.End(); err != nil {
-		return out, err
-	}
-	return out, nil
+	p.Release()
+	return err
 }
 
-func decodeactionProfileInputJSON(p *jsonbind.Parser) (actionProfileInput, error) {
+func decodeactionProfileInputBytes(data []byte) (actionProfileInput, error) {
 	var out actionProfileInput
-	null, err := p.ObjectStart()
-	if err != nil || null {
-		return out, err
-	}
-	for n := 0; ; n++ {
-		key, ok, err := p.ObjectKey(n)
+	err := decodeactionProfileInputInto(data, &out)
+	return out, err
+}
+
+func decodeactionProfileInputJSON(p *jsonbind.Parser, out *actionProfileInput) (*actionProfileInput, error) {
+	if !p.ObjectStartFast() {
+		null, err := p.ObjectStart()
 		if err != nil {
 			return out, err
 		}
-		if !ok {
+		if null {
+			*out = actionProfileInput{}
 			return out, nil
 		}
-		switch string(key) {
-		case "id":
-			v, err := p.String()
+	}
+	for n := 0; ; n++ {
+		var rest []byte
+		if p.KeyFast(n) {
+			rest = p.Rest()
+		} else {
+			var ok bool
+			var err error
+			rest, ok, err = p.ObjectKeyRest(n)
+			if err != nil {
+				return out, err
+			}
+			if !ok {
+				return out, nil
+			}
+		}
+		idx, k := -1, 0
+		if len(rest) >= 4 && string(rest[:4]) == "\"id\"" {
+			idx, k = 0, 4
+		}
+		if idx >= 0 {
+			p.Skip(k)
+			if !p.ColonFast() {
+				if err := p.Colon(); err != nil {
+					return out, err
+				}
+			}
+		} else {
+			key, err := p.ObjectKeyName()
+			if err != nil {
+				return out, err
+			}
+			switch string(key) {
+			case "id":
+				idx = 0
+			default:
+				if err := p.SkipValue(); err != nil {
+					return out, err
+				}
+				continue
+			}
+		}
+		switch idx {
+		case 0:
+			v0, err := p.String()
 			if err != nil {
 				return out, jsonbind.FieldError("id", "invalid string", err)
 			}
-			out.Id = v
-		default:
-			if err := p.SkipValue(); err != nil {
-				return out, err
-			}
+			out.Id = v0
 		}
 	}
 }

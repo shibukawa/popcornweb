@@ -1,0 +1,245 @@
+id: concept:code-generation
+type: concept
+title: Code Generation
+summary: Code generation scans Go, .pw.html, .pw.sql, and .pw.dynamo sources and emits
+  all required application mapping and codec code beside its source.
+facts:
+  legacy_body: "Code generation scans Go, .pw.html, .pw.sql, and .pw.dynamo sources\
+    \ and emits all required application mapping and codec code beside its source.\n\
+    \n```yaml\nruns_in:\n  - api:cli-generate, as its first step and the whole of\
+    \ it under --code-only\n  - api:cli-check, which plans the same work and writes\
+    \ nothing\n  - api:cli-dev, on every watched change\n  - api:cli-build, through\
+    \ api:cli-generate\ninputs:\n  - pw.Parse[T] call sites\n  - route registrations\n\
+    \  - .pw.html files\n  - .pw.sql files\n  - reachable JSON types\n  - concept:page-tree\
+    \ roots, their reserved files, and their optional page.go\n  - dynamo-tagged struct\
+    \ declarations and their dynamobind call sites\n  - .pw.dynamo query declarations\n\
+    flow: flow:generation-pipeline\ndiscovery_scope:\n  per_purpose: the data:project-config\
+    \ generate.handlers, generate.templates, generate.queries, generate.config, generate.pages,\
+    \ and generate.dynamo lists, per decision:explicit-generation-sources\n  effect:\
+    \ a directory contributes only the artifact kinds whose purpose lists it, so a\
+    \ query directory is never analyzed for routes\n  pages_unit: a generate.pages\
+    \ entry is walked as one concept:page-tree per flow:page-route-generation, not\
+    \ as a directory of independent sources\n  fixed: the project.main directory and\
+    \ the project-root public.go\n  required: the keys have no default, so a project\
+    \ without them fails to load\nsql_dialect:\n  source: data:project-config project.database\n\
+    \  effect: .pw.sql sources compile to the placeholder syntax of that engine, per\
+    \ flow:sql-generation\n  no_default: the value is passed through rather than assumed,\
+    \ because a wrong dialect fails at the first query rather than at generation\n\
+    \  outside: warn and ignore a .pw.html, .pw.sql, or stale generated file found\
+    \ outside its purpose; Go sources are not reported\n  consumers: api:cli-new derives\
+    \ its default destination from this scope, and api:cli-dev regenerates from it\n\
+    artifacts:\n  from_generate_handlers:\n    - request binding\n    - optimized\
+    \ JSON codecs\n    - OpenAPI fragments\n  from_generate_templates: typed HTML\
+    \ renderers\n  from_generate_queries: context-based SQL functions\n  from_generate_config:\
+    \ configuration and subcommand binding\n  from_generate_pages:\n    - compiled\
+    \ page and layout components\n    - the route decoder of each page\n    - the\
+    \ api:page-registry and data:page-route-table of each tree root\n    - api:page-action-endpoint\
+    \ registrations\n    - request binders for the route packages, so an action can\
+    \ call pw.Parse\n    - no OpenAPI, per decision:dual-router-coexistence\n  from_generate_dynamo:\n\
+    \    - item codecs, key builders, and table definitions, per requirement:dynamodb-generation\n\
+    \    - the decision:dynamodb-table-registry list in the project.main package\n\
+    \    - no SQL dialect input, because there is no engine variant to compile for\n\
+    \  from_every_purpose: data:route-table, the exported view of the same route analysis\n\
+    \  optional: generated tests\nunparsable_source:\n  rule: a Go file that does\
+    \ not parse is reported by name, line, and column, and its directory is skipped\
+    \ for that run\n  reason: api:cli-dev regenerates the moment a file appears, so\
+    \ it routinely reads one an editor has created and not yet written into\n  upstream_defect:\
+    \ system:tinybind walks such a file to a nil position and panics, found by generating\
+    \ over a zero-byte source on 2026-08-02\n  containment: a panic anywhere in a\
+    \ generation request becomes an error, because one escaping would take the developer\
+    \ loop, the application it supervises, and the services it started down with it\n\
+    \  transient: the next watched change regenerates, so a file caught mid-save costs\
+    \ a message rather than a restart\ntwo_pass_ordering:\n  halves: the directories\
+    \ whose generation only writes Go, then the ones whose generation also type-checks\
+    \ it — the generate.handlers, generate.pages, and generate.config purposes\n \
+    \ between_them: the first half's output is written to disk before the second half\
+    \ is planned\n  why: analysing a handler package loads the query package the same\
+    \ run produces, and a plan nobody has written is invisible to packages.Load\n\
+    \  what_it_fixes: a clean checkout, where generated Go is absent because it is\
+    \ not committed; in one lexical pass handlers preceded queries, failed to load\
+    \ them, and stopped the run before anything was written, so running it again changed\
+    \ nothing\n  survived_because: a working tree that had generated once already\
+    \ held the output, so only a fresh clone hit it\nbehavior:\n  - read a source\
+    \ only where the purpose that owns its kind lists its directory\n  - walk each\
+    \ generate.pages root once, reporting every discovery problem in that walk rather\
+    \ than only the first\n  - use the pw emitter of decision:page-render-binding\
+    \ for every page tree artifact, so generated pages call api:page-render-runtime\
+    \ rather than system:tinybind\n  - run request binding over the packages a discovered\
+    \ tree reports, skipping the ones the generator reports nothing to generate for\n\
+    \  - register the Popcorn Web generated header prefix with every discovery pass,\
+    \ so nothing this wrote is analyzed as a source on the next run\n  - keep, per\
+    \ directory, only the artifacts whose purpose lists that directory\n  - warn once\
+    \ per .pw.html, .pw.sql, or stale generated file found outside its purpose, naming\
+    \ the path and the key\n  - use system:tinybind route and call analysis behind\
+    \ the pw API\n  - process sources and packages in stable lexical order within\
+    \ each half of two_pass_ordering\n  - stop on parse or generation error\n  - format\
+    \ generated Go source\n  - replace destination files atomically after all generation\
+    \ succeeds, except the first half of two_pass_ordering, which lands before the\
+    \ second is planned because that half reads it from disk\n  - emit {source-base}_pw_gen.go\
+    \ beside each source\n```"
+  runs_in:
+  - api:cli-generate, as its first step and the whole of it under --code-only
+  - api:cli-check, which plans the same work and writes nothing
+  - api:cli-dev, on every watched change
+  - api:cli-build, through api:cli-generate
+  inputs:
+  - pw.Parse[T] call sites
+  - route registrations
+  - .pw.html files
+  - .pw.sql files
+  - reachable JSON types
+  - concept:page-tree roots, their reserved files, and their optional page.go
+  - dynamo-tagged struct declarations and their dynamobind call sites
+  - .pw.dynamo query declarations
+  flow: flow:generation-pipeline
+  discovery_scope:
+    per_purpose: the data:project-config generate.handlers, generate.templates, generate.queries,
+      generate.config, generate.pages, and generate.dynamo lists, per decision:explicit-generation-sources
+    effect: a directory contributes only the artifact kinds whose purpose lists it,
+      so a query directory is never analyzed for routes
+    pages_unit: a generate.pages entry is walked as one concept:page-tree per flow:page-route-generation,
+      not as a directory of independent sources
+    fixed: the project.main directory and the project-root public.go
+    required: the keys have no default, so a project without them fails to load
+  sql_dialect:
+    source: data:project-config project.database
+    effect: .pw.sql sources compile to the placeholder syntax of that engine, per
+      flow:sql-generation
+    no_default: the value is passed through rather than assumed, because a wrong dialect
+      fails at the first query rather than at generation
+    outside: warn and ignore a .pw.html, .pw.sql, or stale generated file found outside
+      its purpose; Go sources are not reported
+    consumers: api:cli-new derives its default destination from this scope, and api:cli-dev
+      regenerates from it
+  artifacts:
+    from_generate_handlers:
+    - request binding
+    - optimized JSON codecs
+    - OpenAPI fragments
+    from_generate_templates: typed HTML renderers
+    from_generate_queries: context-based SQL functions
+    from_generate_config: configuration and subcommand binding
+    from_generate_pages:
+    - compiled page and layout components
+    - the route decoder of each page
+    - the api:page-registry and data:page-route-table of each tree root
+    - api:page-action-endpoint registrations
+    - request binders for the route packages, so an action can call pw.Parse
+    - no OpenAPI, per decision:dual-router-coexistence
+    from_generate_dynamo:
+    - item codecs, key builders, and table definitions, per requirement:dynamodb-generation
+    - the decision:dynamodb-table-registry list in the project.main package
+    - no SQL dialect input, because there is no engine variant to compile for
+    from_every_purpose: data:route-table, the exported view of the same route analysis
+    optional: generated tests
+  unparsable_source:
+    rule: a Go file that does not parse is reported by name, line, and column, and
+      its directory is skipped for that run
+    reason: api:cli-dev regenerates the moment a file appears, so it routinely reads
+      one an editor has created and not yet written into
+    upstream_defect: system:tinybind walks such a file to a nil position and panics,
+      found by generating over a zero-byte source on 2026-08-02
+    containment: a panic anywhere in a generation request becomes an error, because
+      one escaping would take the developer loop, the application it supervises, and
+      the services it started down with it
+    transient: the next watched change regenerates, so a file caught mid-save costs
+      a message rather than a restart
+  two_pass_ordering:
+    halves: the directories whose generation only writes Go, then the ones whose generation
+      also type-checks it — the generate.handlers, generate.pages, and generate.config
+      purposes
+    between_them: the first half's output is written to disk before the second half
+      is planned
+    why: analysing a handler package loads the query package the same run produces,
+      and a plan nobody has written is invisible to packages.Load
+    what_it_fixes: a clean checkout, where generated Go is absent because it is not
+      committed; in one lexical pass handlers preceded queries, failed to load them,
+      and stopped the run before anything was written, so running it again changed
+      nothing
+    survived_because: a working tree that had generated once already held the output,
+      so only a fresh clone hit it
+  behavior:
+  - read a source only where the purpose that owns its kind lists its directory
+  - walk each generate.pages root once, reporting every discovery problem in that
+    walk rather than only the first
+  - use the pw emitter of decision:page-render-binding for every page tree artifact,
+    so generated pages call api:page-render-runtime rather than system:tinybind
+  - run request binding over the packages a discovered tree reports, skipping the
+    ones the generator reports nothing to generate for
+  - register the Popcorn Web generated header prefix with every discovery pass, so
+    nothing this wrote is analyzed as a source on the next run
+  - keep, per directory, only the artifacts whose purpose lists that directory
+  - warn once per .pw.html, .pw.sql, or stale generated file found outside its purpose,
+    naming the path and the key
+  - use system:tinybind route and call analysis behind the pw API
+  - process sources and packages in stable lexical order within each half of two_pass_ordering
+  - stop on parse or generation error
+  - format generated Go source
+  - replace destination files atomically after all generation succeeds, except the
+    first half of two_pass_ordering, which lands before the second is planned because
+    that half reads it from disk
+  - emit {source-base}_pw_gen.go beside each source
+relations:
+- relation: mentions
+  to: api:cli-build
+  resolution: resolved
+- relation: mentions
+  to: api:cli-check
+  resolution: resolved
+- relation: mentions
+  to: api:cli-dev
+  resolution: resolved
+- relation: mentions
+  to: api:cli-generate
+  resolution: resolved
+- relation: mentions
+  to: api:cli-new
+  resolution: resolved
+- relation: mentions
+  to: api:page-action-endpoint
+  resolution: resolved
+- relation: mentions
+  to: api:page-registry
+  resolution: resolved
+- relation: mentions
+  to: api:page-render-runtime
+  resolution: resolved
+- relation: mentions
+  to: concept:page-tree
+  resolution: resolved
+- relation: mentions
+  to: data:page-route-table
+  resolution: resolved
+- relation: mentions
+  to: data:project-config
+  resolution: resolved
+- relation: mentions
+  to: data:route-table
+  resolution: resolved
+- relation: mentions
+  to: decision:dual-router-coexistence
+  resolution: resolved
+- relation: mentions
+  to: decision:dynamodb-table-registry
+  resolution: resolved
+- relation: mentions
+  to: decision:explicit-generation-sources
+  resolution: resolved
+- relation: mentions
+  to: decision:page-render-binding
+  resolution: resolved
+- relation: mentions
+  to: flow:generation-pipeline
+  resolution: resolved
+- relation: mentions
+  to: flow:page-route-generation
+  resolution: resolved
+- relation: mentions
+  to: flow:sql-generation
+  resolution: resolved
+- relation: mentions
+  to: requirement:dynamodb-generation
+  resolution: resolved
+- relation: mentions
+  to: system:tinybind
+  resolution: resolved

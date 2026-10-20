@@ -1,0 +1,340 @@
+id: decision:update-runtime-convergence
+type: decision
+title: Update Runtime Convergence
+summary: system:tinybind v0.3.0 ships htmlupdate, a complete update transport with
+  its own browser runtime, header namespace, and endpoint prefix, duplicating what
+  Popcorn Web already owns; adopt it as the transport and merge the two browser runtimes
+  into one asset under the existing Popcorn Web names rather than retiring either
+  side.
+facts:
+  legacy_body: "system:tinybind v0.3.0 ships htmlupdate, a complete update transport\
+    \ with its own browser runtime, header namespace, and endpoint prefix, duplicating\
+    \ what Popcorn Web already owns; adopt it as the transport and merge the two browser\
+    \ runtimes into one asset under the existing Popcorn Web names rather than retiring\
+    \ either side.\n\n```yaml\nsource: user convergence decision 2026-08-01\nwhat_upstream_now_ships:\n\
+    \  package: tinybind-go/htmlupdate, the net/http half htmlbind deliberately excludes\
+    \ so generated plans stay TinyGo-safe\n  modes: navigation delta, component redraw,\
+    \ action response, streamed delta records, live reconnect\n  runtime: one embedded\
+    \ runtime.js served from its own versioned path\n  names: from v0.3.1 every name\
+    \ is configuration reaching both halves as one object, so nothing this framework\
+    \ calls carries the dependency's brand\n  serving: the module serves its own asset\
+    \ by default and stops when the caller declares ownership\nwhat_pw_already_owned:\n\
+    \  runtime: the boundary runtime of requirement:external-boundary-runtime, serving\
+    \ async completion apply, live delivery, and truncation reload\n  header: the\
+    \ live mode token on Pw-Response-Mode\n  path: the reserved prefix of requirement:framework-script-assets\n\
+    \  framing: the envelopes of api:html-boundary-protocol\noverlap: async streaming,\
+    \ live delivery, and reconnect exist on both sides; navigation delta, redraw,\
+    \ action response, form reconciliation, and preserved islands exist only upstream\n\
+    decision:\n  transport: htmlupdate is the implementation, wrapped by api:html-update-options;\
+    \ pw writes no delta encoder, no manifest codec, and no redraw router of its own\n\
+    \  header_namespace: one Pw prefix, so the render header is Pw-Render and the\
+    \ hint headers are Pw-Manifest and Pw-Build\n  one_header_many_modes: the live\
+    \ token joins the same header as a mode value rather than keeping a header of\
+    \ its own, because the modes are mutually exclusive readings of one question\n\
+    \  runtime_asset: the two scripts merge into one popcornweb-runtime.js, served\
+    \ by requirement:unified-update-runtime from the reserved prefix\n  endpoints:\
+    \ htmlupdate mounts under the pw reserved prefix, so requirement:framework-script-assets\
+    \ keeps one routing, caching, and access rule\nwhy_coexistence_works:\n  negotiate_is_strict:\
+    \ htmlupdate resolves anything that is not its own mode token to a complete document,\
+    \ so an unrecognized value is inert rather than an error\n  consequence: a live\
+    \ token on the shared header reaches htmlupdate as no update request at all\n\
+    \  ordering_rule: pw must test its own modes before delegating, or a live request\
+    \ would be answered as a document; this is the one thing the shared header costs\n\
+    \  version_suffix: the live token gains the ;v=N form the other modes carry, so\
+    \ one parser reads the header\n  token_shared_with_a_planned_mode: the module\
+    \ publishes 'live;v=N' in its guide for its own live reconnect, but parses no\
+    \ live token and carries live deliveries on the navigation mode instead, so the\
+    \ two describe the same intent with different bodies; requirement:tinybind-update-composition-seams\
+    \ carries the convergence\nretired:\n  - the separate boundary runtime file, absorbed\
+    \ rather than deleted\nnot_actually_retired:\n  what: Pw-Response-Mode was to\
+    \ be replaced by a mode value on the shared header, and it was not; the live path\
+    \ still selects on it, both in the server entry and in this framework's own boundary\
+    \ runtime\n  found: 2026-08-04, while adopting v0.3.5\n  harmless_today: the two\
+    \ headers do not collide, and the module's own live token on the shared header\
+    \ reaches a path this framework does not read, so nothing is misrouted\n  but:\
+    \ the ordering rule this decision calls the one cost of a shared header is therefore\
+    \ paying for a merge that has not happened\n  settles_with: the client ownership\
+    \ work, now done, since one side writing both halves makes a single header a choice\
+    \ rather than a negotiation\nkept:\n  - every envelope of api:html-boundary-protocol,\
+    \ since the async and live paths are unchanged on the wire\n  - api:live-delivery-protocol\
+    \ records and the document end marker\n  - the reserved-path and immutable-revision\
+    \ rules of requirement:framework-script-assets\nupstream_request:\n  raised: requirement:tinybind-runtime-ownership,\
+    \ ten findings against v0.3.0\n  answered: v0.3.1, every item accepted, which\
+    \ removes every workaround this decision had allowed for\n  effect_here: the merge\
+    \ becomes composition of an exported value instead of vendoring a copy, and every\
+    \ name becomes configuration instead of a rebuild\nresolved_asks:\n  runtime_source:\
+    \ exported as bytes, as an asset with a digest and media type, and as a configuration\
+    \ the server and browser share; serving is switchable, so this framework serves\
+    \ the merged asset alone\n  protocol_names: the runtime reads the attribute prefix,\
+    \ header namespace, endpoint prefix, and installed name from that configuration,\
+    \ so the Pw namespace needs no rebuilt runtime\n  author_attributes: the preserve\
+    \ and ignore markers follow the same prefix, so no application template writes\
+    \ the dependency's name\n  boundary_prefix: one render option names the placeholder\
+    \ element and the boundary ids together, so the generated attributes and the rendered\
+    \ markup finally agree\n  mount: takes a one-method router that api:serve-mux\
+    \ already satisfies, so the endpoints install with one call\n  errors: a typed\
+    \ failure reaches a callback, so a redraw failure is visible to api:error-renderer\
+    \ and the request-scoped logger\n  registration_and_bounds: registration returns\
+    \ an error, options validate together, and the query bound and stream media type\
+    \ are configurable\nhow_pw_holds_its_own_half:\n  today: a Go const holding the\
+    \ script as a raw string literal, with tests asserting over that string\n  cost:\
+    \ the JavaScript gets no editor tooling, no formatter, and no linter, and a merged\
+    \ asset several times its size makes that worse\n  change: hold it as a real .js\
+    \ file embedded at build time, so both halves of the merge are files before they\
+    \ are bytes\nscript_tag_ownership: pw emits its own tag, because injection per\
+    \ decision:runtime-tag-injection is what keeps the reference out of an author-owned\
+    \ file; upstream returns an empty tag once the caller owns the runtime, so the\
+    \ two do not collide\nrejected:\n  keep_pw_runtime_only:\n    what: implement\
+    \ navigation delta, redraw, and action apply on the htmlbind boundary and validator\
+    \ primitives\n    why_not: it rewrites form-state reconciliation, preserved islands,\
+    \ history, scroll, and focus handling that upstream already ships and tests\n\
+    \    under_review: 2026-08-04, per the client ownership entry of requirement:tinybind-update-composition-seams\n\
+    \    what_the_estimate_missed: the cost of the coupling itself, counted here as\
+    \ zero; wiring the redraw endpoint found that the module's browser half decides\
+    \ the address of an endpoint this framework serves, so a change this framework\
+    \ could make alone needs a coordinated round instead\n    what_it_got_right: the\
+    \ size of what would be rewritten, which the audit confirmed rather than reduced\n\
+    \    not_reversed_yet: the trade is now between a known rewrite and a coupling\
+    \ that bills per round, and that is the argument the next round settles\n    decided:\
+    \ 2026-08-04, that every byte running in a browser becomes this framework's; v0.3.5\
+    \ made the module's asset opt-in, so what remained was writing the replacement\
+    \ rather than negotiating for the right to\n    narrowed_by_v0_3_5: the coupling\
+    \ that forced the decision was addressing, and that is now the caller's, so the\
+    \ rewrite was taken because it was worth taking rather than to unblock anything\n\
+    \    done: the client half is this framework's, written against the published\
+    \ wire contract rather than derived from the module's implementation\n    what_it_cost:\
+    \ about four hundred and fifty lines, against an estimate that had counted the\
+    \ rewrite correctly and the coupling at zero\n    what_it_bought: one apply core\
+    \ instead of two, one live implementation instead of two, addressing this framework\
+    \ can change alone, and a conformance harness that tests the wire rather than\
+    \ a JavaScript entry surface\n    what_stays_the_module_s: every Go half, and\
+    \ everything the compiler emits; the transport decision above is unchanged\n \
+    \ adopt_upstream_names:\n    what: serve under X-Tinybind and /_tb\n    why_not:\
+    \ the reserved prefix, the immutable revision URL, and the framework-owned asset\
+    \ rule are Popcorn Web contracts a dependency name must not leak into\n  two_runtimes_on_one_page:\n\
+    \    why_not: two boundary id spaces, two script tags, and two build identities\
+    \ on one document, with nothing deciding which one owns a given region\nsequencing:\n\
+    \  - api:html-update-options and requirement:unified-update-runtime, since every\
+    \ other item loads through them\n  - requirement:navigation-delta-rendering, which\
+    \ needs no generation change\n  - requirement:reloadable-component-endpoint, which\
+    \ needs the reloadable modifier and a registration site\n  - requirement:action-response-update,\
+    \ which needs only a branch in an application handler\n  - requirement:module-native-csrf,\
+    \ whose token supply and middleware are this framework's remaining half\ndelivery_of_the_runtime_itself:\
+    \ decision:runtime-tag-injection, which is a prerequisite of the first item rather\
+    \ than a step after it, because a merged asset no page reliably loads is worth\
+    \ nothing\nnot_sequenced_here: requirement:component-asset-extraction, which concerns\
+    \ application component assets and shares nothing with this convergence but the\
+    \ word script\nunblocks: flow:partial-refresh, the rung decision:web-runtime-delivery-order\
+    \ placed after flow:initial-streaming-render\n```"
+  source: user convergence decision 2026-08-01
+  what_upstream_now_ships:
+    package: tinybind-go/htmlupdate, the net/http half htmlbind deliberately excludes
+      so generated plans stay TinyGo-safe
+    modes: navigation delta, component redraw, action response, streamed delta records,
+      live reconnect
+    runtime: one embedded runtime.js served from its own versioned path
+    names: from v0.3.1 every name is configuration reaching both halves as one object,
+      so nothing this framework calls carries the dependency's brand
+    serving: the module serves its own asset by default and stops when the caller
+      declares ownership
+  what_pw_already_owned:
+    runtime: the boundary runtime of requirement:external-boundary-runtime, serving
+      async completion apply, live delivery, and truncation reload
+    header: the live mode token on Pw-Response-Mode
+    path: the reserved prefix of requirement:framework-script-assets
+    framing: the envelopes of api:html-boundary-protocol
+  overlap: async streaming, live delivery, and reconnect exist on both sides; navigation
+    delta, redraw, action response, form reconciliation, and preserved islands exist
+    only upstream
+  decision:
+    transport: htmlupdate is the implementation, wrapped by api:html-update-options;
+      pw writes no delta encoder, no manifest codec, and no redraw router of its own
+    header_namespace: one Pw prefix, so the render header is Pw-Render and the hint
+      headers are Pw-Manifest and Pw-Build
+    one_header_many_modes: the live token joins the same header as a mode value rather
+      than keeping a header of its own, because the modes are mutually exclusive readings
+      of one question
+    runtime_asset: the two scripts merge into one popcornweb-runtime.js, served by
+      requirement:unified-update-runtime from the reserved prefix
+    endpoints: htmlupdate mounts under the pw reserved prefix, so requirement:framework-script-assets
+      keeps one routing, caching, and access rule
+  why_coexistence_works:
+    negotiate_is_strict: htmlupdate resolves anything that is not its own mode token
+      to a complete document, so an unrecognized value is inert rather than an error
+    consequence: a live token on the shared header reaches htmlupdate as no update
+      request at all
+    ordering_rule: pw must test its own modes before delegating, or a live request
+      would be answered as a document; this is the one thing the shared header costs
+    version_suffix: the live token gains the ;v=N form the other modes carry, so one
+      parser reads the header
+    token_shared_with_a_planned_mode: the module publishes 'live;v=N' in its guide
+      for its own live reconnect, but parses no live token and carries live deliveries
+      on the navigation mode instead, so the two describe the same intent with different
+      bodies; requirement:tinybind-update-composition-seams carries the convergence
+  retired:
+  - the separate boundary runtime file, absorbed rather than deleted
+  not_actually_retired:
+    what: Pw-Response-Mode was to be replaced by a mode value on the shared header,
+      and it was not; the live path still selects on it, both in the server entry
+      and in this framework's own boundary runtime
+    found: 2026-08-04, while adopting v0.3.5
+    harmless_today: the two headers do not collide, and the module's own live token
+      on the shared header reaches a path this framework does not read, so nothing
+      is misrouted
+    but: the ordering rule this decision calls the one cost of a shared header is
+      therefore paying for a merge that has not happened
+    settles_with: the client ownership work, now done, since one side writing both
+      halves makes a single header a choice rather than a negotiation
+  kept:
+  - every envelope of api:html-boundary-protocol, since the async and live paths are
+    unchanged on the wire
+  - api:live-delivery-protocol records and the document end marker
+  - the reserved-path and immutable-revision rules of requirement:framework-script-assets
+  upstream_request:
+    raised: requirement:tinybind-runtime-ownership, ten findings against v0.3.0
+    answered: v0.3.1, every item accepted, which removes every workaround this decision
+      had allowed for
+    effect_here: the merge becomes composition of an exported value instead of vendoring
+      a copy, and every name becomes configuration instead of a rebuild
+  resolved_asks:
+    runtime_source: exported as bytes, as an asset with a digest and media type, and
+      as a configuration the server and browser share; serving is switchable, so this
+      framework serves the merged asset alone
+    protocol_names: the runtime reads the attribute prefix, header namespace, endpoint
+      prefix, and installed name from that configuration, so the Pw namespace needs
+      no rebuilt runtime
+    author_attributes: the preserve and ignore markers follow the same prefix, so
+      no application template writes the dependency's name
+    boundary_prefix: one render option names the placeholder element and the boundary
+      ids together, so the generated attributes and the rendered markup finally agree
+    mount: takes a one-method router that api:serve-mux already satisfies, so the
+      endpoints install with one call
+    errors: a typed failure reaches a callback, so a redraw failure is visible to
+      api:error-renderer and the request-scoped logger
+    registration_and_bounds: registration returns an error, options validate together,
+      and the query bound and stream media type are configurable
+  how_pw_holds_its_own_half:
+    today: a Go const holding the script as a raw string literal, with tests asserting
+      over that string
+    cost: the JavaScript gets no editor tooling, no formatter, and no linter, and
+      a merged asset several times its size makes that worse
+    change: hold it as a real .js file embedded at build time, so both halves of the
+      merge are files before they are bytes
+  script_tag_ownership: pw emits its own tag, because injection per decision:runtime-tag-injection
+    is what keeps the reference out of an author-owned file; upstream returns an empty
+    tag once the caller owns the runtime, so the two do not collide
+  rejected:
+    keep_pw_runtime_only:
+      what: implement navigation delta, redraw, and action apply on the htmlbind boundary
+        and validator primitives
+      why_not: it rewrites form-state reconciliation, preserved islands, history,
+        scroll, and focus handling that upstream already ships and tests
+      under_review: 2026-08-04, per the client ownership entry of requirement:tinybind-update-composition-seams
+      what_the_estimate_missed: the cost of the coupling itself, counted here as zero;
+        wiring the redraw endpoint found that the module's browser half decides the
+        address of an endpoint this framework serves, so a change this framework could
+        make alone needs a coordinated round instead
+      what_it_got_right: the size of what would be rewritten, which the audit confirmed
+        rather than reduced
+      not_reversed_yet: the trade is now between a known rewrite and a coupling that
+        bills per round, and that is the argument the next round settles
+      decided: 2026-08-04, that every byte running in a browser becomes this framework's;
+        v0.3.5 made the module's asset opt-in, so what remained was writing the replacement
+        rather than negotiating for the right to
+      narrowed_by_v0_3_5: the coupling that forced the decision was addressing, and
+        that is now the caller's, so the rewrite was taken because it was worth taking
+        rather than to unblock anything
+      done: the client half is this framework's, written against the published wire
+        contract rather than derived from the module's implementation
+      what_it_cost: about four hundred and fifty lines, against an estimate that had
+        counted the rewrite correctly and the coupling at zero
+      what_it_bought: one apply core instead of two, one live implementation instead
+        of two, addressing this framework can change alone, and a conformance harness
+        that tests the wire rather than a JavaScript entry surface
+      what_stays_the_module_s: every Go half, and everything the compiler emits; the
+        transport decision above is unchanged
+    adopt_upstream_names:
+      what: serve under X-Tinybind and /_tb
+      why_not: the reserved prefix, the immutable revision URL, and the framework-owned
+        asset rule are Popcorn Web contracts a dependency name must not leak into
+    two_runtimes_on_one_page:
+      why_not: two boundary id spaces, two script tags, and two build identities on
+        one document, with nothing deciding which one owns a given region
+  sequencing:
+  - api:html-update-options and requirement:unified-update-runtime, since every other
+    item loads through them
+  - requirement:navigation-delta-rendering, which needs no generation change
+  - requirement:reloadable-component-endpoint, which needs the reloadable modifier
+    and a registration site
+  - requirement:action-response-update, which needs only a branch in an application
+    handler
+  - requirement:module-native-csrf, whose token supply and middleware are this framework's
+    remaining half
+  delivery_of_the_runtime_itself: decision:runtime-tag-injection, which is a prerequisite
+    of the first item rather than a step after it, because a merged asset no page
+    reliably loads is worth nothing
+  not_sequenced_here: requirement:component-asset-extraction, which concerns application
+    component assets and shares nothing with this convergence but the word script
+  unblocks: flow:partial-refresh, the rung decision:web-runtime-delivery-order placed
+    after flow:initial-streaming-render
+relations:
+- relation: mentions
+  to: api:error-renderer
+  resolution: resolved
+- relation: mentions
+  to: api:html-boundary-protocol
+  resolution: resolved
+- relation: mentions
+  to: api:html-update-options
+  resolution: resolved
+- relation: mentions
+  to: api:live-delivery-protocol
+  resolution: resolved
+- relation: mentions
+  to: api:serve-mux
+  resolution: resolved
+- relation: mentions
+  to: decision:runtime-tag-injection
+  resolution: resolved
+- relation: mentions
+  to: decision:web-runtime-delivery-order
+  resolution: resolved
+- relation: mentions
+  to: flow:initial-streaming-render
+  resolution: resolved
+- relation: mentions
+  to: flow:partial-refresh
+  resolution: resolved
+- relation: mentions
+  to: requirement:action-response-update
+  resolution: resolved
+- relation: mentions
+  to: requirement:component-asset-extraction
+  resolution: resolved
+- relation: mentions
+  to: requirement:external-boundary-runtime
+  resolution: resolved
+- relation: mentions
+  to: requirement:framework-script-assets
+  resolution: resolved
+- relation: mentions
+  to: requirement:module-native-csrf
+  resolution: resolved
+- relation: mentions
+  to: requirement:navigation-delta-rendering
+  resolution: resolved
+- relation: mentions
+  to: requirement:reloadable-component-endpoint
+  resolution: resolved
+- relation: mentions
+  to: requirement:tinybind-runtime-ownership
+  resolution: resolved
+- relation: mentions
+  to: requirement:tinybind-update-composition-seams
+  resolution: resolved
+- relation: mentions
+  to: requirement:unified-update-runtime
+  resolution: resolved
+- relation: mentions
+  to: system:tinybind
+  resolution: resolved

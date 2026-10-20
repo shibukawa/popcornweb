@@ -1,0 +1,40 @@
+id: concept:classic-web-style
+type: concept
+title: Classic Web Style
+summary: An HTTP handler binds one request, runs application logic, and writes one
+  complete response using standard navigation and form semantics.
+facts:
+  legacy_body: "An HTTP handler binds one request, runs application logic, and writes\
+    \ one complete response using standard navigation and form semantics.\n\n```yaml\n\
+    mode_name: classic\nunit: http.Handler\nrendering: requirement:classic-rendering\n\
+    navigation:\n  links: full document requests\n  forms: ordinary submissions and\
+    \ redirects\n  enhancement: optional\nmutation:\n  location: handler or application\
+    \ service\n  browser_default: Post/Redirect/Get\n  transaction_boundary: explicit\
+    \ api:transaction-runner per decision:explicit-transaction-boundary\ncaching:\n\
+    \  - HTTP validators and response cache\n  - safe generated read-query cache\n\
+    \  - application cache\n```"
+  mode_name: classic
+  unit: http.Handler
+  rendering: requirement:classic-rendering
+  navigation:
+    links: full document requests
+    forms: ordinary submissions and redirects
+    enhancement: optional
+  mutation:
+    location: handler or application service
+    browser_default: Post/Redirect/Get
+    transaction_boundary: explicit api:transaction-runner per decision:explicit-transaction-boundary
+  caching:
+  - HTTP validators and response cache
+  - safe generated read-query cache
+  - application cache
+relations:
+- relation: mentions
+  to: api:transaction-runner
+  resolution: resolved
+- relation: mentions
+  to: decision:explicit-transaction-boundary
+  resolution: resolved
+- relation: mentions
+  to: requirement:classic-rendering
+  resolution: resolved

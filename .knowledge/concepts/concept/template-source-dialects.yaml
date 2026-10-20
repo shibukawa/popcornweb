@@ -1,0 +1,64 @@
+id: concept:template-source-dialects
+type: concept
+title: Popcorn Web Source Dialects
+summary: Three branded source kinds share one declaration header grammar and differ
+  only in the body parser the declared output type selects; an editor that models
+  the shared half models all three.
+facts:
+  legacy_body: "Three branded source kinds share one declaration header grammar and\
+    \ differ only in the body parser the declared output type selects; an editor that\
+    \ models the shared half models all three.\n\n```yaml\nowner: system:tinybind,\
+    \ which owns the grammar; Popcorn Web owns only the file suffixes and the generation\
+    \ purposes\nkinds:\n  .pw.html:\n    root_keyword: component\n    output: html\n\
+    \    body: HTML, with slots and boundaries\n    purpose: data:project-config generate.templates\
+    \ and generate.pages\n  .pw.sql:\n    root_keyword: statement\n    output_prefix:\
+    \ sql\n    body: SQL text of the data:project-config project.database dialect\n\
+    \    purpose: generate.queries\n  .pw.dynamo:\n    root_keyword: statement\n \
+    \   output_prefix: dynamo\n    body: clause list rather than query text, per requirement:dynamodb-typed-queries\n\
+    \    purpose: generate.dynamo\n    no_package_line: the directory is the package\n\
+    shared_header:\n  - optional package or module name, absent in .pw.dynamo\n  -\
+    \ import \"path\" with an optional as alias\n  - type or record declarations,\
+    \ enum declarations\n  - external declarations, including external async and external\
+    \ live\n  - annotations of the form @name(key: \"value\") preceding a declaration\n\
+    \  - an optional export modifier before the root keyword\n  - a PascalCase declaration\
+    \ name, a typed parameter list, a colon, an output type, and a braced body\nshared_body:\n\
+    \  expression: \"{expr}\" in a format-valid insertion context\n  escape: \"{{\
+    \ ... }}\" is literal text and carries no expression\n  control:\n    - \"{if\
+    \ cond} ... {else if cond} ... {else} ... {/if}\"\n    - \"{for item in collection}\
+    \ ... {/for}\"\n    - \"{await name = Call(args)} ... {fallback} ... {recover\
+    \ err} ... {/await}\"\n  recursion: the shared parser owns the header of each\
+    \ control block and hands the body back to the active format parser\nformat_local:\n\
+    \  html: elements, attributes, <slot /> and named slots, raw-text elements\n \
+    \ sql: string literals, quoted identifiers, line and block comments, and dollar-quoted\
+    \ strings, none of which are template syntax\n  dynamo: a required table clause\
+    \ and a key clause, in either order, separated by \";\" on one line\ngenerated_output:\
+    \ \"{source-base}_pw_gen.go beside the source, excluded from version control per\
+    \ policy:generated-artifacts\"\neditor_consequence:\n  - one grammar covers the\
+    \ shared header and the shared control forms, and three body grammars embed into\
+    \ it\n  - the file suffix, not the content, decides which body grammar applies\n\
+    \  - a suffix outside its generate purpose is a project problem, not a syntax\
+    \ one, and belongs to requirement:editor-diagnostics\n```"
+  legacy_parse_issues:
+  - kind: legacy_parse_error
+    block: 0
+    message: "while parsing a block mapping\n  in \"<unicode string>\", line 24, column\
+      \ 5:\n      - annotations of the form @name(ke ... \n        ^\nexpected <block\
+      \ end>, but found '<scalar>'\n  in \"<unicode string>\", line 24, column 47:\n\
+      \     ... s of the form @name(key: \"value\") preceding a declaration\n    \
+      \                                     ^"
+relations:
+- relation: mentions
+  to: data:project-config
+  resolution: resolved
+- relation: mentions
+  to: policy:generated-artifacts
+  resolution: resolved
+- relation: mentions
+  to: requirement:dynamodb-typed-queries
+  resolution: resolved
+- relation: mentions
+  to: requirement:editor-diagnostics
+  resolution: resolved
+- relation: mentions
+  to: system:tinybind
+  resolution: resolved

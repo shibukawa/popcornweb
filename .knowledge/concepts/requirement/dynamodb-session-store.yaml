@@ -1,0 +1,238 @@
+id: requirement:dynamodb-session-store
+type: requirement
+title: DynamoDB Session Backend
+summary: sessionstore/dynamo implements api:session-store over requirement:dynamodb-store,
+  so a deployment with no relational database can still hold login sessions.
+facts:
+  legacy_body: "sessionstore/dynamo implements api:session-store over requirement:dynamodb-store,\
+    \ so a deployment with no relational database can still hold login sessions.\n\
+    \n```yaml\nmotivation:\n  - requirement:dynamodb-store allows a project with no\
+    \ rdb section, and today such a project cannot log anyone in\n  - a serverless\
+    \ deployment already paying for DynamoDB should not add a relational database\
+    \ for one table\n  - api:session-store is a four-operation key-value contract,\
+    \ which is what this store is\nplugin:\n  import: popcornweb/sessionstore/dynamo\n\
+    \  backend_name: dynamo\n  config_prefix: session.dynamo\n  registration: api:session-backend-plugin;\
+    \ the import registers the factory under the backend name, so session.backend\
+    \ selects it\n  requires: api:dynamo-package imported and enabled, the way the\
+    \ rdb backend requires api:rdb-middleware\n  client: the process client that middleware\
+    \ installs; the backend borrows it, so it returns no Close and opens nothing\n\
+    \  raw_store: it implements session.RawStore over already encoded payloads, so\
+    \ it never sees the application payload type; the host adds it back with session.Typed\n\
+    table:\n  declared_name: popcornweb_session, per rule:framework-owned-tables\n\
+    \  deployed_name: resolved by rule:dynamodb-table-naming like any other table,\
+    \ so a test prefix reaches it unchanged\n  key: the record key hash as the partition\
+    \ key; no sort key\n  definition_source: registered through decision:dynamodb-table-registry\
+    \ when the package is imported, so requirement:dynamodb-migration creates it with\
+    \ every other table\n  handwritten: the definition and the item mapping are written\
+    \ rather than generated, decided on implementation 2026-08-01\n  why: this package\
+    \ is the only reader and writer of the item, so there is no drift for a generated\
+    \ codec to close, and generating for one internal type would put a generation\
+    \ step in the framework's own build\n  what_replaces_the_guarantee: one constant\
+    \ names the key attribute, and both the definition and the item read it\n  no_migration_file:\
+    \ this store has none, per decision:dynamodb-desired-state-migration; the rule:framework-owned-tables\
+    \ migration-file convention is the SQL half of the same idea\noperation_mapping:\n\
+    \  Put: PutItem, which replaces one item atomically and needs no condition\n \
+    \ Get: GetItem, with decision:dynamodb-session-read-consistency deciding the consistency\n\
+    \  Touch: UpdateItem conditioned on the item existing and not being dead, which\
+    \ is stronger than the SQL path's read-then-write\n  Touch_clamping: the caller\
+    \ has already clamped the renewal to the absolute expiry, so dead_at takes the\
+    \ new idle expiry outright; a DynamoDB update expression has no conditional operator\
+    \ to clamp with anyway\n  Delete: DeleteItem, idempotent by construction\n  errors:\
+    \ a miss is the driver's item-not-found sentinel, reported as the contract's not-found;\
+    \ nothing converts it to a zero record\nstored_attributes:\n  source: data:session-record\n\
+    \  data: the codec payload as a binary attribute, so no timestamp rewrite touches\
+    \ it\n  timestamps: epoch-second numeric attributes, since DynamoDB has no time\
+    \ type\n  dead_at: the minimum of the absolute and idle expiry, maintained by\
+    \ Put and Touch, and the attribute a deployment points TTL at\n  reason_for_dead_at:\
+    \ TTL reads one numeric attribute, and the record dies at whichever expiry comes\
+    \ first\nexpiry: decision:dynamodb-session-expiry\nbounds:\n  item_size: the plugin\
+    \ rejects a record over the DynamoDB item limit before sending, naming the limit,\
+    \ rather than letting the service answer with a validation error\n  write_rate:\
+    \ every Touch is a write, so the data:session-runtime-config renewal_interval\
+    \ bounds cost more visibly here than on a relational store\nttl_is_not_ours:\n\
+    \  what: nothing in the framework enables or verifies expiry, per decision:dynamodb-operational-configuration\n\
+    \  effect: the store is correct without TTL and unbounded in size without it,\
+    \ and the guide says so\n  not_blocked: this needs no driver change; the store\
+    \ is complete as designed\nacceptance:\n  - a project with middleware.rdb absent\
+    \ and middleware.dynamo enabled logs a user in, keeps the session across requests,\
+    \ and logs out\n  - the session table is created by the same pw migrate run that\
+    \ creates application tables\n  - startup refuses to serve when the table is absent,\
+    \ naming the table and the command that creates it\n  - Touch on an expired record\
+    \ fails without reviving it, in one request\n  - Delete twice succeeds twice\n\
+    \  - a record over the item limit is refused with the limit named, before any\
+    \ request\n  - two parallel test servers with different prefixes never observe\
+    \ each other's sessions\n  - no request this store issues produces a query-diagnostics\
+    \ record, per policy:query-log-safety, so no cookie value, key hash, stored payload,\
+    \ or CSRF secret can reach one\nnon_goals:\n  - a sweep of expired records, per\
+    \ decision:dynamodb-session-expiry\n  - enabling or verifying TTL on the deployed\
+    \ table\n  - a dedicated client or a second region for sessions; the process client\
+    \ is the only one\n  - sharing one table with requirement:contrib-auth-state records,\
+    \ which would be the single-table design system:tinybind declines\n  - global\
+    \ tables or multi-region replication, which the driver does not expose\n```"
+  motivation:
+  - requirement:dynamodb-store allows a project with no rdb section, and today such
+    a project cannot log anyone in
+  - a serverless deployment already paying for DynamoDB should not add a relational
+    database for one table
+  - api:session-store is a four-operation key-value contract, which is what this store
+    is
+  plugin:
+    import: popcornweb/sessionstore/dynamo
+    backend_name: dynamo
+    config_prefix: session.dynamo
+    registration: api:session-backend-plugin; the import registers the factory under
+      the backend name, so session.backend selects it
+    requires: api:dynamo-package imported and enabled, the way the rdb backend requires
+      api:rdb-middleware
+    client: the process client that middleware installs; the backend borrows it, so
+      it returns no Close and opens nothing
+    raw_store: it implements session.RawStore over already encoded payloads, so it
+      never sees the application payload type; the host adds it back with session.Typed
+  table:
+    declared_name: popcornweb_session, per rule:framework-owned-tables
+    deployed_name: resolved by rule:dynamodb-table-naming like any other table, so
+      a test prefix reaches it unchanged
+    key: the record key hash as the partition key; no sort key
+    definition_source: registered through decision:dynamodb-table-registry when the
+      package is imported, so requirement:dynamodb-migration creates it with every
+      other table
+    handwritten: the definition and the item mapping are written rather than generated,
+      decided on implementation 2026-08-01
+    why: this package is the only reader and writer of the item, so there is no drift
+      for a generated codec to close, and generating for one internal type would put
+      a generation step in the framework's own build
+    what_replaces_the_guarantee: one constant names the key attribute, and both the
+      definition and the item read it
+    no_migration_file: this store has none, per decision:dynamodb-desired-state-migration;
+      the rule:framework-owned-tables migration-file convention is the SQL half of
+      the same idea
+  operation_mapping:
+    Put: PutItem, which replaces one item atomically and needs no condition
+    Get: GetItem, with decision:dynamodb-session-read-consistency deciding the consistency
+    Touch: UpdateItem conditioned on the item existing and not being dead, which is
+      stronger than the SQL path's read-then-write
+    Touch_clamping: the caller has already clamped the renewal to the absolute expiry,
+      so dead_at takes the new idle expiry outright; a DynamoDB update expression
+      has no conditional operator to clamp with anyway
+    Delete: DeleteItem, idempotent by construction
+    errors: a miss is the driver's item-not-found sentinel, reported as the contract's
+      not-found; nothing converts it to a zero record
+  stored_attributes:
+    source: data:session-record
+    data: the codec payload as a binary attribute, so no timestamp rewrite touches
+      it
+    timestamps: epoch-second numeric attributes, since DynamoDB has no time type
+    dead_at: the minimum of the absolute and idle expiry, maintained by Put and Touch,
+      and the attribute a deployment points TTL at
+    reason_for_dead_at: TTL reads one numeric attribute, and the record dies at whichever
+      expiry comes first
+  expiry: decision:dynamodb-session-expiry
+  bounds:
+    item_size: the plugin rejects a record over the DynamoDB item limit before sending,
+      naming the limit, rather than letting the service answer with a validation error
+    write_rate: every Touch is a write, so the data:session-runtime-config renewal_interval
+      bounds cost more visibly here than on a relational store
+  ttl_is_not_ours:
+    what: nothing in the framework enables or verifies expiry, per decision:dynamodb-operational-configuration
+    effect: the store is correct without TTL and unbounded in size without it, and
+      the guide says so
+    not_blocked: this needs no driver change; the store is complete as designed
+  acceptance:
+  - a project with middleware.rdb absent and middleware.dynamo enabled logs a user
+    in, keeps the session across requests, and logs out
+  - the session table is created by the same pw migrate run that creates application
+    tables
+  - startup refuses to serve when the table is absent, naming the table and the command
+    that creates it
+  - Touch on an expired record fails without reviving it, in one request
+  - Delete twice succeeds twice
+  - a record over the item limit is refused with the limit named, before any request
+  - two parallel test servers with different prefixes never observe each other's sessions
+  - no request this store issues produces a query-diagnostics record, per policy:query-log-safety,
+    so no cookie value, key hash, stored payload, or CSRF secret can reach one
+  non_goals:
+  - a sweep of expired records, per decision:dynamodb-session-expiry
+  - enabling or verifying TTL on the deployed table
+  - a dedicated client or a second region for sessions; the process client is the
+    only one
+  - sharing one table with requirement:contrib-auth-state records, which would be
+    the single-table design system:tinybind declines
+  - global tables or multi-region replication, which the driver does not expose
+acceptance:
+  item-f218853afc348375:
+    text: a project with middleware.rdb absent and middleware.dynamo enabled logs
+      a user in, keeps the session across requests, and logs out
+  item-8c9f62da79d3182a:
+    text: the session table is created by the same pw migrate run that creates application
+      tables
+  item-bf8ea26b4f318ffa:
+    text: startup refuses to serve when the table is absent, naming the table and
+      the command that creates it
+  item-399a71df7a03c3f9:
+    text: Touch on an expired record fails without reviving it, in one request
+  item-884322669b703cb2:
+    text: Delete twice succeeds twice
+  item-574037c72db6df5a:
+    text: a record over the item limit is refused with the limit named, before any
+      request
+  item-b2787d0644d78322:
+    text: two parallel test servers with different prefixes never observe each other's
+      sessions
+  item-bc49f12976c1db6f:
+    text: no request this store issues produces a query-diagnostics record, per policy:query-log-safety,
+      so no cookie value, key hash, stored payload, or CSRF secret can reach one
+relations:
+- relation: mentions
+  to: api:dynamo-package
+  resolution: resolved
+- relation: mentions
+  to: api:rdb-middleware
+  resolution: resolved
+- relation: mentions
+  to: api:session-backend-plugin
+  resolution: resolved
+- relation: mentions
+  to: api:session-store
+  resolution: resolved
+- relation: mentions
+  to: data:session-record
+  resolution: resolved
+- relation: mentions
+  to: data:session-runtime-config
+  resolution: resolved
+- relation: mentions
+  to: decision:dynamodb-desired-state-migration
+  resolution: resolved
+- relation: mentions
+  to: decision:dynamodb-operational-configuration
+  resolution: resolved
+- relation: mentions
+  to: decision:dynamodb-session-expiry
+  resolution: resolved
+- relation: mentions
+  to: decision:dynamodb-session-read-consistency
+  resolution: resolved
+- relation: mentions
+  to: decision:dynamodb-table-registry
+  resolution: resolved
+- relation: mentions
+  to: policy:query-log-safety
+  resolution: resolved
+- relation: mentions
+  to: requirement:contrib-auth-state
+  resolution: resolved
+- relation: mentions
+  to: requirement:dynamodb-migration
+  resolution: resolved
+- relation: mentions
+  to: requirement:dynamodb-store
+  resolution: resolved
+- relation: mentions
+  to: rule:dynamodb-table-naming
+  resolution: resolved
+- relation: mentions
+  to: rule:framework-owned-tables
+  resolution: resolved
+- relation: mentions
+  to: system:tinybind
+  resolution: resolved

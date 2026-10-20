@@ -1,0 +1,105 @@
+id: decision:import-registered-session-plugins
+type: decision
+title: Import-Registered Session Plugins
+summary: Session core does not import storage implementations; blank imports opt implementations
+  and their configbind targets into the application binary.
+facts:
+  legacy_body: "Session core does not import storage implementations; blank imports\
+    \ opt implementations and their configbind targets into the application binary.\n\
+    \n```yaml\nlayout: rule:storage-package-layout\nexamples:\n  rdb_session_plugin:\
+    \ import _ \"popcornweb/sessionstore/<engine>\"\n  auth_state_plugin: import _\
+    \ \"popcornweb/authstate/<engine>\"\n  database_engine: import _ \"popcornweb/database/<engine>\"\
+    \n  redis_session_plugin: import _ \"popcornweb/sessionstore/redis\"\n  dynamo_session_plugin:\
+    \ import _ \"popcornweb/sessionstore/dynamo\"\nbuilt_in_exception:\n  backend:\
+    \ cookie\n  reason: decision:cookie-session-storage stores records in the browser,\
+    \ so it adds no dependency to exclude\n  effect: it is registered by pw and needs\
+    \ no import; every other backend needs one\nboundaries:\n  - sessionstore/sqlite\
+    \ registers the RDB session backend but no database engine\n  - database engine\
+    \ packages register into rule:rdb-dsn-resolution independently from the session\
+    \ plugin\n  - every rule:rdb-dsn-resolution engine is the application's own import,\
+    \ including the scaffold-default SQLite engine\n  - sessionstore/redis registers\
+    \ the Redis-compatible session backend and client integration\n  - sessionstore/dynamo\
+    \ registers the DynamoDB session backend and its table definition, but not the\
+    \ client, which api:dynamo-package owns\n  - core session packages import neither\
+    \ backend plugin\n  - a host such as plugin/auth resolves the backend by name\
+    \ and imports no storage plugin either\neffects:\n  - only imported implementations\
+    \ contribute code and dependencies to binary size\n  - a missing selected backend\
+    \ or RDB driver is a startup error\n  - backend-specific keys are still declared\
+    \ by pw, so an unimported backend contributes no code but its keys remain visible\n\
+    contract: api:session-backend-plugin\nmechanism:\n  problem: api:session-store\
+    \ is generic over the payload type, so a name-keyed registry cannot hold a typed\
+    \ factory\n  solution: session.RawStore is the non-generic plugin contract over\
+    \ encoded payloads, and session.Typed adds the payload type back at the host\n\
+    \  registry: pw owns it, because pw already declares data:session-runtime-config\
+    \ and every plugin may import pw\nmissing_import:\n  detection: startup, when\
+    \ the configured backend name resolves to no registered factory\n  response: name\
+    \ the backend, list the registered ones, and print the import line that adds it\n\
+    \  reason: a linker error would name a symbol, while this names the one line an\
+    \ application is missing\n```"
+  layout: rule:storage-package-layout
+  examples:
+    rdb_session_plugin: import _ "popcornweb/sessionstore/<engine>"
+    auth_state_plugin: import _ "popcornweb/authstate/<engine>"
+    database_engine: import _ "popcornweb/database/<engine>"
+    redis_session_plugin: import _ "popcornweb/sessionstore/redis"
+    dynamo_session_plugin: import _ "popcornweb/sessionstore/dynamo"
+  built_in_exception:
+    backend: cookie
+    reason: decision:cookie-session-storage stores records in the browser, so it adds
+      no dependency to exclude
+    effect: it is registered by pw and needs no import; every other backend needs
+      one
+  boundaries:
+  - sessionstore/sqlite registers the RDB session backend but no database engine
+  - database engine packages register into rule:rdb-dsn-resolution independently from
+    the session plugin
+  - every rule:rdb-dsn-resolution engine is the application's own import, including
+    the scaffold-default SQLite engine
+  - sessionstore/redis registers the Redis-compatible session backend and client integration
+  - sessionstore/dynamo registers the DynamoDB session backend and its table definition,
+    but not the client, which api:dynamo-package owns
+  - core session packages import neither backend plugin
+  - a host such as plugin/auth resolves the backend by name and imports no storage
+    plugin either
+  effects:
+  - only imported implementations contribute code and dependencies to binary size
+  - a missing selected backend or RDB driver is a startup error
+  - backend-specific keys are still declared by pw, so an unimported backend contributes
+    no code but its keys remain visible
+  contract: api:session-backend-plugin
+  mechanism:
+    problem: api:session-store is generic over the payload type, so a name-keyed registry
+      cannot hold a typed factory
+    solution: session.RawStore is the non-generic plugin contract over encoded payloads,
+      and session.Typed adds the payload type back at the host
+    registry: pw owns it, because pw already declares data:session-runtime-config
+      and every plugin may import pw
+  missing_import:
+    detection: startup, when the configured backend name resolves to no registered
+      factory
+    response: name the backend, list the registered ones, and print the import line
+      that adds it
+    reason: a linker error would name a symbol, while this names the one line an application
+      is missing
+relations:
+- relation: mentions
+  to: api:dynamo-package
+  resolution: resolved
+- relation: mentions
+  to: api:session-backend-plugin
+  resolution: resolved
+- relation: mentions
+  to: api:session-store
+  resolution: resolved
+- relation: mentions
+  to: data:session-runtime-config
+  resolution: resolved
+- relation: mentions
+  to: decision:cookie-session-storage
+  resolution: resolved
+- relation: mentions
+  to: rule:rdb-dsn-resolution
+  resolution: resolved
+- relation: mentions
+  to: rule:storage-package-layout
+  resolution: resolved

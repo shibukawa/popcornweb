@@ -116,14 +116,13 @@ func runDev(ctx context.Context, args []string, stdout, stderr io.Writer) error 
 	}
 	report.Phase("building assets")
 	if assets, err := buildDerivedAssets(root, config.Assets); err != nil {
-		// The loop survives an unbuildable state, here as everywhere else: the
-		// next change is what fixes it.
-		fmt.Fprintln(stderr, "pw dev:", err)
+		fmt.Fprintln(stderr, "pw dev: public assets unavailable:", err)
 		report.Failed(err)
+		return err
 	} else {
 		reportDerivedAssets(stdout, assets)
 	}
-	storybook.start(root, storybookStyles(config, readDevelopmentServer(root)), stdout, stderr)
+	storybook.start(root, storybookStyles(config, readDevelopmentServer(root)), stdout, stderr, config.Assets)
 	report.Phase("applying migrations")
 	if err := runDevMigrations(ctx, root, config, stdout, stderr); err != nil {
 		report.Failed(err)
@@ -148,7 +147,7 @@ func runDev(ctx context.Context, args []string, stdout, stderr io.Writer) error 
 	// One reader for the whole run: what it remembers between two application
 	// processes is what makes the second one a reload rather than a startup.
 	bootLog := newDevBootLog(stderr)
-	app, exited, err := startApplication(ctx, root, config.Main, idp, telemetry, logs, console, config.Console, attachToken, bootLog, stdout, stderr)
+	app, exited, err := startApplication(ctx, root, config.Main, idp, telemetry, logs, console, config.Console, attachToken, bootLog, stdout, stderr, config.Assets)
 	// The region gives way here: everything after this point is the application
 	// and its services talking, which is the scrollback the loop exists to show.
 	report.Done()
@@ -179,6 +178,7 @@ func runDev(ctx context.Context, args []string, stdout, stderr io.Writer) error 
 			// state that does not build, start, or stay up. The next watched
 			// change rebuilds and restarts it.
 			app, exited = nil, nil
+
 			if err == nil {
 				fmt.Fprintln(stdout, "pw dev: the application exited; waiting for the next change")
 				console.Publish("the application exited", devconsole.StatusStarting, nil)
@@ -213,6 +213,19 @@ func runDev(ctx context.Context, args []string, stdout, stderr io.Writer) error 
 			stopCommand(app, exited)
 			bootLog.Flush()
 			app, exited = nil, nil
+			updated, configErr := loadProjectConfig(root)
+			if configErr != nil {
+				report.Failed(configErr)
+				fmt.Fprintln(stderr, "pw dev:", configErr)
+				state = next
+				continue
+			}
+			updated.Assets.SourceMaps = true
+			if updated.Tailwind != config.Tailwind && tailwind != nil {
+				stopCommand(tailwind, tailwindExited)
+				tailwind, tailwindExited = nil, nil
+			}
+			config = updated
 			if config.Tailwind.Enabled && tailwind == nil {
 				development := config.Tailwind
 				development.Minify = false
@@ -258,10 +271,10 @@ func runDev(ctx context.Context, args []string, stdout, stderr io.Writer) error 
 			// The harness is rebuilt with the project, so a template edit is
 			// visible in the storybook for the same reason it is visible in
 			// the application.
-			storybook.start(root, storybookStyles(config, readDevelopmentServer(root)), stdout, stderr)
+			storybook.start(root, storybookStyles(config, readDevelopmentServer(root)), stdout, stderr, config.Assets)
 			state, _ = watchSnapshot(root, config, tailwind == nil)
 			report.Phase("building and starting the application")
-			app, exited, err = startApplication(ctx, root, config.Main, idp, telemetry, logs, console, config.Console, attachToken, bootLog, stdout, stderr)
+			app, exited, err = startApplication(ctx, root, config.Main, idp, telemetry, logs, console, config.Console, attachToken, bootLog, stdout, stderr, config.Assets)
 			if err != nil {
 				fmt.Fprintln(stderr, "pw dev:", err)
 				report.Failed(err)
@@ -274,7 +287,7 @@ func runDev(ctx context.Context, args []string, stdout, stderr io.Writer) error 
 	}
 }
 
-func startApplication(ctx context.Context, root, mainPackage string, idp *devIdentityProvider, telemetry *devTelemetryViewer, logs *devLogCapture, console *devconsole.Console, settings consoleConfig, attachToken string, bootLog *devBootLog, stdout, stderr io.Writer) (*exec.Cmd, <-chan error, error) {
+func startApplication(ctx context.Context, root, mainPackage string, idp *devIdentityProvider, telemetry *devTelemetryViewer, logs *devLogCapture, console *devconsole.Console, settings consoleConfig, attachToken string, bootLog *devBootLog, stdout, stderr io.Writer, assetConfigs ...assetsConfig) (*exec.Cmd, <-chan error, error) {
 	// Not CommandContext: its cancellation kills this process the moment the
 	// interrupt arrives, and a kill is the one signal `go run` cannot pass down
 	// to the binary it compiled. The loop stops the application through
@@ -285,6 +298,11 @@ func startApplication(ctx context.Context, root, mainPackage string, idp *devIde
 	// log has to be told what it can no longer see for itself.
 	command.Dir, command.Stdout, command.Stderr, command.Stdin = root, stdout, bootLog, os.Stdin
 	command.Env = bootLogEnviron(root, terminalWriter(stderr), logs.environ(consoleEnviron(console, settings, attachToken, telemetry.environ(idp.environ(developmentEnviron())))))
+	var assets assetsConfig
+	if len(assetConfigs) > 0 {
+		assets = assetConfigs[0]
+	}
+	command.Env = append(command.Env, "SERVER_PUBLIC_LOCAL_ROOT="+assets.locations().derived)
 	ownProcessGroup(command)
 	if err := command.Start(); err != nil {
 		return nil, nil, err
@@ -431,10 +449,14 @@ func watchSnapshot(root string, config projectConfig, tailwindStopped bool) (wat
 	extra := configuredWatchPaths(root, config.Watch.Includes,
 		append(tailwindWatchPaths(root, config.Tailwind, tailwindStopped),
 			migrationWatchPaths(root, config.Migration)...))
-	return snapshotWatchFiles(root, config.Watch.Excludes, extra...)
+	return snapshotAssetWatchFiles(root, config.Assets, config.Watch.Excludes, extra...)
 }
 
 func snapshotWatchFiles(root string, excludes []string, extra ...string) (watchState, error) {
+	return snapshotAssetWatchFiles(root, assetsConfig{}, excludes, extra...)
+}
+
+func snapshotAssetWatchFiles(root string, assets assetsConfig, excludes []string, extra ...string) (watchState, error) {
 	// The walk runs twice a second for the life of pw dev, so everything a
 	// per-file test needs is computed here once: the walk hands back paths
 	// joined under the cleaned root, which is what lets the loop compare and
@@ -452,7 +474,7 @@ func snapshotWatchFiles(root string, excludes []string, extra ...string) (watchS
 		skipped[filepath.Clean(filepath.Join(root, filepath.FromSlash(entry)))] = true
 	}
 	distPath := filepath.Join(root, "dist")
-	publicRoot := filepath.Join(root, "public")
+	publicRoot := filepath.Join(root, filepath.FromSlash(assets.locations().public))
 	publicPrefix := publicRoot + string(filepath.Separator)
 	err := filepath.WalkDir(root, func(path string, entry os.DirEntry, err error) error {
 		if err != nil {
@@ -465,7 +487,8 @@ func snapshotWatchFiles(root string, excludes []string, extra ...string) (watchS
 			}
 			// dist holds what this loop produces, so watching it would make
 			// every rebuild trigger the next one.
-			if path == distPath || skipped[path] {
+			l := assets.locations()
+			if (path == distPath && !pathWithin(distPath, publicRoot)) || path == filepath.Join(root, filepath.FromSlash(l.derived)) || path == filepath.Join(root, filepath.FromSlash(l.stage)) || path == filepath.Join(root, filepath.FromSlash(l.cache)) || skipped[path] {
 				return filepath.SkipDir
 			}
 			return nil

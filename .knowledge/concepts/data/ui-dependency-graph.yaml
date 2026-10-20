@@ -1,0 +1,27 @@
+id: data:ui-dependency-graph
+type: data
+title: UI Dependency Graph
+summary: Generation records the inputs and scopes that can change each server-component
+  output.
+facts:
+  legacy_body: "Generation records the inputs and scopes that can change each server-component\
+    \ output.\n\n```yaml\nsources:\n  - component inputs\n  - api:typed-external-function\
+    \ calls\n  - declared data tags\n  - URL and search parameters\n  - session and\
+    \ authorization scope\n  - parent and child boundaries\ncorrectness:\n  input_hash:\
+    \ execution optimization\n  dependency_invalidation: freshness authority\n  rationale:\
+    \ output may vary with database state, permissions, locale, or time\n```"
+  sources:
+  - component inputs
+  - api:typed-external-function calls
+  - declared data tags
+  - URL and search parameters
+  - session and authorization scope
+  - parent and child boundaries
+  correctness:
+    input_hash: execution optimization
+    dependency_invalidation: freshness authority
+    rationale: output may vary with database state, permissions, locale, or time
+relations:
+- relation: mentions
+  to: api:typed-external-function
+  resolution: resolved

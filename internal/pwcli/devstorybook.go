@@ -71,7 +71,11 @@ func (s *devStorybook) handler() http.Handler {
 // harness that fails to build leaves the pane reporting its own absence and the
 // loop untouched, because a storybook is a reader of the project rather than a
 // part of it.
-func (s *devStorybook) start(root string, styles []string, stdout, stderr io.Writer) {
+func (s *devStorybook) start(root string, styles []string, stdout, stderr io.Writer, configs ...assetsConfig) {
+	var assets assetsConfig
+	if len(configs) > 0 {
+		assets = configs[0]
+	}
 	if s == nil {
 		return
 	}
@@ -91,7 +95,7 @@ func (s *devStorybook) start(root string, styles []string, stdout, stderr io.Wri
 		pwstory.AddressVar+"="+address,
 		// The shell a story renders inside links the project's stylesheet, so
 		// the harness serves the tree it lives in.
-		pwstory.PublicVar+"="+filepath.Join(root, "public"),
+		pwstory.PublicVar+"="+filepath.Join(root, filepath.FromSlash(assets.locations().derived)),
 		// A story rendered on its own has no document to link a stylesheet
 		// from, so the harness is told which to add. pw resolves them because
 		// it knows the configured output and the mount it is served at.

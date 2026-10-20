@@ -806,10 +806,10 @@ func (r *checkRun) checkReadiness() {
 // The tree under dist is produced, so a stale one means the last build predates
 // an edit and the application would embed bytes nobody asked for.
 func (r *checkRun) checkDerivedTree() {
-	authored := filepath.Join(r.Root, "public")
-	output := filepath.Join(r.Root, filepath.FromSlash(derivedPublicDir))
+	authored := filepath.Join(r.Root, filepath.FromSlash(r.State.config.Assets.locations().public))
+	output := filepath.Join(r.Root, filepath.FromSlash(r.State.config.Assets.locations().derived))
 	if _, err := os.Stat(output); err != nil {
-		r.report(pwcheck.PrecompressionOld, "dist/public has not been built", "public")
+		r.report(pwcheck.PrecompressionOld, r.State.config.Assets.locations().derived+" has not been built", r.State.config.Assets.locations().public)
 		return
 	}
 	var sources []string
@@ -823,7 +823,7 @@ func (r *checkRun) checkDerivedTree() {
 	if len(sources) == 0 {
 		return
 	}
-	manifest := filepath.Join(r.Root, assetManifestFile)
+	manifest := filepath.Join(r.Root, filepath.FromSlash(r.State.config.Assets.locations().manifestGo))
 	if _, err := os.Stat(manifest); err != nil {
 		r.report(pwcheck.PrecompressionOld, "the asset manifest has not been generated", "public")
 		return
@@ -863,7 +863,7 @@ func (r *checkRun) checkAssetContent() {
 	if !options.Signature && !options.SVGScan {
 		return
 	}
-	authored := filepath.Join(r.Root, "public")
+	authored := filepath.Join(r.Root, filepath.FromSlash(r.State.config.Assets.locations().public))
 	if info, err := os.Stat(authored); err != nil || !info.IsDir() {
 		return
 	}
@@ -899,7 +899,7 @@ func (r *checkRun) checkAssetContent() {
 		if finding.Kind == assetverify.ActiveContent {
 			id = pwcheck.AssetActiveSVG
 		}
-		r.report(id, finding.Message(), path.Join("public", slashed))
+		r.report(id, finding.Message(), path.Join(r.State.config.Assets.locations().public, slashed))
 		return nil
 	})
 }
@@ -937,7 +937,7 @@ func (r *checkRun) reportEmbeddedSize(name string, size int64) {
 	}
 	r.report(pwcheck.AssetEmbeddedLarge,
 		fmt.Sprintf("public/%s is %d MiB and is compiled into the binary", name, size>>20),
-		path.Join("public", name))
+		path.Join(r.State.config.Assets.locations().public, name))
 }
 
 // leadingBytes reads only what a verdict can depend on.

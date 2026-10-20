@@ -1379,8 +1379,8 @@ func TestAMemoCallGeneratesItsKeyMethod(t *testing.T) {
 	for _, want := range []string{
 		"func (v itemSummary) CacheKey() string",
 		"var _ cachekeybind.CacheKey = itemSummary{}",
-		"cachekeybind.KeyString(v.ItemID)",
-		"cachekeybind.KeyInt(v.Page)",
+		"cachekeybind.AppendKeyString(b, v.ItemID)",
+		"cachekeybind.AppendKeyInt(b, v.Page)",
 	} {
 		if !strings.Contains(emitted, want) {
 			t.Errorf("emitted method does not contain %q:\n%s", want, emitted)
