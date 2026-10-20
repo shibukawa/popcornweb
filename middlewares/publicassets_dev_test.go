@@ -3,15 +3,18 @@
 package middlewares
 
 import (
+	"bytes"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"testing/fstest"
 )
 
-func TestDevelopmentPublicAssetsUseOnlyLocalIdentity(t *testing.T) {
+func TestDevelopmentPublicAssetsPreferLocalIdentity(t *testing.T) {
 	root := t.TempDir()
 	old, err := os.Getwd()
 	if err != nil {
@@ -48,8 +51,27 @@ func TestDevelopmentPublicAssetsUseOnlyLocalIdentity(t *testing.T) {
 
 	missing := httptest.NewRecorder()
 	handler.ServeHTTP(missing, httptest.NewRequest(http.MethodGet, "/public/embedded.txt", nil))
-	if missing.Code != http.StatusNotFound {
+	if missing.Code != http.StatusOK || missing.Body.String() != "embedded" {
 		t.Fatalf("embedded fallback status = %d", missing.Code)
+	}
+}
+
+func TestDevelopmentMissingTreeDiagnosticIsEmittedOnce(t *testing.T) {
+	t.Chdir(t.TempDir())
+	var output bytes.Buffer
+	previous := slog.Default()
+	slog.SetDefault(slog.New(slog.NewTextHandler(&output, nil)))
+	t.Cleanup(func() { slog.SetDefault(previous) })
+	middleware, err := PublicAssets(PublicAssetConfig{Mount: "/public", LocalRoot: "cmd/app/dist/public"}, fstest.MapFS{"app.css": {Data: []byte("body{}")}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	handler := middleware(http.NotFoundHandler())
+	for range 2 {
+		handler.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest("GET", "/public/app.css", nil))
+	}
+	if strings.Count(output.String(), "public derived tree is unavailable") != 1 || !strings.Contains(output.String(), "cmd/app/dist/public") {
+		t.Fatalf("diagnostic: %s", &output)
 	}
 }
 
@@ -85,5 +107,37 @@ func TestDevelopmentPublicAssetURLIsOneTheLoopServes(t *testing.T) {
 	middleware(http.NotFoundHandler()).ServeHTTP(response, httptest.NewRequest(http.MethodGet, named, nil))
 	if response.Code != http.StatusOK || response.Body.String() != "live" {
 		t.Fatalf("the named URL answered %d %q", response.Code, response.Body.String())
+	}
+}
+
+func TestDevelopmentPublicAssetsFallbackWithoutDerivedTree(t *testing.T) {
+	t.Chdir(t.TempDir())
+	middleware, err := PublicAssets(PublicAssetConfig{Mount: "/public", LocalRoot: "cmd/app/dist/public"}, fstest.MapFS{"app.css": {Data: []byte("embedded stylesheet")}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	response := httptest.NewRecorder()
+	middleware(http.NotFoundHandler()).ServeHTTP(response, httptest.NewRequest("GET", "/public/app.css", nil))
+	if response.Code != http.StatusOK || response.Body.String() != "embedded stylesheet" {
+		t.Fatalf("%d %s", response.Code, response.Body)
+	}
+}
+
+func TestDevelopmentPublicAssetsRejectLocalSymlinkWithoutFallback(t *testing.T) {
+	t.Chdir(t.TempDir())
+	if err := os.MkdirAll("cmd/app/dist/public", 0755); err != nil {
+		t.Fatal(err)
+	}
+	middleware, err := PublicAssets(PublicAssetConfig{Mount: "/public", LocalRoot: "cmd/app/dist/public"}, fstest.MapFS{"app.css": {Data: []byte("embedded")}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink("missing", "cmd/app/dist/public/app.css"); err != nil {
+		t.Fatal(err)
+	}
+	response := httptest.NewRecorder()
+	middleware(http.NotFoundHandler()).ServeHTTP(response, httptest.NewRequest("GET", "/public/app.css", nil))
+	if response.Code != http.StatusNotFound {
+		t.Fatalf("symlink fell through: %d", response.Code)
 	}
 }

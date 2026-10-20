@@ -25,6 +25,10 @@ type PublicAssetConfig = middlewares.PublicAssetConfig
 // is not copied: two implementations of which names may be served are two
 // chances to serve one that must not be.
 func PublicAssets(config PublicAssetConfig, embedded fs.FS) (Middleware, error) {
+	config, embedded, err := middlewares.PreparePublicAssets(config, embedded)
+	if err != nil {
+		return nil, err
+	}
 	mount, err := middlewares.NormalizePublicMount(config.Mount)
 	if err != nil {
 		return nil, err

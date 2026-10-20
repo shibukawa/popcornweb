@@ -15,7 +15,8 @@ import (
 // configuration is pw's job and not this package's.
 type AssetSource struct {
 	// Root is the project root; public/ and the Tailwind paths resolve from it.
-	Root string
+	Root   string
+	Public string
 	// Mount is the configured public mount, or empty when pw could not
 	// determine it. An undetermined mount is reported as undetermined rather
 	// than assumed, because a wrong URL here is worse than no URL.
@@ -106,7 +107,11 @@ func scanAssets(source AssetSource) assetReport {
 		report.Limits = append(report.Limits,
 			"the public mount is undetermined, so the URL column is left blank; server.public.mount lives in the runtime configuration this pane does not read")
 	}
-	publicRoot := filepath.Join(source.Root, "public")
+	public := source.Public
+	if public == "" {
+		public = "public"
+	}
+	publicRoot := filepath.Join(source.Root, filepath.FromSlash(public))
 	info, err := os.Stat(publicRoot)
 	switch {
 	case os.IsNotExist(err):

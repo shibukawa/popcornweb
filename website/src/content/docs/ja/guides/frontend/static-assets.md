@@ -5,7 +5,7 @@ sidebar:
   order: 7
 ---
 
-プロジェクトは、ルートの `public/` ディレクトリから静的ファイルを配信します。
+既定では、ルートの `public/` ディレクトリを静的ファイルの入力として使います。
 ファイルはバイナリに埋め込まれるため、実行ファイルとアセットをまとめてデプロイできます。
 
 ```
@@ -27,6 +27,22 @@ GET /public/images/logo.png
 ビルド用ツリーへ出力します。変換がなければ内容は完全に同じです。変換でファイル名が
 変わる場合は、出力と参照の書き換えが `dist/public` 上で揃います。CDN やオブジェクト
 ストレージでアセットをアプリケーションとは別に配布するなら、この仕組みは使いません。
+
+## モジュール配下にアプリを置く
+
+共有の `go.mod` を持つモジュールでは、アプリを `cmd/app` に置いたまま
+`popcornweb.toml` の `[assets]` で入力・派生ツリー・埋め込みファイルを指定できます。
+
+```toml
+[assets]
+public = "cmd/app/public"
+derived = "cmd/app/dist/public"
+embed = "cmd/app/public.go"
+```
+
+`cmd/app/public.go` は `package main` にでき、埋め込みはそのファイルから見た
+`//go:embed all:dist/public` です。生成されるGoマニフェストも同じパッケージに入ります。
+既定値・補助ファイルの配置・パスの制限は[ビルド設定](/ja/reference/build-configuration/#assets)を参照してください。
 
 ## 何が出荷されるか
 
@@ -378,6 +394,13 @@ sandbox を切ってよいのは、`<object>` やリンク経由で**意図的�
 
 ## 開発中の挙動
 
+`pw dev` は設定した派生ツリーのパスをアプリへ渡します。通常のファイル欠落では、
+`pw.WithPublicFS` で渡したFS、または登録済みの埋め込みFSへフォールバックします。
+派生ツリーがない場合は起動時に一度警告し、埋め込みデータが古い可能性を伝えます。
+両方のツリーがなければ、静的ファイルが404になることを明示します。
+シンボリックリンクなどの拒否をフォールバックで回避することはありません。
+`pw dev` の初回アセット構築に失敗した場合は、エラーを表示して終了します。
+
 [`pw dev`](/ja/pw/project/dev/) は同じ変換を走らせ、`dist/public` をディスクから配信します。
 アセットを編集してリロードすれば、ツリーが作り直されます。バイナリがコンパイルしない
 ファイルのために Go のリビルドが走ることはありません。マニフェストが無いので `AssetURL` は素の URL を
@@ -403,6 +426,7 @@ sandbox を切ってよいのは、`<object>` やリンク経由で**意図的�
 | --- | --- | --- |
 | `server.public.enabled` | `true` | そもそも配信するか |
 | `server.public.mount` | `"/public"` | マウント先 |
+| `server.public.local_root` | `"dist/public"` | ディスク上のビルド済みツリー。実行ディレクトリからの相対パス |
 | `server.public.read_local` | `false` | 埋め込みツリーよりディスク上のビルド済みツリーを優先する |
 | `server.public.svg_sandbox` | `true` | `image/svg+xml` のレスポンスに `Content-Security-Policy: sandbox` を付ける |
 

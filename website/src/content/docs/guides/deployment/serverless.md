@@ -42,9 +42,11 @@ pw build --target=cloudflare-workers
 ```
 
 Every result is written under `.pw/build/<target>/<backend>/` with a
-`deployment.json` manifest. `config.prod.toml` is required by the process and
-source targets. A fasthttp build also requires `project.fasthttp = true`; the
+`deployment.json` manifest. `config.prod.toml` is included by process and source targets when present;
+applications configured entirely by environment variables may omit it. A fasthttp build also requires `project.fasthttp = true`; the
 Cloudflare target builds `nethttp` only.
+
+When the config file is absent, the generated Dockerfile omits its `COPY`. Asset generation and packaging follow the configured `[assets]` locations.
 
 ## AWS Lambda
 
@@ -60,7 +62,7 @@ COPY --from=public.ecr.aws/awsguru/aws-lambda-adapter:1.0.1 \
 The application keeps its normal entry point. The adapter forwards requests to
 `AWS_LWA_PORT`, then `PORT`, then `8080`; Popcorn Web follows the same order for
 its listener. The generated directory contains a Linux `bootstrap`,
-`config.prod.toml`, and a Dockerfile pinned to the adapter version. It sets
+`config.prod.toml` when present, and a Dockerfile pinned to the adapter version. It sets
 `APP_ENV=prod` and is the Docker build context.
 
 This intentionally does not embed a Lambda Runtime API client in the framework.

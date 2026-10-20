@@ -1,6 +1,6 @@
 "use strict";
 
-// A WASI preview1 shim covering exactly the seven imports the formatter module
+// A WASI preview1 shim covering exactly the eight imports the formatter module
 // declares, and nothing else.
 //
 // Written by hand rather than taken from a package for two reasons. The
@@ -12,6 +12,7 @@
 
 const WASI_ESUCCESS = 0;
 const WASI_EBADF = 8;
+const WASI_EINVAL = 28;
 
 const CLOCK_REALTIME = 0;
 
@@ -33,6 +34,8 @@ function createWasi({ args, stdin, memory }) {
   let stdinOffset = 0;
   let exitCode = 0;
   let exited = false;
+  let clockOffset = 0n;
+  const now = () => BigInt(Date.now()) * 1000000n + clockOffset;
 
   const view = () => new DataView(memory().buffer);
   const bytes = () => new Uint8Array(memory().buffer);
@@ -116,7 +119,59 @@ function createWasi({ args, stdin, memory }) {
       // The formatter does not read the clock for anything observable; the Go
       // runtime does. A coarse monotonic-enough value is sufficient and keeps
       // the module from being a timing side channel.
-      view().setBigUint64(timePtr, BigInt(Date.now()) * 1000000n, true);
+      view().setBigUint64(timePtr, now(), true);
+      return WASI_ESUCCESS;
+    },
+
+    poll_oneoff(inPtr, outPtr, count, eventsPtr) {
+      // TinyGo 0.42 uses the preview1 subscription/event ABI (48/32 bytes).
+      // Only buffered stdin, collected stdout/stderr, and virtual clock waits
+      // exist here. No host descriptor or real sleep is exposed to the module.
+      const v = view();
+      v.setUint32(eventsPtr, 0, true);
+      if (count === 0) return WASI_EINVAL;
+      const instant = now();
+      const subscriptions = [];
+      for (let i = 0; i < count; i++) {
+        const ptr = inPtr + i * 48;
+        const type = v.getUint8(ptr + 8);
+        if (type > 2) return WASI_EINVAL;
+        const entry = { user: v.getBigUint64(ptr, true), type, error: 0 };
+        if (type === 0) {
+          const clock = v.getUint32(ptr + 16, true);
+          const timeout = v.getBigUint64(ptr + 24, true);
+          const flags = v.getUint16(ptr + 40, true);
+          if (clock > 1 || (flags & ~1) !== 0) entry.error = WASI_EINVAL;
+          entry.deadline = flags & 1 ? timeout : instant + timeout;
+        } else {
+          entry.fd = v.getUint32(ptr + 16, true);
+          if ((type === 1 && entry.fd !== 0) ||
+              (type === 2 && entry.fd !== 1 && entry.fd !== 2)) {
+            entry.error = WASI_EBADF;
+          }
+        }
+        subscriptions.push(entry);
+      }
+      let ready = subscriptions.filter((s) => s.error || s.type !== 0 || s.deadline <= instant);
+      if (ready.length === 0) {
+        const earliest = subscriptions.reduce((a, b) => a.deadline < b.deadline ? a : b);
+        clockOffset += earliest.deadline - instant;
+        ready = subscriptions.filter((s) => s.deadline <= earliest.deadline);
+      }
+      const b = bytes();
+      for (let i = 0; i < ready.length; i++) {
+        const entry = ready[i];
+        const ptr = outPtr + i * 32;
+        b.fill(0, ptr, ptr + 32);
+        v.setBigUint64(ptr, entry.user, true);
+        v.setUint16(ptr + 8, entry.error, true);
+        v.setUint8(ptr + 10, entry.type);
+        if (!entry.error && entry.type === 1) {
+          v.setBigUint64(ptr + 16, BigInt(stdin.length - stdinOffset), true);
+          if (stdinOffset === stdin.length) v.setUint16(ptr + 24, 1, true);
+        }
+      }
+      v.setUint32(eventsPtr, ready.length, true);
       return WASI_ESUCCESS;
     },
 

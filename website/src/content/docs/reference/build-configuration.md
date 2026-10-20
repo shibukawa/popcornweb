@@ -59,6 +59,8 @@ dynamo = []
 firestore = []
 ```
 
+Even a project with no queries must declare `queries = []`. Omitting `generate.queries` is different from an explicit empty scope.
+
 Each purpose lists the directories [`pw generate`](/pw/project/generate/) may
 read *for that purpose*, and nothing else. A `.pw.sql` file in a directory that
 `queries` does not list is invisible to generation — which is why generation
@@ -165,6 +167,38 @@ should be changing the schema.
 
 `dir` is a tooling path. It tells `pw` where the files are and has no runtime
 meaning.
+
+## `[assets]`
+
+```toml
+[assets]
+public = "cmd/app/public"
+derived = "cmd/app/dist/public"
+embed = "cmd/app/public.go"
+```
+
+| Key | Default | Purpose |
+| --- | --- | --- |
+| `assets.public` | `"public"` | Authored input tree |
+| `assets.derived` | `"dist/public"` | Built tree served and embedded by the application |
+| `assets.embed` | `"public.go"` | Authored Go embed file checked before building assets |
+
+All paths are relative to `popcornweb.toml`. Escaping paths, symlinks in any
+component, and overlapping input/output trees are rejected. The derived tree
+must be below the directory containing the embed file, as required by `go:embed`.
+The example uses `//go:embed all:dist/public` in `cmd/app/public.go` and
+`fs.Sub(embeddedPublic, "dist/public")`.
+
+`public_manifest_pw_gen.go` is written beside the embed file, in its package.
+`manifest.json`, `routes.json`, the `derived/` staging tree, and the `cache/`
+conversion cache go beside the configured derived tree; here that is
+`cmd/app/dist/`. Extracted component files go under the authored tree's
+`generated/` directory. Tailwind input/output paths remain project-relative.
+
+`pw dev` passes `assets.derived` to the application as
+`SERVER_PUBLIC_LOCAL_ROOT`. Direct `go run -tags=pwdev` invocations can set
+`server.public.local_root` themselves; its default is `dist/public`.
+The project root, module import paths, config files, and dotenv discovery are unchanged.
 
 ## `[assets.tailwind]`
 

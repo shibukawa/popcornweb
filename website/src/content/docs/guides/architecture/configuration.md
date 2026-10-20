@@ -284,3 +284,27 @@ an answer that costs no extra log line. Each entry shows where its value came
 from, and a `secret` tag decides whether it is printed, masked, or dropped.
 `observability.boot_log` selects the format. See
 [Configuration Summary](/productivity/startup-summary/).
+
+## Before opening application resources
+
+If your application opens a store or another resource before `pw.Run`, parse
+configuration and dispatch framework actions first:
+
+```go
+func run() error {
+    // Register application configuration before parsing.
+    if err := pw.ParseConfig(); err != nil {
+        return err
+    }
+    if handled, err := pw.RunFrameworkAction(); handled || err != nil {
+        return err
+    }
+    // Open application resources here.
+    return pw.Run(context.Background(), handlers.Handlers())
+}
+```
+
+This lets `--generate-config` and `healthcheck` finish without opening those
+resources. `ParseConfig` is idempotent; the later `pw.Run` reuses its result.
+`pwfast.RunFrameworkAction` provides the same sequence for fasthttp, and
+`pwconfig.RunFrameworkAction` remains available to shared startup code.

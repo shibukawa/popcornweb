@@ -124,6 +124,16 @@ element. The rules:
   [`${NAME}` reference](#referencing-the-environment-from-a-file) in its value.
 - The scaffold renders one example `[[…]]` block per slice.
 
+### `[]string` defaults
+
+A `default` tag for `[]string` uses comma-separated scalar values, just like an
+environment variable: `default:"/**"` or `default:"GET,HEAD,POST"`. Spaces around
+items are trimmed. Omit the tag (or use `default:""`) for zero elements.
+`pw generate` rejects bracketed defaults such as `default:"[]"` and JSON-looking
+arrays instead of treating them as literal list items. TOML configuration still
+uses real arrays, including `[]`; repeated CLI flags accumulate values. Items
+containing commas belong in TOML arrays or repeated CLI flags.
+
 ## Tags
 
 Five tags name a key:

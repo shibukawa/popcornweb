@@ -48,6 +48,7 @@ func registerServerConfigDefinition0() {
 			"server.public.enabled",
 			"server.public.mount",
 			"server.public.read_local",
+			"server.public.local_root",
 			"server.public.svg_sandbox",
 		},
 		Defaults: map[string]string{
@@ -63,6 +64,7 @@ func registerServerConfigDefinition0() {
 			"server.public.enabled":      "true",
 			"server.public.mount":        "/public",
 			"server.public.read_local":   "false",
+			"server.public.local_root":   "dist/public",
 			"server.public.svg_sandbox":  "true",
 		},
 		DependsOn: map[string][]configbind.Dependency{
@@ -70,6 +72,7 @@ func registerServerConfigDefinition0() {
 			"server.api_catalog_origin": {{Key: "server.api_catalog"}},
 			"server.public.mount":       {{Key: "server.public.enabled"}},
 			"server.public.read_local":  {{Key: "server.public.enabled"}},
+			"server.public.local_root":  {{Key: "server.public.enabled"}},
 			"server.public.svg_sandbox": {{Key: "server.public.enabled"}},
 		},
 		Summary: map[string]string{
@@ -101,6 +104,7 @@ func registerServerConfigDefinition0() {
 			{Prefix: "server", Key: "public.enabled", Kind: cliparser.KindBool},
 			{Prefix: "server", Key: "public.mount"},
 			{Prefix: "server", Key: "public.read_local", Kind: cliparser.KindBool},
+			{Prefix: "server", Key: "public.local_root"},
 			{Prefix: "server", Key: "public.svg_sandbox", Kind: cliparser.KindBool},
 		},
 		Apply: applyServerConfigDefinition0,
@@ -124,6 +128,7 @@ func registerServerConfigDefinition0() {
 			{Key: "public.enabled", Kind: configbind.ScaffoldBool, Default: "true"},
 			{Key: "public.mount", Kind: configbind.ScaffoldString, Default: "/public"},
 			{Key: "public.read_local", Kind: configbind.ScaffoldBool, Default: "false"},
+			{Key: "public.local_root", Kind: configbind.ScaffoldString, Default: "dist/public"},
 			{Key: "public.svg_sandbox", Kind: configbind.ScaffoldBool, Default: "true"},
 		},
 	})
@@ -259,6 +264,11 @@ func applyServerConfigDefinition0(dst any, o *configbind.Overlay) error {
 	} else {
 		p.Public.ReadLocal = false
 	}
+	if v, ok := o.GetString("server.public.local_root"); ok {
+		p.Public.LocalRoot = v
+	} else {
+		p.Public.LocalRoot = "dist/public"
+	}
 	if v, ok := o.GetString("server.public.svg_sandbox"); ok {
 		bb, err := strconv.ParseBool(v)
 		if err != nil {
@@ -317,14 +327,14 @@ func registerSecurityConfigDefinition1() {
 			"security.headers.hsts.include_subdomains": "false",
 			"security.headers.hsts.preload":            "false",
 			"security.cors.enabled":                    "false",
-			"security.cors.include":                    "[\"/**\"]",
+			"security.cors.include":                    "/**",
 			"security.cors.allow_credentials":          "false",
-			"security.cors.allowed_methods":            "[\"GET\",\"HEAD\",\"POST\"]",
-			"security.cors.allowed_headers":            "[\"Content-Type\",\"Authorization\"]",
-			"security.cors.exposed_headers":            "[\"X-Request-ID\",\"Retry-After\",\"X-RateLimit-Limit\",\"X-RateLimit-Remaining\",\"X-RateLimit-Reset\"]",
+			"security.cors.allowed_methods":            "GET,HEAD,POST",
+			"security.cors.allowed_headers":            "Content-Type,Authorization",
+			"security.cors.exposed_headers":            "X-Request-ID,Retry-After,X-RateLimit-Limit,X-RateLimit-Remaining,X-RateLimit-Reset",
 			"security.cors.max_age":                    "10m",
 			"security.csrf.enabled":                    "false",
-			"security.csrf.include":                    "[\"/**\"]",
+			"security.csrf.include":                    "/**",
 			"security.csrf.form_field":                 "_csrf",
 			"security.csrf.header":                     "X-CSRF-Token",
 			"security.csrf.cookie_name":                "pw_csrf",
@@ -401,16 +411,16 @@ func registerSecurityConfigDefinition1() {
 			{Key: "headers.hsts.include_subdomains", Kind: configbind.ScaffoldBool, Default: "false"},
 			{Key: "headers.hsts.preload", Kind: configbind.ScaffoldBool, Default: "false"},
 			{Key: "cors.enabled", Kind: configbind.ScaffoldBool, Default: "false"},
-			{Key: "cors.include", Kind: configbind.ScaffoldStringSlice, Default: "[\"/**\"]"},
+			{Key: "cors.include", Kind: configbind.ScaffoldStringSlice, Default: "/**"},
 			{Key: "cors.exclude", Kind: configbind.ScaffoldStringSlice, Env: "-"},
 			{Key: "cors.allowed_origins", Kind: configbind.ScaffoldStringSlice, Env: "-"},
 			{Key: "cors.allow_credentials", Kind: configbind.ScaffoldBool, Default: "false"},
-			{Key: "cors.allowed_methods", Kind: configbind.ScaffoldStringSlice, Default: "[\"GET\",\"HEAD\",\"POST\"]"},
-			{Key: "cors.allowed_headers", Kind: configbind.ScaffoldStringSlice, Default: "[\"Content-Type\",\"Authorization\"]"},
-			{Key: "cors.exposed_headers", Kind: configbind.ScaffoldStringSlice, Default: "[\"X-Request-ID\",\"Retry-After\",\"X-RateLimit-Limit\",\"X-RateLimit-Remaining\",\"X-RateLimit-Reset\"]"},
+			{Key: "cors.allowed_methods", Kind: configbind.ScaffoldStringSlice, Default: "GET,HEAD,POST"},
+			{Key: "cors.allowed_headers", Kind: configbind.ScaffoldStringSlice, Default: "Content-Type,Authorization"},
+			{Key: "cors.exposed_headers", Kind: configbind.ScaffoldStringSlice, Default: "X-Request-ID,Retry-After,X-RateLimit-Limit,X-RateLimit-Remaining,X-RateLimit-Reset"},
 			{Key: "cors.max_age", Kind: configbind.ScaffoldDuration, Default: "10m", Help: "how long a browser may cache one preflight"},
 			{Key: "csrf.enabled", Kind: configbind.ScaffoldBool, Default: "false"},
-			{Key: "csrf.include", Kind: configbind.ScaffoldStringSlice, Default: "[\"/**\"]"},
+			{Key: "csrf.include", Kind: configbind.ScaffoldStringSlice, Default: "/**"},
 			{Key: "csrf.exclude", Kind: configbind.ScaffoldStringSlice, Env: "-"},
 			{Key: "csrf.form_field", Kind: configbind.ScaffoldString, Default: "_csrf"},
 			{Key: "csrf.header", Kind: configbind.ScaffoldString, Default: "X-CSRF-Token"},

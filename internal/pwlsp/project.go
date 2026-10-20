@@ -42,6 +42,7 @@ type SourceDir struct {
 
 // Project is the loaded model.
 type Project struct {
+	RouteTable string
 	Root       string
 	ConfigPath string
 	Name       string

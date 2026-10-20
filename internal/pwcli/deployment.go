@@ -136,12 +136,18 @@ func buildProcessDeployment(ctx context.Context, root, stage string, config proj
 		return deploymentManifest{}, fmt.Errorf("go build deployment: %w", err)
 	}
 	productionConfig := filepath.Join(root, "config.prod.toml")
+	productionFiles := binary
 	info, err := os.Stat(productionConfig)
-	if err != nil {
-		return deploymentManifest{}, fmt.Errorf("deployment requires config.prod.toml: %w", err)
-	}
-	if err := copyDeploymentFile(productionConfig, filepath.Join(stage, "config.prod.toml"), info.Mode()); err != nil {
-		return deploymentManifest{}, err
+	if err == nil {
+		if !info.Mode().IsRegular() {
+			return deploymentManifest{}, fmt.Errorf("config.prod.toml must be a regular file")
+		}
+		if err := copyDeploymentFile(productionConfig, filepath.Join(stage, "config.prod.toml"), info.Mode()); err != nil {
+			return deploymentManifest{}, err
+		}
+		productionFiles += " config.prod.toml"
+	} else if !os.IsNotExist(err) {
+		return deploymentManifest{}, fmt.Errorf("read config.prod.toml: %w", err)
 	}
 	if err := copyExternalAssets(root, stage); err != nil {
 		return deploymentManifest{}, fmt.Errorf("copy %s: %w", externalPublicDir, err)
@@ -153,7 +159,7 @@ func buildProcessDeployment(ctx context.Context, root, stage string, config proj
 		dockerfile := "FROM public.ecr.aws/awsguru/aws-lambda-adapter:" + lambdaWebAdapterVersion + " AS adapter\n" +
 			"FROM gcr.io/distroless/static-debian12:nonroot\n" +
 			"COPY --from=adapter /lambda-adapter /opt/extensions/lambda-adapter\n" +
-			"COPY --chown=nonroot:nonroot bootstrap config.prod.toml /\n" +
+			"COPY --chown=nonroot:nonroot " + productionFiles + " /\n" +
 			// The tree that ships beside the binary. It lands at the root
 			// because that is the working directory /bootstrap runs with, and
 			// the server resolves the directory against that.
@@ -184,7 +190,7 @@ func buildProcessDeployment(ctx context.Context, root, stage string, config proj
 
 func buildSourceDeployment(ctx context.Context, root, stage string, config projectConfig, options buildOptions, stdout, stderr io.Writer) (deploymentManifest, error) {
 	applicationRoot := filepath.Join(stage, "app")
-	if err := copyProjectForFunction(root, applicationRoot); err != nil {
+	if err := copyProjectForFunction(root, applicationRoot, config.Main); err != nil {
 		return deploymentManifest{}, err
 	}
 	modulePath, goVersion, err := normalizeApplicationModule(root, filepath.Join(applicationRoot, "go.mod"))
@@ -204,8 +210,8 @@ func buildSourceDeployment(ctx context.Context, root, stage string, config proje
 			if err := copyDeploymentFile(source, filepath.Join(stage, name), info.Mode()); err != nil {
 				return deploymentManifest{}, err
 			}
-		} else if name == "config.prod.toml" {
-			return deploymentManifest{}, fmt.Errorf("deployment requires config.prod.toml: %w", err)
+		} else if !os.IsNotExist(err) {
+			return deploymentManifest{}, fmt.Errorf("read %s: %w", name, err)
 		}
 	}
 	// Beside the configuration, for the same reason: both are resolved against
@@ -224,6 +230,9 @@ func buildSourceDeployment(ctx context.Context, root, stage string, config proje
 		}
 	}
 	if err := copyTransformedMain(root, packageDir, packageName, config.Main, options.backend); err != nil {
+		return deploymentManifest{}, err
+	}
+	if err := copyMainPublicAssets(root, packageDir, config); err != nil {
 		return deploymentManifest{}, err
 	}
 	wrapper, err := format.Source([]byte(sourceFunctionWrapper(packageName, options.target, options.backend)))
@@ -270,7 +279,14 @@ func buildSourceDeployment(ctx context.Context, root, stage string, config proje
 	return deploymentManifest{Target: options.target, Backend: options.backend, Artifact: ".", Entrypoint: entrypoint}, nil
 }
 
-func copyProjectForFunction(root, stage string) error {
+func copyProjectForFunction(root, stage string, mainPackages ...string) error {
+	mainDirectory := ""
+	if len(mainPackages) > 0 {
+		relative := strings.TrimPrefix(mainPackages[0], "./")
+		if relative == "cmd" || strings.HasPrefix(relative, "cmd/") {
+			mainDirectory = filepath.Join(root, filepath.FromSlash(relative))
+		}
+	}
 	return filepath.WalkDir(root, func(path string, entry fs.DirEntry, walkErr error) error {
 		if walkErr != nil {
 			return walkErr
@@ -280,13 +296,18 @@ func copyProjectForFunction(root, stage string) error {
 			return err
 		}
 		first := strings.Split(relative, string(filepath.Separator))[0]
+		// The selected main may live below cmd with its own embed and imported
+		// subpackages. Other command trees remain outside the source bundle.
+		if entry.IsDir() && first == "cmd" && (mainDirectory == "" || (!pathWithin(path, mainDirectory) && !pathWithin(mainDirectory, path))) {
+			return filepath.SkipDir
+		}
 		// externalPublicDir is skipped here and placed at the stage root
 		// instead: the server resolves it against the working directory, which
 		// is the stage rather than the application subtree. Copying it here as
 		// well would put the largest files in the project into the bundle
 		// twice, in a place nothing reads.
 		if entry.IsDir() && (first == ".git" || first == ".pw" || first == ".devbox" || first == ".log" ||
-			first == "node_modules" || first == "cmd" || first == externalPublicDir) {
+			first == "node_modules" || first == externalPublicDir) {
 			return filepath.SkipDir
 		}
 		if entry.IsDir() {
@@ -304,6 +325,39 @@ func copyProjectForFunction(root, stage string) error {
 			return err
 		}
 		return copyDeploymentFile(path, filepath.Join(stage, relative), info.Mode())
+	})
+}
+
+// A transformed main keeps its go:embed directive. Carry that directive's
+// relative tree into the generated entrypoint package as well as the module.
+func copyMainPublicAssets(root, destination string, config projectConfig) error {
+	l := config.Assets.locations()
+	mainDir := filepath.Clean(filepath.FromSlash(strings.TrimPrefix(config.Main, "./")))
+	if filepath.Dir(filepath.FromSlash(l.embed)) != mainDir {
+		return nil
+	}
+	source := filepath.Join(root, filepath.FromSlash(l.derived))
+	relativeTree, err := filepath.Rel(mainDir, filepath.FromSlash(l.derived))
+	if err != nil {
+		return err
+	}
+	return filepath.WalkDir(source, func(name string, entry fs.DirEntry, walkErr error) error {
+		if walkErr != nil {
+			return walkErr
+		}
+		relative, err := filepath.Rel(source, name)
+		if err != nil {
+			return err
+		}
+		target := filepath.Join(destination, relativeTree, relative)
+		if entry.IsDir() {
+			return os.MkdirAll(target, 0755)
+		}
+		info, err := entry.Info()
+		if err != nil {
+			return err
+		}
+		return copyDeploymentFile(name, target, info.Mode())
 	})
 }
 

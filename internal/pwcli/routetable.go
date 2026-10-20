@@ -163,7 +163,7 @@ func writeRouteTable(root string, config projectConfig, collected *routeCollecto
 	if err := collectPageRoutes(root, config, collected); err != nil {
 		return err
 	}
-	return pwroutes.Write(root, collected.table())
+	return pwroutes.Write(root, collected.table(), config.Assets.locations().routes)
 }
 
 // collectPageRoutes reads each declared page tree through the same discovery

@@ -11,6 +11,7 @@ type PublicAssetSettings struct {
 	Enabled   bool   `default:"true"`
 	Mount     string `default:"/public" dependon:".enabled"`
 	ReadLocal bool   `default:"false" dependon:".enabled"`
+	LocalRoot string `default:"dist/public" dependon:".enabled"`
 	// SVGSandbox adds a sandbox Content-Security-Policy to an image/svg+xml
 	// response. An SVG is the one served image that executes, and it executes
 	// in the application origin on direct navigation, so this is on by default

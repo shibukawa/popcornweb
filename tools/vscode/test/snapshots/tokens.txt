@@ -665,22 +665,22 @@
 13	"</"	meta.embedded.block.html punctuation.definition.tag.begin.html
 13	"script"	meta.embedded.block.html entity.name.tag.html
 13	">"	meta.embedded.block.html punctuation.definition.tag.end.html
-13	"</"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.begin.html
-13	"head"	meta.embedded.block.html meta.tag.html entity.name.tag.html
-13	">"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.end.html
-14	"<"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.begin.html
-14	"body"	meta.embedded.block.html meta.tag.html entity.name.tag.html
-14	">"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.end.html
-14	"<"	meta.embedded.block.html punctuation.definition.tag.begin.html
-14	"slot"	meta.embedded.block.html entity.name.tag.slot.pw
-14	"/>"	meta.embedded.block.html punctuation.definition.tag.end.html
 14	"</"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.begin.html
-14	"body"	meta.embedded.block.html meta.tag.html entity.name.tag.html
+14	"head"	meta.embedded.block.html meta.tag.html entity.name.tag.html
 14	">"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.end.html
-14	"</"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.begin.html
-14	"html"	meta.embedded.block.html meta.tag.html entity.name.tag.html
-14	">"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.end.html
-15	"}"	punctuation.definition.block.end.pw
+15	"<"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.begin.html
+15	"body"	meta.embedded.block.html meta.tag.html entity.name.tag.html
+15	">"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.end.html
+15	"<"	meta.embedded.block.html punctuation.definition.tag.begin.html
+15	"slot"	meta.embedded.block.html entity.name.tag.slot.pw
+15	"/>"	meta.embedded.block.html punctuation.definition.tag.end.html
+15	"</"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.begin.html
+15	"body"	meta.embedded.block.html meta.tag.html entity.name.tag.html
+15	">"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.end.html
+16	"</"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.begin.html
+16	"html"	meta.embedded.block.html meta.tag.html entity.name.tag.html
+16	">"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.end.html
+17	"}"	punctuation.definition.block.end.pw
 
 ## examples/auction/handlers/home.pw.html [source.pw.html]
 1	"package"	keyword.control.import.pw
@@ -3597,8 +3597,8 @@
 110	"script"	meta.embedded.block.html entity.name.tag.html
 110	"component"	meta.embedded.block.html entity.other.attribute-name.html
 110	">"	meta.embedded.block.html punctuation.definition.tag.end.html
-111	"  export function setup(el, scope) {"	meta.embedded.block.html meta.embedded.block.js
-112	"    scope.on(\"auction.closed\", () => {"	meta.embedded.block.html meta.embedded.block.js
+111	"  export function setup({ el, onSignal }) {"	meta.embedded.block.html meta.embedded.block.js
+112	"    onSignal(\"auction.closed\", () => {"	meta.embedded.block.html meta.embedded.block.js
 113	"      // A signal is best effort, so it only prompts a refresh. The closed state"	meta.embedded.block.html meta.embedded.block.js
 114	"      // and winning result remain server-rendered from the database."	meta.embedded.block.html meta.embedded.block.js
 115	"      if (el.dataset.roomStatus === \"open\") window.location.reload();"	meta.embedded.block.html meta.embedded.block.js
@@ -5018,7 +5018,7 @@
 83	"      FROM room_participants AS viewer_participation"	meta.embedded.block.sql
 84	"      WHERE"	meta.embedded.block.sql
 85	"        viewer_participation.room_id = room.id"	meta.embedded.block.sql
-86	"        AND  viewer_participation.account_id = "	meta.embedded.block.sql
+86	"        AND viewer_participation.account_id = "	meta.embedded.block.sql
 86	"{"	meta.embedded.block.sql punctuation.section.embedded.pw
 86	"viewerAccountID"	meta.embedded.block.sql meta.embedded.expression.pw variable.other.pw
 86	"}"	meta.embedded.block.sql punctuation.section.embedded.pw
@@ -5121,7 +5121,7 @@
 149	"      FROM room_participants AS viewer_participation"	meta.embedded.block.sql
 150	"      WHERE"	meta.embedded.block.sql
 151	"        viewer_participation.room_id = room.id"	meta.embedded.block.sql
-152	"        AND  viewer_participation.account_id = "	meta.embedded.block.sql
+152	"        AND viewer_participation.account_id = "	meta.embedded.block.sql
 152	"{"	meta.embedded.block.sql punctuation.section.embedded.pw
 152	"viewerAccountID"	meta.embedded.block.sql meta.embedded.expression.pw variable.other.pw
 152	"}"	meta.embedded.block.sql punctuation.section.embedded.pw
@@ -6864,27 +6864,27 @@
 16	"</"	meta.embedded.block.html punctuation.definition.tag.begin.html
 16	"script"	meta.embedded.block.html entity.name.tag.html
 16	">"	meta.embedded.block.html punctuation.definition.tag.end.html
-16	"</"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.begin.html
-16	"head"	meta.embedded.block.html meta.tag.html entity.name.tag.html
-16	">"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.end.html
-17	"<"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.begin.html
-17	"body"	meta.embedded.block.html meta.tag.html entity.name.tag.html
-17	"class"	meta.embedded.block.html meta.tag.html entity.other.attribute-name.html
-17	"="	meta.embedded.block.html meta.tag.html punctuation.separator.key-value.html
-17	"\""	meta.embedded.block.html meta.tag.html punctuation.definition.string.begin.html
-17	"m-0 bg-stone-50 text-stone-950 antialiased"	meta.embedded.block.html meta.tag.html string.quoted.double.html
-17	"\""	meta.embedded.block.html meta.tag.html punctuation.definition.string.end.html
-17	">"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.end.html
-17	"<"	meta.embedded.block.html punctuation.definition.tag.begin.html
-17	"slot"	meta.embedded.block.html entity.name.tag.slot.pw
-17	"/>"	meta.embedded.block.html punctuation.definition.tag.end.html
 17	"</"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.begin.html
-17	"body"	meta.embedded.block.html meta.tag.html entity.name.tag.html
+17	"head"	meta.embedded.block.html meta.tag.html entity.name.tag.html
 17	">"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.end.html
-17	"</"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.begin.html
-17	"html"	meta.embedded.block.html meta.tag.html entity.name.tag.html
-17	">"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.end.html
-18	"}"	punctuation.definition.block.end.pw
+18	"<"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.begin.html
+18	"body"	meta.embedded.block.html meta.tag.html entity.name.tag.html
+18	"class"	meta.embedded.block.html meta.tag.html entity.other.attribute-name.html
+18	"="	meta.embedded.block.html meta.tag.html punctuation.separator.key-value.html
+18	"\""	meta.embedded.block.html meta.tag.html punctuation.definition.string.begin.html
+18	"m-0 bg-stone-50 text-stone-950 antialiased"	meta.embedded.block.html meta.tag.html string.quoted.double.html
+18	"\""	meta.embedded.block.html meta.tag.html punctuation.definition.string.end.html
+18	">"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.end.html
+18	"<"	meta.embedded.block.html punctuation.definition.tag.begin.html
+18	"slot"	meta.embedded.block.html entity.name.tag.slot.pw
+18	"/>"	meta.embedded.block.html punctuation.definition.tag.end.html
+18	"</"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.begin.html
+18	"body"	meta.embedded.block.html meta.tag.html entity.name.tag.html
+18	">"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.end.html
+19	"</"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.begin.html
+19	"html"	meta.embedded.block.html meta.tag.html entity.name.tag.html
+19	">"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.end.html
+20	"}"	punctuation.definition.block.end.pw
 
 ## examples/helloworld/handlers/home.pw.html [source.pw.html]
 1	"package"	keyword.control.import.pw
@@ -7250,27 +7250,27 @@
 10	"/public/generated/app.css"	meta.embedded.block.html meta.tag.html string.quoted.double.html
 10	"\""	meta.embedded.block.html meta.tag.html punctuation.definition.string.end.html
 10	">"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.end.html
-10	"</"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.begin.html
-10	"head"	meta.embedded.block.html meta.tag.html entity.name.tag.html
-10	">"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.end.html
-11	"<"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.begin.html
-11	"body"	meta.embedded.block.html meta.tag.html entity.name.tag.html
-11	"class"	meta.embedded.block.html meta.tag.html entity.other.attribute-name.html
-11	"="	meta.embedded.block.html meta.tag.html punctuation.separator.key-value.html
-11	"\""	meta.embedded.block.html meta.tag.html punctuation.definition.string.begin.html
-11	"min-h-screen bg-gradient-to-br from-slate-50 via-indigo-50 to-sky-100 text-slate-900 antialiased"	meta.embedded.block.html meta.tag.html string.quoted.double.html
-11	"\""	meta.embedded.block.html meta.tag.html punctuation.definition.string.end.html
-11	">"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.end.html
-11	"<"	meta.embedded.block.html punctuation.definition.tag.begin.html
-11	"slot"	meta.embedded.block.html entity.name.tag.slot.pw
-11	"/>"	meta.embedded.block.html punctuation.definition.tag.end.html
 11	"</"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.begin.html
-11	"body"	meta.embedded.block.html meta.tag.html entity.name.tag.html
+11	"head"	meta.embedded.block.html meta.tag.html entity.name.tag.html
 11	">"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.end.html
-11	"</"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.begin.html
-11	"html"	meta.embedded.block.html meta.tag.html entity.name.tag.html
-11	">"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.end.html
-12	"}"	punctuation.definition.block.end.pw
+12	"<"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.begin.html
+12	"body"	meta.embedded.block.html meta.tag.html entity.name.tag.html
+12	"class"	meta.embedded.block.html meta.tag.html entity.other.attribute-name.html
+12	"="	meta.embedded.block.html meta.tag.html punctuation.separator.key-value.html
+12	"\""	meta.embedded.block.html meta.tag.html punctuation.definition.string.begin.html
+12	"min-h-screen bg-gradient-to-br from-slate-50 via-indigo-50 to-sky-100 text-slate-900 antialiased"	meta.embedded.block.html meta.tag.html string.quoted.double.html
+12	"\""	meta.embedded.block.html meta.tag.html punctuation.definition.string.end.html
+12	">"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.end.html
+12	"<"	meta.embedded.block.html punctuation.definition.tag.begin.html
+12	"slot"	meta.embedded.block.html entity.name.tag.slot.pw
+12	"/>"	meta.embedded.block.html punctuation.definition.tag.end.html
+12	"</"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.begin.html
+12	"body"	meta.embedded.block.html meta.tag.html entity.name.tag.html
+12	">"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.end.html
+13	"</"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.begin.html
+13	"html"	meta.embedded.block.html meta.tag.html entity.name.tag.html
+13	">"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.end.html
+14	"}"	punctuation.definition.block.end.pw
 
 ## examples/htmx_fragment/handlers/tasks.pw.html [source.pw.html]
 1	"package"	keyword.control.import.pw
@@ -8552,22 +8552,22 @@
 14	"</"	meta.embedded.block.html punctuation.definition.tag.begin.html
 14	"script"	meta.embedded.block.html entity.name.tag.html
 14	">"	meta.embedded.block.html punctuation.definition.tag.end.html
-14	"</"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.begin.html
-14	"head"	meta.embedded.block.html meta.tag.html entity.name.tag.html
-14	">"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.end.html
-15	"<"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.begin.html
-15	"body"	meta.embedded.block.html meta.tag.html entity.name.tag.html
-15	">"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.end.html
-15	"<"	meta.embedded.block.html punctuation.definition.tag.begin.html
-15	"slot"	meta.embedded.block.html entity.name.tag.slot.pw
-15	"/>"	meta.embedded.block.html punctuation.definition.tag.end.html
 15	"</"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.begin.html
-15	"body"	meta.embedded.block.html meta.tag.html entity.name.tag.html
+15	"head"	meta.embedded.block.html meta.tag.html entity.name.tag.html
 15	">"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.end.html
-15	"</"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.begin.html
-15	"html"	meta.embedded.block.html meta.tag.html entity.name.tag.html
-15	">"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.end.html
-16	"}"	punctuation.definition.block.end.pw
+16	"<"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.begin.html
+16	"body"	meta.embedded.block.html meta.tag.html entity.name.tag.html
+16	">"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.end.html
+16	"<"	meta.embedded.block.html punctuation.definition.tag.begin.html
+16	"slot"	meta.embedded.block.html entity.name.tag.slot.pw
+16	"/>"	meta.embedded.block.html punctuation.definition.tag.end.html
+16	"</"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.begin.html
+16	"body"	meta.embedded.block.html meta.tag.html entity.name.tag.html
+16	">"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.end.html
+17	"</"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.begin.html
+17	"html"	meta.embedded.block.html meta.tag.html entity.name.tag.html
+17	">"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.end.html
+18	"}"	punctuation.definition.block.end.pw
 
 ## examples/live_render/handlers/dashboard.pw.html [source.pw.html]
 1	"package"	keyword.control.import.pw
@@ -9350,27 +9350,27 @@
 13	"</"	meta.embedded.block.html punctuation.definition.tag.begin.html
 13	"script"	meta.embedded.block.html entity.name.tag.html
 13	">"	meta.embedded.block.html punctuation.definition.tag.end.html
-13	"</"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.begin.html
-13	"head"	meta.embedded.block.html meta.tag.html entity.name.tag.html
-13	">"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.end.html
-14	"<"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.begin.html
-14	"body"	meta.embedded.block.html meta.tag.html entity.name.tag.html
-14	"class"	meta.embedded.block.html meta.tag.html entity.other.attribute-name.html
-14	"="	meta.embedded.block.html meta.tag.html punctuation.separator.key-value.html
-14	"\""	meta.embedded.block.html meta.tag.html punctuation.definition.string.begin.html
-14	"bg-slate-50 text-slate-900 antialiased dark:bg-slate-950 dark:text-slate-100"	meta.embedded.block.html meta.tag.html string.quoted.double.html
-14	"\""	meta.embedded.block.html meta.tag.html punctuation.definition.string.end.html
-14	">"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.end.html
-14	"<"	meta.embedded.block.html punctuation.definition.tag.begin.html
-14	"slot"	meta.embedded.block.html entity.name.tag.slot.pw
-14	"/>"	meta.embedded.block.html punctuation.definition.tag.end.html
 14	"</"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.begin.html
-14	"body"	meta.embedded.block.html meta.tag.html entity.name.tag.html
+14	"head"	meta.embedded.block.html meta.tag.html entity.name.tag.html
 14	">"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.end.html
-14	"</"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.begin.html
-14	"html"	meta.embedded.block.html meta.tag.html entity.name.tag.html
-14	">"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.end.html
-15	"}"	punctuation.definition.block.end.pw
+15	"<"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.begin.html
+15	"body"	meta.embedded.block.html meta.tag.html entity.name.tag.html
+15	"class"	meta.embedded.block.html meta.tag.html entity.other.attribute-name.html
+15	"="	meta.embedded.block.html meta.tag.html punctuation.separator.key-value.html
+15	"\""	meta.embedded.block.html meta.tag.html punctuation.definition.string.begin.html
+15	"bg-slate-50 text-slate-900 antialiased dark:bg-slate-950 dark:text-slate-100"	meta.embedded.block.html meta.tag.html string.quoted.double.html
+15	"\""	meta.embedded.block.html meta.tag.html punctuation.definition.string.end.html
+15	">"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.end.html
+15	"<"	meta.embedded.block.html punctuation.definition.tag.begin.html
+15	"slot"	meta.embedded.block.html entity.name.tag.slot.pw
+15	"/>"	meta.embedded.block.html punctuation.definition.tag.end.html
+15	"</"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.begin.html
+15	"body"	meta.embedded.block.html meta.tag.html entity.name.tag.html
+15	">"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.end.html
+16	"</"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.begin.html
+16	"html"	meta.embedded.block.html meta.tag.html entity.name.tag.html
+16	">"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.end.html
+17	"}"	punctuation.definition.block.end.pw
 
 ## examples/oidclogin/handlers/home.pw.html [source.pw.html]
 1	"package"	keyword.control.import.pw
@@ -9834,11 +9834,11 @@
 11	"{"	meta.embedded.block.sql punctuation.section.embedded.pw
 11	"issuer"	meta.embedded.block.sql meta.embedded.expression.pw variable.other.pw
 11	"}"	meta.embedded.block.sql punctuation.section.embedded.pw
-12	"    AND  external_identities.claim = "	meta.embedded.block.sql
+12	"    AND external_identities.claim = "	meta.embedded.block.sql
 12	"{"	meta.embedded.block.sql punctuation.section.embedded.pw
 12	"claim"	meta.embedded.block.sql meta.embedded.expression.pw variable.other.pw
 12	"}"	meta.embedded.block.sql punctuation.section.embedded.pw
-13	"    AND  external_identities.value = "	meta.embedded.block.sql
+13	"    AND external_identities.value = "	meta.embedded.block.sql
 13	"{"	meta.embedded.block.sql punctuation.section.embedded.pw
 13	"value"	meta.embedded.block.sql meta.embedded.expression.pw variable.other.pw
 13	"}"	meta.embedded.block.sql punctuation.section.embedded.pw
@@ -10196,44 +10196,28 @@
 18	"</"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.begin.html
 18	"th"	meta.embedded.block.html meta.tag.html entity.name.tag.html
 18	">"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.end.html
-18	"</"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.begin.html
-18	"tr"	meta.embedded.block.html meta.tag.html entity.name.tag.html
-18	">"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.end.html
 19	"</"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.begin.html
-19	"thead"	meta.embedded.block.html meta.tag.html entity.name.tag.html
+19	"tr"	meta.embedded.block.html meta.tag.html entity.name.tag.html
 19	">"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.end.html
-20	"<"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.begin.html
-20	"tbody"	meta.embedded.block.html meta.tag.html entity.name.tag.html
+20	"</"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.begin.html
+20	"thead"	meta.embedded.block.html meta.tag.html entity.name.tag.html
 20	">"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.end.html
-21	"{"	meta.embedded.block.html punctuation.section.embedded.pw
-21	"for"	meta.embedded.block.html keyword.control.pw
-21	"invoice"	meta.embedded.block.html meta.embedded.expression.pw variable.other.pw
-21	"in"	meta.embedded.block.html meta.embedded.expression.pw keyword.control.pw
-21	"invoices"	meta.embedded.block.html meta.embedded.expression.pw variable.other.pw
-21	"}"	meta.embedded.block.html punctuation.section.embedded.pw
-22	"<"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.begin.html
-22	"tr"	meta.embedded.block.html meta.tag.html entity.name.tag.html
-22	"class"	meta.embedded.block.html meta.tag.html entity.other.attribute-name.html
-22	"="	meta.embedded.block.html meta.tag.html punctuation.separator.key-value.html
-22	"\""	meta.embedded.block.html meta.tag.html punctuation.definition.string.begin.html
-22	"row"	meta.embedded.block.html meta.tag.html string.quoted.double.html
-22	"\""	meta.embedded.block.html meta.tag.html punctuation.definition.string.end.html
-22	">"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.end.html
+21	"<"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.begin.html
+21	"tbody"	meta.embedded.block.html meta.tag.html entity.name.tag.html
+21	">"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.end.html
+22	"{"	meta.embedded.block.html punctuation.section.embedded.pw
+22	"for"	meta.embedded.block.html keyword.control.pw
+22	"invoice"	meta.embedded.block.html meta.embedded.expression.pw variable.other.pw
+22	"in"	meta.embedded.block.html meta.embedded.expression.pw keyword.control.pw
+22	"invoices"	meta.embedded.block.html meta.embedded.expression.pw variable.other.pw
+22	"}"	meta.embedded.block.html punctuation.section.embedded.pw
 23	"<"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.begin.html
-23	"td"	meta.embedded.block.html meta.tag.html entity.name.tag.html
+23	"tr"	meta.embedded.block.html meta.tag.html entity.name.tag.html
 23	"class"	meta.embedded.block.html meta.tag.html entity.other.attribute-name.html
 23	"="	meta.embedded.block.html meta.tag.html punctuation.separator.key-value.html
 23	"\""	meta.embedded.block.html meta.tag.html punctuation.definition.string.begin.html
-23	"row__cell"	meta.embedded.block.html meta.tag.html string.quoted.double.html
+23	"row"	meta.embedded.block.html meta.tag.html string.quoted.double.html
 23	"\""	meta.embedded.block.html meta.tag.html punctuation.definition.string.end.html
-23	">"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.end.html
-23	"{"	meta.embedded.block.html punctuation.section.embedded.pw
-23	"invoice"	meta.embedded.block.html meta.embedded.expression.pw variable.other.pw
-23	"."	meta.embedded.block.html meta.embedded.expression.pw punctuation.accessor.pw
-23	"number"	meta.embedded.block.html meta.embedded.expression.pw variable.other.property.pw
-23	"}"	meta.embedded.block.html punctuation.section.embedded.pw
-23	"</"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.begin.html
-23	"td"	meta.embedded.block.html meta.tag.html entity.name.tag.html
 23	">"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.end.html
 24	"<"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.begin.html
 24	"td"	meta.embedded.block.html meta.tag.html entity.name.tag.html
@@ -10246,7 +10230,7 @@
 24	"{"	meta.embedded.block.html punctuation.section.embedded.pw
 24	"invoice"	meta.embedded.block.html meta.embedded.expression.pw variable.other.pw
 24	"."	meta.embedded.block.html meta.embedded.expression.pw punctuation.accessor.pw
-24	"customer"	meta.embedded.block.html meta.embedded.expression.pw variable.other.property.pw
+24	"number"	meta.embedded.block.html meta.embedded.expression.pw variable.other.property.pw
 24	"}"	meta.embedded.block.html punctuation.section.embedded.pw
 24	"</"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.begin.html
 24	"td"	meta.embedded.block.html meta.tag.html entity.name.tag.html
@@ -10256,34 +10240,50 @@
 25	"class"	meta.embedded.block.html meta.tag.html entity.other.attribute-name.html
 25	"="	meta.embedded.block.html meta.tag.html punctuation.separator.key-value.html
 25	"\""	meta.embedded.block.html meta.tag.html punctuation.definition.string.begin.html
-25	"row__cell row__cell--total"	meta.embedded.block.html meta.tag.html string.quoted.double.html
+25	"row__cell"	meta.embedded.block.html meta.tag.html string.quoted.double.html
 25	"\""	meta.embedded.block.html meta.tag.html punctuation.definition.string.end.html
 25	">"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.end.html
 25	"{"	meta.embedded.block.html punctuation.section.embedded.pw
 25	"invoice"	meta.embedded.block.html meta.embedded.expression.pw variable.other.pw
 25	"."	meta.embedded.block.html meta.embedded.expression.pw punctuation.accessor.pw
-25	"total"	meta.embedded.block.html meta.embedded.expression.pw variable.other.property.pw
+25	"customer"	meta.embedded.block.html meta.embedded.expression.pw variable.other.property.pw
 25	"}"	meta.embedded.block.html punctuation.section.embedded.pw
 25	"</"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.begin.html
 25	"td"	meta.embedded.block.html meta.tag.html entity.name.tag.html
 25	">"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.end.html
-26	"</"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.begin.html
-26	"tr"	meta.embedded.block.html meta.tag.html entity.name.tag.html
+26	"<"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.begin.html
+26	"td"	meta.embedded.block.html meta.tag.html entity.name.tag.html
+26	"class"	meta.embedded.block.html meta.tag.html entity.other.attribute-name.html
+26	"="	meta.embedded.block.html meta.tag.html punctuation.separator.key-value.html
+26	"\""	meta.embedded.block.html meta.tag.html punctuation.definition.string.begin.html
+26	"row__cell row__cell--total"	meta.embedded.block.html meta.tag.html string.quoted.double.html
+26	"\""	meta.embedded.block.html meta.tag.html punctuation.definition.string.end.html
 26	">"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.end.html
-27	"{"	meta.embedded.block.html punctuation.section.embedded.pw
-27	"/"	meta.embedded.block.html keyword.control.pw
-27	"for"	meta.embedded.block.html keyword.control.pw
-27	"}"	meta.embedded.block.html punctuation.section.embedded.pw
-28	"</"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.begin.html
-28	"tbody"	meta.embedded.block.html meta.tag.html entity.name.tag.html
-28	">"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.end.html
+26	"{"	meta.embedded.block.html punctuation.section.embedded.pw
+26	"invoice"	meta.embedded.block.html meta.embedded.expression.pw variable.other.pw
+26	"."	meta.embedded.block.html meta.embedded.expression.pw punctuation.accessor.pw
+26	"total"	meta.embedded.block.html meta.embedded.expression.pw variable.other.property.pw
+26	"}"	meta.embedded.block.html punctuation.section.embedded.pw
+26	"</"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.begin.html
+26	"td"	meta.embedded.block.html meta.tag.html entity.name.tag.html
+26	">"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.end.html
+27	"</"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.begin.html
+27	"tr"	meta.embedded.block.html meta.tag.html entity.name.tag.html
+27	">"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.end.html
+28	"{"	meta.embedded.block.html punctuation.section.embedded.pw
+28	"/"	meta.embedded.block.html keyword.control.pw
+28	"for"	meta.embedded.block.html keyword.control.pw
+28	"}"	meta.embedded.block.html punctuation.section.embedded.pw
 29	"</"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.begin.html
-29	"table"	meta.embedded.block.html meta.tag.html entity.name.tag.html
+29	"tbody"	meta.embedded.block.html meta.tag.html entity.name.tag.html
 29	">"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.end.html
 30	"</"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.begin.html
-30	"section"	meta.embedded.block.html meta.tag.html entity.name.tag.html
+30	"table"	meta.embedded.block.html meta.tag.html entity.name.tag.html
 30	">"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.end.html
-31	"}"	punctuation.definition.block.end.pw
+31	"</"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.begin.html
+31	"section"	meta.embedded.block.html meta.tag.html entity.name.tag.html
+31	">"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.end.html
+32	"}"	punctuation.definition.block.end.pw
 
 ## examples/partial_update/pages/layout.pw.html [source.pw.html]
 1	"package"	keyword.control.import.pw
@@ -10667,152 +10667,122 @@
 46	"</"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.begin.html
 46	"th"	meta.embedded.block.html meta.tag.html entity.name.tag.html
 46	">"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.end.html
-46	"</"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.begin.html
-46	"tr"	meta.embedded.block.html meta.tag.html entity.name.tag.html
-46	">"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.end.html
 47	"</"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.begin.html
-47	"thead"	meta.embedded.block.html meta.tag.html entity.name.tag.html
+47	"tr"	meta.embedded.block.html meta.tag.html entity.name.tag.html
 47	">"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.end.html
-48	"<"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.begin.html
-48	"tbody"	meta.embedded.block.html meta.tag.html entity.name.tag.html
+48	"</"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.begin.html
+48	"thead"	meta.embedded.block.html meta.tag.html entity.name.tag.html
 48	">"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.end.html
-49	"{"	meta.embedded.block.html punctuation.section.embedded.pw
-49	"for"	meta.embedded.block.html keyword.control.pw
-49	"order"	meta.embedded.block.html meta.embedded.expression.pw variable.other.pw
-49	"in"	meta.embedded.block.html meta.embedded.expression.pw keyword.control.pw
-49	"SearchOrders"	meta.embedded.block.html meta.embedded.expression.pw entity.name.function.pw
-49	"("	meta.embedded.block.html meta.embedded.expression.pw meta.brace.round.pw
-49	"query"	meta.embedded.block.html meta.embedded.expression.pw variable.other.pw
-49	")"	meta.embedded.block.html meta.embedded.expression.pw meta.brace.round.pw
-49	"}"	meta.embedded.block.html punctuation.section.embedded.pw
-50	"<"	meta.embedded.block.html punctuation.definition.tag.begin.html
-50	"OrderRow"	meta.embedded.block.html entity.name.tag.component.pw
-50	"id"	meta.embedded.block.html entity.other.attribute-name.html
-50	"="	meta.embedded.block.html punctuation.separator.key-value.html
-50	"\""	meta.embedded.block.html punctuation.definition.string.begin.html
-50	"{"	meta.embedded.block.html string.quoted.double.html punctuation.section.embedded.pw
-50	"order"	meta.embedded.block.html string.quoted.double.html meta.embedded.expression.pw variable.other.pw
-50	"."	meta.embedded.block.html string.quoted.double.html meta.embedded.expression.pw punctuation.accessor.pw
-50	"id"	meta.embedded.block.html string.quoted.double.html meta.embedded.expression.pw variable.other.property.pw
-50	"}"	meta.embedded.block.html string.quoted.double.html punctuation.section.embedded.pw
-50	"\""	meta.embedded.block.html punctuation.definition.string.end.html
-50	"title"	meta.embedded.block.html entity.other.attribute-name.html
-50	"="	meta.embedded.block.html punctuation.separator.key-value.html
-50	"\""	meta.embedded.block.html punctuation.definition.string.begin.html
-50	"{"	meta.embedded.block.html string.quoted.double.html punctuation.section.embedded.pw
-50	"order"	meta.embedded.block.html string.quoted.double.html meta.embedded.expression.pw variable.other.pw
-50	"."	meta.embedded.block.html string.quoted.double.html meta.embedded.expression.pw punctuation.accessor.pw
-50	"title"	meta.embedded.block.html string.quoted.double.html meta.embedded.expression.pw variable.other.property.pw
-50	"}"	meta.embedded.block.html string.quoted.double.html punctuation.section.embedded.pw
-50	"\""	meta.embedded.block.html punctuation.definition.string.end.html
-50	"owner"	meta.embedded.block.html entity.other.attribute-name.html
-50	"="	meta.embedded.block.html punctuation.separator.key-value.html
-50	"\""	meta.embedded.block.html punctuation.definition.string.begin.html
-50	"{"	meta.embedded.block.html string.quoted.double.html punctuation.section.embedded.pw
-50	"order"	meta.embedded.block.html string.quoted.double.html meta.embedded.expression.pw variable.other.pw
-50	"."	meta.embedded.block.html string.quoted.double.html meta.embedded.expression.pw punctuation.accessor.pw
-50	"owner"	meta.embedded.block.html string.quoted.double.html meta.embedded.expression.pw variable.other.property.pw
-50	"}"	meta.embedded.block.html string.quoted.double.html punctuation.section.embedded.pw
-50	"\""	meta.embedded.block.html punctuation.definition.string.end.html
-50	"at"	meta.embedded.block.html entity.other.attribute-name.html
-50	"="	meta.embedded.block.html punctuation.separator.key-value.html
-50	"\""	meta.embedded.block.html punctuation.definition.string.begin.html
-50	"{"	meta.embedded.block.html string.quoted.double.html punctuation.section.embedded.pw
-50	"order"	meta.embedded.block.html string.quoted.double.html meta.embedded.expression.pw variable.other.pw
-50	"."	meta.embedded.block.html string.quoted.double.html meta.embedded.expression.pw punctuation.accessor.pw
-50	"at"	meta.embedded.block.html string.quoted.double.html meta.embedded.expression.pw variable.other.property.pw
-50	"}"	meta.embedded.block.html string.quoted.double.html punctuation.section.embedded.pw
-50	"\""	meta.embedded.block.html punctuation.definition.string.end.html
-50	"/>"	meta.embedded.block.html punctuation.definition.tag.end.html
-51	"{"	meta.embedded.block.html punctuation.section.embedded.pw
-51	"/"	meta.embedded.block.html keyword.control.pw
-51	"for"	meta.embedded.block.html keyword.control.pw
-51	"}"	meta.embedded.block.html punctuation.section.embedded.pw
-52	"</"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.begin.html
-52	"tbody"	meta.embedded.block.html meta.tag.html entity.name.tag.html
-52	">"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.end.html
+49	"<"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.begin.html
+49	"tbody"	meta.embedded.block.html meta.tag.html entity.name.tag.html
+49	">"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.end.html
+50	"{"	meta.embedded.block.html punctuation.section.embedded.pw
+50	"for"	meta.embedded.block.html keyword.control.pw
+50	"order"	meta.embedded.block.html meta.embedded.expression.pw variable.other.pw
+50	"in"	meta.embedded.block.html meta.embedded.expression.pw keyword.control.pw
+50	"SearchOrders"	meta.embedded.block.html meta.embedded.expression.pw entity.name.function.pw
+50	"("	meta.embedded.block.html meta.embedded.expression.pw meta.brace.round.pw
+50	"query"	meta.embedded.block.html meta.embedded.expression.pw variable.other.pw
+50	")"	meta.embedded.block.html meta.embedded.expression.pw meta.brace.round.pw
+50	"}"	meta.embedded.block.html punctuation.section.embedded.pw
+51	"<"	meta.embedded.block.html punctuation.definition.tag.begin.html
+51	"OrderRow"	meta.embedded.block.html entity.name.tag.component.pw
+51	"id"	meta.embedded.block.html entity.other.attribute-name.html
+51	"="	meta.embedded.block.html punctuation.separator.key-value.html
+51	"\""	meta.embedded.block.html punctuation.definition.string.begin.html
+51	"{"	meta.embedded.block.html string.quoted.double.html punctuation.section.embedded.pw
+51	"order"	meta.embedded.block.html string.quoted.double.html meta.embedded.expression.pw variable.other.pw
+51	"."	meta.embedded.block.html string.quoted.double.html meta.embedded.expression.pw punctuation.accessor.pw
+51	"id"	meta.embedded.block.html string.quoted.double.html meta.embedded.expression.pw variable.other.property.pw
+51	"}"	meta.embedded.block.html string.quoted.double.html punctuation.section.embedded.pw
+51	"\""	meta.embedded.block.html punctuation.definition.string.end.html
+51	"title"	meta.embedded.block.html entity.other.attribute-name.html
+51	"="	meta.embedded.block.html punctuation.separator.key-value.html
+51	"\""	meta.embedded.block.html punctuation.definition.string.begin.html
+51	"{"	meta.embedded.block.html string.quoted.double.html punctuation.section.embedded.pw
+51	"order"	meta.embedded.block.html string.quoted.double.html meta.embedded.expression.pw variable.other.pw
+51	"."	meta.embedded.block.html string.quoted.double.html meta.embedded.expression.pw punctuation.accessor.pw
+51	"title"	meta.embedded.block.html string.quoted.double.html meta.embedded.expression.pw variable.other.property.pw
+51	"}"	meta.embedded.block.html string.quoted.double.html punctuation.section.embedded.pw
+51	"\""	meta.embedded.block.html punctuation.definition.string.end.html
+51	"owner"	meta.embedded.block.html entity.other.attribute-name.html
+51	"="	meta.embedded.block.html punctuation.separator.key-value.html
+51	"\""	meta.embedded.block.html punctuation.definition.string.begin.html
+51	"{"	meta.embedded.block.html string.quoted.double.html punctuation.section.embedded.pw
+51	"order"	meta.embedded.block.html string.quoted.double.html meta.embedded.expression.pw variable.other.pw
+51	"."	meta.embedded.block.html string.quoted.double.html meta.embedded.expression.pw punctuation.accessor.pw
+51	"owner"	meta.embedded.block.html string.quoted.double.html meta.embedded.expression.pw variable.other.property.pw
+51	"}"	meta.embedded.block.html string.quoted.double.html punctuation.section.embedded.pw
+51	"\""	meta.embedded.block.html punctuation.definition.string.end.html
+51	"at"	meta.embedded.block.html entity.other.attribute-name.html
+51	"="	meta.embedded.block.html punctuation.separator.key-value.html
+51	"\""	meta.embedded.block.html punctuation.definition.string.begin.html
+51	"{"	meta.embedded.block.html string.quoted.double.html punctuation.section.embedded.pw
+51	"order"	meta.embedded.block.html string.quoted.double.html meta.embedded.expression.pw variable.other.pw
+51	"."	meta.embedded.block.html string.quoted.double.html meta.embedded.expression.pw punctuation.accessor.pw
+51	"at"	meta.embedded.block.html string.quoted.double.html meta.embedded.expression.pw variable.other.property.pw
+51	"}"	meta.embedded.block.html string.quoted.double.html punctuation.section.embedded.pw
+51	"\""	meta.embedded.block.html punctuation.definition.string.end.html
+51	"/>"	meta.embedded.block.html punctuation.definition.tag.end.html
+52	"{"	meta.embedded.block.html punctuation.section.embedded.pw
+52	"/"	meta.embedded.block.html keyword.control.pw
+52	"for"	meta.embedded.block.html keyword.control.pw
+52	"}"	meta.embedded.block.html punctuation.section.embedded.pw
 53	"</"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.begin.html
-53	"table"	meta.embedded.block.html meta.tag.html entity.name.tag.html
+53	"tbody"	meta.embedded.block.html meta.tag.html entity.name.tag.html
 53	">"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.end.html
-54	"}"	punctuation.definition.block.end.pw
-56	"// A reloadable component is an update boundary wherever it renders, so each row"	comment.line.pw
-57	"// is its own fragment with its own id. Two things follow, and both are visible"	comment.line.pw
-58	"// in the network tab: the browser can ask for one row again without touching"	comment.line.pw
-59	"// the rest of the page, and a search that only reorders the rows leaves the"	comment.line.pw
-60	"// ones it keeps alone."	comment.line.pw
-61	"//"	comment.line.pw
-62	"// Its parameters arrive from whoever issued the redraw, which is why a"	comment.line.pw
-63	"// component that loaded a record by identifier would have to check ownership"	comment.line.pw
-64	"// itself. This one formats values handed to it, which is the shape that is safe"	comment.line.pw
-65	"// to publish without a check."	comment.line.pw
-66	"@reloadable"	entity.name.tag.annotation.pw
-67	"export"	storage.modifier.pw
-67	"component"	keyword.declaration.pw
-67	"OrderRow"	entity.name.function.pw
-67	"("	punctuation.definition.parameters.begin.pw
-67	"id"	variable.parameter.pw
-67	":"	punctuation.separator.type.pw
-67	"string"	support.type.pw
-67	","	punctuation.separator.parameter.pw
-67	"title"	variable.parameter.pw
-67	":"	punctuation.separator.type.pw
-67	"string"	support.type.pw
-67	","	punctuation.separator.parameter.pw
-67	"owner"	variable.parameter.pw
-67	":"	punctuation.separator.type.pw
-67	"string"	support.type.pw
-67	","	punctuation.separator.parameter.pw
-67	"at"	variable.parameter.pw
-67	":"	punctuation.separator.type.pw
-67	"string"	support.type.pw
-67	")"	punctuation.definition.parameters.end.pw
-67	":"	punctuation.separator.type.pw
-67	"html"	support.type.output.pw
-67	"{"	punctuation.definition.block.begin.pw
-68	"<"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.begin.html
-68	"tr"	meta.embedded.block.html meta.tag.html entity.name.tag.html
-68	"class"	meta.embedded.block.html meta.tag.html entity.other.attribute-name.html
-68	"="	meta.embedded.block.html meta.tag.html punctuation.separator.key-value.html
-68	"\""	meta.embedded.block.html meta.tag.html punctuation.definition.string.begin.html
-68	"row"	meta.embedded.block.html meta.tag.html string.quoted.double.html
-68	"\""	meta.embedded.block.html meta.tag.html punctuation.definition.string.end.html
-68	"id"	meta.embedded.block.html meta.tag.html entity.other.attribute-name.html
-68	"="	meta.embedded.block.html meta.tag.html punctuation.separator.key-value.html
-68	"\""	meta.embedded.block.html meta.tag.html punctuation.definition.string.begin.html
-68	"{"	meta.embedded.block.html meta.tag.html string.quoted.double.html punctuation.section.embedded.pw
-68	"id"	meta.embedded.block.html meta.tag.html string.quoted.double.html meta.embedded.expression.pw variable.other.pw
-68	"}"	meta.embedded.block.html meta.tag.html string.quoted.double.html punctuation.section.embedded.pw
-68	"\""	meta.embedded.block.html meta.tag.html punctuation.definition.string.end.html
-68	">"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.end.html
+54	"</"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.begin.html
+54	"table"	meta.embedded.block.html meta.tag.html entity.name.tag.html
+54	">"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.end.html
+55	"}"	punctuation.definition.block.end.pw
+57	"// A reloadable component is an update boundary wherever it renders, so each row"	comment.line.pw
+58	"// is its own fragment with its own id. Two things follow, and both are visible"	comment.line.pw
+59	"// in the network tab: the browser can ask for one row again without touching"	comment.line.pw
+60	"// the rest of the page, and a search that only reorders the rows leaves the"	comment.line.pw
+61	"// ones it keeps alone."	comment.line.pw
+62	"//"	comment.line.pw
+63	"// Its parameters arrive from whoever issued the redraw, which is why a"	comment.line.pw
+64	"// component that loaded a record by identifier would have to check ownership"	comment.line.pw
+65	"// itself. This one formats values handed to it, which is the shape that is safe"	comment.line.pw
+66	"// to publish without a check."	comment.line.pw
+67	"@reloadable"	entity.name.tag.annotation.pw
+68	"export"	storage.modifier.pw
+68	"component"	keyword.declaration.pw
+68	"OrderRow"	entity.name.function.pw
+68	"("	punctuation.definition.parameters.begin.pw
+68	"id"	variable.parameter.pw
+68	":"	punctuation.separator.type.pw
+68	"string"	support.type.pw
+68	","	punctuation.separator.parameter.pw
+68	"title"	variable.parameter.pw
+68	":"	punctuation.separator.type.pw
+68	"string"	support.type.pw
+68	","	punctuation.separator.parameter.pw
+68	"owner"	variable.parameter.pw
+68	":"	punctuation.separator.type.pw
+68	"string"	support.type.pw
+68	","	punctuation.separator.parameter.pw
+68	"at"	variable.parameter.pw
+68	":"	punctuation.separator.type.pw
+68	"string"	support.type.pw
+68	")"	punctuation.definition.parameters.end.pw
+68	":"	punctuation.separator.type.pw
+68	"html"	support.type.output.pw
+68	"{"	punctuation.definition.block.begin.pw
 69	"<"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.begin.html
-69	"td"	meta.embedded.block.html meta.tag.html entity.name.tag.html
+69	"tr"	meta.embedded.block.html meta.tag.html entity.name.tag.html
 69	"class"	meta.embedded.block.html meta.tag.html entity.other.attribute-name.html
 69	"="	meta.embedded.block.html meta.tag.html punctuation.separator.key-value.html
 69	"\""	meta.embedded.block.html meta.tag.html punctuation.definition.string.begin.html
-69	"row__cell"	meta.embedded.block.html meta.tag.html string.quoted.double.html
+69	"row"	meta.embedded.block.html meta.tag.html string.quoted.double.html
 69	"\""	meta.embedded.block.html meta.tag.html punctuation.definition.string.end.html
-69	">"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.end.html
-69	"<"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.begin.html
-69	"a"	meta.embedded.block.html meta.tag.html entity.name.tag.html
-69	"class"	meta.embedded.block.html meta.tag.html entity.other.attribute-name.html
+69	"id"	meta.embedded.block.html meta.tag.html entity.other.attribute-name.html
 69	"="	meta.embedded.block.html meta.tag.html punctuation.separator.key-value.html
 69	"\""	meta.embedded.block.html meta.tag.html punctuation.definition.string.begin.html
-69	"row__link"	meta.embedded.block.html meta.tag.html string.quoted.double.html
+69	"{"	meta.embedded.block.html meta.tag.html string.quoted.double.html punctuation.section.embedded.pw
+69	"id"	meta.embedded.block.html meta.tag.html string.quoted.double.html meta.embedded.expression.pw variable.other.pw
+69	"}"	meta.embedded.block.html meta.tag.html string.quoted.double.html punctuation.section.embedded.pw
 69	"\""	meta.embedded.block.html meta.tag.html punctuation.definition.string.end.html
-69	"href"	meta.embedded.block.html meta.tag.html entity.other.attribute-name.html
-69	"="	meta.embedded.block.html meta.tag.html punctuation.separator.key-value.html
-69	"\""	meta.embedded.block.html meta.tag.html punctuation.definition.string.begin.html
-69	"/"	meta.embedded.block.html meta.tag.html string.quoted.double.html
-69	"\""	meta.embedded.block.html meta.tag.html punctuation.definition.string.end.html
-69	">"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.end.html
-69	"{"	meta.embedded.block.html punctuation.section.embedded.pw
-69	"title"	meta.embedded.block.html meta.embedded.expression.pw variable.other.pw
-69	"}"	meta.embedded.block.html punctuation.section.embedded.pw
-69	"</"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.begin.html
-69	"a"	meta.embedded.block.html meta.tag.html entity.name.tag.html
-69	">"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.end.html
-69	"</"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.begin.html
-69	"td"	meta.embedded.block.html meta.tag.html entity.name.tag.html
 69	">"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.end.html
 70	"<"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.begin.html
 70	"td"	meta.embedded.block.html meta.tag.html entity.name.tag.html
@@ -10822,9 +10792,25 @@
 70	"row__cell"	meta.embedded.block.html meta.tag.html string.quoted.double.html
 70	"\""	meta.embedded.block.html meta.tag.html punctuation.definition.string.end.html
 70	">"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.end.html
+70	"<"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.begin.html
+70	"a"	meta.embedded.block.html meta.tag.html entity.name.tag.html
+70	"class"	meta.embedded.block.html meta.tag.html entity.other.attribute-name.html
+70	"="	meta.embedded.block.html meta.tag.html punctuation.separator.key-value.html
+70	"\""	meta.embedded.block.html meta.tag.html punctuation.definition.string.begin.html
+70	"row__link"	meta.embedded.block.html meta.tag.html string.quoted.double.html
+70	"\""	meta.embedded.block.html meta.tag.html punctuation.definition.string.end.html
+70	"href"	meta.embedded.block.html meta.tag.html entity.other.attribute-name.html
+70	"="	meta.embedded.block.html meta.tag.html punctuation.separator.key-value.html
+70	"\""	meta.embedded.block.html meta.tag.html punctuation.definition.string.begin.html
+70	"/"	meta.embedded.block.html meta.tag.html string.quoted.double.html
+70	"\""	meta.embedded.block.html meta.tag.html punctuation.definition.string.end.html
+70	">"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.end.html
 70	"{"	meta.embedded.block.html punctuation.section.embedded.pw
-70	"owner"	meta.embedded.block.html meta.embedded.expression.pw variable.other.pw
+70	"title"	meta.embedded.block.html meta.embedded.expression.pw variable.other.pw
 70	"}"	meta.embedded.block.html punctuation.section.embedded.pw
+70	"</"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.begin.html
+70	"a"	meta.embedded.block.html meta.tag.html entity.name.tag.html
+70	">"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.end.html
 70	"</"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.begin.html
 70	"td"	meta.embedded.block.html meta.tag.html entity.name.tag.html
 70	">"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.end.html
@@ -10836,22 +10822,9 @@
 71	"row__cell"	meta.embedded.block.html meta.tag.html string.quoted.double.html
 71	"\""	meta.embedded.block.html meta.tag.html punctuation.definition.string.end.html
 71	">"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.end.html
-71	"<"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.begin.html
-71	"time"	meta.embedded.block.html meta.tag.html entity.name.tag.html
-71	"datetime"	meta.embedded.block.html meta.tag.html entity.other.attribute-name.html
-71	"="	meta.embedded.block.html meta.tag.html punctuation.separator.key-value.html
-71	"\""	meta.embedded.block.html meta.tag.html punctuation.definition.string.begin.html
-71	"{"	meta.embedded.block.html meta.tag.html string.quoted.double.html punctuation.section.embedded.pw
-71	"at"	meta.embedded.block.html meta.tag.html string.quoted.double.html meta.embedded.expression.pw variable.other.pw
-71	"}"	meta.embedded.block.html meta.tag.html string.quoted.double.html punctuation.section.embedded.pw
-71	"\""	meta.embedded.block.html meta.tag.html punctuation.definition.string.end.html
-71	">"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.end.html
 71	"{"	meta.embedded.block.html punctuation.section.embedded.pw
-71	"at"	meta.embedded.block.html meta.embedded.expression.pw variable.other.pw
+71	"owner"	meta.embedded.block.html meta.embedded.expression.pw variable.other.pw
 71	"}"	meta.embedded.block.html punctuation.section.embedded.pw
-71	"</"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.begin.html
-71	"time"	meta.embedded.block.html meta.tag.html entity.name.tag.html
-71	">"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.end.html
 71	"</"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.begin.html
 71	"td"	meta.embedded.block.html meta.tag.html entity.name.tag.html
 71	">"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.end.html
@@ -10863,58 +10836,85 @@
 72	"row__cell"	meta.embedded.block.html meta.tag.html string.quoted.double.html
 72	"\""	meta.embedded.block.html meta.tag.html punctuation.definition.string.end.html
 72	">"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.end.html
+72	"<"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.begin.html
+72	"time"	meta.embedded.block.html meta.tag.html entity.name.tag.html
+72	"datetime"	meta.embedded.block.html meta.tag.html entity.other.attribute-name.html
+72	"="	meta.embedded.block.html meta.tag.html punctuation.separator.key-value.html
+72	"\""	meta.embedded.block.html meta.tag.html punctuation.definition.string.begin.html
+72	"{"	meta.embedded.block.html meta.tag.html string.quoted.double.html punctuation.section.embedded.pw
+72	"at"	meta.embedded.block.html meta.tag.html string.quoted.double.html meta.embedded.expression.pw variable.other.pw
+72	"}"	meta.embedded.block.html meta.tag.html string.quoted.double.html punctuation.section.embedded.pw
+72	"\""	meta.embedded.block.html meta.tag.html punctuation.definition.string.end.html
+72	">"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.end.html
+72	"{"	meta.embedded.block.html punctuation.section.embedded.pw
+72	"at"	meta.embedded.block.html meta.embedded.expression.pw variable.other.pw
+72	"}"	meta.embedded.block.html punctuation.section.embedded.pw
+72	"</"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.begin.html
+72	"time"	meta.embedded.block.html meta.tag.html entity.name.tag.html
+72	">"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.end.html
+72	"</"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.begin.html
+72	"td"	meta.embedded.block.html meta.tag.html entity.name.tag.html
+72	">"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.end.html
 73	"<"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.begin.html
-73	"button"	meta.embedded.block.html meta.tag.html entity.name.tag.html
-74	"class"	meta.embedded.block.html meta.tag.html entity.other.attribute-name.html
-74	"="	meta.embedded.block.html meta.tag.html punctuation.separator.key-value.html
-74	"\""	meta.embedded.block.html meta.tag.html punctuation.definition.string.begin.html
-74	"row__redraw"	meta.embedded.block.html meta.tag.html string.quoted.double.html
-74	"\""	meta.embedded.block.html meta.tag.html punctuation.definition.string.end.html
-75	"type"	meta.embedded.block.html meta.tag.html entity.other.attribute-name.html
+73	"td"	meta.embedded.block.html meta.tag.html entity.name.tag.html
+73	"class"	meta.embedded.block.html meta.tag.html entity.other.attribute-name.html
+73	"="	meta.embedded.block.html meta.tag.html punctuation.separator.key-value.html
+73	"\""	meta.embedded.block.html meta.tag.html punctuation.definition.string.begin.html
+73	"row__cell"	meta.embedded.block.html meta.tag.html string.quoted.double.html
+73	"\""	meta.embedded.block.html meta.tag.html punctuation.definition.string.end.html
+73	">"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.end.html
+74	"<"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.begin.html
+74	"button"	meta.embedded.block.html meta.tag.html entity.name.tag.html
+75	"class"	meta.embedded.block.html meta.tag.html entity.other.attribute-name.html
 75	"="	meta.embedded.block.html meta.tag.html punctuation.separator.key-value.html
 75	"\""	meta.embedded.block.html meta.tag.html punctuation.definition.string.begin.html
-75	"button"	meta.embedded.block.html meta.tag.html string.quoted.double.html
+75	"row__redraw"	meta.embedded.block.html meta.tag.html string.quoted.double.html
 75	"\""	meta.embedded.block.html meta.tag.html punctuation.definition.string.end.html
-76	"data-redraw"	meta.embedded.block.html meta.tag.html entity.other.attribute-name.html
+76	"type"	meta.embedded.block.html meta.tag.html entity.other.attribute-name.html
 76	"="	meta.embedded.block.html meta.tag.html punctuation.separator.key-value.html
 76	"\""	meta.embedded.block.html meta.tag.html punctuation.definition.string.begin.html
-76	"{"	meta.embedded.block.html meta.tag.html string.quoted.double.html punctuation.section.embedded.pw
-76	"id"	meta.embedded.block.html meta.tag.html string.quoted.double.html meta.embedded.expression.pw variable.other.pw
-76	"}"	meta.embedded.block.html meta.tag.html string.quoted.double.html punctuation.section.embedded.pw
+76	"button"	meta.embedded.block.html meta.tag.html string.quoted.double.html
 76	"\""	meta.embedded.block.html meta.tag.html punctuation.definition.string.end.html
-77	"data-title"	meta.embedded.block.html meta.tag.html entity.other.attribute-name.html
+77	"data-redraw"	meta.embedded.block.html meta.tag.html entity.other.attribute-name.html
 77	"="	meta.embedded.block.html meta.tag.html punctuation.separator.key-value.html
 77	"\""	meta.embedded.block.html meta.tag.html punctuation.definition.string.begin.html
 77	"{"	meta.embedded.block.html meta.tag.html string.quoted.double.html punctuation.section.embedded.pw
-77	"title"	meta.embedded.block.html meta.tag.html string.quoted.double.html meta.embedded.expression.pw variable.other.pw
+77	"id"	meta.embedded.block.html meta.tag.html string.quoted.double.html meta.embedded.expression.pw variable.other.pw
 77	"}"	meta.embedded.block.html meta.tag.html string.quoted.double.html punctuation.section.embedded.pw
 77	"\""	meta.embedded.block.html meta.tag.html punctuation.definition.string.end.html
-78	"data-owner"	meta.embedded.block.html meta.tag.html entity.other.attribute-name.html
+78	"data-title"	meta.embedded.block.html meta.tag.html entity.other.attribute-name.html
 78	"="	meta.embedded.block.html meta.tag.html punctuation.separator.key-value.html
 78	"\""	meta.embedded.block.html meta.tag.html punctuation.definition.string.begin.html
 78	"{"	meta.embedded.block.html meta.tag.html string.quoted.double.html punctuation.section.embedded.pw
-78	"owner"	meta.embedded.block.html meta.tag.html string.quoted.double.html meta.embedded.expression.pw variable.other.pw
+78	"title"	meta.embedded.block.html meta.tag.html string.quoted.double.html meta.embedded.expression.pw variable.other.pw
 78	"}"	meta.embedded.block.html meta.tag.html string.quoted.double.html punctuation.section.embedded.pw
 78	"\""	meta.embedded.block.html meta.tag.html punctuation.definition.string.end.html
-79	"data-at"	meta.embedded.block.html meta.tag.html entity.other.attribute-name.html
+79	"data-owner"	meta.embedded.block.html meta.tag.html entity.other.attribute-name.html
 79	"="	meta.embedded.block.html meta.tag.html punctuation.separator.key-value.html
 79	"\""	meta.embedded.block.html meta.tag.html punctuation.definition.string.begin.html
 79	"{"	meta.embedded.block.html meta.tag.html string.quoted.double.html punctuation.section.embedded.pw
-79	"at"	meta.embedded.block.html meta.tag.html string.quoted.double.html meta.embedded.expression.pw variable.other.pw
+79	"owner"	meta.embedded.block.html meta.tag.html string.quoted.double.html meta.embedded.expression.pw variable.other.pw
 79	"}"	meta.embedded.block.html meta.tag.html string.quoted.double.html punctuation.section.embedded.pw
 79	"\""	meta.embedded.block.html meta.tag.html punctuation.definition.string.end.html
-79	">"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.end.html
-79	"redraw"	meta.embedded.block.html
-79	"</"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.begin.html
-79	"button"	meta.embedded.block.html meta.tag.html entity.name.tag.html
-79	">"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.end.html
+80	"data-at"	meta.embedded.block.html meta.tag.html entity.other.attribute-name.html
+80	"="	meta.embedded.block.html meta.tag.html punctuation.separator.key-value.html
+80	"\""	meta.embedded.block.html meta.tag.html punctuation.definition.string.begin.html
+80	"{"	meta.embedded.block.html meta.tag.html string.quoted.double.html punctuation.section.embedded.pw
+80	"at"	meta.embedded.block.html meta.tag.html string.quoted.double.html meta.embedded.expression.pw variable.other.pw
+80	"}"	meta.embedded.block.html meta.tag.html string.quoted.double.html punctuation.section.embedded.pw
+80	"\""	meta.embedded.block.html meta.tag.html punctuation.definition.string.end.html
+80	">"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.end.html
+80	"redraw"	meta.embedded.block.html
 80	"</"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.begin.html
-80	"td"	meta.embedded.block.html meta.tag.html entity.name.tag.html
+80	"button"	meta.embedded.block.html meta.tag.html entity.name.tag.html
 80	">"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.end.html
 81	"</"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.begin.html
-81	"tr"	meta.embedded.block.html meta.tag.html entity.name.tag.html
+81	"td"	meta.embedded.block.html meta.tag.html entity.name.tag.html
 81	">"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.end.html
-82	"}"	punctuation.definition.block.end.pw
+82	"</"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.begin.html
+82	"tr"	meta.embedded.block.html meta.tag.html entity.name.tag.html
+82	">"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.end.html
+83	"}"	punctuation.definition.block.end.pw
 
 ## examples/partial_update/templates/500.pw.html [source.pw.html]
 1	"package"	keyword.control.import.pw
@@ -11079,22 +11079,22 @@
 14	"</"	meta.embedded.block.html punctuation.definition.tag.begin.html
 14	"script"	meta.embedded.block.html entity.name.tag.html
 14	">"	meta.embedded.block.html punctuation.definition.tag.end.html
-14	"</"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.begin.html
-14	"head"	meta.embedded.block.html meta.tag.html entity.name.tag.html
-14	">"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.end.html
-15	"<"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.begin.html
-15	"body"	meta.embedded.block.html meta.tag.html entity.name.tag.html
-15	">"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.end.html
-15	"<"	meta.embedded.block.html punctuation.definition.tag.begin.html
-15	"slot"	meta.embedded.block.html entity.name.tag.slot.pw
-15	"/>"	meta.embedded.block.html punctuation.definition.tag.end.html
 15	"</"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.begin.html
-15	"body"	meta.embedded.block.html meta.tag.html entity.name.tag.html
+15	"head"	meta.embedded.block.html meta.tag.html entity.name.tag.html
 15	">"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.end.html
-15	"</"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.begin.html
-15	"html"	meta.embedded.block.html meta.tag.html entity.name.tag.html
-15	">"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.end.html
-16	"}"	punctuation.definition.block.end.pw
+16	"<"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.begin.html
+16	"body"	meta.embedded.block.html meta.tag.html entity.name.tag.html
+16	">"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.end.html
+16	"<"	meta.embedded.block.html punctuation.definition.tag.begin.html
+16	"slot"	meta.embedded.block.html entity.name.tag.slot.pw
+16	"/>"	meta.embedded.block.html punctuation.definition.tag.end.html
+16	"</"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.begin.html
+16	"body"	meta.embedded.block.html meta.tag.html entity.name.tag.html
+16	">"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.end.html
+17	"</"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.begin.html
+17	"html"	meta.embedded.block.html meta.tag.html entity.name.tag.html
+17	">"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.end.html
+18	"}"	punctuation.definition.block.end.pw
 
 ## examples/passkeylogin/handlers/home.pw.html [source.pw.html]
 1	"package"	keyword.control.import.pw
@@ -11660,11 +11660,11 @@
 11	"{"	meta.embedded.block.sql punctuation.section.embedded.pw
 11	"issuer"	meta.embedded.block.sql meta.embedded.expression.pw variable.other.pw
 11	"}"	meta.embedded.block.sql punctuation.section.embedded.pw
-12	"    AND  external_identities.claim = "	meta.embedded.block.sql
+12	"    AND external_identities.claim = "	meta.embedded.block.sql
 12	"{"	meta.embedded.block.sql punctuation.section.embedded.pw
 12	"claim"	meta.embedded.block.sql meta.embedded.expression.pw variable.other.pw
 12	"}"	meta.embedded.block.sql punctuation.section.embedded.pw
-13	"    AND  external_identities.value = "	meta.embedded.block.sql
+13	"    AND external_identities.value = "	meta.embedded.block.sql
 13	"{"	meta.embedded.block.sql punctuation.section.embedded.pw
 13	"value"	meta.embedded.block.sql meta.embedded.expression.pw variable.other.pw
 13	"}"	meta.embedded.block.sql punctuation.section.embedded.pw

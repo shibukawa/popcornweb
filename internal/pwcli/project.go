@@ -389,6 +389,7 @@ func loadProjectConfig(root string) (projectConfig, error) {
 		"dev.console.launcher.enabled", "dev.console.launcher.corner",
 		"dev.console.storybook.enabled", "dev.console.data.enabled",
 		"migration.dir", "migration.auto",
+		"assets.public", "assets.derived", "assets.embed",
 		"assets.tailwind.enabled", "assets.tailwind.input",
 		"assets.tailwind.output", "assets.tailwind.minify",
 		"assets.css.minify", "assets.images.enabled", "assets.images.quality",
@@ -676,6 +677,25 @@ func loadProjectConfig(root string) (projectConfig, error) {
 	// there is no cost to defaulting them on. The switches exist for a project
 	// shipping a file the signature table judges wrongly, and for one serving
 	// an SVG that is interactive on purpose.
+	for _, binding := range []struct {
+		key    string
+		target *string
+	}{
+		{"assets.public", &config.Assets.Public}, {"assets.derived", &config.Assets.Derived}, {"assets.embed", &config.Assets.Embed},
+	} {
+		if value, ok := document.Get(binding.key); ok {
+			*binding.target, err = value.AsString()
+			if err != nil {
+				return projectConfig{}, fmt.Errorf("popcornweb.toml: %s: %w", binding.key, err)
+			}
+			if *binding.target == "" {
+				return projectConfig{}, fmt.Errorf("popcornweb.toml: %s must not be empty", binding.key)
+			}
+		}
+	}
+	if err := validateAssetLocations(root, config.Assets); err != nil {
+		return projectConfig{}, fmt.Errorf("popcornweb.toml: %w", err)
+	}
 	config.Assets.Verify = true
 	config.Assets.VerifySVG = true
 	for _, binding := range []struct {

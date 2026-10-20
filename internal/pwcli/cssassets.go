@@ -11,6 +11,9 @@ import (
 // assetsConfig is the asset half of the project configuration: what the build
 // converts, beside the Tailwind settings that were the only asset keys before.
 type assetsConfig struct {
+	Public  string
+	Derived string
+	Embed   string
 	// CSSMinify rewrites stylesheets in place. The URL does not change, so no
 	// template is touched and no reference has to follow it.
 	CSSMinify bool

@@ -115,13 +115,17 @@ func siteKey(site *Site) string {
 }
 
 // Write writes the table under root, creating the directory it lives in.
-func Write(root string, table *Table) error {
+func Write(root string, table *Table, files ...string) error {
+	file := File
+	if len(files) > 0 && files[0] != "" {
+		file = files[0]
+	}
 	table.Sort()
 	encoded, err := json.MarshalIndent(table, "", "  ")
 	if err != nil {
 		return err
 	}
-	path := filepath.Join(root, filepath.FromSlash(File))
+	path := filepath.Join(root, filepath.FromSlash(file))
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		return err
 	}
@@ -129,8 +133,12 @@ func Write(root string, table *Table) error {
 }
 
 // Load reads the table under root, or reports ErrAbsent.
-func Load(root string) (*Table, error) {
-	source, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(File)))
+func Load(root string, files ...string) (*Table, error) {
+	file := File
+	if len(files) > 0 && files[0] != "" {
+		file = files[0]
+	}
+	source, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(file)))
 	if err != nil {
 		if errors.Is(err, fs.ErrNotExist) {
 			return nil, ErrAbsent

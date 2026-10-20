@@ -212,7 +212,7 @@ func projectInfo(project *Project) ProjectInfo {
 // shown as an empty list: an editor view that silently covers half the URL
 // space reads as if it covered all of it.
 func registeredRoutes(project *Project, report *RouteReport) []Route {
-	table, err := pwroutes.Load(project.Root)
+	table, err := pwroutes.Load(project.Root, project.RouteTable)
 	if err != nil {
 		report.NotCovered = "routes registered in Go; run pw generate to write the route table"
 		return nil

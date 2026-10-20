@@ -83,6 +83,7 @@ func devConsolePanes(root string, config projectConfig, server developmentServer
 	if config.Console.Assets {
 		assets.Handler = devconsole.AssetPane(devconsole.AssetSource{
 			Root:            root,
+			Public:          config.Assets.locations().public,
 			Mount:           server.PublicMount,
 			TailwindEnabled: config.Tailwind.Enabled,
 			TailwindInput:   config.Tailwind.Input,
@@ -292,7 +293,7 @@ func storybookStyles(config projectConfig, server developmentServer) []string {
 		// rather than a wrong one.
 		mount = "/public"
 	}
-	rest, ok := strings.CutPrefix(config.Tailwind.Output, "public/")
+	rest, ok := strings.CutPrefix(config.Tailwind.Output, config.Assets.locations().public+"/")
 	if !ok {
 		return nil
 	}
