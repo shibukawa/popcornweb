@@ -13,8 +13,10 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/shibukawa/popcornweb/contrib/devidp"
+	"github.com/shibukawa/popcornweb/database"
 	"github.com/shibukawa/popcornweb/internal/dbseed"
 	"github.com/shibukawa/popcornweb/internal/pwtestbridge"
 	"github.com/shibukawa/popcornweb/migrate"
@@ -74,6 +76,7 @@ func (c *Config) Update[T any](edit func(*T)) {
 }
 
 type runSettings struct {
+	database    *pwruntime.Connection
 	migration   []migrate.Option
 	transaction bool
 	seedDir     string
@@ -83,6 +86,32 @@ type runSettings struct {
 
 // RunOption configures TestRun resources.
 type RunOption func(*runSettings) error
+
+// WithDatabase uses one caller-owned connection for this isolated test runtime.
+// It overrides the configured DSN without changing global configuration. RDB
+// must be enabled. Native connections need DataSource for migration/seed tooling.
+// Server.Close never closes the supplied pool.
+func WithDatabase(connection pwruntime.Connection) RunOption {
+	return func(settings *runSettings) error {
+		if _, err := pwruntime.NewConnectionSet("", []pwruntime.Connection{connection}); err != nil {
+			return err
+		}
+		if connection.Driver == "" {
+			return fmt.Errorf("testutil: supplied database needs a Driver")
+		}
+		if connection.DataSource != "" {
+			target, err := database.Resolve(connection.DataSource)
+			if err != nil {
+				return err
+			}
+			if target.Dialect != connection.Driver {
+				return fmt.Errorf("testutil: supplied database Driver does not match DataSource dialect")
+			}
+		}
+		settings.database = &connection
+		return nil
+	}
+}
 
 // WithMigrations installs the migrated schema from a migration directory.
 //
@@ -194,6 +223,20 @@ func TestRun(t TestingT, handler http.Handler, customize func(*Config), options 
 		}
 	}
 
+	if settings.database != nil {
+		// This copied topology supplies group and dialect metadata. The
+		// synthetic DSN below is never dialed: native tooling and server
+		// migrations require an explicit DataSource.
+		config.Update(func(value *pw.MiddlewareConfig) {
+			dsn := settings.database.DataSource
+			if dsn == "" {
+				dsn = settings.database.Driver + "://external"
+			}
+			value.RDB.DefaultGroup, value.RDB.WriteGroup, value.RDB.MigrationGroup = "", "", ""
+			value.RDB.Connections = []pw.RDBConnectionConfig{{DSN: dsn, Group: settings.database.Group, ReadOnly: settings.database.ReadOnly, ConnectTimeout: 5 * time.Second, MaxOpenConns: 1, MaxIdleConns: 1}}
+		})
+	}
+
 	// The identity provider starts before the application so its issuer and
 	// generated client credentials can reach the copied configuration.
 	var idpServer *devidp.Server
@@ -234,6 +277,9 @@ func TestRun(t TestingT, handler http.Handler, customize func(*Config), options 
 		if db == nil {
 			return fmt.Errorf("configured RDB is disabled")
 		}
+		if settings.database != nil && settings.database.DataSource == "" && settings.database.Driver != "sqlite" {
+			return fmt.Errorf("supplied database needs DataSource for migrations")
+		}
 		// The migrations run against the group that receives them, which is
 		// where the seeds and pw migrate also write.
 		dsn, err := config.Get[pw.MiddlewareConfig]().RDB.MigrationDSN()
@@ -243,7 +289,7 @@ func TestRun(t TestingT, handler http.Handler, customize func(*Config), options 
 		return installMigrations(context.Background(), db, dsn, settings.migration)
 	}
 	prepared, err := pw.PrepareTestRuntime(handler, config.values, pwtestbridge.Options{
-		Transaction: settings.transaction, PrepareDatabase: prepareDatabase,
+		Transaction: settings.transaction, PrepareDatabase: prepareDatabase, Database: settings.database,
 	})
 	if err != nil {
 		_ = listener.Close()

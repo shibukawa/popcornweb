@@ -27,6 +27,9 @@ var ErrUnknownConnectionGroup = errors.New("popcornweb: unknown database connect
 // one whose request-time path bypasses it.
 type Connection struct {
 	DB *sql.DB
+	// DataSource is the framework DSN used to open a separate tooling handle
+	// for native connections. It may contain credentials; never log it.
+	DataSource string
 	// Native is the handle of an engine that bypasses database/sql. A caller
 	// that needs a *sql.DB finds none on such a connection; statements run
 	// through Executor and transactions through the scope.

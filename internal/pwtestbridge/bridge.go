@@ -15,6 +15,8 @@ type Options struct {
 	// Transaction wraps every request of the prepared handler in one shared
 	// transaction scope that the caller begins and rolls back.
 	Transaction bool
+	// Database is borrowed from the caller and never closed by the test runtime.
+	Database *pwruntime.Connection
 	// PrepareDatabase runs against the opened pool before the runtime handler
 	// is built. Extensions verify their tables while that handler is
 	// assembled, so a test that installs a schema has to do it here rather

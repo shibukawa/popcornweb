@@ -13,6 +13,7 @@ import (
 
 	"github.com/shibukawa/popcornweb/middlewares"
 	"github.com/shibukawa/popcornweb/pwconfig"
+	"github.com/shibukawa/popcornweb/pwruntime"
 	tinybind "github.com/shibukawa/tinybind-go"
 	"github.com/shibukawa/tinygodriver/httpserver"
 )
@@ -22,6 +23,29 @@ type Option func(*lifecycleOptions) error
 
 type lifecycleOptions struct {
 	publicFS fs.FS
+	database *pwruntime.ConnectionSet
+}
+
+// WithDatabase supplies caller-owned connections instead of opening configured
+// DSNs. RDB must remain enabled and its configured topology must be valid.
+// Configure DefaultGroup when supplying multiple groups. Rebuilding the stack
+// replaces the process set; shutdown leaves supplied pools open.
+func WithDatabase(connections ...pwruntime.Connection) Option {
+	connections = append([]pwruntime.Connection(nil), connections...)
+	return func(options *lifecycleOptions) error {
+		if len(connections) == 0 {
+			return errors.New("popcornweb: WithDatabase requires at least one connection")
+		}
+		if !ConfigContext[MiddlewareConfig](nil).RDB.Enabled {
+			return errors.New("popcornweb: WithDatabase requires middleware.rdb.enabled")
+		}
+		set, err := pwruntime.NewConnectionSet(ConfigContext[MiddlewareConfig](nil).RDB.DefaultGroup, connections)
+		if err != nil {
+			return err
+		}
+		options.database = set
+		return nil
+	}
 }
 
 // WithExternalAssets reads the external public tree from a store instead of
@@ -105,7 +129,7 @@ func buildMiddlewares(handler http.Handler, option ...Option) (http.Handler, err
 	// middleware chain. Zero restores the runtime's own 1 MiB default, which
 	// makes the unconditional call also the unconfigured case.
 	tinybind.SetMaxCBORBodyBytes(server.CBORMaxBody)
-	if err := initializeRuntimeDatabase(); err != nil {
+	if err := initializeRuntimeDatabase(options.database); err != nil {
 		return nil, err
 	}
 	if err := validateOperationalEndpointCollisions(handler, server); err != nil {

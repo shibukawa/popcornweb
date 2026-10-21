@@ -56,6 +56,17 @@ facts:
   - kind: legacy_parse_error
     block: 0
     message: '''<'' not supported between instances of ''bool'' and ''str'''
+  external_database:
+    option: testutil.WithDatabase(pwruntime.Connection)
+    isolation: Per-server borrowed connection; no pwdatabase.Install and no mutation
+      of registered configurations.
+    configuration: RDB must be enabled. The isolated topology is replaced from the
+      supplied connection.
+    ownership: Server.Close and failed initialization preserve supplied pools; additional
+      native tooling handles are framework-owned.
+    preparation: Migrations, seed data and assertions use the supplied connection
+      and its DataSource.
+    requirement: requirement:external-database-injection
 relations:
 - relation: mentions
   to: api:database-selection
@@ -114,3 +125,5 @@ relations:
 - relation: mentions
   to: rule:savepoint-dialect-support
   resolution: resolved
+- relation: specified_by
+  to: requirement:external-database-injection

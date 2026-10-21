@@ -85,6 +85,50 @@ config.Update(func(app *AppConfig) {
 
 ## オプション
 
+### `WithDatabase`：呼び出し側が所有する接続プール
+
+`TestMain` のpgmem fixtureなど、テストサーバーの外側で用意したプールを渡せます。
+以下の `postgres`・`testutil`・`pw` は `github.com/shibukawa/popcornweb` 配下のパッケージです。
+
+```go
+pool := fixture.PgxPool(t)
+server := testutil.TestRun(t, Handlers(), func(config *testutil.Config) {
+    config.Update(func(middleware *pw.MiddlewareConfig) {
+        middleware.RDB.Enabled = true
+    })
+}, testutil.WithDatabase(postgres.FromPool(pool)),
+   testutil.WithMigrations("../migrations"))
+```
+
+`WithDatabase` はテスト用にコピーした接続構成だけを、この1接続に置き換えます。
+設定ファイルにDSNを書く必要はありません。リクエスト、トランザクション、
+マイグレーション、seed、`AssertDB` は同じDBを使います。サーバーごとに接続を保持するため、
+異なるpgmemのforkを使う2つのサーバーも、プロセス全体のプールを差し替えずに動作します。
+`WithTransaction(true)` も利用でき、アプリ内のトランザクションはセーブポイントに、
+テストサーバー終了はテスト全体のロールバックになります。
+
+渡したプールの所有者は呼び出し側です。`server.Close()` はプールを閉じず、
+native接続用にフレームワークが開いたツール用ハンドルだけを閉じます。
+最後にプールを閉じるのは呼び出し側またはfixtureです。空の接続やRDB無効の設定はエラーになります。
+
+`postgres.FromPool` はTinyGo対応の `database/pgx/pgxpool.Pool` を変換します。
+通常のGoビルドではupstreamのpgxと同じ型です。プールの接続文字列を
+`pwruntime.Connection.DataSource` に記録し、マイグレーションや `database/sql` のツールは
+このURLで別接続を開きます。独自ダイヤラーや、pgxの設定を解析した後の変更は復元しません。
+必要なら同じDBへ到達するURLを `connection.DataSource` に明示してください。
+ツール用DSNを持たないnative接続は拒否します。SQLite以外のSQLハンドルを渡して
+`WithMigrations` を使う場合も `DataSource` が必要です。このフィールドは認証情報として扱ってください。
+
+通常のアプリ起動では、`pw.Run` と `pw.Middlewares` に
+`pw.WithDatabase(connections...)` を渡せます。RDBの有効化と妥当な接続構成は必要ですが、
+設定されたDSNへ接続せず、渡されたプールを使います。グループを設定と合わせ、複数グループでは
+`default_group` を指定してください。スタックの再構築はリクエスト受付前に直列で行います。
+すでに動いているハンドラーの接続を一斉に移行する機能ではありません。
+共通の処理は `pwdatabase.Install` です。以前フレームワークが開いた接続群は解放し、
+呼び出し側が渡した接続群は閉じません。TestRunはこのプロセス全体の差し替えを使いません。
+
+実行例は [pgmemサンプル](https://github.com/shibukawa/popcornweb/tree/main/examples/pgmem) にあります。
+
 ### `WithMigrations` / `WithMigrationsFS`
 
 ```go
