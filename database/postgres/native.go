@@ -44,7 +44,8 @@ func openNative(ctx context.Context, dsn string, bounds database.PoolBounds) (da
 // query dispatches through QueryRows.
 type nativeDB struct {
 	sqlbind.UnimplementedQuerier
-	pool *pgxpool.Pool
+	pool     *pgxpool.Pool
+	borrowed bool
 }
 
 func (db *nativeDB) ExecContext(ctx context.Context, query string, args ...any) (sql.Result, error) {
@@ -78,7 +79,9 @@ func (db *nativeDB) BeginTx(ctx context.Context, options database.NativeTxOption
 func (db *nativeDB) Ping(ctx context.Context) error { return db.pool.Ping(ctx) }
 
 func (db *nativeDB) Close() error {
-	db.pool.Close()
+	if !db.borrowed {
+		db.pool.Close()
+	}
 	return nil
 }
 

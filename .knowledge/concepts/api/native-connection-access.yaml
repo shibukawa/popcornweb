@@ -140,6 +140,13 @@ facts:
   - a panic in the callback releases the connection before it propagates
   - nothing here appears in pw; a project that never imports the engine package directly
     never sees a pgx type
+  supplied_pool:
+    constructor: postgres.FromPool(pool)
+    ownership: The native adapter borrows the caller pool; its Close does not close
+      pgxpool.
+    tooling: DataSource records the parsed pool DSN. A caller using edited config
+      or a custom dialer must supply a reachable same-database tooling URL.
+    requirement: requirement:external-database-injection
 relations:
 - relation: mentions
   to: api:database-selection
@@ -171,3 +178,5 @@ relations:
 - relation: mentions
   to: system:tinygodriver
   resolution: resolved
+- relation: specified_by
+  to: requirement:external-database-injection

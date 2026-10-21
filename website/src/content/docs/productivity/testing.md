@@ -87,6 +87,55 @@ config.Update(func(app *AppConfig) {
 
 ## Options
 
+### `WithDatabase`: caller-owned pools
+
+Use a pool prepared outside the test server, for example a pgmem fixture in
+`TestMain`. Import `database/postgres`, `testutil` and `pw` from
+`github.com/shibukawa/popcornweb`:
+
+```go
+pool := fixture.PgxPool(t)
+server := testutil.TestRun(t, Handlers(), func(config *testutil.Config) {
+    config.Update(func(middleware *pw.MiddlewareConfig) {
+        middleware.RDB.Enabled = true
+    })
+}, testutil.WithDatabase(postgres.FromPool(pool)),
+   testutil.WithMigrations("../migrations"))
+```
+
+`WithDatabase` replaces only the test's copied connection topology with this
+single connection. No DSN is needed in the configuration file. Requests,
+transactions, migrations, seeds and `AssertDB` use that database. Each server
+keeps its own connection, so two servers can use different pgmem forks without
+replacing process-wide pools. `WithTransaction(true)` also works: application
+transactions become savepoints and closing the server rolls the test back.
+
+The caller owns the supplied pool. `server.Close()` leaves it open and closes
+only the extra tooling handle the framework opened for a native connection.
+The caller or fixture must eventually close the pool. Empty connections and a
+disabled RDB are errors.
+
+`postgres.FromPool` adapts a TinyGo-compatible `database/pgx/pgxpool.Pool`
+(the standard Go build aliases upstream pgx). It records the pool's connection
+string as `pwruntime.Connection.DataSource`; migration and `database/sql` tooling
+open separate connections using that URL. Custom dialers and edits made after
+parsing a pgx configuration are not reconstructed. If necessary, set
+`connection.DataSource` explicitly to a URL reaching the same database. Native
+connections without a tooling DSN are rejected. Supplied non-SQLite SQL handles
+also need `DataSource` when using `WithMigrations`. Treat this field as a secret.
+
+For normal application startup, `pw.Run` and `pw.Middlewares` accept
+`pw.WithDatabase(connections...)`. RDB must be enabled and the configured
+connection topology must remain valid; supplied connections replace its pools
+without dialing the configured DSNs. Supply matching groups and set
+`default_group` for multiple groups. Rebuild application stacks serially before
+serving; replacement is not a live migration of existing handlers.
+`pwdatabase.Install` is the shared process-level primitive; it releases a previous
+framework-owned set but never closes an installed caller-owned set. TestRun does
+not call it.
+
+See the runnable [pgmem example](https://github.com/shibukawa/popcornweb/tree/main/examples/pgmem).
+
 ### `WithMigrations` / `WithMigrationsFS`
 
 ```go

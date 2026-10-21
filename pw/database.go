@@ -41,7 +41,14 @@ func validateConfiguredRuntime() error {
 // initializeRuntimeDatabase opens the configured pools and registers their
 // release. Opening is pwdatabase's; what stays here is that a pool this
 // process opened is closed by the same shutdown that closes an extension.
-func initializeRuntimeDatabase() error {
+func initializeRuntimeDatabase(supplied *pwruntime.ConnectionSet) error {
+	if supplied != nil {
+		if err := pwdatabase.Install(supplied); err != nil {
+			return err
+		}
+		registerCleanup("database", func(context.Context) error { return pwdatabase.Close() })
+		return nil
+	}
 	config := ConfigContext[MiddlewareConfig](nil).RDB
 	if !config.Enabled {
 		return nil

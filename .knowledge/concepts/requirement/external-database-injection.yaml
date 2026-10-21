@@ -1,0 +1,366 @@
+id: requirement:external-database-injection
+type: requirement
+title: Caller-owned database injection
+summary: Supply externally provisioned pools, including pgmem, without transferring
+  ownership to the framework.
+lifecycle: accepted
+authority: authored
+scope:
+  transport: net/http
+facts:
+  request: Complete leftover FromPool and WithDatabase work for externally provisioned
+    pgmem tests and submit a pull request.
+  decisions:
+    api: Complete postgres.FromPool, pw.WithDatabase, pwdatabase.Install and testutil.WithDatabase.
+    ownership: The caller owns supplied pools. The framework closes only its own pools
+      and tooling handles.
+    configuration: RDB must be explicitly enabled. Production retains valid configured
+      topology. TestRun derives its isolated copied topology from the supplied connection.
+    pgmem: Keep pgmem outside the core module dependency graph; test real integration
+      in a standalone example module.
+    native_tooling: Native connections require a framework-compatible DataSource URL.
+      Modified pgx configuration or custom dialers need an explicitly reachable tooling
+      DSN.
+constraints:
+- Preserve unrelated local untracked work.
+- TestRun must not install pools in process state.
+- Do not log DataSource, which can contain credentials.
+non_goals:
+- Automatic provisioning or ownership of pgmem servers.
+- Reconstructing custom dialers or modified pgx connection settings from a DSN.
+- A new fasthttp startup API; RuntimeOptions.Resources already supports external connection
+  sets.
+capabilities:
+  external-pools:
+    state: implemented
+    verified_by:
+    - provided-pool
+    - ownership
+    - isolated-tests
+    - prepare-data
+    - native-adapter
+    - validation
+    - pgmem
+    - build
+    evidence:
+      path: docs/requests/external-database-injection.md
+acceptance:
+  provided-pool:
+    text: Requests use supplied SQL or native pools without opening configured DSNs.
+    verified_by:
+    - provided-pool
+  ownership:
+    text: Replacement, shutdown and failed setup preserve caller-owned pools and release
+      framework-owned handles.
+    verified_by:
+    - ownership
+  isolated-tests:
+    text: Separate TestRun servers use independent connections without changing process
+      state or global configuration.
+    verified_by:
+    - isolated-tests
+  prepare-data:
+    text: Migrations, seed loading and assertions target the supplied database, including
+      PostgreSQL from pgmem.
+    verified_by:
+    - prepare-data
+  native-adapter:
+    text: FromPool preserves native queries, WithConn and transactions, and records
+      a tooling DSN.
+    verified_by:
+    - native-adapter
+  validation:
+    text: Empty/nil connections, disabled RDB, missing native tooling DSNs and unsupported
+      transaction drivers fail before serving.
+    verified_by:
+    - validation
+  pgmem:
+    text: An external fixture provisions pgmem; real HTTP, migrations, seed data,
+      rollback and pool lifetime are tested.
+    verified_by:
+    - pgmem
+  build:
+    text: Tests, pwdev checks and go install pass, and English/Japanese usage documentation
+      is provided.
+    verified_by:
+    - build
+verification:
+  provided-pool:
+    state: passed
+    method: integration
+    authority: observed
+    test: TestWithDatabaseServesTheHandedPoolAndReplacesItPerCall
+    evidence:
+      path: pw/withdatabase_test.go
+      locator: TestWithDatabaseServesTheHandedPoolAndReplacesItPerCall
+    basis:
+    - path: pwruntime/connection.go
+      input_hash: b52f9cd71e17c525ee3572b6d7f9ab0599a025c52a195ac359fac9126dcbc389
+    - path: database/postgres/native.go
+      input_hash: 119d98abcf5204af3e2c1fd33196c353eb4af28f1844041e276845642f740d36
+    - path: database/postgres/pool.go
+      input_hash: ece7eb7e3478e05c9099863f0333cdd168f1a016c8fc6046cc9f518413097aee
+    - path: pwdatabase/pwdatabase.go
+      input_hash: 93b4eaae29c2ba601f661c9557ffa3dc7954069bc354466d61063126199d3ed1
+    - path: pw/lifecycle.go
+      input_hash: 0337d5b0cf618b669f2fccc9034a2d8fc4651b092d187698545b36a07ca7df08
+    - path: pw/database.go
+      input_hash: 7a2babe2a449e38de493922727a413b93f7a9b91c150eb0ddf3b51cb8b7ec660
+    - path: pw/test_bridge.go
+      input_hash: 06951887092d730c2ab0eaa9667ba16e9291c1da8c571c166fda05ff0fd54a22
+    - path: internal/pwtestbridge/bridge.go
+      input_hash: e504b8f9bce2a114b6594bdb01439c2e82653ee39bc4a037dcc5c10e3f20264d
+    - path: testutil/testutil.go
+      input_hash: da3732465c0ebf7a6923c799c12379d74ce84c333f6fd5c99f67c6e6a73fd8fe
+    - path: pw/withdatabase_test.go
+      input_hash: 90c691abdaf1164090120ce7502df7d549b6cec11261b2df0153d038fd4b0c30
+  ownership:
+    state: passed
+    method: integration
+    authority: observed
+    test: TestInstallReplacesTheSetAndClosesOnlyWhatStartOpened; TestSuppliedDatabasesStayIsolatedAndOwnedAfterFailure
+    evidence:
+      path: pwdatabase/install_test.go
+      locator: TestInstallReplacesTheSetAndClosesOnlyWhatStartOpened; TestSuppliedDatabasesStayIsolatedAndOwnedAfterFailure
+    basis:
+    - path: pwruntime/connection.go
+      input_hash: b52f9cd71e17c525ee3572b6d7f9ab0599a025c52a195ac359fac9126dcbc389
+    - path: database/postgres/native.go
+      input_hash: 119d98abcf5204af3e2c1fd33196c353eb4af28f1844041e276845642f740d36
+    - path: database/postgres/pool.go
+      input_hash: ece7eb7e3478e05c9099863f0333cdd168f1a016c8fc6046cc9f518413097aee
+    - path: pwdatabase/pwdatabase.go
+      input_hash: 93b4eaae29c2ba601f661c9557ffa3dc7954069bc354466d61063126199d3ed1
+    - path: pw/lifecycle.go
+      input_hash: 0337d5b0cf618b669f2fccc9034a2d8fc4651b092d187698545b36a07ca7df08
+    - path: pw/database.go
+      input_hash: 7a2babe2a449e38de493922727a413b93f7a9b91c150eb0ddf3b51cb8b7ec660
+    - path: pw/test_bridge.go
+      input_hash: 06951887092d730c2ab0eaa9667ba16e9291c1da8c571c166fda05ff0fd54a22
+    - path: internal/pwtestbridge/bridge.go
+      input_hash: e504b8f9bce2a114b6594bdb01439c2e82653ee39bc4a037dcc5c10e3f20264d
+    - path: testutil/testutil.go
+      input_hash: da3732465c0ebf7a6923c799c12379d74ce84c333f6fd5c99f67c6e6a73fd8fe
+    - path: pwdatabase/install_test.go
+      input_hash: e40bc47c0e74c8466da284c6f66664d6e7e90c0b26ef1a42a94cba8a3bd315d6
+    - path: testutil/database_test.go
+      input_hash: 9a29614f8696f06199730ee9ce5d845b2cf08e22ba1b000495f84fb55278b5eb
+  isolated-tests:
+    state: passed
+    method: integration
+    authority: observed
+    test: TestSuppliedDatabasesStayIsolatedAndOwnedAfterFailure; TestParallelFixtureServers
+    evidence:
+      path: testutil/database_test.go
+      locator: TestSuppliedDatabasesStayIsolatedAndOwnedAfterFailure; TestParallelFixtureServers
+    basis:
+    - path: pwruntime/connection.go
+      input_hash: b52f9cd71e17c525ee3572b6d7f9ab0599a025c52a195ac359fac9126dcbc389
+    - path: database/postgres/native.go
+      input_hash: 119d98abcf5204af3e2c1fd33196c353eb4af28f1844041e276845642f740d36
+    - path: database/postgres/pool.go
+      input_hash: ece7eb7e3478e05c9099863f0333cdd168f1a016c8fc6046cc9f518413097aee
+    - path: pwdatabase/pwdatabase.go
+      input_hash: 93b4eaae29c2ba601f661c9557ffa3dc7954069bc354466d61063126199d3ed1
+    - path: pw/lifecycle.go
+      input_hash: 0337d5b0cf618b669f2fccc9034a2d8fc4651b092d187698545b36a07ca7df08
+    - path: pw/database.go
+      input_hash: 7a2babe2a449e38de493922727a413b93f7a9b91c150eb0ddf3b51cb8b7ec660
+    - path: pw/test_bridge.go
+      input_hash: 06951887092d730c2ab0eaa9667ba16e9291c1da8c571c166fda05ff0fd54a22
+    - path: internal/pwtestbridge/bridge.go
+      input_hash: e504b8f9bce2a114b6594bdb01439c2e82653ee39bc4a037dcc5c10e3f20264d
+    - path: testutil/testutil.go
+      input_hash: da3732465c0ebf7a6923c799c12379d74ce84c333f6fd5c99f67c6e6a73fd8fe
+    - path: testutil/database_test.go
+      input_hash: 9a29614f8696f06199730ee9ce5d845b2cf08e22ba1b000495f84fb55278b5eb
+    - path: examples/pgmem/database_test.go
+      input_hash: c79b8fa449561202f1764c05a6d11e2737808e64aa91ca0119f00c949b5c6196
+  prepare-data:
+    state: passed
+    method: integration
+    authority: observed
+    test: TestFixturePoolMigrationsSeedsAndNativeTransactions; TestRunServesAHandedDatabase
+    evidence:
+      path: examples/pgmem/database_test.go
+      locator: TestFixturePoolMigrationsSeedsAndNativeTransactions; TestRunServesAHandedDatabase
+    basis:
+    - path: pwruntime/connection.go
+      input_hash: b52f9cd71e17c525ee3572b6d7f9ab0599a025c52a195ac359fac9126dcbc389
+    - path: database/postgres/native.go
+      input_hash: 119d98abcf5204af3e2c1fd33196c353eb4af28f1844041e276845642f740d36
+    - path: database/postgres/pool.go
+      input_hash: ece7eb7e3478e05c9099863f0333cdd168f1a016c8fc6046cc9f518413097aee
+    - path: pwdatabase/pwdatabase.go
+      input_hash: 93b4eaae29c2ba601f661c9557ffa3dc7954069bc354466d61063126199d3ed1
+    - path: pw/lifecycle.go
+      input_hash: 0337d5b0cf618b669f2fccc9034a2d8fc4651b092d187698545b36a07ca7df08
+    - path: pw/database.go
+      input_hash: 7a2babe2a449e38de493922727a413b93f7a9b91c150eb0ddf3b51cb8b7ec660
+    - path: pw/test_bridge.go
+      input_hash: 06951887092d730c2ab0eaa9667ba16e9291c1da8c571c166fda05ff0fd54a22
+    - path: internal/pwtestbridge/bridge.go
+      input_hash: e504b8f9bce2a114b6594bdb01439c2e82653ee39bc4a037dcc5c10e3f20264d
+    - path: testutil/testutil.go
+      input_hash: da3732465c0ebf7a6923c799c12379d74ce84c333f6fd5c99f67c6e6a73fd8fe
+    - path: examples/pgmem/database_test.go
+      input_hash: c79b8fa449561202f1764c05a6d11e2737808e64aa91ca0119f00c949b5c6196
+    - path: examples/pgmem/go.mod
+      input_hash: e5139569032b2f69814238a1357e943fa7410ad4b58abe1aa16f13af8e7734ad
+    - path: examples/pgmem/go.sum
+      input_hash: 560ad17f8778b092e7e5031eb02302861f4e79fc5fef21055a51e39b88216cee
+    - path: testutil/database_test.go
+      input_hash: 9a29614f8696f06199730ee9ce5d845b2cf08e22ba1b000495f84fb55278b5eb
+  native-adapter:
+    state: passed
+    method: integration
+    authority: observed
+    test: TestFixturePoolMigrationsSeedsAndNativeTransactions; TestFixturePoolsRemainIndependentAndRollbackAtClose
+    evidence:
+      path: examples/pgmem/database_test.go
+      locator: TestFixturePoolMigrationsSeedsAndNativeTransactions; TestFixturePoolsRemainIndependentAndRollbackAtClose
+    basis:
+    - path: pwruntime/connection.go
+      input_hash: b52f9cd71e17c525ee3572b6d7f9ab0599a025c52a195ac359fac9126dcbc389
+    - path: database/postgres/native.go
+      input_hash: 119d98abcf5204af3e2c1fd33196c353eb4af28f1844041e276845642f740d36
+    - path: database/postgres/pool.go
+      input_hash: ece7eb7e3478e05c9099863f0333cdd168f1a016c8fc6046cc9f518413097aee
+    - path: pwdatabase/pwdatabase.go
+      input_hash: 93b4eaae29c2ba601f661c9557ffa3dc7954069bc354466d61063126199d3ed1
+    - path: pw/lifecycle.go
+      input_hash: 0337d5b0cf618b669f2fccc9034a2d8fc4651b092d187698545b36a07ca7df08
+    - path: pw/database.go
+      input_hash: 7a2babe2a449e38de493922727a413b93f7a9b91c150eb0ddf3b51cb8b7ec660
+    - path: pw/test_bridge.go
+      input_hash: 06951887092d730c2ab0eaa9667ba16e9291c1da8c571c166fda05ff0fd54a22
+    - path: internal/pwtestbridge/bridge.go
+      input_hash: e504b8f9bce2a114b6594bdb01439c2e82653ee39bc4a037dcc5c10e3f20264d
+    - path: testutil/testutil.go
+      input_hash: da3732465c0ebf7a6923c799c12379d74ce84c333f6fd5c99f67c6e6a73fd8fe
+    - path: examples/pgmem/database_test.go
+      input_hash: c79b8fa449561202f1764c05a6d11e2737808e64aa91ca0119f00c949b5c6196
+    - path: examples/pgmem/go.mod
+      input_hash: e5139569032b2f69814238a1357e943fa7410ad4b58abe1aa16f13af8e7734ad
+    - path: examples/pgmem/go.sum
+      input_hash: 560ad17f8778b092e7e5031eb02302861f4e79fc5fef21055a51e39b88216cee
+  validation:
+    state: passed
+    method: unit
+    authority: observed
+    test: TestSuppliedDatabaseValidation; TestWithDatabaseNeedsTheDatabaseEnabled;
+      TestWithDatabaseNeedsAConnection; TestFromPoolRefusesNothingButServesNothingForANilPool
+    evidence:
+      path: testutil/database_test.go
+      locator: TestSuppliedDatabaseValidation; TestWithDatabaseNeedsTheDatabaseEnabled;
+        TestWithDatabaseNeedsAConnection; TestFromPoolRefusesNothingButServesNothingForANilPool
+    basis:
+    - path: pwruntime/connection.go
+      input_hash: b52f9cd71e17c525ee3572b6d7f9ab0599a025c52a195ac359fac9126dcbc389
+    - path: database/postgres/native.go
+      input_hash: 119d98abcf5204af3e2c1fd33196c353eb4af28f1844041e276845642f740d36
+    - path: database/postgres/pool.go
+      input_hash: ece7eb7e3478e05c9099863f0333cdd168f1a016c8fc6046cc9f518413097aee
+    - path: pwdatabase/pwdatabase.go
+      input_hash: 93b4eaae29c2ba601f661c9557ffa3dc7954069bc354466d61063126199d3ed1
+    - path: pw/lifecycle.go
+      input_hash: 0337d5b0cf618b669f2fccc9034a2d8fc4651b092d187698545b36a07ca7df08
+    - path: pw/database.go
+      input_hash: 7a2babe2a449e38de493922727a413b93f7a9b91c150eb0ddf3b51cb8b7ec660
+    - path: pw/test_bridge.go
+      input_hash: 06951887092d730c2ab0eaa9667ba16e9291c1da8c571c166fda05ff0fd54a22
+    - path: internal/pwtestbridge/bridge.go
+      input_hash: e504b8f9bce2a114b6594bdb01439c2e82653ee39bc4a037dcc5c10e3f20264d
+    - path: testutil/testutil.go
+      input_hash: da3732465c0ebf7a6923c799c12379d74ce84c333f6fd5c99f67c6e6a73fd8fe
+    - path: testutil/database_test.go
+      input_hash: 9a29614f8696f06199730ee9ce5d845b2cf08e22ba1b000495f84fb55278b5eb
+    - path: pw/withdatabase_test.go
+      input_hash: 90c691abdaf1164090120ce7502df7d549b6cec11261b2df0153d038fd4b0c30
+    - path: database/postgres/pool_test.go
+      input_hash: 6c8d8fd5b8a431842ed12ce6c45e8497b114d0b0ade055242eb092db1b304b8e
+  pgmem:
+    state: passed
+    method: integration
+    authority: observed
+    test: 'go test -p=2 -v ./... (examples/pgmem): three tests including parallel
+      subtests passed'
+    evidence:
+      path: examples/pgmem/database_test.go
+      locator: 'go test -p=2 -v ./... (examples/pgmem): three tests including parallel
+        subtests passed'
+    basis:
+    - path: pwruntime/connection.go
+      input_hash: b52f9cd71e17c525ee3572b6d7f9ab0599a025c52a195ac359fac9126dcbc389
+    - path: database/postgres/native.go
+      input_hash: 119d98abcf5204af3e2c1fd33196c353eb4af28f1844041e276845642f740d36
+    - path: database/postgres/pool.go
+      input_hash: ece7eb7e3478e05c9099863f0333cdd168f1a016c8fc6046cc9f518413097aee
+    - path: pwdatabase/pwdatabase.go
+      input_hash: 93b4eaae29c2ba601f661c9557ffa3dc7954069bc354466d61063126199d3ed1
+    - path: pw/lifecycle.go
+      input_hash: 0337d5b0cf618b669f2fccc9034a2d8fc4651b092d187698545b36a07ca7df08
+    - path: pw/database.go
+      input_hash: 7a2babe2a449e38de493922727a413b93f7a9b91c150eb0ddf3b51cb8b7ec660
+    - path: pw/test_bridge.go
+      input_hash: 06951887092d730c2ab0eaa9667ba16e9291c1da8c571c166fda05ff0fd54a22
+    - path: internal/pwtestbridge/bridge.go
+      input_hash: e504b8f9bce2a114b6594bdb01439c2e82653ee39bc4a037dcc5c10e3f20264d
+    - path: testutil/testutil.go
+      input_hash: da3732465c0ebf7a6923c799c12379d74ce84c333f6fd5c99f67c6e6a73fd8fe
+    - path: examples/pgmem/database_test.go
+      input_hash: c79b8fa449561202f1764c05a6d11e2737808e64aa91ca0119f00c949b5c6196
+    - path: examples/pgmem/go.mod
+      input_hash: e5139569032b2f69814238a1357e943fa7410ad4b58abe1aa16f13af8e7734ad
+    - path: examples/pgmem/go.sum
+      input_hash: 560ad17f8778b092e7e5031eb02302861f4e79fc5fef21055a51e39b88216cee
+  build:
+    state: passed
+    method: integration
+    authority: observed
+    test: go test -p=4 ./...; go vet -p=4 ./...; related packages with pwdev; go install
+      ./cmd/pw into a temporary GOBIN; website npm run build
+    evidence:
+      path: docs/requests/external-database-injection.md
+      locator: go test -p=4 ./...; go vet -p=4 ./...; related packages with pwdev;
+        go install ./cmd/pw into a temporary GOBIN; website npm run build
+    basis:
+    - path: pwruntime/connection.go
+      input_hash: b52f9cd71e17c525ee3572b6d7f9ab0599a025c52a195ac359fac9126dcbc389
+    - path: database/postgres/native.go
+      input_hash: 119d98abcf5204af3e2c1fd33196c353eb4af28f1844041e276845642f740d36
+    - path: database/postgres/pool.go
+      input_hash: ece7eb7e3478e05c9099863f0333cdd168f1a016c8fc6046cc9f518413097aee
+    - path: pwdatabase/pwdatabase.go
+      input_hash: 93b4eaae29c2ba601f661c9557ffa3dc7954069bc354466d61063126199d3ed1
+    - path: pw/lifecycle.go
+      input_hash: 0337d5b0cf618b669f2fccc9034a2d8fc4651b092d187698545b36a07ca7df08
+    - path: pw/database.go
+      input_hash: 7a2babe2a449e38de493922727a413b93f7a9b91c150eb0ddf3b51cb8b7ec660
+    - path: pw/test_bridge.go
+      input_hash: 06951887092d730c2ab0eaa9667ba16e9291c1da8c571c166fda05ff0fd54a22
+    - path: internal/pwtestbridge/bridge.go
+      input_hash: e504b8f9bce2a114b6594bdb01439c2e82653ee39bc4a037dcc5c10e3f20264d
+    - path: testutil/testutil.go
+      input_hash: da3732465c0ebf7a6923c799c12379d74ce84c333f6fd5c99f67c6e6a73fd8fe
+    - path: go.mod
+      input_hash: 6395d43e84ea0b7fc07ade55b2846879f49afc2a2484ece5121ed4444ce5ed6f
+    - path: go.sum
+      input_hash: 79e1ebc71169cf60f003e747b9acd4cede770c3d7797f76cd96d9427e03d21a9
+    - path: website/src/content/docs/productivity/testing.md
+      input_hash: c27a27f57563cd699f8fa4732169736470bb51d693351c9f5114d92292032608
+    - path: website/src/content/docs/ja/productivity/testing.md
+      input_hash: 87c07e3bca82b69cf3856201327470a95d1e00d6b2b4c258f7e1c542bd354e4b
+    - path: docs/requests/external-database-injection.md
+      input_hash: 5b4510e3704c7312ea06114c3421f6cc16d00bca714f087ea9120883bae1abdc
+relations:
+- relation: extends
+  to: api:test-run
+- relation: uses
+  to: api:native-connection-access
+review_state: confirmed
+history:
+  recovered-partial-work:
+    summary: Recovered five untracked source/test files from the primary checkout,
+      completed missing runtime APIs and ownership tracking, and preserved unrelated
+      work.

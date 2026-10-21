@@ -30,12 +30,13 @@ import (
 	"github.com/shibukawa/popcornweb/pwruntime"
 )
 
-// state is the pool set this process opened. It is process-wide because a pool
+// state holds the configured or caller-supplied pool set. It is process-wide because a pool
 // is, and it is replaced rather than assumed written once, because framework
 // initialization runs more than once in one process — most obviously in tests.
 var state struct {
 	sync.RWMutex
 	connections *pwruntime.ConnectionSet
+	owned       bool
 	// db and driver mirror the default group's connection for callers that
 	// predate the connection set, such as the readiness probe.
 	db     *sql.DB
@@ -72,6 +73,7 @@ func Start(config pwconfig.RDBConfig) error {
 		return nil
 	}
 	state.connections = set
+	state.owned = true
 	if primary, ok := defaultConnection(set); ok {
 		state.db = primary.DB
 		state.driver = primary.Driver
@@ -79,16 +81,38 @@ func Start(config pwconfig.RDBConfig) error {
 	return nil
 }
 
-// Close releases the pools this process opened.
+// Close releases pools opened by Start, or forgets caller-owned installed pools.
 func Close() error {
 	state.Lock()
-	set := state.connections
-	state.connections, state.db, state.driver = nil, nil, ""
+	set, owned := state.connections, state.owned
+	state.connections, state.db, state.driver, state.owned = nil, nil, "", false
 	state.Unlock()
-	if set == nil {
+	if set == nil || !owned {
 		return nil
 	}
 	return set.Close()
+}
+
+// Install replaces the process connection set with caller-owned pools. It closes
+// a previous set opened by Start, but never a set installed by the caller.
+// Close forgets an installed set without closing its pools. Application startup
+// and replacement must be serialized; handlers already using a set retain it.
+func Install(set *pwruntime.ConnectionSet) error {
+	if set == nil || set.Count() == 0 {
+		return errors.New("popcornweb: cannot install an empty connection set")
+	}
+	state.Lock()
+	previous, owned := state.connections, state.owned
+	state.connections, state.owned = set, false
+	state.db, state.driver = nil, ""
+	if primary, ok := defaultConnection(set); ok {
+		state.db, state.driver = primary.DB, primary.Driver
+	}
+	state.Unlock()
+	if previous != nil && previous != set && owned {
+		return previous.Close()
+	}
+	return nil
 }
 
 // Connections returns the open pool set, or nil when none was opened.
@@ -173,6 +197,7 @@ func openConnection(config pwconfig.RDBConnectionConfig, label string) (pwruntim
 		return connection, fmt.Errorf("popcornweb: connection %s: %w", label, err)
 	}
 	connection.Driver = target.Dialect
+	connection.DataSource = config.DSN
 	ctx, cancel := context.WithTimeout(context.Background(), config.ConnectTimeout)
 	defer cancel()
 	if target.Native() {

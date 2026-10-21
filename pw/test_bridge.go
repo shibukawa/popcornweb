@@ -45,11 +45,14 @@ func PrepareTestRuntime(handler http.Handler, configs pwtestbridge.Configs, opti
 	if err := validateOperationalEndpointCollisions(handler, server); err != nil {
 		return pwtestbridge.Prepared{}, err
 	}
-	// A test opens only the migration group: schema, seed data, and the test
-	// transaction have to live in one database. Resources leaves the connection
-	// set nil, which collapses every group name onto that one pool, so a
-	// handler calling SelectDB with a replica group needs no test-only branch.
+	// A test borrows the supplied connection or opens the migration group.
+	// Schema, seed data and the test transaction live in that one database.
+	// Its single-connection set collapses every group name onto the same pool,
+	// so SelectDB with a replica group needs no test-only branch.
 	var testConnection RDBConnectionConfig
+	if options.Database != nil && !middleware.RDB.Enabled {
+		return pwtestbridge.Prepared{}, fmt.Errorf("popcornweb: WithDatabase requires middleware.rdb.enabled")
+	}
 	if middleware.RDB.Enabled {
 		resolved, err := testDatabaseConnection(middleware.RDB)
 		if err != nil {
@@ -67,8 +70,12 @@ func PrepareTestRuntime(handler http.Handler, configs pwtestbridge.Configs, opti
 		if err != nil {
 			return pwtestbridge.Prepared{}, err
 		}
-		if !pwruntime.SupportsSavepoint(target.Dialect) {
-			return pwtestbridge.Prepared{}, fmt.Errorf("popcornweb: test transaction requires a driver with savepoint support, got %q", target.Dialect)
+		dialect := target.Dialect
+		if options.Database != nil {
+			dialect = options.Database.Driver
+		}
+		if !pwruntime.SupportsSavepoint(dialect) {
+			return pwtestbridge.Prepared{}, fmt.Errorf("popcornweb: test transaction requires a driver with savepoint support, got %q", dialect)
 		}
 	}
 	var dbClose func() error
@@ -77,24 +84,46 @@ func PrepareTestRuntime(handler http.Handler, configs pwtestbridge.Configs, opti
 	var connections *pwruntime.ConnectionSet
 	var scope *pwruntime.TransactionScope
 	if middleware.RDB.Enabled {
-		connection, err := pwdatabase.OpenOne(testConnection, testConnection.Group)
+		var connection pwruntime.Connection
+		var err error
+		if options.Database != nil {
+			connection = *options.Database
+		} else {
+			connection, err = pwdatabase.OpenOne(testConnection, testConnection.Group)
+		}
 		if err != nil {
 			return pwtestbridge.Prepared{}, err
 		}
 		driver = connection.Driver
 		db = connection.DB
-		closers := []func() error{connection.Close}
+		var closers []func() error
+		if options.Database == nil {
+			closers = append(closers, connection.Close)
+		}
+		closeOpened := func() {
+			for _, close := range closers {
+				_ = close()
+			}
+		}
 		if connection.Native != nil {
 			// Requests run natively, but schema preparation, seeding, and
 			// assertions are database/sql tooling, which the engine's *sql.DB
 			// opener still serves. That second handle is what the test side of
 			// the bridge sees as DB.
-			target, targetErr := pwconfig.Target(testConnection.DSN)
+			dsn := connection.DataSource
+			if dsn == "" && options.Database == nil {
+				dsn = testConnection.DSN
+			}
+			if dsn == "" {
+				closeOpened()
+				return pwtestbridge.Prepared{}, fmt.Errorf("popcornweb: supplied native database needs DataSource for tooling")
+			}
+			target, targetErr := pwconfig.Target(dsn)
 			if targetErr == nil {
 				db, targetErr = target.Open()
 			}
 			if targetErr != nil {
-				_ = connection.Close()
+				closeOpened()
 				return pwtestbridge.Prepared{}, fmt.Errorf("popcornweb: open tooling database: %w", targetErr)
 			}
 			closers = append(closers, db.Close)
