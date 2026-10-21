@@ -6,7 +6,6 @@ import (
 	"crypto/subtle"
 	"encoding/base64"
 	"io"
-	"strings"
 
 	"github.com/shibukawa/tinybind-go/htmlbind"
 )
@@ -186,26 +185,21 @@ func AppendCSRFOption(options []htmlbind.Option, token string, disabled bool) []
 
 // CSRFRendersHTML reports whether a safe request announces that it will
 // render the page's templates, and therefore needs the token an unsafe form in
-// them carries. It takes the four header values it reads — Sec-Fetch-Dest,
-// Accept, UpdateRenderHeader, and ResponseModeHeader — rather than a reader, so
-// a transport whose header values are not strings converts only what is there.
+// them carries. It is AnnouncesPage asked for this check's reason, which is why
+// the browser runtime's own update and live requests count: they render the
+// same chain the document did. Reading them as "renders no HTML" left the
+// secret out of the request, and a page whose layout holds a sign-out form
+// answered 500 to every update of itself.
 //
-// A document request says so itself, through CSRFHTMLRequest. The browser
-// runtime's own requests do not: a partial update and a live delivery are
-// fetches, so they arrive with no text/html in Accept and a Sec-Fetch-Dest of
-// empty, and they render the same chain the document did. Reading them as
-// "renders no HTML" left the secret out of the request, and a page whose
-// layout holds a sign-out form answered 500 to every update of itself.
-//
-// Neither header mints anything a document request would not have: a page
-// that sends one was rendered from this origin and already holds the secret.
+// Neither of those headers mints anything a document request would not have: a
+// page that sends one was rendered from this origin and already holds the
+// secret.
 //
 // This is the prediction and not the rule. A render no header announced asks
 // for the secret itself when it runs, so answering false here costs a page
 // nothing but the session read it would have made anyway.
 func CSRFRendersHTML(secFetchDest, accept, updateRender, responseMode string) bool {
-	return CSRFHTMLRequest(secFetchDest, accept) ||
-		strings.TrimSpace(updateRender) != "" || strings.TrimSpace(responseMode) != ""
+	return AnnouncesPage(secFetchDest, accept, updateRender, responseMode)
 }
 
 // CSRFSafeMethod reports whether a method is one the cross-site check lets
@@ -222,25 +216,13 @@ func CSRFSafeMethod(method string) bool {
 }
 
 // CSRFHTMLRequest reports whether a safe request is expected to render HTML,
-// given its Sec-Fetch-Dest and Accept header values. Browsers send either an
-// HTML Accept value or a document navigation target; a generic */* request
-// does not justify allocating session state merely in case the handler might
-// render a form. Both transports call this one function so the answer cannot
-// drift.
+// given its Sec-Fetch-Dest and Accept header values. A generic */* request does
+// not justify allocating session state merely in case the handler might render
+// a form.
 //
 // CSRFRendersHTML is the question a middleware asks; this is the half of it a
-// browser's own navigation answers.
+// browser's own navigation answers, which DocumentRequest states for every
+// caller that is not the CSRF check.
 func CSRFHTMLRequest(secFetchDest, accept string) bool {
-	if strings.EqualFold(strings.TrimSpace(secFetchDest), "document") {
-		return true
-	}
-	for remainder := accept; remainder != ""; {
-		var mediaRange string
-		mediaRange, remainder, _ = strings.Cut(remainder, ",")
-		mediaType, _, _ := strings.Cut(mediaRange, ";")
-		if strings.EqualFold(strings.TrimSpace(mediaType), "text/html") {
-			return true
-		}
-	}
-	return false
+	return DocumentRequest(secFetchDest, accept)
 }

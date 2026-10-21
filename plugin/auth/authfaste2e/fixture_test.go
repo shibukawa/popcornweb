@@ -5,12 +5,15 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"html"
 	"net"
 	"net/http"
 	"net/http/cookiejar"
 	"net/http/httptest"
+	"net/url"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"sync"
 	"testing"
@@ -239,12 +242,88 @@ func (b *browser) login() {
 	}
 }
 
+// navigationAccept is what a browser sends when it opens a page. The guard sends
+// a request to the login only when it asks for a page, so a browser that
+// navigates has to say so the way a real one does.
+const navigationAccept = "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
+
+// get opens a page: the request a browser makes when the address changes.
 func (b *browser) get(path string) (*http.Response, []byte) {
 	b.t.Helper()
 	request, err := http.NewRequest(http.MethodGet, b.base+path, nil)
 	if err != nil {
 		b.t.Fatal(err)
 	}
+	request.Header.Set("Accept", navigationAccept)
+	return b.do(request)
+}
+
+// fetch asks for something that is not a page, with the cookies the browser
+// holds. accept and dest are what that kind of request names — an icon names
+// image types and a destination of image — and an empty value sends no header,
+// which is also what a tool that never said what it wanted looks like.
+func (b *browser) fetch(path, accept, dest string) (*http.Response, []byte) {
+	b.t.Helper()
+	request, err := http.NewRequest(http.MethodGet, b.base+path, nil)
+	if err != nil {
+		b.t.Fatal(err)
+	}
+	if accept != "" {
+		request.Header.Set("Accept", accept)
+	}
+	if dest != "" {
+		request.Header.Set("Sec-Fetch-Dest", dest)
+	}
+	return b.do(request)
+}
+
+// reconfirmPending reports whether the browser holds the mark a reconfirm
+// logout leaves behind. The mark is scoped to the login path, so it is asked of
+// the jar for that path and no other.
+func (b *browser) reconfirmPending() bool {
+	b.t.Helper()
+	target, err := url.Parse(b.base + "/auth/login")
+	if err != nil {
+		b.t.Fatal(err)
+	}
+	for _, cookie := range b.client.Jar.Cookies(target) {
+		if strings.HasSuffix(cookie.Name, "_reconfirm") {
+			return true
+		}
+	}
+	return false
+}
+
+var (
+	pickerAction = regexp.MustCompile(`<form method="post" action="([^"]*)">`)
+	pickerAuth   = regexp.MustCompile(`name="auth" value="([^"]*)"`)
+	pickerCSRF   = regexp.MustCompile(`name="csrf" value="([^"]*)"`)
+)
+
+// chooseAccount answers the provider's account picker the way a person does, by
+// pressing the button of one of the accounts it lists. page is the response the
+// picker arrived in, which says where its form is submitted from; the redirects
+// that follow end back on this listener, signed in.
+func (b *browser) chooseAccount(page *http.Response, body []byte, subject string) (*http.Response, []byte) {
+	b.t.Helper()
+	action, auth, csrf := pickerAction.FindSubmatch(body), pickerAuth.FindSubmatch(body), pickerCSRF.FindSubmatch(body)
+	if action == nil || auth == nil || csrf == nil {
+		b.t.Fatalf("the provider did not show an account picker: %.300q", body)
+	}
+	target, err := page.Request.URL.Parse(html.UnescapeString(string(action[1])))
+	if err != nil {
+		b.t.Fatal(err)
+	}
+	form := url.Values{
+		"auth":    {html.UnescapeString(string(auth[1]))},
+		"csrf":    {html.UnescapeString(string(csrf[1]))},
+		"subject": {subject},
+	}
+	request, err := http.NewRequest(http.MethodPost, target.String(), strings.NewReader(form.Encode()))
+	if err != nil {
+		b.t.Fatal(err)
+	}
+	request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	return b.do(request)
 }
 
@@ -388,7 +467,9 @@ mode = "oidc_passkey"
 post_login_path = "/whoami"
 recent_auth_max_age = "5m"
 recovery.policy = "oidc"
-protection.include = ["/private"]
+# The icons a browser asks for unprompted are protected too, as they are in any
+# deployment that protects the whole site, so the guard meets them.
+protection.include = ["/private", "/favicon.ico", "/apple-touch-icon.png", "/apple-touch-icon-precomposed.png"]
 protection.unauthenticated = "redirect"
 
 [auth.assurance.presence]

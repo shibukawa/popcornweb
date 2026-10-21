@@ -150,6 +150,8 @@ format and `-b jar.txt` replays them, so a login response can feed the next
 call. `-b 'name=value'` sends one cookie string directly.
 
 Without any of these, a protected route answers `401`, which is the finding.
+The redirect to the login is the answer to a request that asks for a page, so
+`-H 'Accept: text/html'` is how to see the one a browser gets.
 
 ## Exit status
 

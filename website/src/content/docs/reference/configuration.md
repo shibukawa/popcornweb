@@ -564,7 +564,7 @@ imports nothing authentication-related has no `[auth]` prefix to configure.
 | `recent_auth_max_age` | `"5m"` | how recently a request must have authenticated to change a login method |
 | `protection.include` | `[]` | path patterns that require authentication |
 | `protection.exclude` | `[]` | path patterns that stay public |
-| `protection.unauthenticated` | `"redirect"` | `redirect` or `unauthorized` |
+| `protection.unauthenticated` | `"redirect"` | `redirect` sends a request that asks for a page to the login and answers every other request `401`; `unauthorized` answers `401` to all |
 
 ### `[auth.oidc]`
 
@@ -582,7 +582,7 @@ imports nothing authentication-related has no `[auth]` prefix to configure.
 | `claim.values` | `[]` | accepted values |
 | `claim.match` | `"any"` | `any` or `all` |
 | `registered_claims` | `[]` | claims compared against the allowlist; defaults to `identity_claim` |
-| `logout_scope` | `"reconfirm"` | `reconfirm` revokes the local session and makes the next authorization carry `prompt`; `global` also ends the provider session through its `end_session_endpoint` |
+| `logout_scope` | `"reconfirm"` | `reconfirm` revokes the local session and makes authorization requests carry `prompt` until a sign-in completes, for an hour at most; `global` also ends the provider session through its `end_session_endpoint` |
 | `allow_global_logout_request` | `false` | let a same-origin logout form escalate to `global` by posting `scope=global`; a request may only escalate |
 | `allow_loopback_http` | `false` | permit an `http` loopback issuer and an `http` loopback callback during development, whether that callback is written out or derived from the request |
 

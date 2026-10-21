@@ -71,12 +71,23 @@ report whether an account exists.
 `POST /auth/logout` revokes the stored session and expires the cookie. It
 requires a same-origin submission. What it then does to the provider session is
 `auth.oidc.logout_scope`: `reconfirm`, the default, sends the provider nothing
-and marks the next authorization request to carry `prompt`, so the provider
-still demands proof while every other relying party sharing it is untouched;
+and marks authorization requests to carry `prompt` until a sign-in completes
+(the callback ends it; a login request that only begins one does not), so the
+provider still demands proof while every other relying party sharing it is
+untouched;
 `global` additionally ends the provider session through RP-initiated logout.
 There is no local-only scope — clearing only the local cookie leaves the next
 login silent, which is the failure `reconfirm` exists to fix. A mode reaching no
 provider session refuses a typed scope rather than binding it inert.
+
+The guard sends only a request that asks for a page to the login — a
+`Sec-Fetch-Dest` of `document`, an `Accept` that names `text/html`, or the
+browser runtime's own update headers — and answers every other unauthenticated
+request `401`. A browser follows a redirect for an icon as readily as for a
+page, and the login endpoint at the end of it begins an authorization; Safari
+asks for `/favicon.ico` and `/apple-touch-icon*.png` unprompted, so a deployment
+that protects the whole site lists them in `protection.exclude` if signed-out
+pages should show one.
 
 Discovery runs on the first login rather than at startup, so the application
 starts even when the provider is not up yet, and a failed discovery is not

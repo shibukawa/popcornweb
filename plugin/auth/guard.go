@@ -23,8 +23,13 @@ type Rules struct {
 	// LoginURL is where an unauthenticated browser is sent, carrying a
 	// validated local return path. An empty result answers 401 instead.
 	LoginURL func(path string) string
-	// Redirect sends a browser to LoginURL; without it an unauthenticated
-	// request is answered 401 whatever it accepts.
+	// Redirect sends a request that asks for a page to LoginURL. Every other
+	// unauthenticated request is answered 401, and so is every request when it
+	// is false.
+	//
+	// A redirect is an answer to a person. An icon, an image, or a script is
+	// fetched by a browser that follows it all the same, and the request that
+	// follows reaches the login endpoint on the way to a login page nobody sees.
 	Redirect bool
 	// BearerRealm names the scheme a 401 asks for, per RFC 6750. Empty sends no
 	// challenge.
@@ -73,11 +78,17 @@ func (rt *runtime) guard(x Exchange, next func()) {
 		next()
 		return
 	}
-	// Never cached: the answer depends on who is asking, and a shared cache
-	// holding one would show a signed-in page to a stranger or a login redirect
-	// to a signed-in reader.
+	// Never cached: the answer depends on who is asking and on what they asked
+	// for, and a shared cache holding one would show a signed-in page to a
+	// stranger or a login redirect to a signed-in reader.
 	x.SetHeader("Cache-Control", "no-store")
-	if rules.Redirect {
+	// Only a request that asks for a page is sent to the login. The others are
+	// refused where they stand, because a browser follows a redirect for an icon
+	// as readily as for a page — Safari does it for the icons it asks for
+	// unprompted — and the login endpoint it lands on does what a visit there
+	// does: it begins an authorization, and it uses up the one-time mark a
+	// sign-out left so that the next login would ask again.
+	if rules.Redirect && announcesPage(x) {
 		if target := rules.LoginURL(path); target != "" {
 			x.Redirect(target, http.StatusSeeOther)
 			return
@@ -87,6 +98,13 @@ func (rt *runtime) guard(x Exchange, next func()) {
 		x.SetHeader("WWW-Authenticate", `Bearer realm="`+rules.BearerRealm+`"`)
 	}
 	x.Problem(pwruntime.Unauthorized())
+}
+
+// announcesPage is this transport's header read over the shared decision, so
+// the two builds cannot drift on which requests are sent to the login.
+func announcesPage(x Exchange) bool {
+	return pwruntime.AnnouncesPage(x.Header("Sec-Fetch-Dest"), x.Header("Accept"),
+		x.Header(pwruntime.UpdateRenderHeader), x.Header(pwruntime.ResponseModeHeader))
 }
 
 // protected applies exclude-over-include precedence. The framework's own login,
