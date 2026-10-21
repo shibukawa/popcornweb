@@ -419,8 +419,9 @@ type OIDCConfig struct {
 	// holds, which is not the session this application owns.
 	//
 	// reconfirm revokes the local session, sends the provider nothing, and
-	// marks the next authorization to carry prompt, so the provider still
-	// demands proof while every other relying party sharing it is untouched.
+	// marks authorization requests to carry prompt until a sign-in completes,
+	// so the provider still demands proof while every other relying party
+	// sharing it is untouched.
 	//
 	// global additionally ends the provider session through the discovered end
 	// session endpoint, which signs the user out of every application sharing

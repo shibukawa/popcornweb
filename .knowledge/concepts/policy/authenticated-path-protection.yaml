@@ -16,15 +16,42 @@ facts:
     \  - reject invalid patterns during startup configuration validation\n  - match\
     \ the exact canonical path used by router dispatch\n  - ignore query parameters\n\
     \  - allow a protected request only when data:request-authentication is authenticated\n\
-    \  - otherwise produce the configured redirect or HTTP 401 response without calling\
-    \ the handler\nrules:\n  - default include is empty; path protection is opt-in\n\
-    \  - exclude is a security-sensitive public override\n  - login, callback, bootstrap,\
-    \ and required static paths must remain reachable without this guard\n  - authorization\
-    \ by role, tenant, ownership, or permission remains application policy\n  - middleware\
-    \ ordering must establish session and authentication before this guard\nsecurity:\n\
-    \  - reject malformed escapes and ambiguous path forms before matching\n  - prevent\
-    \ encoded separators or dot segments from changing the routed target after matching\n\
-    \  - do not preserve an arbitrary cross-origin return URL for login redirects\n\
+    \  - otherwise answer without calling the handler, with the configured redirect\
+    \ when the request asks for a page and the deployment redirects, and with HTTP\
+    \ 401 in every other case\nnavigation:\n  question: whether the request will be\
+    \ shown to a person as a page, which is the only kind of request a login redirect\
+    \ can serve\n  asks_for_a_page: Sec-Fetch-Dest of document, or an Accept that\
+    \ names text/html, or one of the browser runtime's own update and live request\
+    \ headers, whose redirects the runtime turns into a navigation\n  otherwise: HTTP\
+    \ 401 with Cache-Control no-store and no Location, even in a deployment that redirects,\
+    \ because a browser follows a redirect for an icon, an image, or a script as readily\
+    \ as for a page, and the login endpoint it lands on acts on the visit\n  one_decision:\
+    \ pwruntime.AnnouncesPage, read by the net/http guard of plugin/auth and by pwfast.Guard,\
+    \ and by the CSRF check through CSRFRendersHTML, so neither transport and neither\
+    \ policy can answer differently\n  unprompted_requests: browsers ask for /favicon.ico\
+    \ and /apple-touch-icon*.png without being asked, with the cookies of the site;\
+    \ Safari does, and a deployment whose include covers the whole site meets them\
+    \ at the guard\n  what_it_prevents: the login endpoint beginning an authorization\
+    \ for a request nobody will see the end of, which also used to spend the one-time\
+    \ mark of policy:provider-session-scope, so that the next real sign-in was answered\
+    \ silently\n  icons_of_a_protected_site: answered 401 until the deployment lists\
+    \ them in exclude, which is the explicit public override this policy already asks\
+    \ for; exclude takes exact paths and has no mid-segment wildcard, so apple-touch-icon*.png\
+    \ cannot be written and the sized variants a log shows are listed one by one\n\
+    \  public_assets_do_not_help: the public asset mount is never the root, so a file\
+    \ under it cannot answer a request for /favicon.ico or /apple-touch-icon.png,\
+    \ and those requests always reach the guard\n  before_2026_10_21: every unauthenticated\
+    \ request to a protected path was redirected, whatever it asked for\nrules:\n\
+    \  - default include is empty; path protection is opt-in\n  - exclude is a security-sensitive\
+    \ public override\n  - login, callback, bootstrap, and required static paths must\
+    \ remain reachable without this guard\n  - authorization by role, tenant, ownership,\
+    \ or permission remains application policy\n  - middleware ordering must establish\
+    \ session and authentication before this guard\nsecurity:\n  - reject malformed\
+    \ escapes and ambiguous path forms before matching\n  - prevent encoded separators\
+    \ or dot segments from changing the routed target after matching\n  - do not preserve\
+    \ an arbitrary cross-origin return URL for login redirects\n  - a request that\
+    \ asks for no page never reaches the login endpoint through this guard, so it\
+    \ cannot begin an authorization or spend what the login endpoint hands out once\n\
     ```"
   decision:
     protected: path matches at least one include and no exclude
@@ -45,8 +72,9 @@ facts:
   - match the exact canonical path used by router dispatch
   - ignore query parameters
   - allow a protected request only when data:request-authentication is authenticated
-  - otherwise produce the configured redirect or HTTP 401 response without calling
-    the handler
+  - otherwise answer without calling the handler, with the configured redirect when
+    the request asks for a page and the deployment redirects, and with HTTP 401 in
+    every other case
   rules:
   - default include is empty; path protection is opt-in
   - exclude is a security-sensitive public override
@@ -59,7 +87,54 @@ facts:
   - prevent encoded separators or dot segments from changing the routed target after
     matching
   - do not preserve an arbitrary cross-origin return URL for login redirects
+  - a request that asks for no page never reaches the login endpoint through this
+    guard, so it cannot begin an authorization or spend what the login endpoint hands
+    out once
+  navigation:
+    question: whether the request will be shown to a person as a page, which is the
+      only kind of request a login redirect can serve
+    asks_for_a_page: Sec-Fetch-Dest of document, or an Accept that names text/html,
+      or one of the browser runtime's own update and live request headers, whose redirects
+      the runtime turns into a navigation
+    otherwise: HTTP 401 with Cache-Control no-store and no Location, even in a deployment
+      that redirects, because a browser follows a redirect for an icon, an image,
+      or a script as readily as for a page, and the login endpoint it lands on acts
+      on the visit
+    one_decision: pwruntime.AnnouncesPage, read by the net/http guard of plugin/auth
+      and by pwfast.Guard, and by the CSRF check through CSRFRendersHTML, so neither
+      transport and neither policy can answer differently
+    unprompted_requests: browsers ask for /favicon.ico and /apple-touch-icon*.png
+      without being asked, with the cookies of the site; Safari does, and a deployment
+      whose include covers the whole site meets them at the guard
+    what_it_prevents: the login endpoint beginning an authorization for a request
+      nobody will see the end of, which also used to spend the one-time mark of policy:provider-session-scope,
+      so that the next real sign-in was answered silently
+    icons_of_a_protected_site: answered 401 until the deployment lists them in exclude,
+      which is the explicit public override this policy already asks for; exclude
+      takes exact paths and has no mid-segment wildcard, so apple-touch-icon*.png
+      cannot be written and the sized variants a log shows are listed one by one
+    public_assets_do_not_help: the public asset mount is never the root, so a file
+      under it cannot answer a request for /favicon.ico or /apple-touch-icon.png,
+      and those requests always reach the guard
+    before_2026_10_21: every unauthenticated request to a protected path was redirected,
+      whatever it asked for
+open_questions:
+  safari-unprompted-request-headers:
+    text: what Accept and Sec-Fetch-Dest Safari sends when it fetches /favicon.ico
+      and /apple-touch-icon*.png on its own; the tests use the shapes a browser gives
+      an image request and none was captured from Safari itself, so the rule rests
+      on those requests naming neither text/html nor a document destination
+    state: open
 relations:
 - relation: mentions
   to: data:request-authentication
+  resolution: resolved
+- relation: shares_decision_with
+  to: decision:lazy-cookie-session-loading
+  resolution: resolved
+- relation: mentions
+  to: policy:provider-session-scope
+  resolution: resolved
+- relation: mentions
+  to: api:authentication-endpoints
   resolution: resolved

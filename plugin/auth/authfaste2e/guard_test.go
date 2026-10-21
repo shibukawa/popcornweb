@@ -48,6 +48,51 @@ func TestTheGuardSeesTheAuthenticationTheFrameRecorded(t *testing.T) {
 	}
 }
 
+// A request that does not ask for a page is refused where it stands, and never
+// reaches the login: nothing it could begin there is left behind. The
+// transaction cookie is the evidence, because only the login endpoint writes it.
+func TestARequestForNoPageIsRefusedBeforeTheLogin(t *testing.T) {
+	browser := newBrowser(t).noRedirect()
+
+	for _, path := range append([]string{"/private"}, unpromptedPaths...) {
+		response, _ := browser.fetch(path, "*/*", "")
+		if response.StatusCode != http.StatusUnauthorized {
+			t.Fatalf("%s answered %d, want 401", path, response.StatusCode)
+		}
+		if location := response.Header.Get("Location"); location != "" {
+			t.Errorf("%s was sent to %q", path, location)
+		}
+		if response.Header.Get("Cache-Control") != "no-store" {
+			t.Errorf("%s: Cache-Control = %q; a guard decision is per-visitor and must not be cached",
+				path, response.Header.Get("Cache-Control"))
+		}
+		for _, cookie := range response.Cookies() {
+			if strings.HasSuffix(cookie.Name, "_txn") {
+				t.Errorf("%s began an authorization: %#v", path, cookie)
+			}
+		}
+	}
+}
+
+// Either way a browser announces a page is enough on its own: the destination
+// every current browser sends, and the Accept the older ones do.
+func TestEitherAnnouncementOfAPageIsSentToTheLogin(t *testing.T) {
+	browser := newBrowser(t).noRedirect()
+
+	for name, ask := range map[string]func() (*http.Response, []byte){
+		"a document destination alone": func() (*http.Response, []byte) { return browser.fetch("/private", "", "document") },
+		"an Accept that names HTML":    func() (*http.Response, []byte) { return browser.fetch("/private", "text/html", "") },
+	} {
+		response, _ := ask()
+		if response.StatusCode != http.StatusSeeOther {
+			t.Errorf("%s answered %d, want 303", name, response.StatusCode)
+		}
+		if location := response.Header.Get("Location"); !strings.HasPrefix(location, "/auth/login") {
+			t.Errorf("%s was sent to %q, want the login", name, location)
+		}
+	}
+}
+
 // The framework's own login path stays reachable whatever the include patterns
 // say, or a deployment that protected everything could never sign anyone in.
 func TestTheLoginPathIsNeverProtected(t *testing.T) {

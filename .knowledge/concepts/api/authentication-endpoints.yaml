@@ -19,21 +19,26 @@ facts:
     \    path: auth.login_path, default /auth/login\n    method: GET\n    action:\
     \ begin authorization through requirement:contrib-oidc, or through requirement:contrib-oauth\
     \ under oauth_only, and store the transaction key, with the return path, in a\
-    \ short-lived cookie\n  callback:\n    path: auth.callback_path, default /auth/callback\n\
-    \    method: GET\n    action: consume the transaction, verify the ID Token — or\
-    \ read the account through requirement:contrib-oauthprofile under oauth_only —\
-    \ and establish the session\n  logout:\n    path: auth.logout_path, default /auth/logout\n\
-    \    method: POST only\n    reason: a logout reachable by link or prefetch is\
-    \ a denial-of-service surface\n    action: delete the server-side session, then\
-    \ end the provider session before returning to the landing path\n    scope: auth.oidc.logout_scope\
-    \ selects reconfirm or global, defaulting to reconfirm, per policy:provider-session-scope;\
-    \ the block below describes the removed bool it replaces\n    provider_logout:\n\
-    \      default: enabled through auth.oidc.provider_logout\n      reason: clearing\
-    \ only the local cookie leaves the provider signed in, so the next login silently\
-    \ returns the same user and the sign-out appears to do nothing\n      request:\
-    \ RP-initiated logout with client_id and a post_logout_redirect_uri derived from\
-    \ this origin\n      no_hint: the session payload holds no token body, so no id_token_hint\
-    \ is available or sent\n      fallback: local logout when the provider advertises\
+    \ short-lived cookie\n    reconfirm: carries prompt for as long as the mark of\
+    \ policy:provider-session-scope is held, and does not spend it, because beginning\
+    \ an authorization proves nobody\n  callback:\n    path: auth.callback_path, default\
+    \ /auth/callback\n    method: GET\n    action: consume the transaction, verify\
+    \ the ID Token — or read the account through requirement:contrib-oauthprofile\
+    \ under oauth_only — and establish the session\n    completion: expires that mark\
+    \ once the session is established, whether or not one was pending, because the\
+    \ mark is scoped to the login path and this request does not carry it\n  logout:\n\
+    \    path: auth.logout_path, default /auth/logout\n    method: POST only\n   \
+    \ reason: a logout reachable by link or prefetch is a denial-of-service surface\n\
+    \    action: delete the server-side session, then end the provider session before\
+    \ returning to the landing path\n    scope: auth.oidc.logout_scope selects reconfirm\
+    \ or global, defaulting to reconfirm, per policy:provider-session-scope; the block\
+    \ below describes the removed bool it replaces\n    provider_logout:\n      default:\
+    \ enabled through auth.oidc.provider_logout\n      reason: clearing only the local\
+    \ cookie leaves the provider signed in, so the next login silently returns the\
+    \ same user and the sign-out appears to do nothing\n      request: RP-initiated\
+    \ logout with client_id and a post_logout_redirect_uri derived from this origin\n\
+    \      no_hint: the session payload holds no token body, so no id_token_hint is\
+    \ available or sent\n      fallback: local logout when the provider advertises\
     \ no end session endpoint, discovery fails, or the request cannot be built\n \
     \     opt_out: auth.oidc.provider_logout false, for a provider shared with applications\
     \ that must stay signed in\n      resolved: policy:provider-session-scope replaces\
@@ -70,8 +75,10 @@ facts:
     \ decides which endpoints mount and which fields are read\n  status: every mode\
     \ serves; api:cli-init still records passkey_only with auth.enabled false until\
     \ its scaffold exists\nguard:\n  paths: auth.protection.include requires a session,\
-    \ everything else stays public\n  unauthenticated: redirect through the login\
-    \ and return, or answer 401\nsecurity: policy:oauth-security and policy:oidc-security\
+    \ everything else stays public\n  unauthenticated: a request that asks for a page\
+    \ is redirected through the login and returned, or answered 401 when the deployment\
+    \ answers 401; every other request is answered 401 whichever is configured, per\
+    \ policy:authenticated-path-protection\nsecurity: policy:oauth-security and policy:oidc-security\
     \ through requirement:contrib-oidc\ntransport_seam_2026_08_11:\n  type: auth.Exchange,\
     \ everything these endpoints need from the transport carrying one request\n  precedent:\
     \ session.Carrier, one layer up and for the same reason; a session touched three\
@@ -132,11 +139,17 @@ facts:
       action: begin authorization through requirement:contrib-oidc, or through requirement:contrib-oauth
         under oauth_only, and store the transaction key, with the return path, in
         a short-lived cookie
+      reconfirm: carries prompt for as long as the mark of policy:provider-session-scope
+        is held, and does not spend it, because beginning an authorization proves
+        nobody
     callback:
       path: auth.callback_path, default /auth/callback
       method: GET
       action: consume the transaction, verify the ID Token — or read the account through
         requirement:contrib-oauthprofile under oauth_only — and establish the session
+      completion: expires that mark once the session is established, whether or not
+        one was pending, because the mark is scoped to the login path and this request
+        does not carry it
     logout:
       path: auth.logout_path, default /auth/logout
       method: POST only
@@ -205,7 +218,9 @@ facts:
       false until its scaffold exists
   guard:
     paths: auth.protection.include requires a session, everything else stays public
-    unauthenticated: redirect through the login and return, or answer 401
+    unauthenticated: a request that asks for a page is redirected through the login
+      and returned, or answered 401 when the deployment answers 401; every other request
+      is answered 401 whichever is configured, per policy:authenticated-path-protection
   security: policy:oauth-security and policy:oidc-security through requirement:contrib-oidc
   transport_seam_2026_08_11:
     type: auth.Exchange, everything these endpoints need from the transport carrying
@@ -315,4 +330,7 @@ relations:
   resolution: resolved
 - relation: mentions
   to: rule:framework-owned-tables
+  resolution: resolved
+- relation: mentions
+  to: policy:authenticated-path-protection
   resolution: resolved

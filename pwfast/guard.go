@@ -2,6 +2,7 @@ package pwfast
 
 import (
 	"github.com/shibukawa/popcornweb/internal/pathpattern"
+	"github.com/shibukawa/popcornweb/pwruntime"
 	"github.com/shibukawa/tinygodriver/fasthttp"
 )
 
@@ -32,13 +33,26 @@ type GuardPolicy struct {
 	// LoginURL is where an unauthenticated browser is sent. An empty result
 	// answers 401 instead, which is also what Redirect being false does.
 	LoginURL func(path string) string
-	// Redirect sends a browser to LoginURL; without it an unauthenticated
-	// request is answered 401 whatever it accepts. An API-only deployment wants
-	// the second, and a redirect there would answer a fetch with a login page.
+	// Redirect sends a request that asks for a page to LoginURL. Every other
+	// unauthenticated request is answered 401, and so is every request when it
+	// is false. An API-only deployment wants the second for all of them, and a
+	// redirect there would answer a fetch with a login page.
+	//
+	// A redirect is an answer to a person. An icon, an image, or a script is
+	// fetched by a browser that follows it all the same, and the request that
+	// follows reaches the login endpoint on the way to a login page nobody sees.
 	Redirect bool
 	// BearerRealm names the scheme a 401 asks for, per RFC 6750, so a client
 	// that sent nothing learns what to send. Empty sends no challenge.
 	BearerRealm string
+}
+
+// announcesPage is this transport's header read over the shared decision, so
+// the two builds cannot drift on which requests are sent to the login.
+func announcesPage(r *fasthttp.RequestCtx) bool {
+	header := &r.Request.Header
+	return pwruntime.AnnouncesPage(string(header.Peek("Sec-Fetch-Dest")), string(header.Peek("Accept")),
+		string(header.Peek(pwruntime.UpdateRenderHeader)), string(header.Peek(pwruntime.ResponseModeHeader)))
 }
 
 // Guard requires an authenticated caller on every protected path.
@@ -63,11 +77,15 @@ func Guard(policy GuardPolicy) Middleware {
 				next(r)
 				return
 			}
-			// Never cached: the answer depends on who is asking, and a shared
-			// cache holding one would show a signed-in page to a stranger or a
-			// login redirect to a signed-in reader.
+			// Never cached: the answer depends on who is asking and on what they
+			// asked for, and a shared cache holding one would show a signed-in
+			// page to a stranger or a login redirect to a signed-in reader.
 			r.Response.Header.Set("Cache-Control", "no-store")
-			if policy.Redirect && policy.LoginURL != nil {
+			// Only a request that asks for a page is sent to the login, for the
+			// reason the net/http half states: a browser follows a redirect for an
+			// icon as readily as for a page, and the login endpoint it lands on
+			// uses up the one-time mark a sign-out left behind.
+			if policy.Redirect && policy.LoginURL != nil && announcesPage(r) {
 				if target := policy.LoginURL(path); target != "" {
 					// Through Redirect rather than by hand, so the target is
 					// refused unless a browser can follow it without running

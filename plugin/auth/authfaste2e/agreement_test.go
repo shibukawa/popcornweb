@@ -33,6 +33,20 @@ func TestBothTransportsAnswerAlike(t *testing.T) {
 			headers: []string{"Location", "Cache-Control"},
 		},
 		{
+			name: "an anonymous request for something that is not a page is refused where it stands",
+			ask: func(b *browser) (*http.Response, []byte) {
+				return b.fetch("/apple-touch-icon.png", imageAccept, "image")
+			},
+			status:  http.StatusUnauthorized,
+			headers: []string{"Cache-Control", "Content-Type"},
+		},
+		{
+			name:    "a document destination with no Accept is sent to the login too",
+			ask:     func(b *browser) (*http.Response, []byte) { return b.fetch("/private", "", "document") },
+			status:  http.StatusSeeOther,
+			headers: []string{"Location", "Cache-Control"},
+		},
+		{
 			name:    "a navigation to the logout endpoint is refused by method",
 			ask:     func(b *browser) (*http.Response, []byte) { return b.get("/auth/logout") },
 			status:  http.StatusMethodNotAllowed,

@@ -26,15 +26,16 @@ const (
 	// completed login returns to. The key is base64url and cannot contain it.
 	returnPathSeparator = ":"
 	// reconfirmCookieSuffix names the cookie carrying the one thing a
-	// reconfirm logout leaves behind: that the next authorization request must
-	// not be answered silently.
+	// reconfirm logout leaves behind: that the next sign-in must not be
+	// answered silently.
 	//
 	// It needs no integrity protection. Its only effect is to add prompt,
 	// which can add an interaction and never remove one, so a forged value
 	// costs a redundant confirmation and grants nothing.
 	reconfirmCookieSuffix = "_reconfirm"
 	// reconfirmCookieMaxAge outlives a browser sitting on the landing page
-	// before signing in again, without becoming a lasting setting.
+	// before signing in again, without becoming a lasting setting. A completed
+	// sign-in ends it sooner; an abandoned one does not.
 	reconfirmCookieMaxAge = 3600
 	// logoutScopeField lets a logout form escalate to a global sign-out where
 	// the deployment permits it.
@@ -158,10 +159,16 @@ func (rt *runtime) handleLogin(x Exchange) {
 		// improves the odds of an interactive confirmation and reports nothing.
 		begin.MaxAge = &stepUpWindow
 		begin.Prompt = []string{"login"}
-	} else if rt.takeReconfirm(x) {
+	} else if rt.reconfirmPending(x) {
 		// select_account names who the provider knows, which is the account
 		// picker a returning user expects, and login stops it from being
 		// answered from a single sign-on session the logout left alive.
+		//
+		// Asking does not use the mark up. A request that begins an
+		// authorization and never finishes one — a second tab, a prefetch, a
+		// browser that followed a redirect for an icon — has re-proved nobody,
+		// and the sign-in the logout meant to make interactive is still ahead.
+		// The callback that completes a sign-in ends the mark.
 		//
 		// A shared-device deployment withholds select_account: it exists to
 		// surface exactly what that mode is trying to hide.
@@ -287,6 +294,11 @@ func (rt *runtime) handleCallback(x Exchange) {
 		return
 	}
 	rt.rememberSignIn(x, data)
+	// The sign-in a reconfirm logout asked to be interactive has completed, so
+	// the mark has done its work. It is expired whether or not one is pending,
+	// because it cannot be looked for here: it is scoped to the login path and
+	// this request is for the callback.
+	rt.clearReconfirm(x)
 	rt.redirect(x, rt.landingPath(returnPath))
 }
 
@@ -364,10 +376,10 @@ func (rt *runtime) handleLogout(x Exchange) {
 		// A provider advertising no end session endpoint degrades to reconfirm
 		// rather than to a silent logout: the next login must still ask.
 	}
-	// Reconfirm asks the provider for nothing. It records that the next
-	// authorization request carries prompt, which is what stops the provider
-	// from answering silently from a single sign-on session this logout could
-	// not reach.
+	// Reconfirm asks the provider for nothing. It records that authorization
+	// requests carry prompt until a sign-in completes, which is what stops the
+	// provider from answering silently from a single sign-on session this
+	// logout could not reach.
 	//
 	// Only OIDC can say it. A plain OAuth authorization request has no prompt
 	// parameter, so ModeOAuthOnly writes no cookie here rather than one nothing
@@ -611,9 +623,10 @@ func (rt *runtime) reconfirmCookieName() string {
 	return rt.manager.CookieName() + reconfirmCookieSuffix
 }
 
-// markReconfirm records that the next authorization request must carry prompt.
-// This is the whole of a reconfirm logout: nothing is sent to the provider, and
-// the provider session of every other relying party is untouched.
+// markReconfirm records that authorization requests must carry prompt until a
+// sign-in completes. This is the whole of a reconfirm logout: nothing is sent to
+// the provider, and the provider session of every other relying party is
+// untouched.
 func (rt *runtime) markReconfirm(x Exchange) {
 	x.SetCookie(&http.Cookie{
 		Name:     rt.reconfirmCookieName(),
@@ -626,13 +639,28 @@ func (rt *runtime) markReconfirm(x Exchange) {
 	})
 }
 
-// takeReconfirm reports whether the pending reconfirmation is set and clears
-// it, so the intent survives only until the next authorization request rather
-// than becoming a permanent setting.
-func (rt *runtime) takeReconfirm(x Exchange) bool {
-	if _, pending := requestCookie(x, rt.reconfirmCookieName()); !pending {
-		return false
-	}
+// reconfirmPending reports whether a logout left the mark. It only reads.
+//
+// The mark used to be spent by the request that read it, so the intent lasted
+// until the next authorization request rather than until the next sign-in. Any
+// request to the login path began one — an icon fetch the guard redirected, a
+// second tab, a prefetch — and the person's own click, arriving after it, found
+// nothing and was answered silently from the provider session, which looked
+// like a sign-out that had not worked.
+func (rt *runtime) reconfirmPending(x Exchange) bool {
+	_, pending := requestCookie(x, rt.reconfirmCookieName())
+	return pending
+}
+
+// clearReconfirm expires the mark once a sign-in has completed, so the intent
+// ends there rather than becoming a permanent setting. An hour ends it for a
+// sign-in that never comes.
+//
+// It cannot ask whether the mark is pending first. The mark is scoped to the
+// login path, which is why an ordinary request never carries it, and the
+// callback that calls this is not a request for that path. Expiring a cookie
+// the browser may not hold costs one header on a response that sets several.
+func (rt *runtime) clearReconfirm(x Exchange) {
 	x.SetCookie(&http.Cookie{
 		Name:     rt.reconfirmCookieName(),
 		Value:    "",
@@ -642,7 +670,6 @@ func (rt *runtime) takeReconfirm(x Exchange) bool {
 		HttpOnly: true,
 		SameSite: http.SameSiteLaxMode,
 	})
-	return true
 }
 
 // cookieSecure mirrors the session cookie policy, so the correlation cookie is

@@ -103,7 +103,7 @@ The `[auth]` keys decide what the framework mounts and what it protects:
 | `post_login_path` | `"/"` | where a completed login lands when no path was requested |
 | `protection.include` | `[]` | path patterns that require authentication |
 | `protection.exclude` | `[]` | patterns carved back out of `include` |
-| `protection.unauthenticated` | `"redirect"` | `redirect` through the login, or `unauthorized` with `401` |
+| `protection.unauthenticated` | `"redirect"` | `redirect` a request that asks for a page through the login, or `unauthorized` with `401` for every request |
 
 Each path is validated as rooted and free of `//` before the server starts, so
 a typo is a startup error rather than a route nobody can reach.
@@ -370,9 +370,39 @@ does not attach automatically, and there is no session secret to validate.
 | `auth.logout_path` (`/auth/logout`) | POST | ends the session |
 
 `auth.protection.include` lists the paths that require a session; everything
-else stays public. An unauthenticated request is redirected through the login
-and returned afterwards, or answered with `401` when
-`auth.protection.unauthenticated = "unauthorized"`.
+else stays public. An unauthenticated request that asks for a page — a browser
+navigation, or one of the runtime's own updates — is redirected through the
+login and returned afterwards. Every other request is answered with `401`, and
+so is every request when `auth.protection.unauthenticated = "unauthorized"`.
+
+The split exists because a redirect only serves someone who will read the page
+at the end of it. A browser fetching an icon, an image, or a script follows the
+redirect just the same, with the site's cookies, and the login endpoint it
+reaches does what any visit there does: it begins an authorization, and it
+reads the reminder a sign-out leaves for the next login (`reconfirm`, below).
+Safari asks for `/favicon.ico` and the `/apple-touch-icon*.png` family without
+being asked, so a site whose `include` covers every path used to send those
+fetches into the login the moment a visitor signed out — and the visitor's own
+click, a moment later, was answered without the `prompt` the sign-out had asked
+for.
+
+Those fetches now get `401` where they stand. That keeps them out of the login
+and costs nothing a visitor could see, because a signed-out visitor never got
+the icon of a protected site either. If the signed-out pages should show one,
+list the exact paths in `exclude`. The pattern syntax matches whole segments, so
+`/apple-touch-icon*.png` cannot be written; each sized variant your access log
+shows is an entry of its own.
+
+```toml
+[auth]
+protection.include = ["/**"]
+protection.exclude = ["/favicon.ico", "/apple-touch-icon.png", "/apple-touch-icon-precomposed.png"]
+```
+
+None of this applies when `include` names a handful of paths such as `/mypage`,
+because the icons are public already. The public asset mount does not help
+either: it is never the site root, so a file under `/public/` cannot answer a
+request for `/favicon.ico`.
 
 **Logout is POST only.** If a link or browser prefetch could end a session,
 sign-out would become a denial-of-service surface. A `GET` therefore receives
@@ -394,11 +424,15 @@ the next login returns the same account without asking, and the sign-out appears
 to have done nothing.
 
 `reconfirm`, the default, revokes the local session and asks the provider for
-nothing at all. What it changes is the *next* authorization request, which
-carries `prompt` so the provider must show its account picker and demand proof
+nothing at all. What it changes is the authorization requests that follow, which
+carry `prompt` so the provider must show its account picker and demand proof
 rather than answering silently from a single sign-on session this logout could
-not reach. No specification lets a relying party end its own slice of a provider
-session, so this is the closest thing to a per-application sign-out that exists.
+not reach. Only a completed sign-in ends that. A login page opened and left, a
+second tab, or a browser following a redirect for an icon does not use it up, so
+the sign-in you actually make is still the one that asks; if none comes, it
+lapses after an hour. No specification lets a relying party end its own slice of
+a provider session, so this is the closest thing to a per-application sign-out
+that exists.
 
 `global` additionally redirects through the provider's RP-initiated logout,
 which signs the user out of every application sharing that provider:

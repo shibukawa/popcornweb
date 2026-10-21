@@ -272,7 +272,9 @@ What a sign-out does to the provider session has three possible answers. One of 
 
 ![A sequence contrasting reconfirm, which sends the provider nothing, with global, which calls end_session_endpoint](../../../../assets/diagrams/logout-scopes.svg)
 
-`reconfirm` is a name we gave a behavior, not a standard. **No request goes to the provider at a reconfirm sign-out.** One parameter is added to the next ordinary authorization request, and that is the whole of it.
+`reconfirm` is a name we gave a behavior, not a standard. **No request goes to the provider at a reconfirm sign-out.** One parameter is added to the ordinary authorization requests that follow, until a sign-in completes, and that is the whole of it.
+
+The callback spends the mark that carries it, not the login request that reads it. The login path is reachable by anything that fetches URLs: a second tab, a prefetch, a browser following a redirect for an icon it asked for unprompted. A mark used up by the first of them would be gone before the person's own click, and the sign-in would be answered silently, which is the failure reconfirm exists to fix.
 
 No specification offers a way to be forgotten by a provider for one relying party alone. The provider session is a single session shared across all of them, and RP-Initiated Logout ends all or nothing. Reconfirm sidesteps that by asking the provider for nothing.
 

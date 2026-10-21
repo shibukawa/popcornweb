@@ -541,7 +541,7 @@ CSRF の秘密もここの鍵ではありません。登録されたセッショ
 | `session.renewal_interval` | `"0s"` | 無操作失効の更新間隔の下限 |
 | `protection.include` | `[]` | 認証を必要とするパスパターン |
 | `protection.exclude` | `[]` | 公開のままにするパスパターン |
-| `protection.unauthenticated` | `"redirect"` | `redirect` または `unauthorized` |
+| `protection.unauthenticated` | `"redirect"` | `redirect` はページを求めるリクエストをログインへ送り、それ以外には `401` を返す。`unauthorized` はすべてに `401` を返す |
 
 ### `[auth.oidc]`
 
@@ -559,7 +559,7 @@ CSRF の秘密もここの鍵ではありません。登録されたセッショ
 | `claim.values` | `[]` | 受け入れる値 |
 | `claim.match` | `"any"` | `any` または `all` |
 | `registered_claims` | `[]` | 許可リストと突き合わせるクレーム。既定は `identity_claim` |
-| `logout_scope` | `"reconfirm"` | `reconfirm` はローカルのセッションを破棄し、次の認可リクエストに `prompt` を載せる。`global` は加えて `end_session_endpoint` でプロバイダのセッションも終了する |
+| `logout_scope` | `"reconfirm"` | `reconfirm` はローカルのセッションを破棄し、サインインが完了するまで（長くて 1 時間）認可リクエストに `prompt` を載せる。`global` は加えて `end_session_endpoint` でプロバイダのセッションも終了する |
 | `allow_global_logout_request` | `false` | 同一オリジンのログアウトフォームが `scope=global` を POST して `global` へ引き上げることを許す。引き上げしかできない |
 | `allow_loopback_http` | `false` | 開発時に `http` のループバック issuer と、`http` のループバックコールバックを許可する。コールバックは書き出したものでもリクエストから導出したものでもよい |
 

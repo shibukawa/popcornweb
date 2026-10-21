@@ -215,7 +215,9 @@ func TestOIDCLoginEndToEnd(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	client := &http.Client{Jar: jar}
+	// A browser names a page when it asks for one, and the guard sends only a
+	// request that does so to the login.
+	client := &http.Client{Jar: jar, Transport: navigating{http.DefaultTransport}}
 
 	// An anonymous request to a protected path is redirected into the login
 	// flow, which completes at the originally requested page.
@@ -261,9 +263,10 @@ func TestOIDCLoginEndToEnd(t *testing.T) {
 	// beside the probes, so the guard reaches it exactly as it reaches an
 	// application route. An anonymous request is sent into the login flow
 	// instead of being answered with a map of the whole surface.
-	anonymous := &http.Client{CheckRedirect: func(*http.Request, []*http.Request) error {
-		return http.ErrUseLastResponse
-	}}
+	anonymous := &http.Client{Transport: navigating{http.DefaultTransport},
+		CheckRedirect: func(*http.Request, []*http.Request) error {
+			return http.ErrUseLastResponse
+		}}
 	document, err := anonymous.Get(app.URL + "/openapi.json")
 	if err != nil {
 		t.Fatal(err)
@@ -330,6 +333,48 @@ func TestOIDCLoginEndToEnd(t *testing.T) {
 		t.Fatalf("session cookie survived logout: %#v", cookie)
 	}
 
+	// The logout left the mark that makes the next sign-in ask again, and
+	// nothing short of a completed sign-in may spend it: not a browser fetching
+	// the icon it asks for unprompted, which the guard used to send to the login
+	// with the mark's cookie in hand, and not a login page opened and left.
+	if findCookie(t, jar, app.URL+"/auth/login", "pw_session_reconfirm") == nil {
+		t.Fatal("logout left no reconfirm mark")
+	}
+	stray := &http.Client{Jar: jar, CheckRedirect: func(*http.Request, []*http.Request) error {
+		return http.ErrUseLastResponse
+	}}
+	icon, err := stray.Get(app.URL + "/apple-touch-icon.png")
+	if err != nil {
+		t.Fatal(err)
+	}
+	readBody(t, icon)
+	if icon.StatusCode != http.StatusUnauthorized {
+		t.Fatalf("an icon fetch to a protected path answered %d, want 401", icon.StatusCode)
+	}
+	if location := icon.Header.Get("Location"); location != "" {
+		t.Fatalf("an icon fetch was sent to %q", location)
+	}
+	for attempt := 1; attempt <= 2; attempt++ {
+		begin, err := stray.Get(app.URL + "/auth/login")
+		if err != nil {
+			t.Fatal(err)
+		}
+		readBody(t, begin)
+		if begin.StatusCode != http.StatusSeeOther {
+			t.Fatalf("login start %d answered %d, want the provider redirect", attempt, begin.StatusCode)
+		}
+		authorization, err := url.Parse(begin.Header.Get("Location"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if prompt := authorization.Query().Get("prompt"); prompt != "select_account login" {
+			t.Fatalf("authorization request %d carried prompt %q, want the account picker and a login", attempt, prompt)
+		}
+		if findCookie(t, jar, app.URL+"/auth/login", "pw_session_reconfirm") == nil {
+			t.Fatalf("authorization request %d spent the reconfirm mark before any sign-in completed", attempt)
+		}
+	}
+
 	// After logout the protected page is anonymous again, and a login that
 	// the admission rule rejects does not create a session.
 	provider.setClaims(map[string]any{"sub": "other", "name": "Outsider", "roles": []string{"guest"},
@@ -345,6 +390,10 @@ func TestOIDCLoginEndToEnd(t *testing.T) {
 	if cookie := findCookie(t, jar, app.URL, "pw_session"); cookie != nil {
 		t.Fatal("a denied login created a session")
 	}
+	// A sign-in the admission rule refused proved nobody, so the mark outlives it.
+	if findCookie(t, jar, app.URL+"/auth/login", "pw_session_reconfirm") == nil {
+		t.Fatal("a refused sign-in spent the reconfirm mark")
+	}
 
 	// A token that no longer carries the configured identity claim cannot
 	// identify an account, so the login is refused instead of falling back to
@@ -358,6 +407,35 @@ func TestOIDCLoginEndToEnd(t *testing.T) {
 	if withoutKey.StatusCode != http.StatusForbidden {
 		t.Fatalf("login without the identity claim = %d", withoutKey.StatusCode)
 	}
+
+	// The sign-in that completes ends the mark, because the intent was that one
+	// sign-in ask, and this is it.
+	provider.setClaims(map[string]any{"sub": "user", "name": "Example User", "email": "user@example.com",
+		"roles": []string{"staff"}, "employee_number": "E-10231"})
+	completed, err := client.Get(app.URL + "/mypage")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if body := readBody(t, completed); completed.StatusCode != http.StatusOK || !strings.HasPrefix(body, "mypage:user:") {
+		t.Fatalf("completing sign-in = %d %q", completed.StatusCode, body)
+	}
+	if findCookie(t, jar, app.URL+"/auth/login", "pw_session_reconfirm") != nil {
+		t.Fatal("a completed sign-in left the reconfirm mark")
+	}
+}
+
+// navigating makes a request look like the one a browser sends to open a page:
+// it names text/html unless the request already named something. The guard
+// sends a request to the login only when it asks for a page, and a bare Go
+// client asks for nothing.
+type navigating struct{ next http.RoundTripper }
+
+func (n navigating) RoundTrip(request *http.Request) (*http.Response, error) {
+	if request.Header.Get("Accept") == "" {
+		request = request.Clone(request.Context())
+		request.Header.Set("Accept", navigationAccept)
+	}
+	return n.next.RoundTrip(request)
 }
 
 func postLogout(client *http.Client, appURL, origin string) (*http.Response, error) {
@@ -455,7 +533,7 @@ session.ttl = "1h"
 session.idle_timeout = "30m"
 mode = "oidc_only"
 post_login_path = "/"
-protection.include = ["/mypage", "/openapi.json"]
+protection.include = ["/mypage", "/openapi.json", "/apple-touch-icon.png"]
 
 [auth.oidc]
 issuer = "%s"
