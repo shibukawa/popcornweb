@@ -59,10 +59,15 @@ facts:
     \ other than a generation run, so it is never stale and is never reported\n    found_by: reporting the asset\
     \ manifest printed a warning on every rebuild after the first, in every scaffolded project, about a file the\
     \ same build had just written\n    bound: the exemption is the exact path, so a copy left anywhere else is still\
-    \ reported\n  message: names the path and the purpose key that would include it\n  rejected_alternative: failing\
-    \ the build, which would break a project that keeps deliberate samples or fixtures beside its code\nconsumers:\n\
-    \  generation: api:cli-generate keeps, per directory, only the artifacts whose purpose lists that directory\n\
-    \  developer_loop: api:cli-dev regenerates from these lists but watches wider, per decision:developer-loop-watch-scope\n\
+    \ reported\n  other_checkouts_are_not_walked:\n    rule: the report walks the project root but stops at a linked\
+    \ git worktree below it, because that is a second copy of the project judged against a configuration written\
+    \ for the first\n    found_by: pw dev printed a warning for every generated file and template of every worktree\
+    \ under .claude/worktrees on each regeneration\n    bound: a worktree is recognised by its .git file naming\
+    \ a git directory under worktrees, so a submodule, whose git directory is under modules, is still walked as\
+    \ part of the project\n  message: names the path and the purpose key that would include it\n  rejected_alternative:\
+    \ failing the build, which would break a project that keeps deliberate samples or fixtures beside its code\n\
+    consumers:\n  generation: api:cli-generate keeps, per directory, only the artifacts whose purpose lists that\
+    \ directory\n  developer_loop: api:cli-dev regenerates from these lists but watches wider, per decision:developer-loop-watch-scope\n\
     \  scaffolding: api:cli-new offers destinations inside the purpose its artifact belongs to, which for a page\
     \ is a generate.pages root\nrationale:\n  - a reader answers \"what is this directory generated for\" by reading\
     \ the purpose it appears under\n  - a purpose that scans an unrelated tree pays for it on every developer-loop\
@@ -162,6 +167,13 @@ facts:
       found_by: reporting the asset manifest printed a warning on every rebuild after the first, in every scaffolded
         project, about a file the same build had just written
       bound: the exemption is the exact path, so a copy left anywhere else is still reported
+    other_checkouts_are_not_walked:
+      rule: the report walks the project root but stops at a linked git worktree below it, because that is a second
+        copy of the project judged against a configuration written for the first
+      found_by: pw dev printed a warning for every generated file and template of every worktree under .claude/worktrees
+        on each regeneration
+      bound: a worktree is recognised by its .git file naming a git directory under worktrees, so a submodule, whose
+        git directory is under modules, is still walked as part of the project
     message: names the path and the purpose key that would include it
     rejected_alternative: failing the build, which would break a project that keeps deliberate samples or fixtures
       beside its code

@@ -34,6 +34,10 @@ func verifyScriptModuleTags(root string) error {
 			case ".git", ".pw", "dist", "node_modules", ".devbox":
 				return filepath.SkipDir
 			}
+			// A template of another checkout is that checkout's to verify.
+			if nestedWorktree(root, name) {
+				return filepath.SkipDir
+			}
 			return nil
 		}
 		if !strings.HasSuffix(entry.Name(), ".pw.html") {

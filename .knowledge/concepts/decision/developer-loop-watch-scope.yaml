@@ -16,25 +16,28 @@ facts:
     \  includes: extra relative paths and glob patterns added to the walk, for inputs\
     \ the walk does not reach\n  excludes: subtrees skipped during the walk, added\
     \ to the built-in list\n  built_in_excludes: .git, vendor, node_modules, .devbox,\
-    \ and the requirement:public-asset-delivery public tree\n  defaults: both lists\
-    \ empty, because the module walk is already the right default\nreplaces:\n  key:\
-    \ dev.extra_watch\n  reason: an exclude list is meaningless without its include\
-    \ counterpart in the same block, and the pair reads as one scope\nexcludes_motivation:\n\
-    \  problem: a project that installs a large dependency tree makes the walk the\
-    \ slowest step of every loop iteration\n  scope: exclusion is by directory subtree,\
-    \ since that is what makes a walk expensive\nwatched_by_default:\n  - Go sources,\
-    \ for rebuild\n  - .pw.html and .pw.sql, for regeneration\n  - a new or removed\
-    \ concept:page-tree route, which needs nothing added: the walk compares files\
-    \ rather than subscribing to events, and a route always carries the page template\
-    \ that makes it one\n  - popcornweb.toml, the policy:config-file-resolution project-local\
-    \ files, and the policy:dotenv-resolution files\n  - the data:migration-source\
-    \ directory and the data:devidp-config file when enabled\nrationale:\n  - the\
-    \ wide default is what makes the loop trustworthy, and the narrow one is what\
-    \ makes it fast; only the second is safe to leave to the operator\n  - a wrong\
-    \ exclude costs a missed reload the operator can see, while a missing include\
-    \ costs a reload that never happens for a reason nobody states\nnon_goals:\n \
-    \ - matching the generation scope\n  - watching outside the project root\n  -\
-    \ per-file rather than per-subtree exclusion\n```"
+    \ a linked git worktree below the project root, and the requirement:public-asset-delivery\
+    \ public tree\n  defaults: both lists empty, because the module walk is already\
+    \ the right default\nreplaces:\n  key: dev.extra_watch\n  reason: an exclude list\
+    \ is meaningless without its include counterpart in the same block, and the pair\
+    \ reads as one scope\nexcludes_motivation:\n  problem: a project that installs\
+    \ a large dependency tree makes the walk the slowest step of every loop iteration\n\
+    \  scope: exclusion is by directory subtree, since that is what makes a walk expensive\n\
+    watched_by_default:\n  - Go sources, for rebuild\n  - .pw.html and .pw.sql, for\
+    \ regeneration\n  - a new or removed concept:page-tree route, which needs nothing\
+    \ added: the walk compares files rather than subscribing to events, and a route\
+    \ always carries the page template that makes it one\n  - popcornweb.toml, the\
+    \ policy:config-file-resolution project-local files, and the policy:dotenv-resolution\
+    \ files\n  - the data:migration-source directory and the data:devidp-config file\
+    \ when enabled\nrationale:\n  - the wide default is what makes the loop trustworthy,\
+    \ and the narrow one is what makes it fast; only the second is safe to leave to\
+    \ the operator\n  - a wrong exclude costs a missed reload the operator can see,\
+    \ while a missing include costs a reload that never happens for a reason nobody\
+    \ states\n  - a linked git worktree is a second copy of the project, so watching\
+    \ it restarts the loop whenever another checkout is edited; a submodule is part\
+    \ of the project and stays in the walk\nnon_goals:\n  - matching the generation\
+    \ scope\n  - watching outside the project root\n  - per-file rather than per-subtree\
+    \ exclusion\n```"
   status: accepted
   why_wider_than_generation:
     generation: reads only what it generates from, so an explicit list is exact
@@ -47,8 +50,8 @@ facts:
     includes: extra relative paths and glob patterns added to the walk, for inputs
       the walk does not reach
     excludes: subtrees skipped during the walk, added to the built-in list
-    built_in_excludes: .git, vendor, node_modules, .devbox, and the requirement:public-asset-delivery
-      public tree
+    built_in_excludes: .git, vendor, node_modules, .devbox, a linked git worktree
+      below the project root, and the requirement:public-asset-delivery public tree
     defaults: both lists empty, because the module walk is already the right default
   replaces:
     key: dev.extra_watch
@@ -72,6 +75,9 @@ facts:
     makes it fast; only the second is safe to leave to the operator
   - a wrong exclude costs a missed reload the operator can see, while a missing include
     costs a reload that never happens for a reason nobody states
+  - a linked git worktree is a second copy of the project, so watching it restarts
+    the loop whenever another checkout is edited; a submodule is part of the project
+    and stays in the walk
   non_goals:
   - matching the generation scope
   - watching outside the project root

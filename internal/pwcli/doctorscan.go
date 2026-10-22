@@ -125,6 +125,9 @@ func (s *projectScan) scanGenerated() {
 				// diagnosis to say about it.
 				return filepath.SkipDir
 			}
+			if nestedWorktree(s.root, path) {
+				return filepath.SkipDir
+			}
 			return nil
 		}
 		if !strings.HasSuffix(entry.Name(), generatedSuffix) || packageArtifacts[entry.Name()] {

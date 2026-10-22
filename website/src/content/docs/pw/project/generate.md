@@ -149,6 +149,13 @@ a call site outside its purpose simply gets no generated binding. A `_pw_gen.go`
 left outside every purpose by an earlier layout **is** reported, since nothing
 regenerates or removes it any more.
 
+Neither report looks inside another checkout of the repository. A worktree made
+by `git worktree add` below the project root — the kind coding agents keep under
+`.claude/worktrees` — holds a full copy of the project, and its sources and
+generated files answer to its own `popcornweb.toml`, not to this one. Judged
+from here, every file in it would look like one nobody listed. A submodule is
+part of the project and is reported like any other directory.
+
 Besides declaration files, generation reads Go source for call sites:
 
 | Call | Generates |

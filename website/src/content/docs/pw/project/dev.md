@@ -39,7 +39,12 @@ that did not prints the rows that moved.
 
 The walk covers the module, not the `[generate]` purposes: any Go source is a
 rebuild input, including files no purpose generates from. `.git`, `vendor`,
-`node_modules`, `.devbox`, and the `public` tree are always skipped.
+`node_modules`, `.devbox`, and the `public` tree are always skipped, and so is
+any worktree made by `git worktree add` below the project root, such as the
+checkouts a coding agent keeps under `.claude/worktrees`. Each one holds a
+second copy of every source, so counting them would restart the application
+whenever someone edits another checkout. A submodule is part of the project and
+is walked like any other directory.
 
 `dev.watch.includes` takes relative glob patterns for inputs the walk does not
 reach. `dev.watch.excludes` skips a subtree, which is what to reach for when a

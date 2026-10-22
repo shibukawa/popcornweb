@@ -608,6 +608,9 @@ func newRetentionScanner(root string, assets assetsConfig) (*retentionScanner, e
 			case ".git", ".pw", "dist", "node_modules", "public", ".devbox":
 				return filepath.SkipDir
 			}
+			if nestedWorktree(root, name) {
+				return filepath.SkipDir
+			}
 			return nil
 		}
 		if !scannableSource(entry.Name()) {
