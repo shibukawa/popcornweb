@@ -667,6 +667,11 @@ func reportSourcesOutsideScope(root string, config projectConfig, stdout io.Writ
 			case ".git", ".pw", "vendor", "node_modules", ".devbox":
 				return filepath.SkipDir
 			}
+			// Another checkout of the project holds a copy of everything this
+			// walk looks for, and none of it is listed in this configuration.
+			if nestedWorktree(root, path) {
+				return filepath.SkipDir
+			}
 			return nil
 		}
 		if path == bootstrap {

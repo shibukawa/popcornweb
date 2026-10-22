@@ -491,6 +491,12 @@ func snapshotAssetWatchFiles(root string, assets assetsConfig, excludes []string
 			if (path == distPath && !pathWithin(distPath, publicRoot)) || path == filepath.Join(root, filepath.FromSlash(l.derived)) || path == filepath.Join(root, filepath.FromSlash(l.stage)) || path == filepath.Join(root, filepath.FromSlash(l.cache)) || skipped[path] {
 				return filepath.SkipDir
 			}
+			// Last, because it is the one test that reads the disk. A worktree's
+			// sources are not inputs of the application this loop runs, and
+			// counting them restarts it whenever one is edited.
+			if nestedWorktree(root, path) {
+				return filepath.SkipDir
+			}
 			return nil
 		}
 		name := entry.Name()
