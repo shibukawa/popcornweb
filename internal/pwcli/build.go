@@ -6,6 +6,9 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"path"
+	"path/filepath"
+	"runtime"
 	"strings"
 )
 
@@ -28,6 +31,12 @@ func runBuild(ctx context.Context, args []string, stdout, stderr io.Writer) erro
 	if err := options.check(config); err != nil {
 		return err
 	}
+	var output []string
+	if options.target == "" {
+		if output, err = binaryOutput(root, config); err != nil {
+			return err
+		}
+	}
 	debug := options.debug
 	progress := newProgressRegion(stdout)
 	if err := generateBuildInputs(ctx, root, config, options, progress, stdout, stderr); err != nil {
@@ -49,6 +58,7 @@ func runBuild(ctx context.Context, args []string, stdout, stderr io.Writer) erro
 	if !debug {
 		build = append(build, "-ldflags=-s -w")
 	}
+	build = append(build, output...)
 	build = append(build, options.tags()...)
 	command := exec.CommandContext(ctx, "go", append(build, config.Main)...)
 	command.Dir, command.Stdout, command.Stderr, command.Env = root, stdout, stderr, os.Environ()
@@ -58,6 +68,70 @@ func runBuild(ctx context.Context, args []string, stdout, stderr io.Writer) erro
 		return fmt.Errorf("go build: %w", err)
 	}
 	return nil
+}
+
+// binaryOutput is the -o a plain build passes. Without build.output there is
+// none, so the binary lands where go build has always put it: in the project
+// root, named after the main package. When a directory already holds that name
+// go build refuses with only "is a directory", after generation has run, so the
+// collision is found here first and the error names the key that resolves it.
+func binaryOutput(root string, config projectConfig) ([]string, error) {
+	if config.Output != "" {
+		if info, err := os.Stat(filepath.Join(root, filepath.FromSlash(config.Output))); err == nil && info.IsDir() {
+			return nil, fmt.Errorf("popcornweb.toml: build.output %s is a directory; the key names the binary itself", config.Output)
+		}
+		return []string{"-o", filepath.FromSlash(config.Output)}, nil
+	}
+	name := defaultBinaryName(config.Main)
+	if name == "" {
+		return nil, nil
+	}
+	if info, err := os.Stat(filepath.Join(root, name)); err == nil && info.IsDir() {
+		return nil, fmt.Errorf("go build would write the binary of %s to %s, which is a directory; "+
+			"name the binary with build.output in popcornweb.toml, for example build.output = %q", config.Main, name, "bin/"+name)
+	}
+	return nil, nil
+}
+
+// defaultBinaryName is the file go build writes for a main package when it is
+// given no -o: the last element of the package path, the one before it when
+// that is a major version suffix, and .exe for Windows. A main package of "."
+// (or "./v2") takes the module's name, which is not in the path, so it is left
+// to go build.
+func defaultBinaryName(main string) string {
+	elements := strings.Split(path.Clean(filepath.ToSlash(main)), "/")
+	name := elements[len(elements)-1]
+	if majorVersionSuffix(name) {
+		if len(elements) == 1 {
+			return ""
+		}
+		name = elements[len(elements)-2]
+	}
+	if name == "." || name == ".." {
+		return ""
+	}
+	goos := os.Getenv("GOOS")
+	if goos == "" {
+		goos = runtime.GOOS
+	}
+	if goos == "windows" {
+		name += ".exe"
+	}
+	return name
+}
+
+// majorVersionSuffix reports a path element of the form v2, v3, ..., which go
+// build skips when it names a binary.
+func majorVersionSuffix(element string) bool {
+	if len(element) < 2 || element[0] != 'v' || element[1] == '0' {
+		return false
+	}
+	for _, r := range element[1:] {
+		if r < '0' || r > '9' {
+			return false
+		}
+	}
+	return element != "v1"
 }
 
 // runGenerate is runBuild without its final compile step: it writes everything

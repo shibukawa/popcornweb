@@ -23,7 +23,9 @@ selects provider packaging. `pw dev` is unaffected by both.
    (`contrib/devidp`, which signs users in without a password);
 5. runs `go build` on `project.main`.
 
-The binary lands in the project root. With `--target` the result lands under
+The binary lands in the project root, or at `build.output` when popcornweb.toml
+sets it (needed when the root already has a directory named like the main
+package). With `--target` the result lands under
 `.pw/build/<target>/<backend>/` with a `deployment.json` manifest, and
 `config.prod.toml` is required.
 

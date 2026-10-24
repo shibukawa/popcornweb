@@ -46,6 +46,30 @@ from the scheme of the `[[middleware.rdb.connections]]` DSN. Keeping the two in
 agreement is on you
 — nothing here can check a DSN it is forbidden to hold.
 
+## `[build]`
+
+```toml
+[build]
+output = "bin/myapp"
+```
+
+| Key | Default | Meaning |
+| --- | --- | --- |
+| `output` | *(none)* | the path [`pw build`](/pw/project/build/) writes the binary to, relative to the project root |
+
+Without the key `pw build` passes no `-o`, and the binary lands where `go build`
+puts it: in the project root, named after the main package. Set it when that
+name is taken. A module that keeps a library beside its application often has a
+package directory of the application's name at the root, and `go build` cannot
+write a binary over a directory; `pw build` stops before generating and names
+this key instead.
+
+`output` names the binary itself, not a directory to put it in, and is held to
+the rule the asset paths are: a project-relative path, written in its canonical
+form. A missing parent directory is created. A package project has no binary,
+so the key is an error there, and `--target` builds ignore it, because each
+target stages its artifact under `.pw/build/`.
+
 ## `[generate]`
 
 ```toml
