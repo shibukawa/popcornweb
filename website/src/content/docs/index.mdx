@@ -80,50 +80,58 @@ holds one todo list written twice against one PostgreSQL table — once with
 Same five routes, same rows, and the harness refuses to measure them if their
 JSON bodies disagree.
 
-Throughput first, k6 at 20 VUs against the same seeded 50 rows, medians of five
-alternating passes. The framework result depends almost entirely on where the
+Throughput first, k6 at 20 VUs against the same seeded 50 rows, ten alternating
+passes per framework row (nine for the server-side session, after one that other
+work on the machine had disturbed was discarded), each read against the baseline
+measured beside it. The framework result depends almost entirely on where the
 session lives:
 
-| | requests/s | HTML p95 |
-| --- | --- | --- |
-| `net/http` + pgx | ~14,700 | 3.15–3.39 ms |
-| Popcorn Web, cookie session | ~13,700 | 2.90–3.21 ms |
-| Popcorn Web, server-side session | ~15,800 | 2.46–2.66 ms |
+| | requests/s | vs baseline | HTML p95 |
+| --- | --- | --- | --- |
+| `net/http` + pgx, beside the cookie session | ~14,300 | — | 3.23–3.98 ms |
+| Popcorn Web, cookie session | ~14,750 | +3% | 2.58–3.55 ms |
+| `net/http` + pgx, beside the server-side session | ~15,350 | — | 2.80–4.06 ms |
+| Popcorn Web, server-side session | ~17,550 | +14% | 1.82–2.64 ms |
 
 Same application code in both framework rows, and the framework is quicker to
 first byte in both. A cookie session puts the whole record on the wire twice per
-request — 631 bytes of `Set-Cookie` against 299 — and that, not the AES-GCM
-sealing it, is what costs the throughput: the crypto measures 0.5 µs.
+request — 639 bytes of `Set-Cookie` against 299 — and that, not the AES-GCM
+sealing it, is what separates the two rows by eleven points: the crypto measures
+0.5 µs. The server-side row is the in-memory development backend; `rdb`, `redis`
+and `dynamo` are its production shapes, and each adds a storage round trip in
+exchange for the bytes.
 
-Per request the framework spends **203 µs of CPU against the baseline's 221**,
+Per request the framework spends **149 µs of CPU against the baseline's 204**,
 while also running a session, a CSRF check, security headers and a request ID
-the hand-written service does not have. Its whole middleware chain is **2.7 µs**,
+the hand-written service does not have. Its whole middleware chain is **3.3 µs**,
 against **37 µs** for one loopback query.
 [Performance](/guides/architecture/performance/) has the full breakdown and the
 four other settings worth tuning.
 
 All of that has to be linked in, and the binary is where you would expect to pay
-for it. Go 1.26.5 and TinyGo 0.41.1 on darwin/arm64:
+for it. Go 1.27.0 on darwin/arm64; the TinyGo native figures are from TinyGo
+0.41.1 and have not been repeated, because TinyGo 0.42 cannot yet link a native
+binary against the macOS 27 SDK:
 
 | Build | `net/http` + pgx | Popcorn Web |
 | --- | --- | --- |
-| host `go build` | 18.98 MB | 19.66 MB |
-| host `-ldflags="-s -w"` | 13.06 MB | 13.57 MB |
+| host `go build` | 20.07 MB | 22.43 MB |
+| host `-ldflags="-s -w"` | 13.71 MB | 15.37 MB |
 | TinyGo native | does not build | 6.13 MB |
 | TinyGo native `-no-debug` | does not build | 6.13 MB |
 | TinyGo `wasip1` | does not build | does not build |
 
 Read the stripped row as the price list. Sessions, CSRF, security headers,
 negotiated compression, OpenTelemetry spans down to each SQL statement, the
-generated templates and the generated queries together come to **0.51 MB** over
-a service that has none of them — 3.9%, for everything the throughput table
+generated templates and the generated queries together come to **1.66 MB** over
+a service that has none of them — 12%, for everything the throughput table
 above was already running.
 
 The TinyGo rows are where the table stops being a comparison. `pgx` does not
-compile there at all — it reaches for `tls.Conn`, `tls.X509KeyPair` and
-`net.Resolver`, none of which TinyGo has — so the framework's rebuilt driver
-stack is what makes the column exist, and it more than halves the binary against
-a stripped host build.
+compile there at all — it reaches for `tls.X509KeyPair`, which TinyGo does not
+have — so the framework's rebuilt driver stack is what makes the column exist,
+and when it was last measured it more than halved the binary against a stripped
+host build.
 
 Neither service reaches `wasip1`, and for the framework that is a platform
 limit rather than missing work: the PostgreSQL engine requires TinyGo's threaded

@@ -118,16 +118,21 @@ WebSocket upgrade completes.
 
 ### Sizes
 
-`examples/helloworld` on an Apple M3, which embeds SQLite — that is most of what
-these numbers are:
+`examples/helloworld` on an Apple M3 with Go 1.27, which embeds SQLite — that is
+most of what these numbers are:
 
 | Build | net/http | fasthttp |
 | --- | --- | --- |
-| `go build` | 15.8 MiB | 15.5 MiB |
-| `go build -ldflags="-s -w"` | 9.9 MiB | 9.6 MiB |
+| `go build` | 17.7 MiB | 17.1 MiB |
+| `go build -ldflags="-s -w"` | 11.0 MiB | 10.6 MiB |
 | `tinygo build` | 4.2 MiB | 5.6 MiB |
-| `tinygo build -target=wasip1` | 7.6 MiB | 13.4 MiB |
-| `tinygo build -target=wasip1 -no-debug` | 2.9 MiB | 3.8 MiB |
+| `tinygo build -target=wasip1` | 10.3 MiB | 13.7 MiB |
+| `tinygo build -target=wasip1 -no-debug` | 3.8 MiB | 4.9 MiB |
+
+The `tinygo build` row is older than the rest: it was taken with TinyGo 0.41 and
+not repeated, because TinyGo 0.42 cannot yet link a native binary against the
+macOS 27 SDK. The wasip1 `-no-debug` row, the comparable one, has grown by about
+30% since, so read the native figure as a floor.
 
 Read the rows against each other, not across. Under host Go fasthttp is
 marginally smaller; under TinyGo it is 1.4 MiB *larger*, because the fasthttp
@@ -136,10 +141,10 @@ zlib, the router, the websocket upgrader and a SOCKS dialer come on top. Host
 Go's linker discards most of that and TinyGo's keeps more.
 
 **Always pass `-no-debug` for a WASI artifact.** A wasm module embeds its DWARF
-as custom sections, so dropping it takes 62–72% off, and it is worth more than
-every other choice combined. `-no-debug` earns nothing on macOS native builds
-(the Mach-O carries no DWARF to remove). `-target=wasm`, the browser one, does
-not build.
+as custom sections, so dropping it takes 63–65% off, and it saves more than the
+choice of backend and the choice of target put together. `-no-debug` earns
+nothing on macOS native builds (the Mach-O carries no DWARF to remove).
+`-target=wasm`, the browser one, does not build.
 
 ## Build tags
 

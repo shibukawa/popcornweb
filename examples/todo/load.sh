@@ -25,12 +25,17 @@ VUS=${VUS:-20}
 DURATION=${DURATION:-20s}
 ROWS=${ROWS:-50}
 SECRET=${SESSION_KEYRING_SECRET:-w7pGbK0UFoQhTImvxy9KptkfwkIki7dm94avz1Pi4UY=}
+# The Debian-based image rather than the Alpine one: musl's libc is slower than
+# glibc's, and a database benchmark should not be measuring the libc. The Debian
+# release is in the tag so that a new stable cannot move the base under a
+# comparison.
+PG_IMAGE=${PG_IMAGE:-postgres:17-trixie}
 
-echo "==> PostgreSQL"
+echo "==> PostgreSQL ($PG_IMAGE)"
 docker rm -f todo-pg >/dev/null 2>&1 || true
 docker run -d --name todo-pg \
   -e POSTGRES_USER=todo -e POSTGRES_PASSWORD=todo -e POSTGRES_DB=todo \
-  -p 5433:5432 postgres:17-alpine >/dev/null
+  -p 5433:5432 "$PG_IMAGE" >/dev/null
 # pg_isready can succeed during image initialization before POSTGRES_DB has
 # created todo. Probe the database itself so the schema command cannot race it.
 until docker exec todo-pg psql -qU todo -d todo -c 'SELECT 1' >/dev/null 2>&1; do sleep 1; done

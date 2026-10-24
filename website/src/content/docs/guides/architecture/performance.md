@@ -26,16 +26,23 @@ all. TinyGo is the third, and it is chosen for size rather than speed.
 
 | Build | net/http | fasthttp |
 | --- | --- | --- |
-| `go build` | 15.8 MiB | 15.5 MiB |
-| `go build -ldflags="-s -w"` | 9.9 MiB | 9.6 MiB |
+| `go build` | 17.7 MiB | 17.1 MiB |
+| `go build -ldflags="-s -w"` | 11.0 MiB | 10.6 MiB |
 | `tinygo build` | 4.2 MiB | 5.6 MiB |
 | `tinygo build -no-debug` | 4.2 MiB | 5.6 MiB |
 
 Those are [`examples/helloworld`](https://github.com/shibukawa/popcornweb/tree/main/examples/helloworld)
-on an Apple M3, and the subject matters: it embeds SQLite, which is most of what
-you see. The transport accounts for about 300 KiB of the difference between the
-two columns, so a smaller binary is not a reason to switch. TinyGo is, at less
-than half the stripped host build.
+on an Apple M3 with Go 1.27, and the subject matters: it embeds SQLite, which is
+most of what you see. The transport accounts for about 0.6 MiB of the difference
+between the two columns (0.35 MiB once stripped), so a smaller binary is not a
+reason to switch. TinyGo is a reason: the WASI table below puts its module at a
+third of the stripped host build.
+
+The two TinyGo rows are older than the rest. They were taken with TinyGo 0.41 and
+have not been repeated, because TinyGo 0.42 cannot yet link a native binary
+against the macOS 27 SDK. The WASI table was repeated, and its `-no-debug` rows,
+the comparable ones, have grown by about 30% since, so read the native figures as
+a floor.
 
 `-no-debug` earns nothing here, and the reason is macOS rather than TinyGo: the
 linked Mach-O carries no DWARF at all — debug information stays in the object
@@ -66,19 +73,19 @@ and there the flag is not a rounding error:
 
 | `tinygo build -target=wasip1` | net/http | fasthttp |
 | --- | --- | --- |
-| plain | 7.6 MiB | 13.4 MiB |
-| `-no-debug` | 2.9 MiB | 3.8 MiB |
+| plain | 10.3 MiB | 13.7 MiB |
+| `-no-debug` | 3.8 MiB | 4.9 MiB |
 
-A wasm module embeds its DWARF as custom sections, so dropping it takes 62% off
-the net/http build and 72% off the fasthttp one. `wasip2` lands within 0.1 MiB of
-each of these. `-target=wasm`, the browser one, does not build: `net/http`'s
-JavaScript transport does not compile under TinyGo, and no server target needs it.
+A wasm module embeds its DWARF as custom sections, so dropping it takes 63% off
+the net/http build and 65% off the fasthttp one. `wasip2` lands within 0.1 MiB of
+each of these. `-target=wasm`, the browser one, does not build: tinygodriver's
+`netdev` has no implementation for it, and no server target needs one.
 
-Two things follow. **Always pass `-no-debug` for a WASI artifact** — it is worth
-more than every other choice on this page combined, and at 2.9 MiB the module is
-smaller than the native TinyGo binary. And the fasthttp penalty largely
-evaporates: 0.9 MiB rather than the 5.8 MiB the plain column suggests, because
-most of what the fork adds was debug information about it.
+Two things follow. **Always pass `-no-debug` for a WASI artifact** — it saves more
+than the choice of backend and the choice of target put together, and at 3.8 MiB
+the module is about a third of the stripped host build. And the fasthttp penalty
+mostly evaporates: about 1 MiB rather than the 3.4 MiB the plain column suggests,
+because most of what the fork adds is debug information about itself.
 
 For where such a module is deployed, see
 [Serverless](/guides/deployment/serverless/).
@@ -90,21 +97,21 @@ also where the number matters least.
 
 | Per request, 8 goroutines | net/http | fasthttp |
 | --- | --- | --- |
-| JSON response, no socket | 1.8 µs, 21 allocs | 0.8 µs, 2 allocs |
-| HTML page, no socket | 2.5 µs, 39 allocs | 1.2 µs, 16 allocs |
-| JSON response over loopback | 10.1 µs | 9.1 µs |
-| The same, behind one 1 ms query | 172 µs | 167 µs |
+| JSON response, no socket | 1.5 µs, 22 allocs | 0.7 µs, 3 allocs |
+| HTML page, no socket | 2.4 µs, 42 allocs | 1.0 µs, 11 allocs |
+| JSON response over loopback | 9.1 µs | 8.0 µs |
+| The same, behind one 1 ms query | 150 µs | 150 µs |
 
 Read the allocation counts rather than the times: they are deterministic and do
-not move when the machine is busy. Two allocations against twenty-one is the
+not move when the machine is busy. Three allocations against twenty-two is the
 real difference, and it is what the pooled request value buys.
 
 Read the last two rows for the decision. A loopback socket costs both sides the
-same and takes the ratio from 2× to about 10%; one database query takes it to
+same and takes the ratio from 2× to about 13%; one database query takes it to
 noise. Serving the whole `helloworld` page — a template render and a SQLite
-write — host Go on net/http, host Go on fasthttp and TinyGo on net/http land at
-335 µs, 344 µs and 369 µs, which is one measurement of the same thing three
-times.
+write — over one connection takes 261 µs on host Go with net/http and 256 µs with
+fasthttp, which is one measurement of the same thing twice. TinyGo on net/http was
+about 10% slower the last time it was measured, at 369 µs against 335 µs.
 
 So switch for the allocation profile under a load that is genuinely
 transport-bound, or for what TinyGo does to the image. Do not switch expecting a
@@ -117,17 +124,17 @@ build costs you: your handlers must sit in files a build tag can exclude, and
 These results come from
 [`examples/todo`](https://github.com/shibukawa/popcornweb/tree/main/examples/todo)
 under 20 concurrent clients. They report CPU time attributed to each request on
-Go 1.26.5 and an Apple M3, with PostgreSQL 17 in Docker on the same machine.
+Go 1.27.0 and an Apple M3, with PostgreSQL 17 in Docker on the same machine.
 
 | Per request | CPU time |
 | --- | --- |
-| Whole middleware chain | 3.0 µs |
-| └ CSRF check | 2.1 µs |
-| One `SELECT` returning 50 rows | 39 µs |
-| Encode and write a JSON response | 36 µs |
-| Render and write an HTML response | 100 µs |
-| Whole request, Popcorn Web | 166 µs |
-| Whole request, `net/http` comparison | 219 µs |
+| Whole middleware chain | 3.3 µs |
+| └ CSRF check | 2.4 µs |
+| One `SELECT` returning 50 rows | 37 µs |
+| Encode and write a JSON response | 31 µs |
+| Render and write an HTML response | 88 µs |
+| Whole request, Popcorn Web | 149 µs |
+| Whole request, `net/http` comparison | 204 µs |
 
 The JSON and HTML rows describe different responses, so the table is not a sum.
 Its useful signal is the order of magnitude. The middleware chain takes a few
@@ -138,10 +145,12 @@ milliseconds.
 The last two rows differ by more than the per-layer rows explain, and the
 profile says where the rest goes: system calls. `html/template` writes a page
 out as it walks it, one value at a time through the response writer, and the
-comparison service spends three quarters of its CPU inside `write`. A generated
+comparison service spends two thirds of its CPU inside `write`. A generated
 component renders into a buffer and hands the finished document over in one
-call. Neither line appears in the table above, because it is not a layer — it is
-how the layer above it reaches the socket.
+call, and the framework spends half. Take `write` out and the two cost about the
+same, around 75 µs a request, so the whole difference sits there. It does not
+appear in the table above, because it is not a layer — it is how the layer above
+it reaches the socket.
 
 Measure which layer dominates your application first. Removing a few microseconds
 of middleware only matters after that layer has proved to be the bottleneck.
@@ -165,7 +174,7 @@ slow queries without leaving all production SQL logging enabled.
 
 The `cookie` backend needs no external store, and its cryptographic work costs
 about 0.5 µs per request for a typical session — opening the incoming record and
-sealing the outgoing one measures 0.45 µs at 256 bytes and 0.73 µs at 1 KB. Its
+sealing the outgoing one measures 0.44 µs at 256 bytes and 0.72 µs at 1 KB. Its
 real scaling constraint is the wire: the response carries the whole session
 record, and the browser returns that record on the next request. Larger sessions
 therefore mean larger request and response headers.
@@ -260,7 +269,7 @@ is not already doing that work; see
 [Response compression](/guides/backend/compression/).
 
 CSRF is the most visible item in the middleware measurement, but it still costs
-only 2.1 µs in this benchmark. Exclude only APIs that use bearer authentication and
+only 2.4 µs in this benchmark. Exclude only APIs that use bearer authentication and
 cannot be called from a browser with cookies. Removing protection from a wider path
 is not a useful performance trade.
 
