@@ -32,7 +32,7 @@ jobs:
 
       - uses: actions/setup-node@v7
         with:
-          node-version: 22
+          node-version: 24
           cache: npm
           cache-dependency-path: tools/vscode/package-lock.json
 
@@ -84,7 +84,7 @@ jobs:
 
       - uses: actions/setup-node@v7
         with:
-          node-version: 22
+          node-version: 24
 
       - name: Publish to the Visual Studio Marketplace
         run: npx --yes @vscode/vsce publish --packagePath popcornweb.vsix
