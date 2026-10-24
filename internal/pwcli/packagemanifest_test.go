@@ -160,6 +160,24 @@ module = "example.com/widget"
 	}
 }
 
+func TestLoadPackageProjectRejectsBuildOutput(t *testing.T) {
+	root := t.TempDir()
+	writePackageFixture(t, root, `[project]
+name = "widget"
+kind = "package"
+
+[build]
+output = "bin/widget"
+
+[package]
+module = "example.com/widget"
+`)
+	_, err := loadProjectConfig(root)
+	if err == nil || !strings.Contains(err.Error(), "build.output") {
+		t.Fatalf("err = %v, want build.output rejected", err)
+	}
+}
+
 func TestLoadPackageProjectRequiresManifest(t *testing.T) {
 	root := t.TempDir()
 	writePackageFixture(t, root, `[project]

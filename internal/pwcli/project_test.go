@@ -110,6 +110,32 @@ func TestLoadProjectConfigRejectsDevLogDirectoryOutsideProject(t *testing.T) {
 	}
 }
 
+func TestLoadProjectConfigBuildOutput(t *testing.T) {
+	root := t.TempDir()
+	writeProjectFixture(t, root, "[project]\nname = \"fixture\"\nmain = \"./cmd/fixture\"\n\n[build]\noutput = \"bin/fixture\"\n")
+	config, err := loadProjectConfig(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if config.Output != "bin/fixture" {
+		t.Fatalf("output = %q", config.Output)
+	}
+}
+
+// build.output is written to, so it is held to the rule the asset outputs
+// are: inside the project, spelled one way.
+func TestLoadProjectConfigRejectsBuildOutputOutsideProject(t *testing.T) {
+	for _, output := range []string{"", ".", "..", "../bin/fixture", "/tmp/fixture", "./bin/fixture", "bin//fixture"} {
+		t.Run(strings.ReplaceAll(output, "/", "_"), func(t *testing.T) {
+			root := t.TempDir()
+			writeProjectFixture(t, root, "[project]\nname = \"fixture\"\nmain = \".\"\n\n[build]\noutput = \""+output+"\"\n")
+			if _, err := loadProjectConfig(root); err == nil || !strings.Contains(err.Error(), "build.output") {
+				t.Fatalf("err = %v", err)
+			}
+		})
+	}
+}
+
 func TestLoadProjectConfigToolchain(t *testing.T) {
 	for _, testcase := range []struct {
 		name  string

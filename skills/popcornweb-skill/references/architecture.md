@@ -51,7 +51,7 @@ Notes on ownership:
 - `templates/` always holds the document shell and the error templates; both routers render through them. Exactly one `document.pw.html` may exist in the whole tree.
 - `dist/` is entirely build output (`dist/public`, a conversion cache, a manifest); `.gitignore` excludes everything under it except `dist/public/.keep`.
 - `public.go` is ordinary application code you may edit; the manifest beside it (`public_manifest_pw_gen.go`) is generated.
-- The compiled binary lands in the project root, named after the main package.
+- The compiled binary lands in the project root, named after the main package, unless `build.output` in popcornweb.toml names another path.
 
 ### Where does X go
 

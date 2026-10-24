@@ -3,6 +3,8 @@ package pwcli
 import (
 	"bytes"
 	"context"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -204,6 +206,68 @@ func TestBuildProjectRefusesAPackageForBuildOnly(t *testing.T) {
 	}
 	if err := refuseInPackage(projectConfig{Kind: kindPackage}, "build"); err == nil {
 		t.Fatal("build accepted a package project")
+	}
+}
+
+// Without build.output a plain build passes no -o, so its command line is
+// what it was before the key existed. A module that holds a package named
+// like its application has a directory where go build would write the binary,
+// and the build stops before generating, naming the key that resolves it.
+func TestBinaryOutput(t *testing.T) {
+	t.Setenv("GOOS", "linux")
+	root := t.TempDir()
+	for _, directory := range []string{"docflow", "out"} {
+		if err := os.Mkdir(filepath.Join(root, directory), 0o755); err != nil {
+			t.Fatal(err)
+		}
+	}
+	for _, testcase := range []struct {
+		name   string
+		config projectConfig
+		want   []string
+		err    string
+	}{
+		{name: "default", config: projectConfig{Main: "./cmd/app"}},
+		{name: "main at the root", config: projectConfig{Main: "."}},
+		{name: "default is a directory", config: projectConfig{Main: "./cmd/docflow"}, err: `build.output = "bin/docflow"`},
+		{name: "major version suffix", config: projectConfig{Main: "./cmd/docflow/v2"}, err: "docflow, which is a directory"},
+		{name: "explicit", config: projectConfig{Main: "./cmd/docflow", Output: "bin/docflow"}, want: []string{"-o", filepath.FromSlash("bin/docflow")}},
+		{name: "explicit is a directory", config: projectConfig{Main: "./cmd/app", Output: "out"}, err: "build.output out is a directory"},
+	} {
+		t.Run(testcase.name, func(t *testing.T) {
+			got, err := binaryOutput(root, testcase.config)
+			if testcase.err != "" {
+				if err == nil || !strings.Contains(err.Error(), testcase.err) {
+					t.Fatalf("err = %v, want %q", err, testcase.err)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatal(err)
+			}
+			if strings.Join(got, " ") != strings.Join(testcase.want, " ") {
+				t.Fatalf("output = %q, want %q", got, testcase.want)
+			}
+		})
+	}
+}
+
+func TestDefaultBinaryName(t *testing.T) {
+	for _, testcase := range []struct{ goos, main, want string }{
+		{"linux", "./cmd/app", "app"},
+		{"linux", "cmd/app/", "app"},
+		{"linux", "example.com/app/cmd/app", "app"},
+		{"linux", "./cmd/app/v2", "app"},
+		{"linux", "./cmd/app/v1", "v1"},
+		{"linux", "./cmd/app/v02", "v02"},
+		{"linux", ".", ""},
+		{"linux", "./v2", ""},
+		{"windows", "./cmd/app", "app.exe"},
+	} {
+		t.Setenv("GOOS", testcase.goos)
+		if got := defaultBinaryName(testcase.main); got != testcase.want {
+			t.Errorf("%s %s: %q, want %q", testcase.goos, testcase.main, got, testcase.want)
+		}
 	}
 }
 

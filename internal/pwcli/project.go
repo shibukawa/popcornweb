@@ -233,6 +233,12 @@ type projectConfig struct {
 	Kind      string
 	Main      string
 	Toolchain string
+	// Output is build.output: the path pw build writes the binary to,
+	// relative to the project root. Empty leaves the name to go build, which
+	// writes the binary into the root, named after the main package. A module
+	// that also holds a package of that name, such as an application built
+	// beside the library it serves, has a directory there and needs the key.
+	Output string
 	// Database is the engine .pw.sql sources generate for. It sits beside the
 	// toolchain because both are build-time properties of the source tree: one
 	// decides which compiler reads it, the other which dialect it is written
@@ -374,6 +380,7 @@ func loadProjectConfig(root string) (projectConfig, error) {
 	known := []string{
 		"project.name", "project.kind", "project.main", "project.toolchain", "project.database",
 		"project.fasthttp",
+		"build.output",
 		"packages",
 		"generate.handlers", "generate.templates", "generate.queries", "generate.config", "generate.pages",
 		"generate.dynamo", "generate.firestore",
@@ -433,6 +440,15 @@ func loadProjectConfig(root string) (projectConfig, error) {
 	config.Main, err = optionalScalar(document, "project.main")
 	if err != nil {
 		return projectConfig{}, err
+	}
+	config.Output, err = optionalScalar(document, "build.output")
+	if err != nil {
+		return projectConfig{}, err
+	}
+	if _, ok := document.Get("build.output"); ok {
+		if err := validateAssetPath(root, config.Output); err != nil {
+			return projectConfig{}, fmt.Errorf("popcornweb.toml: build.output: %w", err)
+		}
 	}
 	config.Toolchain, err = optionalScalar(document, "project.toolchain")
 	if err != nil {
@@ -915,6 +931,9 @@ func (config *projectConfig) readKindSections(document minitoml.Document) error 
 	case kindPackage:
 		if config.Main != "" {
 			return fmt.Errorf("popcornweb.toml: project.main does not apply to a package; the application that imports it owns the entry point")
+		}
+		if config.Output != "" {
+			return fmt.Errorf("popcornweb.toml: build.output does not apply to a package; pw build builds an application")
 		}
 		if hasPackages {
 			return fmt.Errorf("popcornweb.toml: packages does not apply to a package; a package depends on another through go.mod like any Go module")

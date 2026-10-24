@@ -33,7 +33,9 @@ provider packaging を選びます。
 
 バイナリは main パッケージ名でプロジェクトルートに置かれます。スキャフォールドされた
 `.gitignore` はこれと、`dist/` 配下すべてを除外済みです。ビルド済みツリーも変換キャッシュも
-マニフェストも、すべてビルド成果物です。
+マニフェストも、すべてビルド成果物です。ルートにその名前のディレクトリがすでにあるプロジェクトは、
+[`build.output`](/ja/reference/build-configuration/#build) で別のパスを指定します。指定がなければ、
+そのビルドは生成の前に止まってそう伝えます。
 
 `--target` を指定した場合は `.pw/build/<target>/<backend>/` に生成します。Lambda と
 Azure Functions は Linux binary と provider metadata、Google Cloud Run functions と

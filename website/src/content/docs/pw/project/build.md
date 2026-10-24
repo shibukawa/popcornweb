@@ -35,7 +35,9 @@ in content or in order.
 The binary lands in the project root, named after the main package. The
 scaffolded `.gitignore` already excludes it, along with everything under
 `dist/` — the built tree, the conversion cache, and the manifest are all build
-output.
+output. [`build.output`](/reference/build-configuration/#build) names another
+path, for a project whose root already holds a directory of that name; without
+it such a build stops before generating and says so.
 
 With `--target`, the result instead lands under
 `.pw/build/<target>/<backend>/`. Lambda and Azure Functions receive a Linux
