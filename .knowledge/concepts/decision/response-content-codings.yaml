@@ -33,9 +33,16 @@ facts:
     \   chosen: level 1 on both, per requirement:response-gzip-encoder\n  binary_delta_over_net_http:\n\
     \    stdlib_gzip: 66 KB\n    klauspost_zstd: 247 KB\n    klauspost_gzip_beside_klauspost_zstd:\
     \ 148 KB\n    andybalholm_brotli: 795 KB\n  tinygo_wasip1_total:\n    stdlib_gzip:\
-    \ 835 KB\n    andybalholm_brotli: 5.8 MB\ndecision:\n  - negotiate zstd and gzip\
-    \ on every dynamic response, per policy:response-content-encoding\n  - produce\
-    \ brotli, zstd, and gzip sidecars at build time, per policy:public-asset-precompression\n\
+    \ 835 KB\n    andybalholm_brotli: 5.8 MB\n  static_path_encoder:\n    library_above:\
+    \ every brotli and binary figure above was measured with github.com/andybalholm/brotli,\
+    \ the encoder the build used when this was decided\n    library_now: github.com/molecule-man/go-brrr\
+    \ encodes the build-time sidecars, still at the maximum level\n    comparison:\
+    \ level 11 output identical on 27 files from this repository and its example builds\
+    \ and on a synthetic 11 MB script, in about half the time; 3.1 s against 1.6 s\
+    \ over the 2.5 MB set on darwin/arm64\n    effect: none on the decisions below,\
+    \ since level 11 is still two orders of magnitude slower than the shipped zstd\n\
+    decision:\n  - negotiate zstd and gzip on every dynamic response, per policy:response-content-encoding\n\
+    \  - produce brotli, zstd, and gzip sidecars at build time, per policy:public-asset-precompression\n\
     \  - link no brotli encoder into a served binary; only api:cli-build carries one\n\
     \  - prefer zstd over gzip on the dynamic path, so a client already receiving\
     \ zstd sees no change and gzip is purely additive\n  - prefer brotli over zstd\
@@ -114,6 +121,16 @@ facts:
     tinygo_wasip1_total:
       stdlib_gzip: 835 KB
       andybalholm_brotli: 5.8 MB
+    static_path_encoder:
+      library_above: every brotli and binary figure above was measured with github.com/andybalholm/brotli,
+        the encoder the build used when this was decided
+      library_now: github.com/molecule-man/go-brrr encodes the build-time sidecars,
+        still at the maximum level
+      comparison: level 11 output identical on 27 files from this repository and its
+        example builds and on a synthetic 11 MB script, in about half the time; 3.1
+        s against 1.6 s over the 2.5 MB set on darwin/arm64
+      effect: none on the decisions below, since level 11 is still two orders of magnitude
+        slower than the shipped zstd
   decision:
   - negotiate zstd and gzip on every dynamic response, per policy:response-content-encoding
   - produce brotli, zstd, and gzip sidecars at build time, per policy:public-asset-precompression

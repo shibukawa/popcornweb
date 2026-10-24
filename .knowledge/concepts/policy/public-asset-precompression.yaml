@@ -14,7 +14,7 @@ facts:
     \ CPU is not request latency, so each coding is encoded at the level it is worth,\
     \ and the ratios separate far enough to matter only at those levels\n  measured_spread:\
     \ brotli beats zstd by roughly 15 percent and gzip by roughly 17 percent at maximum\
-    \ levels, per decision:response-content-codings\nencoders:\n  brotli: github.com/andybalholm/brotli,\
+    \ levels, per decision:response-content-codings\nencoders:\n  brotli: github.com/molecule-man/go-brrr,\
     \ reachable from api:cli-build and from nothing a deployment runs\n  zstd: requirement:contrib-zstd\
     \ host implementation\n  gzip: the host backend of requirement:response-gzip-encoder\n\
     eligible_media:\n  - text/*\n  - application/javascript\n  - application/json\n\
@@ -50,8 +50,8 @@ facts:
     measured_spread: brotli beats zstd by roughly 15 percent and gzip by roughly 17
       percent at maximum levels, per decision:response-content-codings
   encoders:
-    brotli: github.com/andybalholm/brotli, reachable from api:cli-build and from nothing
-      a deployment runs
+    brotli: github.com/molecule-man/go-brrr, reachable from api:cli-build and from
+      nothing a deployment runs
     zstd: requirement:contrib-zstd host implementation
     gzip: the host backend of requirement:response-gzip-encoder
   eligible_media:

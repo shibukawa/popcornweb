@@ -3,7 +3,6 @@ module github.com/shibukawa/popcornweb
 go 1.27.0
 
 require (
-	github.com/andybalholm/brotli v1.2.7
 	github.com/charmbracelet/bubbles v1.0.0
 	github.com/charmbracelet/bubbletea v1.3.10
 	github.com/charmbracelet/lipgloss v1.1.0
@@ -12,6 +11,7 @@ require (
 	github.com/goccy/go-yaml v1.19.2
 	github.com/hashicorp/go-envparse v0.1.0
 	github.com/klauspost/compress v1.20.3
+	github.com/molecule-man/go-brrr v1.3.0
 	github.com/pressly/goose/v3 v3.29.0
 	github.com/redis/go-redis/v9 v9.23.0
 	github.com/shibukawa/dbtestify v0.5.0
@@ -53,7 +53,6 @@ require (
 	github.com/mattn/go-runewidth v0.0.31 // indirect
 	github.com/mattn/go-sqlite3 v1.14.52 // indirect
 	github.com/mfridman/interpolate v0.0.2 // indirect
-	github.com/molecule-man/go-brrr v1.3.0 // indirect
 	github.com/muesli/ansi v0.0.0-20230316100256-276c6243b2f6 // indirect
 	github.com/muesli/cancelreader v0.2.2 // indirect
 	github.com/muesli/termenv v0.16.0 // indirect

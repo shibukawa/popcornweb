@@ -16,9 +16,9 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/andybalholm/brotli"
 	"github.com/klauspost/compress/gzip"
 	"github.com/klauspost/compress/zstd"
+	brrr "github.com/molecule-man/go-brrr"
 	"github.com/shibukawa/popcornweb/internal/assetverify"
 )
 
@@ -88,7 +88,7 @@ func derivedSidecarCodings() ([]sidecarCoding, error) {
 		return nil, fmt.Errorf("public assets: create zstd encoder: %w", err)
 	}
 	return []sidecarCoding{
-		{token: "br", suffix: ".br", params: "brotli/1.2.7 " + strconv.Itoa(brotli.BestCompression), encode: encodeBrotli},
+		{token: "br", suffix: ".br", params: "go-brrr/1.3.0 " + strconv.Itoa(brrr.BestCompression), encode: encodeBrotli},
 		{token: "zstd", suffix: ".zstd", params: "compress/1.20.3 " + zstd.SpeedBestCompression.String(), encode: func(source []byte) ([]byte, error) {
 			return zstdEncoder.EncodeAll(source, nil), nil
 		}},
@@ -96,9 +96,16 @@ func derivedSidecarCodings() ([]sidecarCoding, error) {
 	}, nil
 }
 
+// encodeBrotli streams through a Writer instead of calling brrr.Compress: at
+// this level the Writer overlaps two goroutines on one file, and the largest
+// asset sets how long the whole sidecar pass takes. The source arrives in a
+// single Write, so a size hint would tell the encoder nothing it does not know.
 func encodeBrotli(source []byte) ([]byte, error) {
 	var buffer bytes.Buffer
-	writer := brotli.NewWriterLevel(&buffer, brotli.BestCompression)
+	writer, err := brrr.NewWriter(&buffer, brrr.BestCompression)
+	if err != nil {
+		return nil, err
+	}
 	if _, err := writer.Write(source); err != nil {
 		return nil, err
 	}
