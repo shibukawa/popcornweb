@@ -16,65 +16,86 @@ facts:
     \ only over TLS, so a plain-HTTP origin sees gzip and deflate from Safari at every\
     \ version, which is what makes br useless as the fallback\n  - gzip is the only\
     \ coding no browser, proxy, crawler, or non-browser agent lacks\nmeasurement:\n\
-    \  caveat: one 22211-byte corpus of concatenated pw.html templates on darwin/arm64;\
-    \ a larger body favours zstd, whose window is 128 KiB\n  method: encoder reset\
-    \ and reused, matching the sync.Pool path, so per-request allocation is zero\n\
-    \  dynamic_candidates:\n    zstd_speedfastest: 420 MB/s, 30.0 percent of source\n\
-    \    zstd_speeddefault: 368 MB/s, 28.7 percent\n    klauspost_gzip_1: 464 MB/s,\
-    \ 30.8 percent\n    klauspost_gzip_6: 305 MB/s, 27.5 percent\n    stdlib_gzip_1:\
-    \ 309 MB/s, 30.8 percent\n    stdlib_gzip_6: 105 MB/s, 27.1 percent\n    brotli_5:\
-    \ 86 MB/s, 25.2 percent\n    brotli_11: 1.1 MB/s, 22.2 percent\n  gzip_level_curve:\n\
+    \  caveat: one 22211-byte corpus of concatenated pw.html templates, remeasured\
+    \ on 2026-10-24 with Go 1.27.0 on an Apple M3 as the median of five runs on one\
+    \ CPU; a larger body favours zstd, whose window is 128 KiB\n  method: encoder\
+    \ reset and reused, matching the sync.Pool path, so per-request allocation is\
+    \ zero\n  dynamic_candidates:\n    zstd_speedfastest: 555 MB/s, 29.9 percent of\
+    \ source\n    zstd_speeddefault: 461 MB/s, 28.4 percent\n    klauspost_gzip_1:\
+    \ 562 MB/s, 30.6 percent\n    klauspost_gzip_6: 358 MB/s, 26.9 percent\n    stdlib_gzip_1:\
+    \ 497 MB/s, 30.6 percent\n    stdlib_gzip_6: 291 MB/s, 26.9 percent\n    brotli_5:\
+    \ 78 MB/s, 24.9 percent\n    brotli_11: 1.0 MB/s, 21.9 percent\n  gzip_level_curve:\n\
     \    shape: throughput falls monotonically with level while ratio gains flatten,\
     \ so the useful range ends at a backend-specific cliff\n    klauspost_cliff: between\
-    \ 6 and 7, where its own fast encoders give way to the generic path; 305 MB/s\
-    \ becomes 162 for 0.4 points of ratio\n    stdlib_cliff: immediately after 1,\
-    \ since only level 1 uses the fast encoder; 309 MB/s becomes 165 at level 2\n\
-    \    huffman_only: fastest on both backends and worthless, at 60.9 percent\n \
-    \   chosen: level 1 on both, per requirement:response-gzip-encoder\n  binary_delta_over_net_http:\n\
-    \    stdlib_gzip: 66 KB\n    klauspost_zstd: 247 KB\n    klauspost_gzip_beside_klauspost_zstd:\
-    \ 148 KB\n    andybalholm_brotli: 795 KB\n  tinygo_wasip1_total:\n    stdlib_gzip:\
-    \ 835 KB\n    andybalholm_brotli: 5.8 MB\n  static_path_encoder:\n    library_above:\
-    \ every brotli and binary figure above was measured with github.com/andybalholm/brotli,\
-    \ the encoder the build used when this was decided\n    library_now: github.com/molecule-man/go-brrr\
+    \ 6 and 7, where its own fast encoders give way to the generic path; 358 MB/s\
+    \ becomes 194 for 0.5 points of ratio\n    stdlib_cliff: between 6 and 7 as well\
+    \ since Go 1.27, which brought the klauspost encoders into the standard library;\
+    \ 291 MB/s becomes 172 for the same 0.5 points, and every level writes the deflate\
+    \ bytes klauspost writes. Before Go 1.27 the cliff came immediately after 1, where\
+    \ only level 1 used the fast encoder\n    huffman_only: fastest on both backends\
+    \ and worthless, at 59.3 percent\n    chosen: level 1 on both, per requirement:response-gzip-encoder\n\
+    \  binary_delta_over_net_http:\n    method: go build with default flags, Go 1.27.0\
+    \ on darwin/arm64, a net/http server calling each encoder once\n    stdlib_gzip:\
+    \ 171 KB\n    klauspost_zstd: 402 KB\n    klauspost_gzip_beside_klauspost_zstd:\
+    \ 192 KB\n    stdlib_gzip_beside_klauspost_zstd: 155 KB\n    andybalholm_brotli:\
+    \ 1072 KB\n    earlier: 66, 247, 148 and 795 KB for the four rows this record\
+    \ first carried, from an older toolchain by a method not recorded; they sit closer\
+    \ to the stripped figures below\n    stripped: with -ldflags='-s -w' the same\
+    \ rows are 117, 269, 118, 101 and 830 KB, go-brrr is 1332 KB, and the zstd and\
+    \ gzip pair is 387 KB, the figure the compression guide cites\n  tinygo_wasip1_total:\n\
+    \    stdlib_gzip: 835 KB\n    andybalholm_brotli: 5.8 MB\n  tinygo_wasip1_dynamic:\n\
+    \    method: the same 22211-byte corpus under TinyGo 0.42.0 wasip1 on wasmtime,\
+    \ with both encoders pooled as the response path pools them, median of five runs\n\
+    \    stdlib_gzip_1: 196 MB/s, 30.6 percent\n    tinygodriver_zstd: 56 MB/s, 34.6\
+    \ percent, from the bounded encoder of requirement:contrib-zstd\n    reading:\
+    \ on this target gzip is both the faster and the smaller coding, which the zstd-first\
+    \ order does not reflect; data:compression-runtime-config can put gzip first for\
+    \ such a deployment\n  static_path_encoder:\n    library_above: every brotli and\
+    \ binary figure above was measured with github.com/andybalholm/brotli, the encoder\
+    \ the build used when this was decided\n    library_now: github.com/molecule-man/go-brrr\
     \ encodes the build-time sidecars, still at the maximum level\n    comparison:\
     \ level 11 output identical on 27 files from this repository and its example builds\
     \ and on a synthetic 11 MB script, in about half the time; 3.1 s against 1.6 s\
-    \ over the 2.5 MB set on darwin/arm64\n    effect: none on the decisions below,\
-    \ since level 11 is still two orders of magnitude slower than the shipped zstd\n\
-    decision:\n  - negotiate zstd and gzip on every dynamic response, per policy:response-content-encoding\n\
-    \  - produce brotli, zstd, and gzip sidecars at build time, per policy:public-asset-precompression\n\
-    \  - link no brotli encoder into a served binary; only api:cli-build carries one\n\
-    \  - prefer zstd over gzip on the dynamic path, so a client already receiving\
-    \ zstd sees no change and gzip is purely additive\n  - prefer brotli over zstd\
-    \ over gzip on the static path, which is pure ratio because build CPU is not request\
+    \ over the 2.5 MB set on darwin/arm64\n    dynamic_corpus: on the corpus above\
+    \ go-brrr writes the same bytes as andybalholm at levels 5 and 11, at 181 and\
+    \ 1.7 MB/s, and adds 1896 KB over net/http by the same method\n    effect: none\
+    \ on the decisions below, since level 11 is still two orders of magnitude slower\
+    \ than the shipped zstd\ndecision:\n  - negotiate zstd and gzip on every dynamic\
+    \ response, per policy:response-content-encoding\n  - produce brotli, zstd, and\
+    \ gzip sidecars at build time, per policy:public-asset-precompression\n  - link\
+    \ no brotli encoder into a served binary; only api:cli-build carries one\n  -\
+    \ prefer zstd over gzip on the dynamic path, so a client already receiving zstd\
+    \ sees no change and gzip is purely additive\n  - prefer brotli over zstd over\
+    \ gzip on the static path, which is pure ratio because build CPU is not request\
     \ latency\n  - encode shallow on the dynamic path and deep on the static one,\
     \ because the same byte costs request CPU in one place and build CPU in the other\n\
     \  - run the dynamic zstd at SpeedFastest, which puts it within a tenth of gzip\
     \ level 1 on throughput and keeps it ahead on ratio\n  - let a deployment reorder\
     \ or drop a dynamic coding through data:compression-runtime-config, and let nothing\
     \ reach the levels\nrejected:\n  brotli_on_the_dynamic_path:\n    - brotli 5 costs\
-    \ 4.4 times the CPU of the shipped zstd to remove 8.6 percent more of the body,\
-    \ and brotli 11 is 350 times slower\n    - andybalholm/brotli is a port of the\
-    \ C library and is slower than brotli benchmarked as C\n    - 795 KB of encoder\
-    \ contradicts a project that already carries a build tag to remove a 247 KB one\n\
-    \    - a TinyGo target would need a bounded brotli encoder written from nothing,\
-    \ against a format carrying a static dictionary and context modelling, which is\
-    \ a far larger job than requirement:contrib-zstd was\n  stdlib_gzip_on_the_host:\
-    \ 1.5 times slower at the chosen level 1, to save 82 KB in a binary already holding\
-    \ zstd\n  a_deeper_dynamic_level: rejected on throughput; the gzip_level_curve\
-    \ above buys 3.3 points of ratio for a third of the host throughput, and a body\
-    \ already on the wire is not where request CPU should go\n  deflate: ambiguous\
+    \ 7.1 times the CPU of the shipped zstd for a body 16.9 percent smaller, and brotli\
+    \ 11 is 530 times slower\n    - andybalholm/brotli is a port of the C library\
+    \ and is slower than brotli benchmarked as C\n    - 795 KB of encoder, as measured\
+    \ when this was decided, contradicted a project that then carried a build tag\
+    \ to remove a 247 KB one\n    - a TinyGo target would need a bounded brotli encoder\
+    \ written from nothing, against a format carrying a static dictionary and context\
+    \ modelling, which is a far larger job than requirement:contrib-zstd was\n  stdlib_gzip_on_the_host:\
+    \ 1.13 times slower at the chosen level 1 for the same deflate bytes, to save\
+    \ 37 KB in a binary already holding zstd; before Go 1.27 it was 1.5 times slower\
+    \ to save 82 KB\n  a_deeper_dynamic_level: rejected on throughput; the gzip_level_curve\
+    \ above buys 3.6 points of ratio for 36 percent of the host throughput, and a\
+    \ body already on the wire is not where request CPU should go\n  deflate: ambiguous\
     \ between raw and zlib-wrapped across implementations, and reaches no client gzip\
     \ does not\nconsequences:\n  - a served binary gains gzip and no brotli, so the\
-    \ encoder budget grows by 148 KB and not by 943 KB\n  - the two dynamic codings\
+    \ encoder budget grows by 192 KB and not by 1264 KB\n  - the two dynamic codings\
     \ both flush per settled boundary, so decision:streaming-response-compression\
     \ generalizes rather than gaining a case\n  - both dynamic codings now sit near\
-    \ 30 percent, zstd at 30.0 and gzip at 30.8, so the coding a client gets barely\
+    \ 30 percent, zstd at 29.9 and gzip at 30.6, so the coding a client gets barely\
     \ changes the bytes and the order is close to a free choice\n  - the shallower\
-    \ zstd regresses ratio from 28.7 to 30.0 for clients already being served, which\
+    \ zstd regresses ratio from 28.4 to 29.9 for clients already being served, which\
     \ is accepted deliberately: the dynamic path is a throughput budget, and the deep\
     \ levels live on the static path where they cost nothing\n  - zstd stays worth\
-    \ its 247 KB, since it is both the better ratio and the newer format the default\
+    \ its 402 KB, since it is both the better ratio and the newer format the default\
     \ should be pointing at\n  - both codings were once removable per tag; decision:response-encoders-are-unconditional\
     \ records why that stopped being worth its own axis\nverification: a request advertising\
     \ only gzip receives a gzip body, a request advertising zstd still receives zstd,\
@@ -91,36 +112,57 @@ facts:
     from Safari at every version, which is what makes br useless as the fallback
   - gzip is the only coding no browser, proxy, crawler, or non-browser agent lacks
   measurement:
-    caveat: one 22211-byte corpus of concatenated pw.html templates on darwin/arm64;
+    caveat: one 22211-byte corpus of concatenated pw.html templates, remeasured on
+      2026-10-24 with Go 1.27.0 on an Apple M3 as the median of five runs on one CPU;
       a larger body favours zstd, whose window is 128 KiB
     method: encoder reset and reused, matching the sync.Pool path, so per-request
       allocation is zero
     dynamic_candidates:
-      zstd_speedfastest: 420 MB/s, 30.0 percent of source
-      zstd_speeddefault: 368 MB/s, 28.7 percent
-      klauspost_gzip_1: 464 MB/s, 30.8 percent
-      klauspost_gzip_6: 305 MB/s, 27.5 percent
-      stdlib_gzip_1: 309 MB/s, 30.8 percent
-      stdlib_gzip_6: 105 MB/s, 27.1 percent
-      brotli_5: 86 MB/s, 25.2 percent
-      brotli_11: 1.1 MB/s, 22.2 percent
+      zstd_speedfastest: 555 MB/s, 29.9 percent of source
+      zstd_speeddefault: 461 MB/s, 28.4 percent
+      klauspost_gzip_1: 562 MB/s, 30.6 percent
+      klauspost_gzip_6: 358 MB/s, 26.9 percent
+      stdlib_gzip_1: 497 MB/s, 30.6 percent
+      stdlib_gzip_6: 291 MB/s, 26.9 percent
+      brotli_5: 78 MB/s, 24.9 percent
+      brotli_11: 1.0 MB/s, 21.9 percent
     gzip_level_curve:
       shape: throughput falls monotonically with level while ratio gains flatten,
         so the useful range ends at a backend-specific cliff
       klauspost_cliff: between 6 and 7, where its own fast encoders give way to the
-        generic path; 305 MB/s becomes 162 for 0.4 points of ratio
-      stdlib_cliff: immediately after 1, since only level 1 uses the fast encoder;
-        309 MB/s becomes 165 at level 2
-      huffman_only: fastest on both backends and worthless, at 60.9 percent
+        generic path; 358 MB/s becomes 194 for 0.5 points of ratio
+      stdlib_cliff: between 6 and 7 as well since Go 1.27, which brought the klauspost
+        encoders into the standard library; 291 MB/s becomes 172 for the same 0.5
+        points, and every level writes the deflate bytes klauspost writes. Before
+        Go 1.27 the cliff came immediately after 1, where only level 1 used the fast
+        encoder
+      huffman_only: fastest on both backends and worthless, at 59.3 percent
       chosen: level 1 on both, per requirement:response-gzip-encoder
     binary_delta_over_net_http:
-      stdlib_gzip: 66 KB
-      klauspost_zstd: 247 KB
-      klauspost_gzip_beside_klauspost_zstd: 148 KB
-      andybalholm_brotli: 795 KB
+      method: go build with default flags, Go 1.27.0 on darwin/arm64, a net/http server
+        calling each encoder once
+      stdlib_gzip: 171 KB
+      klauspost_zstd: 402 KB
+      klauspost_gzip_beside_klauspost_zstd: 192 KB
+      stdlib_gzip_beside_klauspost_zstd: 155 KB
+      andybalholm_brotli: 1072 KB
+      earlier: 66, 247, 148 and 795 KB for the four rows this record first carried,
+        from an older toolchain by a method not recorded; they sit closer to the stripped
+        figures below
+      stripped: with -ldflags='-s -w' the same rows are 117, 269, 118, 101 and 830
+        KB, go-brrr is 1332 KB, and the zstd and gzip pair is 387 KB, the figure the
+        compression guide cites
     tinygo_wasip1_total:
       stdlib_gzip: 835 KB
       andybalholm_brotli: 5.8 MB
+    tinygo_wasip1_dynamic:
+      method: the same 22211-byte corpus under TinyGo 0.42.0 wasip1 on wasmtime, with
+        both encoders pooled as the response path pools them, median of five runs
+      stdlib_gzip_1: 196 MB/s, 30.6 percent
+      tinygodriver_zstd: 56 MB/s, 34.6 percent, from the bounded encoder of requirement:contrib-zstd
+      reading: on this target gzip is both the faster and the smaller coding, which
+        the zstd-first order does not reflect; data:compression-runtime-config can
+        put gzip first for such a deployment
     static_path_encoder:
       library_above: every brotli and binary figure above was measured with github.com/andybalholm/brotli,
         the encoder the build used when this was decided
@@ -129,6 +171,9 @@ facts:
       comparison: level 11 output identical on 27 files from this repository and its
         example builds and on a synthetic 11 MB script, in about half the time; 3.1
         s against 1.6 s over the 2.5 MB set on darwin/arm64
+      dynamic_corpus: on the corpus above go-brrr writes the same bytes as andybalholm
+        at levels 5 and 11, at 181 and 1.7 MB/s, and adds 1896 KB over net/http by
+        the same method
       effect: none on the decisions below, since level 11 is still two orders of magnitude
         slower than the shipped zstd
   decision:
@@ -147,34 +192,35 @@ facts:
     and let nothing reach the levels
   rejected:
     brotli_on_the_dynamic_path:
-    - brotli 5 costs 4.4 times the CPU of the shipped zstd to remove 8.6 percent more
-      of the body, and brotli 11 is 350 times slower
+    - brotli 5 costs 7.1 times the CPU of the shipped zstd for a body 16.9 percent
+      smaller, and brotli 11 is 530 times slower
     - andybalholm/brotli is a port of the C library and is slower than brotli benchmarked
       as C
-    - 795 KB of encoder contradicts a project that already carries a build tag to
-      remove a 247 KB one
+    - 795 KB of encoder, as measured when this was decided, contradicted a project
+      that then carried a build tag to remove a 247 KB one
     - a TinyGo target would need a bounded brotli encoder written from nothing, against
       a format carrying a static dictionary and context modelling, which is a far
       larger job than requirement:contrib-zstd was
-    stdlib_gzip_on_the_host: 1.5 times slower at the chosen level 1, to save 82 KB
-      in a binary already holding zstd
+    stdlib_gzip_on_the_host: 1.13 times slower at the chosen level 1 for the same
+      deflate bytes, to save 37 KB in a binary already holding zstd; before Go 1.27
+      it was 1.5 times slower to save 82 KB
     a_deeper_dynamic_level: rejected on throughput; the gzip_level_curve above buys
-      3.3 points of ratio for a third of the host throughput, and a body already on
-      the wire is not where request CPU should go
+      3.6 points of ratio for 36 percent of the host throughput, and a body already
+      on the wire is not where request CPU should go
     deflate: ambiguous between raw and zlib-wrapped across implementations, and reaches
       no client gzip does not
   consequences:
-  - a served binary gains gzip and no brotli, so the encoder budget grows by 148 KB
-    and not by 943 KB
+  - a served binary gains gzip and no brotli, so the encoder budget grows by 192 KB
+    and not by 1264 KB
   - the two dynamic codings both flush per settled boundary, so decision:streaming-response-compression
     generalizes rather than gaining a case
-  - both dynamic codings now sit near 30 percent, zstd at 30.0 and gzip at 30.8, so
+  - both dynamic codings now sit near 30 percent, zstd at 29.9 and gzip at 30.6, so
     the coding a client gets barely changes the bytes and the order is close to a
     free choice
-  - the shallower zstd regresses ratio from 28.7 to 30.0 for clients already being served, which is accepted deliberately: the
+  - the shallower zstd regresses ratio from 28.4 to 29.9 for clients already being served, which is accepted deliberately: the
       dynamic path is a throughput budget, and the deep levels live on the static
       path where they cost nothing
-  - zstd stays worth its 247 KB, since it is both the better ratio and the newer format
+  - zstd stays worth its 402 KB, since it is both the better ratio and the newer format
     the default should be pointing at
   - both codings were once removable per tag; decision:response-encoders-are-unconditional
     records why that stopped being worth its own axis

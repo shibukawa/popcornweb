@@ -71,10 +71,11 @@ entirely, use `compression = false` rather than an empty list.
 
 **Leave the order alone unless you have measured your own traffic.** zstd leads
 because it stays slightly ahead of gzip on ratio at the levels both run, and
-because a client already receiving zstd keeps receiving it. Reverse it only if
-your clients are overwhelmingly ones that would take gzip anyway and you would
-rather not link the zstd encoder at all — in which case the build tag below is
-the more direct answer.
+because a client already receiving zstd keeps receiving it. A TinyGo build
+reverses the first reason. Its zstd encoder is a small, memory-bounded one, and
+on a 22 KB page under wasip1 it gets the body down to 34.6 percent of the source
+at 56 MB/s, where gzip reaches 30.6 percent at about 200 MB/s. On TinyGo, put
+gzip first with `compression_codings = ["gzip", "zstd"]`.
 
 gzip is what makes this list worth having. It is the one coding no browser,
 proxy, crawler, or command-line client lacks. Safari in particular advertises
@@ -86,9 +87,9 @@ clients received the original bytes.
 Brotli is not on the list. It belongs to the [static asset
 build](/guides/frontend/static-assets/), where the encoder runs once at build
 time. Per request it is the wrong trade: at a level fast enough to serve, it
-costs roughly four times the CPU of zstd to remove another eight percent of the
-body, and its pure-Go encoder is worth about 795 KB of binary — three times the
-zstd one, in a framework that ships a build tag to remove that.
+costs about three times the CPU of zstd for a body a sixth smaller, and its
+pure-Go encoder adds about 1.3 MB to a stripped binary — five times what the
+zstd one adds.
 
 ## What the response looks like
 
@@ -139,8 +140,9 @@ The level is fixed rather than exposed because it answers to a measured cliff
 that does not move between deployments. A body here is encoded while a request
 waits, so throughput is the scarce resource and ratio is the one that gives:
 gzip runs at level 1 and zstd at its fastest setting, which put both near thirty
-percent of the source at roughly 450 MB/s. Level 6 gzip would buy three more
-points of ratio for a third of the throughput, and level 9 for a *ninth* of it.
+percent of the source at roughly 550 MB/s. Level 6 gzip would buy three and a
+half more points of ratio and give up a third of the throughput; level 9 reaches
+four and a half points and runs at a *ninth* of level 1's speed.
 The deep levels are not lost — the asset build spends them, where the cost lands
 on a machine that is not answering a request.
 
