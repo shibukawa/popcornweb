@@ -25,22 +25,38 @@
 
       forEachSystem = nixpkgs.lib.genAttrs systems;
       pkgsFor = system: nixpkgs.legacyPackages.${system};
+
+      # The Go series go.mod asks for. nixpkgs' default go trails it by a
+      # release, so naming the series here keeps the assertion in nix/pw.nix for
+      # a channel that has not shipped it, instead of for every channel whose
+      # default has not caught up.
+      goFor = pkgs: {
+        go = pkgs.go_1_27;
+        buildGoModule = pkgs.buildGo127Module;
+      };
     in
     {
       overlays.default = final: _prev: {
-        pw = final.callPackage ./nix/pw.nix {
-          src = self;
-          inherit version;
-        };
+        pw = final.callPackage ./nix/pw.nix (
+          {
+            src = self;
+            inherit version;
+          }
+          // goFor final
+        );
       };
 
       packages = forEachSystem (
         system:
         let
-          pw = (pkgsFor system).callPackage ./nix/pw.nix {
-            src = self;
-            inherit version;
-          };
+          pkgs = pkgsFor system;
+          pw = pkgs.callPackage ./nix/pw.nix (
+            {
+              src = self;
+              inherit version;
+            }
+            // goFor pkgs
+          );
         in
         {
           inherit pw;
@@ -61,15 +77,20 @@
         system:
         let
           pkgs = pkgsFor system;
+          goToolchain = goFor pkgs;
         in
         {
           default = pkgs.mkShell {
             # Host tools of decision:host-tools-target-runtime. Tailwind stays
-            # with Devbox per decision:tailwind-host-toolchain.
+            # with Devbox per decision:tailwind-host-toolchain. gopls and
+            # tinygo already build against the newest Go in nixpkgs; gotools
+            # takes the default one, so it is told which Go to use, or
+            # goimports would parse with a go/parser older than the source it
+            # formats.
             packages = [
-              pkgs.go
+              goToolchain.go
               pkgs.gopls
-              pkgs.gotools
+              (pkgs.gotools.override goToolchain)
               pkgs.tinygo
             ];
           };

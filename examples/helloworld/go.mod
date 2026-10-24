@@ -4,13 +4,12 @@ go 1.27.0
 
 require (
 	github.com/shibukawa/popcornweb v0.0.0
-	github.com/shibukawa/tinybind-go v0.5.34
-	github.com/shibukawa/tinygodriver v1.3.5
+	github.com/shibukawa/tinybind-go v0.5.37
+	github.com/shibukawa/tinygodriver v1.3.6
 )
 
 require (
 	filippo.io/edwards25519 v1.2.0 // indirect
-	github.com/andybalholm/brotli v1.2.6 // indirect
 	github.com/dustin/go-humanize v1.1.0 // indirect
 	github.com/fatih/color v1.19.0 // indirect
 	github.com/go-sql-driver/mysql v1.10.1 // indirect
@@ -26,6 +25,7 @@ require (
 	github.com/mattn/go-isatty v0.0.24 // indirect
 	github.com/mattn/go-sqlite3 v1.14.52 // indirect
 	github.com/mfridman/interpolate v0.0.2 // indirect
+	github.com/molecule-man/go-brrr v1.3.0 // indirect
 	github.com/ncruces/go-strftime v1.1.0 // indirect
 	github.com/pressly/goose/v3 v3.29.0 // indirect
 	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect
@@ -42,7 +42,7 @@ require (
 	modernc.org/libc v1.79.0 // indirect
 	modernc.org/mathutil v1.7.1 // indirect
 	modernc.org/memory v1.12.1 // indirect
-	modernc.org/sqlite v1.60.1 // indirect
+	modernc.org/sqlite v1.61.0 // indirect
 )
 
 replace github.com/shibukawa/popcornweb => ../../

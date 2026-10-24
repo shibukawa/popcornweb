@@ -4,7 +4,7 @@ go 1.27.0
 
 require (
 	github.com/shibukawa/popcornweb v0.0.0
-	github.com/shibukawa/tinybind-go v0.5.34
+	github.com/shibukawa/tinybind-go v0.5.37
 )
 
 require (
@@ -30,7 +30,7 @@ require (
 	github.com/sethvargo/go-retry v0.5.0 // indirect
 	github.com/shibukawa/configdir v0.0.0-20170330084843-e180dbdc8da0 // indirect
 	github.com/shibukawa/dbtestify v0.5.0 // indirect
-	github.com/shibukawa/tinygodriver v1.3.5 // indirect
+	github.com/shibukawa/tinygodriver v1.3.6 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/sync v0.24.0 // indirect
 	golang.org/x/sys v0.49.0 // indirect
@@ -38,7 +38,7 @@ require (
 	modernc.org/libc v1.79.0 // indirect
 	modernc.org/mathutil v1.7.1 // indirect
 	modernc.org/memory v1.12.1 // indirect
-	modernc.org/sqlite v1.60.1 // indirect
+	modernc.org/sqlite v1.61.0 // indirect
 )
 
 replace github.com/shibukawa/popcornweb => ../../

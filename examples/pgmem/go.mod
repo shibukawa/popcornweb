@@ -5,8 +5,8 @@ go 1.27.0
 require (
 	github.com/shibukawa/pgmem v1.18.2
 	github.com/shibukawa/popcornweb v0.0.0
-	github.com/shibukawa/tinybind-go v0.5.34
-	github.com/shibukawa/tinygodriver v1.3.5
+	github.com/shibukawa/tinybind-go v0.5.37
+	github.com/shibukawa/tinygodriver v1.3.6
 )
 
 require (
@@ -40,7 +40,7 @@ require (
 	modernc.org/libc v1.79.0 // indirect
 	modernc.org/mathutil v1.7.1 // indirect
 	modernc.org/memory v1.12.1 // indirect
-	modernc.org/sqlite v1.60.1 // indirect
+	modernc.org/sqlite v1.61.0 // indirect
 )
 
 replace github.com/shibukawa/popcornweb => ../..
