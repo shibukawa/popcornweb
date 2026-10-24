@@ -45,11 +45,13 @@ facts:
     \ and 11.0% against deflate's 11.6% and 13.3%\n  what_blocks_it:\n    - compress/zstd\
     \ excludes decoding, so BodyUnzstd, AppendUnzstdBytes and the FS pre-compressed\
     \ .zst read have nothing to call\n    - it offers no Reset and no compression\
-    \ levels, which are what fasthttp's per-level encoder pools are built on\n  the_decode_half_already_has_a_landing_place:\
-    \ zstd_disabled.go returns ErrZstdUnsupported from everything whose signature\
-    \ carries an error, so an encode-only build is that file with its writers replaced\
-    \ rather than a new design\n  and_the_decoder_is_the_whole_problem: both symbols\
-    \ TinyGo cannot link are decoder-side, per decision:tinygo-fasthttp-needs-nozstd,\
+    \ levels, which are what fasthttp's per-level encoder pools are built on\n  reset_arrived:\
+    \ tinygodriver v1.2.4, the release that delivered this ask, added Writer.Reset\
+    \ so encoders can be pooled, and pw's TinyGo response path pools them since 2026-10-24\n\
+    \  the_decode_half_already_has_a_landing_place: zstd_disabled.go returns ErrZstdUnsupported\
+    \ from everything whose signature carries an error, so an encode-only build is\
+    \ that file with its writers replaced rather than a new design\n  and_the_decoder_is_the_whole_problem:\
+    \ both symbols TinyGo cannot link are decoder-side, per decision:tinygo-fasthttp-needs-nozstd,\
     \ so dropping decode is not a side effect of this ask but the point of it\n  recorded_upstream:\
     \ tinygodriver fasthttp/PATCHES.md already names this as coherent to want and\
     \ explicitly not what the tag does today, so this is a shared conclusion rather\
@@ -115,6 +117,9 @@ facts:
       pre-compressed .zst read have nothing to call
     - it offers no Reset and no compression levels, which are what fasthttp's per-level
       encoder pools are built on
+    reset_arrived: tinygodriver v1.2.4, the release that delivered this ask, added
+      Writer.Reset so encoders can be pooled, and pw's TinyGo response path pools
+      them since 2026-10-24
     the_decode_half_already_has_a_landing_place: zstd_disabled.go returns ErrZstdUnsupported
       from everything whose signature carries an error, so an encode-only build is
       that file with its writers replaced rather than a new design

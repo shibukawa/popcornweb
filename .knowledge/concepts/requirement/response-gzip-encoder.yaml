@@ -10,78 +10,99 @@ facts:
     \ mirroring how requirement:contrib-zstd splits.\n\n```yaml\nimplementation_selection:\n\
     \  host_go:\n    condition: \"!tinygo && !force_tinygo_logic\"\n    backend: github.com/klauspost/compress/gzip\n\
     \    level: 1\n    already_a_dependency: true, through the host backend of requirement:contrib-zstd,\
-    \ so the coding adds 148 KB and no module\n  tinygo:\n    condition: \"tinygo\
+    \ so the coding adds 192 KB and no module\n  tinygo:\n    condition: \"tinygo\
     \ || force_tinygo_logic\"\n    backend: compress/gzip\n    level: 1\n    reason:\
-    \ pure Go with no assembly path to validate, and it compiles for wasip1 today\n\
-    \  force_policy: decision:force-tinygo-logic\nlevel_is_1_because:\n  - a dynamic\
-    \ body is encoded while a request waits, so throughput is the scarce resource\
-    \ and ratio is the one that can give\n  - level 1 is the fastest level that still\
-    \ compresses, at 464 MB/s on the host and 309 on TinyGo against 60.9 percent for\
-    \ Huffman-only\n  - it costs 3.3 points of ratio against level 6 and returns a\
-    \ third to two thirds more throughput, per the gzip_level_curve of decision:response-content-codings\n\
-    \  - on the standard library it is not a judgment call: only level 1 uses the\
-    \ fast encoder, and level 2 is already half the speed for 1.7 points\n  - one\
-    \ level on both backends means a response does not change size when a target changes,\
-    \ so a test asserting encoded bytes holds across builds\n  - the deep levels are\
-    \ not lost; policy:public-asset-precompression takes them where the cost lands\
-    \ on the build\nwhy_not_one_backend:\n  stdlib_on_the_host: 1.5 times slower than\
-    \ klauspost at level 1, per decision:response-content-codings\n  klauspost_on_tinygo:\
-    \ carries architecture-specific assembly with pure-Go fallbacks, so it is a validation\
-    \ cost for a target where the standard library already works\nrequired_of_both:\n\
-    \  - construction writes nothing to the destination, per the lazy_frame_header\
-    \ rule of requirement:contrib-zstd; both gzip backends defer their header to the\
-    \ first Write already\n  - Write, Flush, Close, and an Abort that discards an\
-    \ uncommitted frame\n  - Flush emits everything written so far as complete blocks\
-    \ and leaves the stream open, which is the compress/flate sync-flush shape requirement:contrib-zstd\
-    \ was already specified against\n  - Flush does not flush the destination writer;\
-    \ the caller chains that\n  - Flush after Close is an error\n  - identical public\
-    \ lifecycle and errors across backends, so the negotiation path branches on neither\n\
-    pooling:\n  host: reset and reuse through sync.Pool, as the zstd encoder already\
-    \ does, which makes steady-state per-request allocation zero\n  tinygo: an encoder\
-    \ is allocated per response; whether pooling helps depends on the target allocator\
-    \ and is not assumed\nshared_shape:\n  - one interface covers zstd and gzip, so\
-    \ policy:response-content-encoding holds a coding token and a constructor rather\
-    \ than a type per coding\n  - a coding named in configuration but absent from\
-    \ this framework is reported as unsupported instead of failing to compile the\
-    \ negotiation, which is what catches brotli in the list\nbuild_tag:\n  retired:\
-    \ pw_nogzip and pw_nozstd were removed once the zstd encoder became its own package;\
-    \ see decision:response-encoders-are-unconditional\n  what_replaced_it: middleware.compression,\
-    \ which is the same saving at run time and does not fork the build\nopen_questions:\n\
-    \  - the per-writer memory of the TinyGo encoder, which level 1 settles on speed\
-    \ but not on footprint; a constrained target may still want a smaller window than\
-    \ the standard library's fixed one, and that is a measurement nobody has taken\n\
-    references:\n  - https://www.rfc-editor.org/rfc/rfc1952\n```"
+    \ pure Go with no assembly path to validate, and it compiles for wasip1 today;\
+    \ since Go 1.27 it is the klauspost encoder brought into the standard library,\
+    \ writing the same deflate bytes at every level\n  force_policy: decision:force-tinygo-logic\n\
+    level_is_1_because:\n  - a dynamic body is encoded while a request waits, so throughput\
+    \ is the scarce resource and ratio is the one that can give\n  - level 1 is the\
+    \ fastest level that still compresses, at 562 MB/s with the host backend and 497\
+    \ with the standard library on the same host, against 59.3 percent for Huffman-only;\
+    \ the standard library reaches 199 MB/s on TinyGo itself under wasip1 once its\
+    \ encoder is reused\n  - it costs 3.6 points of ratio against level 6 and returns\
+    \ 57 to 70 percent more throughput, per the gzip_level_curve of decision:response-content-codings\n\
+    \  - on the standard library before Go 1.27 it was not a judgment call, since\
+    \ only level 1 used the fast encoder and level 2 was half the speed for 1.7 points;\
+    \ since Go 1.27 levels 1 to 6 run the same fast encoders as the host, and level\
+    \ 2 gives up 12 percent of the throughput for 0.57 points\n  - one level on both\
+    \ backends means a response does not change size when a target changes, so a test\
+    \ asserting the encoded length holds across builds; since Go 1.27 the two write\
+    \ the same deflate bytes, and only the gzip header's modification time differs\n\
+    \  - the deep levels are not lost; policy:public-asset-precompression takes them\
+    \ where the cost lands on the build\nwhy_not_one_backend:\n  stdlib_on_the_host:\
+    \ 1.13 times slower than klauspost at level 1 since Go 1.27, for the same deflate\
+    \ bytes and a binary 37 KB smaller, per decision:response-content-codings; before\
+    \ Go 1.27 it was 1.5 times slower\n  klauspost_on_tinygo: since Go 1.27 the standard\
+    \ library is the same encoder, so klauspost would be a dependency to validate\
+    \ on this target for no change in the deflate bytes; its flate and gzip packages\
+    \ carry no assembly and did build and round-trip under TinyGo wasip1 on 2026-10-24\n\
+    required_of_both:\n  - construction writes nothing to the destination, per the\
+    \ lazy_frame_header rule of requirement:contrib-zstd; both gzip backends defer\
+    \ their header to the first Write already\n  - Write, Flush, Close, and an Abort\
+    \ that discards an uncommitted frame\n  - Flush emits everything written so far\
+    \ as complete blocks and leaves the stream open, which is the compress/flate sync-flush\
+    \ shape requirement:contrib-zstd was already specified against\n  - Flush does\
+    \ not flush the destination writer; the caller chains that\n  - Flush after Close\
+    \ is an error\n  - identical public lifecycle and errors across backends, so the\
+    \ negotiation path branches on neither\npooling:\n  host: reset and reuse through\
+    \ sync.Pool, as the zstd encoder already does, which makes steady-state per-request\
+    \ allocation zero\n  tinygo: reset and reuse through sync.Pool as well, since\
+    \ on TinyGo wasip1 a 22 KB body ran at 52 MB/s through a new encoder, which allocates\
+    \ 798 KB, and at 199 MB/s through a reused one that allocates nothing; TinyGo's\
+    \ sync.Pool never releases what it holds, so the cost is 798 KB resident per encoder,\
+    \ as many as the most responses ever compressed at once\nshared_shape:\n  - one\
+    \ interface covers zstd and gzip, so policy:response-content-encoding holds a\
+    \ coding token and a constructor rather than a type per coding\n  - a coding named\
+    \ in configuration but absent from this framework is reported as unsupported instead\
+    \ of failing to compile the negotiation, which is what catches brotli in the list\n\
+    build_tag:\n  retired: pw_nogzip and pw_nozstd were removed once the zstd encoder\
+    \ became its own package; see decision:response-encoders-are-unconditional\n \
+    \ what_replaced_it: middleware.compression, which is the same saving at run time\
+    \ and does not fork the build\nreferences:\n  - https://www.rfc-editor.org/rfc/rfc1952\n\
+    ```"
   implementation_selection:
     host_go:
       condition: '!tinygo && !force_tinygo_logic'
       backend: github.com/klauspost/compress/gzip
       level: 1
       already_a_dependency: true, through the host backend of requirement:contrib-zstd,
-        so the coding adds 148 KB and no module
+        so the coding adds 192 KB and no module
     tinygo:
       condition: tinygo || force_tinygo_logic
       backend: compress/gzip
       level: 1
       reason: pure Go with no assembly path to validate, and it compiles for wasip1
-        today
+        today; since Go 1.27 it is the klauspost encoder brought into the standard
+        library, writing the same deflate bytes at every level
     force_policy: decision:force-tinygo-logic
   level_is_1_because:
   - a dynamic body is encoded while a request waits, so throughput is the scarce resource
     and ratio is the one that can give
-  - level 1 is the fastest level that still compresses, at 464 MB/s on the host and
-    309 on TinyGo against 60.9 percent for Huffman-only
-  - it costs 3.3 points of ratio against level 6 and returns a third to two thirds
-    more throughput, per the gzip_level_curve of decision:response-content-codings
-  - on the standard library it is not a judgment call: only level 1 uses the fast
-      encoder, and level 2 is already half the speed for 1.7 points
+  - level 1 is the fastest level that still compresses, at 562 MB/s with the host
+    backend and 497 with the standard library on the same host, against 59.3 percent
+    for Huffman-only; the standard library reaches 199 MB/s on TinyGo itself under
+    wasip1 once its encoder is reused
+  - it costs 3.6 points of ratio against level 6 and returns 57 to 70 percent more
+    throughput, per the gzip_level_curve of decision:response-content-codings
+  - on the standard library before Go 1.27 it was not a judgment call, since only
+    level 1 used the fast encoder and level 2 was half the speed for 1.7 points; since
+    Go 1.27 levels 1 to 6 run the same fast encoders as the host, and level 2 gives
+    up 12 percent of the throughput for 0.57 points
   - one level on both backends means a response does not change size when a target
-    changes, so a test asserting encoded bytes holds across builds
+    changes, so a test asserting the encoded length holds across builds; since Go
+    1.27 the two write the same deflate bytes, and only the gzip header's modification
+    time differs
   - the deep levels are not lost; policy:public-asset-precompression takes them where
     the cost lands on the build
   why_not_one_backend:
-    stdlib_on_the_host: 1.5 times slower than klauspost at level 1, per decision:response-content-codings
-    klauspost_on_tinygo: carries architecture-specific assembly with pure-Go fallbacks,
-      so it is a validation cost for a target where the standard library already works
+    stdlib_on_the_host: 1.13 times slower than klauspost at level 1 since Go 1.27,
+      for the same deflate bytes and a binary 37 KB smaller, per decision:response-content-codings;
+      before Go 1.27 it was 1.5 times slower
+    klauspost_on_tinygo: since Go 1.27 the standard library is the same encoder, so
+      klauspost would be a dependency to validate on this target for no change in
+      the deflate bytes; its flate and gzip packages carry no assembly and did build
+      and round-trip under TinyGo wasip1 on 2026-10-24
   required_of_both:
   - construction writes nothing to the destination, per the lazy_frame_header rule
     of requirement:contrib-zstd; both gzip backends defer their header to the first
@@ -97,8 +118,11 @@ facts:
   pooling:
     host: reset and reuse through sync.Pool, as the zstd encoder already does, which
       makes steady-state per-request allocation zero
-    tinygo: an encoder is allocated per response; whether pooling helps depends on
-      the target allocator and is not assumed
+    tinygo: reset and reuse through sync.Pool as well, since on TinyGo wasip1 a 22
+      KB body ran at 52 MB/s through a new encoder, which allocates 798 KB, and at
+      199 MB/s through a reused one that allocates nothing; TinyGo's sync.Pool never
+      releases what it holds, so the cost is 798 KB resident per encoder, as many
+      as the most responses ever compressed at once
   shared_shape:
   - one interface covers zstd and gzip, so policy:response-content-encoding holds
     a coding token and a constructor rather than a type per coding
@@ -110,10 +134,6 @@ facts:
       own package; see decision:response-encoders-are-unconditional
     what_replaced_it: middleware.compression, which is the same saving at run time
       and does not fork the build
-  open_questions:
-  - the per-writer memory of the TinyGo encoder, which level 1 settles on speed but
-    not on footprint; a constrained target may still want a smaller window than the
-    standard library's fixed one, and that is a measurement nobody has taken
   references:
   - https://www.rfc-editor.org/rfc/rfc1952
 open_questions:
@@ -121,6 +141,15 @@ open_questions:
     text: the per-writer memory of the TinyGo encoder, which level 1 settles on speed
       but not on footprint; a constrained target may still want a smaller window than
       the standard library's fixed one, and that is a measurement nobody has taken
+    state: answered
+    resolution: Measured on 2026-10-24 with TinyGo 0.42.0 under wasip1. A level 1
+      standard library writer allocates 798 KB (1.19 MB before Go 1.27), and its window
+      stays fixed. The TinyGo response path now resets and reuses it, so the footprint
+      is paid per concurrently compressing response instead of per response, and a
+      22 KB body runs at 199 MB/s instead of 52. A smaller footprint would need another
+      encoder; klauspost's stateless mode allocated 16.5 KB per body but lost 0.7
+      points of ratio on a single write, and small writes need a 16 KiB buffer in
+      front of it.
 relations:
 - relation: mentions
   to: decision:force-tinygo-logic

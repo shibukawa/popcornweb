@@ -10,7 +10,9 @@ facts:
     \ beside requirement:response-gzip-encoder; the two share one writer interface\
     \ and one negotiation path\npublic_api:\n  - NewWriter(io.Writer, options) returns\
     \ Writer\n  - \"Writer.Flush() error emits buffered input as complete blocks without\
-    \ ending the frame, for decision:streaming-response-compression\"\n  - Writer.Result\
+    \ ending the frame, for decision:streaming-response-compression\"\n  - Writer.Reset(io.Writer)\
+    \ starts a new frame on a new destination and keeps the block buffer, the match\
+    \ table and the WithETag setting, so a response path can pool encoders\n  - Writer.Result\
     \ returns encoded size and SHA-256 after successful Close\n  - EncodeAll(src,\
     \ options) returns encoded bytes and Result\n  - WithETag(bool) controls cache\
     \ hash generation; default true\n  - Result.ETag returns a quoted strong HTTP\
@@ -39,20 +41,29 @@ facts:
     \ at block boundaries without ending the frame\n  - bounded raw and RLE blocks\n\
     \  - low-memory single-match compressed blocks with RLE sequence tables\n  - enabled\
     \ SHA-256 updated only for bytes successfully emitted\nlimits:\n  tinygodriver:\
-    \ 128 KiB window and retained input block plus 16 KiB match table\nflush_semantics:\n\
-    \  available: tinygodriver v1.0.4\n  model: compress/flate and compress/gzip Flush\
-    \ semantics\n  host_go: delegate to the klauspost encoder Flush\n  tinygodriver:\
-    \ emit the retained buffer as non-last blocks and reset it; matches never cross\
-    \ a block boundary, so a split stays self-contained\n  rules:\n    - emitted blocks\
-    \ decode everything written so far\n    - the frame stays open, so Close still\
-    \ finishes it\n    - Flush after Close returns ErrClosed\n    - flushed bytes\
-    \ stay inside the enabled SHA-256 and size accounting\n    - Flush with nothing\
-    \ buffered emits nothing and succeeds\n    - Flush does not flush the destination\
-    \ writer; the caller chains that\n    - flushing before a block fills reduces\
-    \ the ratio, so flush per chunk rather than per Write\ndeferred:\n  - Huffman\
-    \ literals, general FSE tables, multi-match blocks, and additional compression\
-    \ levels\n  - trained dictionaries\n  - seekable format\n  - assembly optimizations\n\
-    \  - decoding\nstandard: https://www.rfc-editor.org/rfc/rfc8878\n```"
+    \ 128 KiB window and retained input block plus 16 KiB match table\npooling:\n\
+    \  host_go: reset and reuse through sync.Pool, which makes steady-state per-response\
+    \ allocation zero\n  tinygodriver: reset and reuse through sync.Pool as well;\
+    \ on TinyGo wasip1 a 22 KB body ran at 45 MB/s through a new encoder, which allocates\
+    \ 286 KB, and at 56 MB/s through a reused one, which still allocates 16 KB per\
+    \ frame where the same code under host Go allocates 76 bytes; TinyGo's sync.Pool\
+    \ never releases what it holds, so every encoder ever built stays resident\n \
+    \ beside_gzip: on the same body and target the reused standard library gzip encoder\
+    \ ran at 196 MB/s and wrote 30.6 percent of the source, against 56 MB/s and 34.6\
+    \ percent here; see decision:response-content-codings\nflush_semantics:\n  available:\
+    \ tinygodriver v1.0.4\n  model: compress/flate and compress/gzip Flush semantics\n\
+    \  host_go: delegate to the klauspost encoder Flush\n  tinygodriver: emit the\
+    \ retained buffer as non-last blocks and reset it; matches never cross a block\
+    \ boundary, so a split stays self-contained\n  rules:\n    - emitted blocks decode\
+    \ everything written so far\n    - the frame stays open, so Close still finishes\
+    \ it\n    - Flush after Close returns ErrClosed\n    - flushed bytes stay inside\
+    \ the enabled SHA-256 and size accounting\n    - Flush with nothing buffered emits\
+    \ nothing and succeeds\n    - Flush does not flush the destination writer; the\
+    \ caller chains that\n    - flushing before a block fills reduces the ratio, so\
+    \ flush per chunk rather than per Write\ndeferred:\n  - Huffman literals, general\
+    \ FSE tables, multi-match blocks, and additional compression levels\n  - trained\
+    \ dictionaries\n  - seekable format\n  - assembly optimizations\n  - decoding\n\
+    standard: https://www.rfc-editor.org/rfc/rfc8878\n```"
   package: github.com/shibukawa/tinygodriver/compress/zstd
   role: the zstd half of policy:response-content-encoding, beside requirement:response-gzip-encoder;
     the two share one writer interface and one negotiation path
@@ -60,6 +71,9 @@ facts:
   - NewWriter(io.Writer, options) returns Writer
   - Writer.Flush() error emits buffered input as complete blocks without ending the
     frame, for decision:streaming-response-compression
+  - Writer.Reset(io.Writer) starts a new frame on a new destination and keeps the
+    block buffer, the match table and the WithETag setting, so a response path can
+    pool encoders
   - Writer.Result returns encoded size and SHA-256 after successful Close
   - EncodeAll(src, options) returns encoded bytes and Result
   - WithETag(bool) controls cache hash generation; default true
@@ -107,6 +121,17 @@ facts:
   - enabled SHA-256 updated only for bytes successfully emitted
   limits:
     tinygodriver: 128 KiB window and retained input block plus 16 KiB match table
+  pooling:
+    host_go: reset and reuse through sync.Pool, which makes steady-state per-response
+      allocation zero
+    tinygodriver: reset and reuse through sync.Pool as well; on TinyGo wasip1 a 22
+      KB body ran at 45 MB/s through a new encoder, which allocates 286 KB, and at
+      56 MB/s through a reused one, which still allocates 16 KB per frame where the
+      same code under host Go allocates 76 bytes; TinyGo's sync.Pool never releases
+      what it holds, so every encoder ever built stays resident
+    beside_gzip: on the same body and target the reused standard library gzip encoder
+      ran at 196 MB/s and wrote 30.6 percent of the source, against 56 MB/s and 34.6
+      percent here; see decision:response-content-codings
   flush_semantics:
     available: tinygodriver v1.0.4
     model: compress/flate and compress/gzip Flush semantics
@@ -136,6 +161,9 @@ relations:
   resolution: resolved
 - relation: mentions
   to: decision:force-tinygo-logic
+  resolution: resolved
+- relation: mentions
+  to: decision:response-content-codings
   resolution: resolved
 - relation: mentions
   to: decision:streaming-response-compression
