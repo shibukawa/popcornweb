@@ -11,9 +11,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/andybalholm/brotli"
 	"github.com/klauspost/compress/gzip"
 	"github.com/klauspost/compress/zstd"
+	brrr "github.com/molecule-man/go-brrr"
 	"github.com/shibukawa/popcornweb/middlewares"
 )
 
@@ -153,7 +153,7 @@ func decodeTestGzip(encoded []byte) ([]byte, error) {
 }
 
 func decodeTestBrotli(encoded []byte) ([]byte, error) {
-	return io.ReadAll(brotli.NewReader(bytes.NewReader(encoded)))
+	return io.ReadAll(brrr.NewReader(bytes.NewReader(encoded)))
 }
 
 // TestBuildDerivedAssetsRefusesAnOldEmbed covers the migration: the scaffolded
