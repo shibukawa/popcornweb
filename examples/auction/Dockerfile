@@ -13,7 +13,7 @@
 # rebases onto each new stable Debian the day it releases, and the runtime
 # stage below names its Debian release explicitly, so an unpinned builder
 # would let the two drift apart on someone else's schedule.
-FROM golang:1.26-trixie AS build
+FROM golang:1.27-trixie AS build
 WORKDIR /src
 
 # The module files come first so the download layer survives a source edit.
@@ -34,7 +34,7 @@ RUN case "${TARGETARCH:-amd64}" in \
       *) echo "no Tailwind release for ${TARGETARCH}" >&2; exit 1 ;; \
     esac; \
     curl -fsSL -o /usr/local/bin/tailwindcss \
-      "https://github.com/tailwindlabs/tailwindcss/releases/download/v4.1.18/tailwindcss-linux-${arch}" \
+      "https://github.com/tailwindlabs/tailwindcss/releases/download/v4.2.4/tailwindcss-linux-${arch}" \
     && chmod +x /usr/local/bin/tailwindcss
 
 COPY . .

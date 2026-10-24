@@ -3,7 +3,7 @@ module github.com/shibukawa/popcornweb
 go 1.27.0
 
 require (
-	github.com/andybalholm/brotli v1.2.6
+	github.com/andybalholm/brotli v1.2.7
 	github.com/charmbracelet/bubbles v1.0.0
 	github.com/charmbracelet/bubbletea v1.3.10
 	github.com/charmbracelet/lipgloss v1.1.0
@@ -16,8 +16,8 @@ require (
 	github.com/redis/go-redis/v9 v9.23.0
 	github.com/shibukawa/dbtestify v0.5.0
 	github.com/shibukawa/localotelviewer v1.0.4
-	github.com/shibukawa/tinybind-go v0.5.34
-	github.com/shibukawa/tinygodriver v1.3.5
+	github.com/shibukawa/tinybind-go v0.5.37
+	github.com/shibukawa/tinygodriver v1.3.6
 	github.com/syumai/workers v0.36.0
 	golang.org/x/mod v0.42.0
 	golang.org/x/tools v0.52.0
@@ -53,6 +53,7 @@ require (
 	github.com/mattn/go-runewidth v0.0.31 // indirect
 	github.com/mattn/go-sqlite3 v1.14.52 // indirect
 	github.com/mfridman/interpolate v0.0.2 // indirect
+	github.com/molecule-man/go-brrr v1.3.0 // indirect
 	github.com/muesli/ansi v0.0.0-20230316100256-276c6243b2f6 // indirect
 	github.com/muesli/cancelreader v0.2.2 // indirect
 	github.com/muesli/termenv v0.16.0 // indirect
@@ -84,5 +85,5 @@ require (
 	modernc.org/libc v1.79.0 // indirect
 	modernc.org/mathutil v1.7.1 // indirect
 	modernc.org/memory v1.12.1 // indirect
-	modernc.org/sqlite v1.60.1 // indirect
+	modernc.org/sqlite v1.61.0 // indirect
 )

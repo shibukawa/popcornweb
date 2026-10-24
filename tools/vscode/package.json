@@ -339,6 +339,6 @@
     "onLanguage:go"
   ],
   "dependencies": {
-    "vscode-languageclient": "^10.1.2"
+    "vscode-languageclient": "^11.0.0"
   }
 }

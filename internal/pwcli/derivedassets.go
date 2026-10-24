@@ -88,7 +88,7 @@ func derivedSidecarCodings() ([]sidecarCoding, error) {
 		return nil, fmt.Errorf("public assets: create zstd encoder: %w", err)
 	}
 	return []sidecarCoding{
-		{token: "br", suffix: ".br", params: "brotli/1.2.6 " + strconv.Itoa(brotli.BestCompression), encode: encodeBrotli},
+		{token: "br", suffix: ".br", params: "brotli/1.2.7 " + strconv.Itoa(brotli.BestCompression), encode: encodeBrotli},
 		{token: "zstd", suffix: ".zstd", params: "compress/1.20.3 " + zstd.SpeedBestCompression.String(), encode: func(source []byte) ([]byte, error) {
 			return zstdEncoder.EncodeAll(source, nil), nil
 		}},

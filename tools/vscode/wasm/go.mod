@@ -14,6 +14,4 @@ module github.com/shibukawa/popcornweb/tools/vscode/wasm
 
 go 1.27.0
 
-require github.com/shibukawa/tinybind-go v0.5.34
-
-require github.com/shibukawa/tinygodriver v1.3.5 // indirect
+require github.com/shibukawa/tinybind-go v0.5.37

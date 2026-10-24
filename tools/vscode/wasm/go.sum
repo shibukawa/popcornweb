@@ -1,6 +1,2 @@
-github.com/shibukawa/tinybind-go v0.5.17 h1:25uNsm3Co87dVig0TOZs0tYvrO9l8AD1W2dP4usLLe0=
-github.com/shibukawa/tinybind-go v0.5.17/go.mod h1:+ENPVbiK6wvD6n4QqQK4hSyDELmTC5lKbBZJlkXFbQo=
-github.com/shibukawa/tinybind-go v0.5.34 h1:2E/qRo8dJ9ZkTbPpZEV2Q6rCBNXqwdWBZ8ExaC9JRt8=
-github.com/shibukawa/tinybind-go v0.5.34/go.mod h1:5Oa1sHIbHJVsLaYG6ZYB3wkCCU5bSXaAWX8ueE8qJHs=
-github.com/shibukawa/tinygodriver v1.3.5 h1:esCDC+7L7PmoIKaW1QxNOoU5TpEwCyF4VevSk5e0I74=
-github.com/shibukawa/tinygodriver v1.3.5/go.mod h1:BHF2120Trf0Np+CO1uxsmtd2G/gfslLuMl5zaA0T7ik=
+github.com/shibukawa/tinybind-go v0.5.37 h1:cGQYzpNlZgFKDT56G31+Qhf0N9TH32cf07de2m5cZ9w=
+github.com/shibukawa/tinybind-go v0.5.37/go.mod h1:BbtKFH/+2fnNSSPZyBEBFSr0aQyst0q4OiIYeHsO4j4=

@@ -157,7 +157,7 @@ func buildProcessDeployment(ctx context.Context, root, stage string, config proj
 	switch options.target {
 	case targetLambda:
 		dockerfile := "FROM public.ecr.aws/awsguru/aws-lambda-adapter:" + lambdaWebAdapterVersion + " AS adapter\n" +
-			"FROM gcr.io/distroless/static-debian12:nonroot\n" +
+			"FROM gcr.io/distroless/static-debian13:nonroot\n" +
 			"COPY --from=adapter /lambda-adapter /opt/extensions/lambda-adapter\n" +
 			"COPY --chown=nonroot:nonroot " + productionFiles + " /\n" +
 			// The tree that ships beside the binary. It lands at the root

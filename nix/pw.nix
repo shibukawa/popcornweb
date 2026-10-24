@@ -25,7 +25,7 @@ buildGoModule {
 
   # Regenerate whenever go.mod or go.sum changes: set this to lib.fakeHash, run
   # nix build .#pw, and copy the hash the mismatch reports.
-  vendorHash = "sha256-Ksp/4VHZGR63bnsQ1As8bxeXqHWFBrGTaoeDu+EJWkA=";
+  vendorHash = "sha256-kMT9EWdyKCWuUI/cz7uQ1cvGI+OQTtsfiX/dlxwDwrk=";
 
   subPackages = [ "cmd/pw" ];
 
