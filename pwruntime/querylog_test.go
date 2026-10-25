@@ -2,6 +2,7 @@ package pwruntime
 
 import (
 	"context"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -260,6 +261,69 @@ func TestQueryLogTruncatesStatementAndValues(t *testing.T) {
 	}
 	if record["reproduction"] != nil {
 		t.Errorf("a truncated value must not produce a rerun snippet: %v", record["reproduction"])
+	}
+}
+
+func TestQueryLogTruncatesByteValues(t *testing.T) {
+	config := defaultDiagnostics()
+	config.MaxValueLength = 9
+	ctx, handler := diagnosticContext(t, "sqlite", config)
+	executor, err := SQLExecutor(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	value := []byte{0xde, 0xad, 0xbe, 0xef, 0x01}
+	if _, err := executor.ExecContext(ctx, "INSERT INTO items (name) VALUES ($1)", value); err != nil {
+		t.Fatal(err)
+	}
+	record := handler.only(t)
+	if got := record["args"]; got != "0xdeadbee" {
+		t.Errorf("args = %v, want the first nine characters of 0xdeadbeef01", got)
+	}
+	if record["args_truncated"] != true {
+		t.Errorf("truncation went unreported: %v", record)
+	}
+}
+
+// TestRenderArgsEncodesOnlyTheBytesThatFit holds the bounded rendering to the
+// text the whole encoding would have been cut to, at both limit parities and
+// on both sides of the point where a value stops fitting.
+func TestRenderArgsEncodesOnlyTheBytesThatFit(t *testing.T) {
+	blob := make([]byte, 300)
+	for i := range blob {
+		blob[i] = byte(i * 7)
+	}
+	for _, limit := range []int{0, 1, 2, 3, 4, 5, 255, 256, 601, 602, 603} {
+		for _, size := range []int{0, 1, 2, 127, 128, 299, 300} {
+			value := blob[:size]
+			config := defaultDiagnostics()
+			config.MaxValueLength = limit
+			rendered, complete := renderArgs([]any{value}, config)
+			want, truncated := truncateText(displayValue(value), limit)
+			if rendered[0] != want || complete == truncated {
+				t.Errorf("limit %d, %d bytes: got %q (complete %v), want %q (complete %v)",
+					limit, size, rendered[0], complete, want, !truncated)
+			}
+		}
+	}
+}
+
+// TestRenderArgsLeavesALargeValueUnencoded is the reason for the bound: a 1 MiB
+// argument used to become 2 MiB of hex, copied twice, to keep its first 256
+// characters.
+func TestRenderArgsLeavesALargeValueUnencoded(t *testing.T) {
+	config := defaultDiagnostics()
+	args := []any{make([]byte, 1<<20)}
+	renderArgs(args, config)
+	var before, after runtime.MemStats
+	runtime.ReadMemStats(&before)
+	const runs = 8
+	for range runs {
+		renderArgs(args, config)
+	}
+	runtime.ReadMemStats(&after)
+	if perCall := (after.TotalAlloc - before.TotalAlloc) / runs; perCall > 16<<10 {
+		t.Fatalf("rendering allocated %d bytes per call, as if the whole value were encoded", perCall)
 	}
 }
 
