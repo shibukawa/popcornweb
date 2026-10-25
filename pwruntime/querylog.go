@@ -590,13 +590,29 @@ func renderArgs(args []any, config *QueryDiagnostics) ([]string, bool) {
 	rendered := make([]string, len(args))
 	complete := true
 	for i, arg := range args {
-		text, truncated := truncateText(displayValue(arg), config.MaxValueLength)
+		text, truncated := boundedDisplayValue(arg, config.MaxValueLength)
 		rendered[i] = text
 		if truncated {
 			complete = false
 		}
 	}
 	return rendered, complete
+}
+
+// boundedDisplayValue is truncateText over displayValue, without paying for
+// the part the limit cuts off. A byte slice is the one kind whose text costs
+// time in proportion to its length, so only the bytes that reach the limit are
+// encoded: a megabyte argument would otherwise become two megabytes of hex to
+// keep the first 256 characters of it.
+func boundedDisplayValue(value any, limit int) (string, bool) {
+	raw, ok := value.([]byte)
+	if !ok || limit <= 0 || 2+hex.EncodedLen(len(raw)) <= limit {
+		return truncateText(displayValue(value), limit)
+	}
+	// (limit-1)/2 bytes give at least limit-2 hex digits, so with the 0x prefix
+	// they cover the limit, including the high nibble an odd limit ends on.
+	head := raw[:(limit-1)/2]
+	return ("0x" + hex.EncodeToString(head))[:limit], true
 }
 
 // displayValue renders one argument as a scalar. A non-scalar becomes a type

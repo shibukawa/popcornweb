@@ -14,14 +14,15 @@ const gzipContentEncoding = "gzip"
 // gzipResponseLevel is the fastest level that still compresses.
 //
 // A dynamic body is encoded while a request waits, so throughput is the scarce
-// resource and ratio is the one that gives: level 1 runs at roughly 460 MB/s
-// against 305 at level 6, for 3.3 points of ratio on a page-sized document.
+// resource and ratio is the one that gives: level 1 runs at roughly 560 MB/s
+// against 360 at level 6, for 3.6 points of ratio on a page-sized document.
 // The deep levels are not lost, they are spent by the public asset build,
 // where the cost lands on a machine that is not answering a request.
 const gzipResponseLevel = 1
 
 // The klauspost encoder is used here rather than the standard library one
-// because it is roughly 1.5 times faster at this level and the module is
+// because it is still about an eighth faster at this level, now that Go 1.27
+// runs the same encoder and writes the same deflate bytes, and the module is
 // already linked for zstd, so the coding costs no new dependency.
 var responseGzipPool sync.Pool
 
