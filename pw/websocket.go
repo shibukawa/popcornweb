@@ -4,7 +4,7 @@ import (
 	"net/http"
 
 	"github.com/shibukawa/popcornweb/pwruntime"
-	tinybind "github.com/shibukawa/tinybind-go"
+	tinybind "github.com/shibukawa/tinybind-go/httpbind"
 )
 
 // Socket is an open typed WebSocket connection. It is the module's own type

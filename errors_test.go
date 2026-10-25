@@ -10,7 +10,7 @@ import (
 
 	petitweb "github.com/shibukawa/popcornweb"
 	"github.com/shibukawa/popcornweb/pwruntime"
-	httpbind "github.com/shibukawa/tinybind-go"
+	httpbind "github.com/shibukawa/tinybind-go/httpbind"
 )
 
 func TestWriteErrorNegotiatesHTML(t *testing.T) {

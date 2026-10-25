@@ -139,7 +139,7 @@ type createUserInput struct {
 Multipart file fields use `httpbind.File`:
 
 ```go
-import httpbind "github.com/shibukawa/tinybind-go"
+import httpbind "github.com/shibukawa/tinybind-go/httpbind"
 
 type uploadInput struct {
 	Title string        `payload:"title" check:"required"`

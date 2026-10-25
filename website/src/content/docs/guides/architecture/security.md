@@ -93,10 +93,12 @@ assets are produced by `pw build` rather than expanded at request time. Where
 the framework does read bytes from somewhere else — OIDC discovery, a token
 exchange, a JWKS document — it reads through a bound applied after the
 transport's own decompression and refuses redirects. The one inflating codec
-anywhere in the stack is WebSocket permessage-deflate, and it is off by default:
-the socket's read limit is applied to each frame as it arrives, before
-inflation, so turning `EnableCompression` on is also the decision to accept what
-a compressed megabyte expands into. What the framework does not do is open an
+anywhere in the stack is WebSocket permessage-deflate, and it is off by default.
+Turning it on does not loosen the bound: the socket's `ReadLimit` counts the
+message as the application receives it, after inflation, so a frame that would
+expand past the limit ends the connection with close code 1009 and an error
+whose cause is `ErrReadLimit`, never with the inflated bytes. What the
+framework does not do is open an
 archive on your behalf: an uploaded `.zip` is bytes to the binder, and unpacking
 it is a decision the application makes with its own limits.
 

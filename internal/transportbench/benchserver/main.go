@@ -26,9 +26,9 @@ import (
 	"github.com/shibukawa/popcornweb/pw"
 	"github.com/shibukawa/popcornweb/pwfast"
 	"github.com/shibukawa/popcornweb/pwruntime"
-	httpbind "github.com/shibukawa/tinybind-go"
 	"github.com/shibukawa/tinybind-go/fasthttpbind"
 	"github.com/shibukawa/tinybind-go/htmlbind"
+	httpbind "github.com/shibukawa/tinybind-go/httpbind"
 	"github.com/shibukawa/tinygodriver/fasthttp"
 )
 

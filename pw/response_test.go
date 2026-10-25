@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	tinybind "github.com/shibukawa/tinybind-go"
+	tinybind "github.com/shibukawa/tinybind-go/httpbind"
 	"github.com/shibukawa/tinybind-go/jsonbind"
 )
 

@@ -14,7 +14,7 @@ import (
 	"github.com/shibukawa/popcornweb/middlewares"
 	"github.com/shibukawa/popcornweb/pwconfig"
 	"github.com/shibukawa/popcornweb/pwruntime"
-	tinybind "github.com/shibukawa/tinybind-go"
+	tinybind "github.com/shibukawa/tinybind-go/httpbind"
 	"github.com/shibukawa/tinygodriver/httpserver"
 )
 

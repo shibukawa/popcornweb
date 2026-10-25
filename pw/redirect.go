@@ -5,7 +5,7 @@ import (
 
 	"github.com/shibukawa/popcornweb/internal/safeurl"
 	"github.com/shibukawa/popcornweb/pwruntime"
-	tinybind "github.com/shibukawa/tinybind-go"
+	tinybind "github.com/shibukawa/tinybind-go/httpbind"
 )
 
 // Redirect sends the browser to another location.

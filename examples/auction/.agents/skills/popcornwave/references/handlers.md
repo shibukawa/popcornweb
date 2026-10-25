@@ -86,7 +86,7 @@ A scalar `input` field reads query then body; a nested struct, slice, or map `in
 Multipart files use `httpbind.File` (exposes `Filename`, `ContentType`, `Size`, `Content`):
 
 ```go
-import httpbind "github.com/shibukawa/tinybind-go"
+import httpbind "github.com/shibukawa/tinybind-go/httpbind"
 
 type uploadInput struct {
 	Title string        `payload:"title" check:"required"`

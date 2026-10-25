@@ -155,7 +155,7 @@ _ = pw.WebSocketWith(w, r, opts, chatLoop) // 上と同じコールバックに�
 
 | 項目 | 既定値 | 何を縛るか |
 | --- | --- | --- |
-| `ReadLimit` | 1 MiB | 受信メッセージ 1 通。超えると接続を閉じる |
+| `ReadLimit` | 1 MiB | 受信メッセージ 1 通。伸長後の大きさで数え、超えると 1009 で接続を閉じる |
 | `IdleTimeout` | 60s | 読み取りデッドライン。pong のたびに延びる |
 | `PingInterval` | 54s | ランタイムが ping を送る間隔。`IdleTimeout` より短いこと |
 | `WriteTimeout` | 10s | 書き込み 1 回。応答しない相手が書き手を占有しないように |

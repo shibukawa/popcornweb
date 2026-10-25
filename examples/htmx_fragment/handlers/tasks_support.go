@@ -12,7 +12,7 @@ import (
 	"time"
 
 	"github.com/shibukawa/popcornweb/pwruntime"
-	httpbind "github.com/shibukawa/tinybind-go"
+	httpbind "github.com/shibukawa/tinybind-go/httpbind"
 )
 
 // validationFields reports the field-level failures behind a pw.Parse error.

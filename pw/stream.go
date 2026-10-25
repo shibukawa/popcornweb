@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"strings"
 
-	tinybind "github.com/shibukawa/tinybind-go"
+	tinybind "github.com/shibukawa/tinybind-go/httpbind"
 )
 
 // Stream is an open typed event stream. It is the module's own type rather

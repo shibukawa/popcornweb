@@ -23,7 +23,7 @@ import (
 
 	"github.com/shibukawa/popcornweb/pw"
 	"github.com/shibukawa/popcornweb/storage"
-	"github.com/shibukawa/tinybind-go"
+	"github.com/shibukawa/tinybind-go/httpbind"
 )
 
 type uploadInput struct {
