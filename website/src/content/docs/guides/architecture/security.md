@@ -24,7 +24,11 @@ template hole, a query parameter, and a request field each get a type and the
 mistake becomes a build error; or in the chain above the handler, where a
 request is measured, parsed, and sometimes refused before any application code
 runs. A handler receives a request that has already been bounded and typed, and
-the escaping, the placeholder, and the token are not steps it can forget.
+the escaping, the placeholder, and the token are not steps it can forget. The
+generation step belongs to [tinybind-go](https://github.com/shibukawa/tinybind-go),
+the library underneath `pw generate`: the binder, the template, and the query
+each compile to type-specific Go with no reflection, so nothing is looked up by
+name at run time, and the same defenses compile under TinyGo.
 
 The second half of the premise is that a defense you cannot see is one you
 cannot rely on. The safe setting is the default. A setting that turns a defense
@@ -59,11 +63,15 @@ sees a bind error rather than data; the fasthttp build refuses the request with
 because decode memory is a different cost from transfer size: a JSON document
 and a multipart body are each limited to 1 MiB by default, and a CBOR body has
 its own `server.cbor_max_body`, since it is read whole before decoding, with an
-oversized document refused as a 413 problem document. A bearer token is refused
-past 16 KiB, a client-supplied request ID past 128 bytes, and the header block
-stays at `net/http`'s own 1 MiB limit. See
-[`[server]`](/reference/configuration/#server) and [Multipart
-files](/reference/request-binding/#multipart-files).
+oversized document refused as a 413 problem document. Those decoder bounds are
+tinybind-go's. They bound the read itself rather than trusting `Content-Length`,
+and none of them can be set to unlimited — a non-positive value restores the
+default, because a bound nobody chose is a bound the client chooses. A bearer
+token is refused past 16 KiB, a client-supplied request ID past 128 bytes, and
+the header block stays at `net/http`'s own 1 MiB limit. See
+[`[server]`](/reference/configuration/#server), [Multipart
+files](/reference/request-binding/#multipart-files), and tinybind-go's [size and
+shape limits](https://github.com/shibukawa/tinybind-go/blob/main/docs/limits.md).
 
 **A slow or half-open connection.** A client that opens a connection and feeds
 it a byte at a time is holding a goroutine, and the server's timeouts are what
@@ -75,21 +83,28 @@ source has delivered on for five minutes. `middleware.request_timeout`, once you
 set one, puts a deadline on the request context that the handler and its
 queries observe.
 
-**A compression bomb.** A request body is never decompressed. The framework
-honors no `Content-Encoding` on a request, so a few kilobytes that would inflate
-to gigabytes reach your handler as exactly the kilobytes that arrived, under the
-cap above, and a runtime that never inflates has nothing to bomb. Compression
-runs in the other direction only: responses are compressed on the way out, and
-precompressed assets are produced by `pw build` rather than expanded at request
-time. Where the framework does read bytes from somewhere else — OIDC discovery,
-a token exchange, a JWKS document — it reads through a bound applied after the
-transport's own decompression and refuses redirects. What the framework does not
-do is open an archive on your behalf: an uploaded `.zip` is bytes to the binder,
-and unpacking it is a decision the application makes with its own limits.
+**A compression bomb.** A request body is never decompressed, neither by this
+framework nor by tinybind-go underneath it. Neither honors a `Content-Encoding`
+on a request, so a few kilobytes that would inflate to gigabytes reach your
+handler as exactly the kilobytes that arrived, under the cap above, and a
+runtime that never inflates has nothing to bomb. Compression runs in the other
+direction only: responses are compressed on the way out, and precompressed
+assets are produced by `pw build` rather than expanded at request time. Where
+the framework does read bytes from somewhere else — OIDC discovery, a token
+exchange, a JWKS document — it reads through a bound applied after the
+transport's own decompression and refuses redirects. The one inflating codec
+anywhere in the stack is WebSocket permessage-deflate, and it is off by default:
+the socket's read limit is applied to each frame as it arrives, before
+inflation, so turning `EnableCompression` on is also the decision to accept what
+a compressed megabyte expands into. What the framework does not do is open an
+archive on your behalf: an uploaded `.zip` is bytes to the binder, and unpacking
+it is a decision the application makes with its own limits.
 
 **Malformed input and unexpected parameters.** `pw.Parse[T]` binds a request
-into a struct whose fields were read at `pw generate`, so the struct is the
-whole surface. A key no field names is skipped — not stored, not reachable —
+into a struct whose fields were read at `pw generate`, through a binder that
+tinybind-go's httpbind emits as ordinary Go for that one struct, so the struct
+is the whole surface and there is no reflective walk at run time for a hostile
+key to steer. A key no field names is skipped — not stored, not reachable —
 unless you declare a `payload:"*"` rest map and ask for it. A value that does
 not parse as its type, or fails a `check` rule, fails the whole bind: the
 handler never runs on half an input, and `pw.WriteProblem` turns the error into
@@ -104,7 +119,8 @@ with the wrong syntax never reaches the store, and a request ID outside 128
 printable ASCII characters is replaced rather than echoed into a header or a log
 line. The boundary is mass assignment: nothing in a `Parse` struct is
 unbindable, so a value the caller must not control does not belong in one — see
-[Request Binding](/reference/request-binding/#source-tags).
+[Request Binding](/reference/request-binding/#source-tags) and tinybind-go's
+[httpbind guide](https://github.com/shibukawa/tinybind-go/blob/main/docs/httpbind.md).
 
 **Session fixation.** The attack plants a session identifier in a victim's
 browser and waits for them to log in under it. Two things make that fail. The
@@ -125,21 +141,32 @@ injection, a `javascript:` URL, framing, and the compression side channel on
 the CSRF token each have a section of this page, because each needs more than a
 paragraph: see [What is on by
 default](/guides/architecture/security/#what-is-on-by-default) and [How CSRF
-works here](/guides/architecture/security/#how-csrf-works-here). Two cases reach
-beyond the template. `pw.Redirect` refuses a target a browser could not follow
+works here](/guides/architecture/security/#how-csrf-works-here). The escaping
+and the URL rules are tinybind-go's htmlbind, which decides what a value may
+become by the position it lands in: text and ordinary attributes are escaped, a
+URL attribute demands a `url` at generation time and a permitted scheme at
+render time, and an event handler or a `<script>` body takes nothing a `string`
+can reach. Its [security
+reference](https://github.com/shibukawa/tinybind-go/blob/main/docs/htmlbind_security.md)
+has the full table of positions, and names the three it does not yet cover: a
+`meta refresh` URL, a `style` attribute, and `srcdoc`. Two cases reach beyond
+the template. `pw.Redirect` refuses a target a browser could not follow
 without running script, on both the full-page and the update branch, so
 forwarding an unchecked parameter cannot turn your own redirect into script
 execution. And the login flow's `next` parameter accepts only a rooted local
 path, so a login link cannot send a freshly signed-in user to another site.
 
-**SQL injection.** Every `{name}` in a `.pw.sql` body is a prepared-statement
+**SQL injection.** A `.pw.sql` statement is compiled by tinybind-go's sqlbind,
+and its guarantee is absolute: every `{name}` in the body is a prepared-statement
 placeholder, and a template expression is never concatenated into SQL text.
 Generation refuses a handwritten `$1` or `?`, and a value parameter cannot stand
-where an identifier or a keyword belongs, so there is no path from a request
-value to query structure. The one write a parameter cannot protect — an `UPDATE`
-or `DELETE` whose `WHERE` could be empty on some branch — is refused at
-generation too. See [Parameters](/reference/sql-templates/#parameters) and [Two
-safety rules](/guides/storage/queries/#two-safety-rules).
+where an identifier, an operator, or a sort direction belongs, so there is no
+path from a request value to query structure. The one write a parameter cannot
+protect — an `UPDATE` or `DELETE` whose `WHERE` could be empty on some branch —
+is refused at generation too. See [Parameters](/reference/sql-templates/#parameters),
+[Two safety rules](/guides/storage/queries/#two-safety-rules), and sqlbind's
+[Values are always
+parameters](https://github.com/shibukawa/tinybind-go/blob/main/docs/sqlbind.md#values-are-always-parameters).
 
 **Path traversal.** Static assets are served from the tree `pw build` embedded,
 so outside development there is no disk to traverse. The request path still has
