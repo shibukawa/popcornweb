@@ -196,13 +196,46 @@ CSRF token, a signed cookie's MAC, a passkey challenge binding, an HMAC-signed
 bearer token, a signed storage URL. A rejection takes as long as an acceptance,
 so response time says nothing about how close a guess came.
 
-**Token attacks.** A bearer token whose header says `alg: none` is refused, the
-algorithm has to be on the configured allowlist, and the key resolved for it has
-to have been published for that same algorithm, so an RSA public key cannot be
-replayed as an HMAC secret. Cached verification keys outlive an issuer outage by
-an hour and then stop, as [Known
+**Token attacks.** A bearer token is refused long before its claims are read.
+The parser accepts exactly three base64url segments, each within 8 KiB and the
+whole within the configured size; it rejects a header or claim set that nests
+deeper than 16 levels, carries more than 256 members, or repeats a member,
+refuses a `crit` header it does not understand, and reads `exp`, `nbf`, and
+`iat` only as integers. `alg: none` is refused, the algorithm has to be on the
+configured allowlist, and the allowlist itself cannot name a symmetric
+algorithm, because the verification key is a published JWKS entry and `HS256`
+would turn that public document into the shared secret. The key is resolved by
+the `kid` the header has to carry, from a key set that must share the issuer's
+origin and is fetched over HTTPS without following redirects, and it must have
+been published for the same algorithm the header names: two candidates are
+refused as ambiguous, an RSA key under 2048 bits is refused, and only then is
+the signature checked.
+
+The claims are then verified as a set, and none of the checks is optional.
+`iss` must equal the configured issuer. `aud` must name this API, with `any` or
+`all` of the configured values. `exp` is required and must lie ahead of the
+clock, `nbf` is honored, and `iat` is required and may not lie in the future,
+all within a leeway capped at five minutes. `exp` minus `iat` must stay within
+`max_token_lifetime`, computed so that an overflowing date cannot wrap into a
+small lifetime. `sub` is required. `typ` must be `at+jwt` by default, which is
+what keeps an ID Token signed by the same issuer from being replayed as an
+access token, and an `at+jwt` token must carry a `jti` so it can be revoked.
+Every `required_scopes` entry must appear in the space-separated `scope` claim,
+split rather than substring-matched. Only after the signature has proved the
+issuer minted the token does the request reach the admission rule or the
+revocation store, which refuses by `jti` or by subject and fails closed when it
+cannot answer. Every rejection is the same 401 with a `WWW-Authenticate:
+Bearer` header, because the difference between expired, wrong audience, and
+revoked is an oracle; the reason goes to the log. An ID Token from the browser
+login passes the same parser and verifier with the client ID as its audience,
+plus a `nonce` compared in constant time against the one minted for that login
+and an `azp` check. The key set is bounded too: an unknown `kid` triggers at
+most one refresh per cooldown, and cached keys outlive an issuer outage by an
+hour and then stop, as [Known
 limits](/guides/architecture/security/#cached-jwks-keys-expire-even-during-an-outage)
-explains.
+explains. See [JWT-only API
+servers](/guides/backend/authentication/#jwt-only-api-servers) and
+[`[auth.jwt]`](/reference/configuration/#authjwt).
 
 **Crashes and error detail.** A panic in a handler is recovered into a 500
 through the same negotiated error path as any other failure, with the panic in
