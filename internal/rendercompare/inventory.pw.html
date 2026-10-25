@@ -1,0 +1,12 @@
+package rendercompare
+
+// The rows of the inventory table. A price is a string because the benchmark
+// compares rendering, and formatting a number is work both sides would repeat.
+type Item { code: string, name: string, qty: int, price: string, inStock: bool }
+
+// The body is one line on purpose. A line break inside a component is
+// whitespace the generated code writes, and the html/template in compare_test.go
+// has to write the same bytes.
+export component Table(items: Item[]): html {
+<table class="inventory"><thead><tr><th>Code</th><th>Name</th><th>Qty</th><th>Price</th><th>Stock</th></tr></thead><tbody>{for item in items}<tr class="{item.inStock ? 'in' : 'out'}"><td>{item.code}</td><td>{item.name}</td><td>{item.qty}</td><td>{item.price}</td><td>{if item.inStock}<em>in stock</em>{/if}</td></tr>{/for}</tbody></table>
+}

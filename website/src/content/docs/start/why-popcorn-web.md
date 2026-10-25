@@ -54,17 +54,18 @@ every request.
 
 Rendering is where that shows up most plainly. The same inventory table written
 twice — once as an `html/template` parsed at startup, once as a typed component
-— rendered to the same bytes. Medians of fifteen runs on Go 1.26.5, Apple M3:
+— rendered to the same bytes. Medians of fifteen runs on Go 1.27.0, Apple M3:
 
 | Rows | `html/template` | Generated |
 | --- | --- | --- |
-| 1 | 2.55 µs · 1032 B · 41 allocs | 393 ns · 560 B · 5 allocs |
-| 50 | 78.5 µs · 26.1 KiB · 1282 allocs | 6.82 µs · 611 B · 21 allocs |
-| 500 | 780 µs · 259 KiB · 12 956 allocs | 70.4 µs · 2.14 KiB · 472 allocs |
+| 1 | 1.70 µs · 760 B · 30 allocs | 289 ns · 168 B · 4 allocs |
+| 50 | 77.3 µs · 25.8 KiB · 1264 allocs | 6.05 µs · 168 B · 4 allocs |
+| 500 | 785 µs · 259 KiB · 12 888 allocs | 58.4 µs · 168 B · 4 allocs |
 
-The memory column is the one that compounds. A fifty-row page costs 611 bytes
-instead of 26 KiB, and what is never allocated is never collected later — a cost
-the collector otherwise charges to whichever request happens to be running.
+The memory column is the one that compounds. A fifty-row page costs 168 bytes
+instead of 26 KiB, and a five-hundred-row page the same 168 against 259 KiB. What
+is never allocated is never collected later — a cost the collector otherwise
+charges to whichever request happens to be running.
 
 Removing reflection has a second consequence, and it is the one the project is
 betting on. If WebAssembly becomes an ordinary place to deploy server code,
