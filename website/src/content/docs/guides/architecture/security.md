@@ -14,6 +14,179 @@ The request path below shows where each check runs. It also makes the boundary
 clear: Popcorn Web can reject an unsafe request, but it cannot decide who
 should be allowed to perform an application-specific action.
 
+## Security first
+
+Popcorn Web is developed on the premise that a web application is attacked, and
+that most of what an attacker tries is the same handful of moves against every
+site. So every defense that can be decided without knowing the application is
+decided by the framework, as early as it can be: at generation time, where a
+template hole, a query parameter, and a request field each get a type and the
+mistake becomes a build error; or in the chain above the handler, where a
+request is measured, parsed, and sometimes refused before any application code
+runs. A handler receives a request that has already been bounded and typed, and
+the escaping, the placeholder, and the token are not steps it can forget.
+
+The second half of the premise is that a defense you cannot see is one you
+cannot rely on. The safe setting is the default. A setting that turns a defense
+off refuses to start outside development, or starts with a warning that `pw
+doctor` repeats against the configuration file. A refusal tells the caller
+nothing about which check it failed and tells the log exactly that. The rest of
+this page is the detail; this section is the shape, organized by what an
+attacker actually sends.
+
+Two jobs are deliberately left to the layer in front of the process, because a
+normal cloud deployment already has one. TLS terminates at the load balancer or
+the CDN: the framework binds a plain port, learns that a request was HTTPS
+either from a TLS connection of its own or from the `X-Forwarded-Proto` a proxy
+named in `server.trusted_proxies` sent, and sends HSTS only on a request it has
+verified that way. Volumetric denial of service is absorbed by the WAF or the
+edge, which sees the traffic before it reaches a port. The framework can take a
+share of either — `pw.Middlewares` returns the composed chain as an ordinary
+`http.Handler` for a process that has to serve TLS itself, and the timeouts,
+caps, and rate limits below are an application-layer flood control — but what
+it keeps for itself is what the edge cannot see: the shape of one request, and
+the budget of one signed-in user. See [Reverse
+Proxy](/guides/deployment/reverse-proxy/).
+
+### What common attacks run into
+
+**An oversized body.** `server.max_request_body` caps every request at 10 MiB,
+and the cap is installed outside your own middleware, so a middleware that reads
+the body is bounded too. A read past it fails inside whatever was consuming the
+body, the connection is closed once the response is written, and the handler
+sees a bind error rather than data; the fasthttp build refuses the request with
+413 before a handler runs. Inside that cap each decoder has a bound of its own,
+because decode memory is a different cost from transfer size: a JSON document
+and a multipart body are each limited to 1 MiB by default, and a CBOR body has
+its own `server.cbor_max_body`, since it is read whole before decoding, with an
+oversized document refused as a 413 problem document. A bearer token is refused
+past 16 KiB, a client-supplied request ID past 128 bytes, and the header block
+stays at `net/http`'s own 1 MiB limit. See
+[`[server]`](/reference/configuration/#server) and [Multipart
+files](/reference/request-binding/#multipart-files).
+
+**A slow or half-open connection.** A client that opens a connection and feeds
+it a byte at a time is holding a goroutine, and the server's timeouts are what
+take it back: five seconds to send the headers, thirty to send the whole
+request, two minutes idle on a keep-alive connection. The response write timeout
+is zero on purpose, because a live response is meant to stay open; that stream
+is bounded by `html.live_idle_timeout` instead, which closes a response no
+source has delivered on for five minutes. `middleware.request_timeout`, once you
+set one, puts a deadline on the request context that the handler and its
+queries observe.
+
+**A compression bomb.** A request body is never decompressed. The framework
+honors no `Content-Encoding` on a request, so a few kilobytes that would inflate
+to gigabytes reach your handler as exactly the kilobytes that arrived, under the
+cap above, and a runtime that never inflates has nothing to bomb. Compression
+runs in the other direction only: responses are compressed on the way out, and
+precompressed assets are produced by `pw build` rather than expanded at request
+time. Where the framework does read bytes from somewhere else — OIDC discovery,
+a token exchange, a JWKS document — it reads through a bound applied after the
+transport's own decompression and refuses redirects. What the framework does not
+do is open an archive on your behalf: an uploaded `.zip` is bytes to the binder,
+and unpacking it is a decision the application makes with its own limits.
+
+**Malformed input and unexpected parameters.** `pw.Parse[T]` binds a request
+into a struct whose fields were read at `pw generate`, so the struct is the
+whole surface. A key no field names is skipped — not stored, not reachable —
+unless you declare a `payload:"*"` rest map and ask for it. A value that does
+not parse as its type, or fails a `check` rule, fails the whole bind: the
+handler never runs on half an input, and `pw.WriteProblem` turns the error into
+one 400 problem document naming each field. Prototype pollution does not apply
+on the server, because there is no prototype: `__proto__` in a JSON body is a
+string key with nothing behind it, and a document is refused past 90 levels of
+nesting so its depth cannot become the depth of the Go stack. The browser
+runtime keeps its own state in `Map`s and frozen namespaces and parses only this
+server's responses. The same discipline holds for the smaller inputs: the
+passkey endpoints refuse a JSON field they did not declare, a session cookie
+with the wrong syntax never reaches the store, and a request ID outside 128
+printable ASCII characters is replaced rather than echoed into a header or a log
+line. The boundary is mass assignment: nothing in a `Parse` struct is
+unbindable, so a value the caller must not control does not belong in one — see
+[Request Binding](/reference/request-binding/#source-tags).
+
+**Session fixation.** The attack plants a session identifier in a victim's
+browser and waits for them to log in under it. Two things make that fail. The
+server never adopts a token it did not mint: a cookie carrying an unknown token
+is cleared and the request continues anonymous, a value with the wrong syntax
+never reaches the store at all, and a token the server does mint is 256 random
+bits, stored under its SHA-256 hash. And a login rotates the session rather than
+writing into it — the old record is revoked first, a new token is issued, and
+the state the anonymous visitor accumulated moves across while the CSRF secret
+is minted afresh — so whatever a browser held before the login is dead after it.
+A step-up to a stronger authentication rotates for the same reason. The cookie
+itself is `HttpOnly`, `Secure`, and `SameSite=Lax`, and startup refuses
+`secure = false` outside development. See [The move that happens at
+login](/guides/backend/sessions/#the-move-that-happens-at-login).
+
+**Forgery and injection in the page.** Cross-site request forgery, script
+injection, a `javascript:` URL, framing, and the compression side channel on
+the CSRF token each have a section of this page, because each needs more than a
+paragraph: see [What is on by
+default](/guides/architecture/security/#what-is-on-by-default) and [How CSRF
+works here](/guides/architecture/security/#how-csrf-works-here). Two cases reach
+beyond the template. `pw.Redirect` refuses a target a browser could not follow
+without running script, on both the full-page and the update branch, so
+forwarding an unchecked parameter cannot turn your own redirect into script
+execution. And the login flow's `next` parameter accepts only a rooted local
+path, so a login link cannot send a freshly signed-in user to another site.
+
+**SQL injection.** Every `{name}` in a `.pw.sql` body is a prepared-statement
+placeholder, and a template expression is never concatenated into SQL text.
+Generation refuses a handwritten `$1` or `?`, and a value parameter cannot stand
+where an identifier or a keyword belongs, so there is no path from a request
+value to query structure. The one write a parameter cannot protect — an `UPDATE`
+or `DELETE` whose `WHERE` could be empty on some branch — is refused at
+generation too. See [Parameters](/reference/sql-templates/#parameters) and [Two
+safety rules](/guides/storage/queries/#two-safety-rules).
+
+**Path traversal.** Static assets are served from the tree `pw build` embedded,
+so outside development there is no disk to traverse. The request path still has
+to be canonical: a dot-prefixed segment, `..`, a backslash, or a NUL is refused
+after one round of percent-decoding, and so is a symbolic link, at build time
+and at serve time. See [Path
+handling](/guides/frontend/static-assets/#path-handling).
+
+**Flooding and brute force.** The volumetric kind is the edge's job, as above.
+Rate limiting in the process is a line of configuration away rather than on,
+because the proxy in front of a normal deployment already limits by address and
+a second limiter nobody sized is noise; what it adds is the budget the edge
+cannot compute, per signed-in user. Turned on, it gives an authenticated user
+600 requests a minute and an anonymous address 300, answers a request over
+budget with 429 and `Retry-After`, and holds a ceiling on the process as a
+whole. The address it counts is read from `X-Forwarded-For` only when the peer
+is in `server.trusted_proxies`, walking back to the last hop a trusted proxy
+vouched for; from anyone else the TCP peer is the client, so a header cannot buy
+a fresh budget. Bearer tokens have a flood of their own, a forged `kid` that
+forces a key fetch, and an unknown key triggers at most one refresh per
+cooldown. See [Rate Limiting](/guides/backend/rate-limiting/).
+
+**Timing attacks.** Every comparison against a secret is constant time: the
+CSRF token, a signed cookie's MAC, a passkey challenge binding, an HMAC-signed
+bearer token, a signed storage URL. A rejection takes as long as an acceptance,
+so response time says nothing about how close a guess came.
+
+**Token attacks.** A bearer token whose header says `alg: none` is refused, the
+algorithm has to be on the configured allowlist, and the key resolved for it has
+to have been published for that same algorithm, so an RSA public key cannot be
+replayed as an HMAC secret. Cached verification keys outlive an issuer outage by
+an hour and then stop, as [Known
+limits](/guides/architecture/security/#cached-jwks-keys-expire-even-during-an-outage)
+explains.
+
+**Crashes and error detail.** A panic in a handler is recovered into a 500
+through the same negotiated error path as any other failure, with the panic in
+the log and nothing of it in the response. Outside development an error page
+carries a status and a title and nothing else — see [Different with no setting
+at all](/guides/architecture/security/#different-with-no-setting-at-all).
+
+A list like this does not replace a review of what your handler itself trusts.
+The framework can measure, parse, and refuse a request; who may perform the
+action it asks for, and whether a value it carries is one the caller should
+control, are decisions it cannot make for you — [What you still
+own](/guides/architecture/security/#what-you-still-own) names them.
+
 ## What a request passes through
 
 A request reaches your handler through a chain, and the order is not arbitrary.
