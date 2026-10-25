@@ -200,11 +200,21 @@ and its guarantee is absolute: every `{name}` in the body is a prepared-statemen
 placeholder, and a template expression is never concatenated into SQL text.
 Generation refuses a handwritten `$1` or `?`, and a value parameter cannot stand
 where an identifier, an operator, or a sort direction belongs, so there is no
-path from a request value to query structure. The one write a parameter cannot
-protect — an `UPDATE` or `DELETE` whose `WHERE` could be empty on some branch —
-is refused at generation too. See [Parameters](/reference/sql-templates/#parameters),
-[Two safety rules](/guides/storage/queries/#two-safety-rules), and sqlbind's
-[Values are always
+path from a request value to query structure. The design also removes the
+reason developers reach for string assembly in the first place. The search form
+whose every field is optional — the query that ends up built from `fmt.Sprintf`
+and a slice of `AND` fragments — is written as the plain SQL you want when every
+condition holds, with `{if}` blocks punched out of it: the compiler withholds
+the `AND`, `OR`, comma, or parenthesis that would dangle, drops a `WHERE` that
+ends up empty, renumbers the placeholders for the branches that survived, and
+expands a slice into an `IN` list. A predicate can be declared once and reused.
+So the clause that injection usually enters through is never assembled by hand,
+and a parameter is the only way a value gets into it. The one write a parameter
+cannot protect — an `UPDATE` or `DELETE` whose `WHERE` could be empty on some
+branch — is refused at generation too. See [Parameters](/reference/sql-templates/#parameters),
+[Conditional SQL](/guides/storage/queries/#conditional-sql), [Two safety
+rules](/guides/storage/queries/#two-safety-rules), and sqlbind's [Values are
+always
 parameters](https://github.com/shibukawa/tinybind-go/blob/main/docs/sqlbind.md#values-are-always-parameters).
 
 **Path traversal.** Static assets are served from the tree `pw build` embedded,
