@@ -13968,6 +13968,215 @@
 26	">"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.end.html
 27	"}"	punctuation.definition.block.end.pw
 
+## internal/rendercompare/inventory.pw.html [source.pw.html]
+1	"package"	keyword.control.import.pw
+1	"rendercompare"	entity.name.namespace.pw
+3	"// The rows of the inventory table. A price is a string because the benchmark"	comment.line.pw
+4	"// compares rendering, and formatting a number is work both sides would repeat."	comment.line.pw
+5	"type"	storage.type.pw
+5	"Item"	entity.name.type.pw
+5	"{"	punctuation.definition.block.begin.pw
+5	"code"	variable.other.property.pw
+5	":"	punctuation.separator.type.pw
+5	"string"	support.type.pw
+5	", "	
+5	"name"	variable.other.property.pw
+5	":"	punctuation.separator.type.pw
+5	"string"	support.type.pw
+5	", "	
+5	"qty"	variable.other.property.pw
+5	":"	punctuation.separator.type.pw
+5	"int"	support.type.pw
+5	", "	
+5	"price"	variable.other.property.pw
+5	":"	punctuation.separator.type.pw
+5	"string"	support.type.pw
+5	", "	
+5	"inStock"	variable.other.property.pw
+5	":"	punctuation.separator.type.pw
+5	"bool"	support.type.pw
+5	"}"	punctuation.definition.block.end.pw
+7	"// The body is one line on purpose. A line break inside a component is"	comment.line.pw
+8	"// whitespace the generated code writes, and the html/template in compare_test.go"	comment.line.pw
+9	"// has to write the same bytes."	comment.line.pw
+10	"export"	storage.modifier.pw
+10	"component"	keyword.declaration.pw
+10	"Table"	entity.name.function.pw
+10	"("	punctuation.definition.parameters.begin.pw
+10	"items"	variable.parameter.pw
+10	":"	punctuation.separator.type.pw
+10	"Item"	entity.name.type.pw
+10	"[]"	punctuation.definition.array.pw
+10	")"	punctuation.definition.parameters.end.pw
+10	":"	punctuation.separator.type.pw
+10	"html"	support.type.output.pw
+10	"{"	punctuation.definition.block.begin.pw
+11	"<"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.begin.html
+11	"table"	meta.embedded.block.html meta.tag.html entity.name.tag.html
+11	"class"	meta.embedded.block.html meta.tag.html entity.other.attribute-name.html
+11	"="	meta.embedded.block.html meta.tag.html punctuation.separator.key-value.html
+11	"\""	meta.embedded.block.html meta.tag.html punctuation.definition.string.begin.html
+11	"inventory"	meta.embedded.block.html meta.tag.html string.quoted.double.html
+11	"\""	meta.embedded.block.html meta.tag.html punctuation.definition.string.end.html
+11	">"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.end.html
+11	"<"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.begin.html
+11	"thead"	meta.embedded.block.html meta.tag.html entity.name.tag.html
+11	">"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.end.html
+11	"<"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.begin.html
+11	"tr"	meta.embedded.block.html meta.tag.html entity.name.tag.html
+11	">"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.end.html
+11	"<"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.begin.html
+11	"th"	meta.embedded.block.html meta.tag.html entity.name.tag.html
+11	">"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.end.html
+11	"Code"	meta.embedded.block.html
+11	"</"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.begin.html
+11	"th"	meta.embedded.block.html meta.tag.html entity.name.tag.html
+11	">"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.end.html
+11	"<"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.begin.html
+11	"th"	meta.embedded.block.html meta.tag.html entity.name.tag.html
+11	">"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.end.html
+11	"Name"	meta.embedded.block.html
+11	"</"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.begin.html
+11	"th"	meta.embedded.block.html meta.tag.html entity.name.tag.html
+11	">"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.end.html
+11	"<"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.begin.html
+11	"th"	meta.embedded.block.html meta.tag.html entity.name.tag.html
+11	">"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.end.html
+11	"Qty"	meta.embedded.block.html
+11	"</"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.begin.html
+11	"th"	meta.embedded.block.html meta.tag.html entity.name.tag.html
+11	">"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.end.html
+11	"<"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.begin.html
+11	"th"	meta.embedded.block.html meta.tag.html entity.name.tag.html
+11	">"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.end.html
+11	"Price"	meta.embedded.block.html
+11	"</"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.begin.html
+11	"th"	meta.embedded.block.html meta.tag.html entity.name.tag.html
+11	">"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.end.html
+11	"<"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.begin.html
+11	"th"	meta.embedded.block.html meta.tag.html entity.name.tag.html
+11	">"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.end.html
+11	"Stock"	meta.embedded.block.html
+11	"</"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.begin.html
+11	"th"	meta.embedded.block.html meta.tag.html entity.name.tag.html
+11	">"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.end.html
+11	"</"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.begin.html
+11	"tr"	meta.embedded.block.html meta.tag.html entity.name.tag.html
+11	">"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.end.html
+11	"</"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.begin.html
+11	"thead"	meta.embedded.block.html meta.tag.html entity.name.tag.html
+11	">"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.end.html
+11	"<"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.begin.html
+11	"tbody"	meta.embedded.block.html meta.tag.html entity.name.tag.html
+11	">"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.end.html
+11	"{"	meta.embedded.block.html punctuation.section.embedded.pw
+11	"for"	meta.embedded.block.html keyword.control.pw
+11	"item"	meta.embedded.block.html meta.embedded.expression.pw variable.other.pw
+11	"in"	meta.embedded.block.html meta.embedded.expression.pw keyword.control.pw
+11	"items"	meta.embedded.block.html meta.embedded.expression.pw variable.other.pw
+11	"}"	meta.embedded.block.html punctuation.section.embedded.pw
+11	"<"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.begin.html
+11	"tr"	meta.embedded.block.html meta.tag.html entity.name.tag.html
+11	"class"	meta.embedded.block.html meta.tag.html entity.other.attribute-name.html
+11	"="	meta.embedded.block.html meta.tag.html punctuation.separator.key-value.html
+11	"\""	meta.embedded.block.html meta.tag.html punctuation.definition.string.begin.html
+11	"{"	meta.embedded.block.html meta.tag.html string.quoted.double.html punctuation.section.embedded.pw
+11	"item"	meta.embedded.block.html meta.tag.html string.quoted.double.html meta.embedded.expression.pw variable.other.pw
+11	"."	meta.embedded.block.html meta.tag.html string.quoted.double.html meta.embedded.expression.pw punctuation.accessor.pw
+11	"inStock"	meta.embedded.block.html meta.tag.html string.quoted.double.html meta.embedded.expression.pw variable.other.property.pw
+11	"?"	meta.embedded.block.html meta.tag.html string.quoted.double.html meta.embedded.expression.pw keyword.operator.pw
+11	"'"	meta.embedded.block.html meta.tag.html string.quoted.double.html meta.embedded.expression.pw string.quoted.single.pw
+11	"in"	meta.embedded.block.html meta.tag.html string.quoted.double.html meta.embedded.expression.pw string.quoted.single.pw
+11	"'"	meta.embedded.block.html meta.tag.html string.quoted.double.html meta.embedded.expression.pw string.quoted.single.pw
+11	":"	meta.embedded.block.html meta.tag.html string.quoted.double.html meta.embedded.expression.pw keyword.operator.pw
+11	"'"	meta.embedded.block.html meta.tag.html string.quoted.double.html meta.embedded.expression.pw string.quoted.single.pw
+11	"out"	meta.embedded.block.html meta.tag.html string.quoted.double.html meta.embedded.expression.pw string.quoted.single.pw
+11	"'"	meta.embedded.block.html meta.tag.html string.quoted.double.html meta.embedded.expression.pw string.quoted.single.pw
+11	"}"	meta.embedded.block.html meta.tag.html string.quoted.double.html punctuation.section.embedded.pw
+11	"\""	meta.embedded.block.html meta.tag.html punctuation.definition.string.end.html
+11	">"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.end.html
+11	"<"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.begin.html
+11	"td"	meta.embedded.block.html meta.tag.html entity.name.tag.html
+11	">"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.end.html
+11	"{"	meta.embedded.block.html punctuation.section.embedded.pw
+11	"item"	meta.embedded.block.html meta.embedded.expression.pw variable.other.pw
+11	"."	meta.embedded.block.html meta.embedded.expression.pw punctuation.accessor.pw
+11	"code"	meta.embedded.block.html meta.embedded.expression.pw variable.other.property.pw
+11	"}"	meta.embedded.block.html punctuation.section.embedded.pw
+11	"</"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.begin.html
+11	"td"	meta.embedded.block.html meta.tag.html entity.name.tag.html
+11	">"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.end.html
+11	"<"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.begin.html
+11	"td"	meta.embedded.block.html meta.tag.html entity.name.tag.html
+11	">"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.end.html
+11	"{"	meta.embedded.block.html punctuation.section.embedded.pw
+11	"item"	meta.embedded.block.html meta.embedded.expression.pw variable.other.pw
+11	"."	meta.embedded.block.html meta.embedded.expression.pw punctuation.accessor.pw
+11	"name"	meta.embedded.block.html meta.embedded.expression.pw variable.other.property.pw
+11	"}"	meta.embedded.block.html punctuation.section.embedded.pw
+11	"</"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.begin.html
+11	"td"	meta.embedded.block.html meta.tag.html entity.name.tag.html
+11	">"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.end.html
+11	"<"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.begin.html
+11	"td"	meta.embedded.block.html meta.tag.html entity.name.tag.html
+11	">"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.end.html
+11	"{"	meta.embedded.block.html punctuation.section.embedded.pw
+11	"item"	meta.embedded.block.html meta.embedded.expression.pw variable.other.pw
+11	"."	meta.embedded.block.html meta.embedded.expression.pw punctuation.accessor.pw
+11	"qty"	meta.embedded.block.html meta.embedded.expression.pw variable.other.property.pw
+11	"}"	meta.embedded.block.html punctuation.section.embedded.pw
+11	"</"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.begin.html
+11	"td"	meta.embedded.block.html meta.tag.html entity.name.tag.html
+11	">"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.end.html
+11	"<"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.begin.html
+11	"td"	meta.embedded.block.html meta.tag.html entity.name.tag.html
+11	">"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.end.html
+11	"{"	meta.embedded.block.html punctuation.section.embedded.pw
+11	"item"	meta.embedded.block.html meta.embedded.expression.pw variable.other.pw
+11	"."	meta.embedded.block.html meta.embedded.expression.pw punctuation.accessor.pw
+11	"price"	meta.embedded.block.html meta.embedded.expression.pw variable.other.property.pw
+11	"}"	meta.embedded.block.html punctuation.section.embedded.pw
+11	"</"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.begin.html
+11	"td"	meta.embedded.block.html meta.tag.html entity.name.tag.html
+11	">"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.end.html
+11	"<"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.begin.html
+11	"td"	meta.embedded.block.html meta.tag.html entity.name.tag.html
+11	">"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.end.html
+11	"{"	meta.embedded.block.html punctuation.section.embedded.pw
+11	"if"	meta.embedded.block.html keyword.control.pw
+11	"item"	meta.embedded.block.html meta.embedded.expression.pw variable.other.pw
+11	"."	meta.embedded.block.html meta.embedded.expression.pw punctuation.accessor.pw
+11	"inStock"	meta.embedded.block.html meta.embedded.expression.pw variable.other.property.pw
+11	"}"	meta.embedded.block.html punctuation.section.embedded.pw
+11	"<"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.begin.html
+11	"em"	meta.embedded.block.html meta.tag.html entity.name.tag.html
+11	">"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.end.html
+11	"in stock"	meta.embedded.block.html
+11	"</"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.begin.html
+11	"em"	meta.embedded.block.html meta.tag.html entity.name.tag.html
+11	">"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.end.html
+11	"{"	meta.embedded.block.html punctuation.section.embedded.pw
+11	"/"	meta.embedded.block.html keyword.control.pw
+11	"if"	meta.embedded.block.html keyword.control.pw
+11	"}"	meta.embedded.block.html punctuation.section.embedded.pw
+11	"</"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.begin.html
+11	"td"	meta.embedded.block.html meta.tag.html entity.name.tag.html
+11	">"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.end.html
+11	"</"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.begin.html
+11	"tr"	meta.embedded.block.html meta.tag.html entity.name.tag.html
+11	">"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.end.html
+11	"{"	meta.embedded.block.html punctuation.section.embedded.pw
+11	"/"	meta.embedded.block.html keyword.control.pw
+11	"for"	meta.embedded.block.html keyword.control.pw
+11	"}"	meta.embedded.block.html punctuation.section.embedded.pw
+11	"</"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.begin.html
+11	"tbody"	meta.embedded.block.html meta.tag.html entity.name.tag.html
+11	">"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.end.html
+11	"</"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.begin.html
+11	"table"	meta.embedded.block.html meta.tag.html entity.name.tag.html
+11	">"	meta.embedded.block.html meta.tag.html punctuation.definition.tag.end.html
+12	"}"	punctuation.definition.block.end.pw
+
 ## tools/vscode/test/fixtures/readings.pw.dynamo [source.pw.dynamo]
 1	"// The repository has no production .pw.dynamo source yet, so the grammar's"	comment.line.pw
 2	"// snapshot coverage for the dialect comes from here. Keep it in step with"	comment.line.pw
