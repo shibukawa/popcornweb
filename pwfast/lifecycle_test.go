@@ -10,7 +10,7 @@ import (
 	"github.com/shibukawa/popcornweb/contrib/otel/trace"
 	"github.com/shibukawa/popcornweb/pwruntime"
 	"github.com/shibukawa/popcornweb/session"
-	httpbind "github.com/shibukawa/tinybind-go"
+	httpbind "github.com/shibukawa/tinybind-go/httpbind"
 	"github.com/shibukawa/tinygodriver/fasthttp"
 	"github.com/shibukawa/tinygodriver/fasthttp/fasthttputil"
 )

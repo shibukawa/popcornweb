@@ -9,7 +9,7 @@ import (
 	"strings"
 
 	"github.com/shibukawa/popcornweb/pwruntime"
-	httpbind "github.com/shibukawa/tinybind-go"
+	httpbind "github.com/shibukawa/tinybind-go/httpbind"
 )
 
 // ErrorPage is the sanitized model passed to an application's HTML renderer.

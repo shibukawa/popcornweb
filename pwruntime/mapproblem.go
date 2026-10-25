@@ -4,7 +4,7 @@ import (
 	"errors"
 	"net/http"
 
-	tinybind "github.com/shibukawa/tinybind-go"
+	tinybind "github.com/shibukawa/tinybind-go/httpbind"
 )
 
 // MapProblem turns any error into the problem a response describes.

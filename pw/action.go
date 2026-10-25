@@ -3,7 +3,7 @@ package pw
 import (
 	"net/http"
 
-	tinybind "github.com/shibukawa/tinybind-go"
+	tinybind "github.com/shibukawa/tinybind-go/httpbind"
 )
 
 // The two calls a generated page dispatcher makes.

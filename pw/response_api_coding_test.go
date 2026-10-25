@@ -5,7 +5,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	tinybind "github.com/shibukawa/tinybind-go"
+	tinybind "github.com/shibukawa/tinybind-go/httpbind"
 )
 
 type codingProbe struct {

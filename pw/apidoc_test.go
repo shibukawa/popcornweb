@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	"github.com/shibukawa/popcornweb/pwruntime"
-	tinybind "github.com/shibukawa/tinybind-go"
+	tinybind "github.com/shibukawa/tinybind-go/httpbind"
 )
 
 func apiDocConfigs(ui string) (ServerConfig, SecurityConfig, MiddlewareConfig) {

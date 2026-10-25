@@ -14,10 +14,10 @@ import (
 
 	"github.com/shibukawa/popcornweb/middlewares"
 	"github.com/shibukawa/popcornweb/pwruntime"
-	tinybind "github.com/shibukawa/tinybind-go"
 	"github.com/shibukawa/tinybind-go/htmlbind"
 	"github.com/shibukawa/tinybind-go/htmlbind/delta"
 	"github.com/shibukawa/tinybind-go/htmlupdate"
+	tinybind "github.com/shibukawa/tinybind-go/httpbind"
 )
 
 // Problem is the application-facing RFC problem value.

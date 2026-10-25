@@ -112,7 +112,7 @@ Tags []string `query:"tag"`
 ### マルチパートのファイル
 
 ```go
-import httpbind "github.com/shibukawa/tinybind-go"
+import httpbind "github.com/shibukawa/tinybind-go/httpbind"
 
 type uploadInput struct {
 	Title string        `payload:"title" check:"required"`

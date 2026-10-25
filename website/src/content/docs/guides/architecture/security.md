@@ -14,6 +14,250 @@ The request path below shows where each check runs. It also makes the boundary
 clear: Popcorn Web can reject an unsafe request, but it cannot decide who
 should be allowed to perform an application-specific action.
 
+## Security first
+
+Popcorn Web is developed on the premise that a web application is attacked, and
+that most of what an attacker tries is the same handful of moves against every
+site. So every defense that can be decided without knowing the application is
+decided by the framework, as early as possible: at generation time, where
+[tinybind-go](https://github.com/shibukawa/tinybind-go) compiles the template,
+the query, and the request binding into type-specific Go with no reflection; or
+in the chain above the handler, where a request is measured, parsed, and
+sometimes refused before any application code runs.
+
+The other half of the premise is that a defense you cannot see is one you cannot
+rely on. The safe setting is the default, a setting that turns a defense off
+refuses to start outside development or warns and is reported by `pw doctor`,
+and a refusal tells the caller nothing about which check failed. The rest of
+this page is the detail; this section is the map.
+
+### What Popcorn Web already handles
+
+#### Oversized bodies
+
+`server.max_request_body` caps every request at 10 MiB, outside your own
+middleware, so a middleware that reads the body is bounded too; the fasthttp
+build refuses the request with 413 before a handler runs. Inside that cap each
+decoder has its own bound, because decode memory is a different cost from
+transfer size: 1 MiB for a JSON document, a multipart body, and a CBOR body
+(`server.cbor_max_body`), 16 KiB for a bearer token, 128 bytes for a request
+ID, and none of them can be set to unlimited. See
+[`[server]`](/reference/configuration/#server) and tinybind-go's [size and shape
+limits](https://github.com/shibukawa/tinybind-go/blob/main/docs/limits.md).
+
+#### Slow and half-open connections
+
+Five seconds to send the headers, thirty to send the whole request, two minutes
+idle on a keep-alive connection: the timeouts are what take a goroutine back
+from a client feeding bytes one at a time. The write timeout is zero because a
+live response is meant to stay open, and `html.live_idle_timeout` closes one
+that no source has delivered on for five minutes. `middleware.request_timeout`
+puts a deadline on the request context once you set one.
+
+#### Compression bombs
+
+A request body is never decompressed, neither by this framework nor by
+tinybind-go underneath it: a `Content-Encoding` on a request is ignored, so a
+few kilobytes that would inflate to gigabytes arrive as kilobytes, under the cap
+above. Compression is outbound only, precompressed assets are produced by `pw
+build`, and the bytes read from an identity provider are bounded after the
+transport's own decompression. WebSocket permessage-deflate, the one inflating
+codec in the stack, is off by default, and `ReadLimit` counts the message after
+inflation.
+
+#### Malformed input and unexpected parameters
+
+`pw.Parse[T]` binds a request through code generated for that one struct, so
+the struct is the whole surface: a key no field names is skipped unless a
+`payload:"*"` rest map asks for it, and a value that does not parse or fails a
+`check` rule fails the whole bind with one 400 problem document naming each
+field. There is no prototype on the server for `__proto__` to pollute, and a
+document deeper than 90 levels is refused so its depth cannot become the Go
+stack's. A session cookie with the wrong syntax never reaches the store, and a
+request ID outside 128 printable ASCII characters is replaced rather than
+echoed. See [Request Binding](/reference/request-binding/).
+
+#### Session fixation
+
+The server never adopts a token it did not mint: an unknown cookie is cleared
+and the request continues anonymous, and a minted token is 256 random bits
+stored under its SHA-256 hash. A login rotates the session — the old record is
+revoked first, a new token issued, the CSRF secret minted afresh — so whatever a
+browser held before the login is dead after it, and a step-up rotates for the
+same reason. The cookie is `HttpOnly`, `Secure`, and `SameSite=Lax`, and
+`secure = false` refuses to start outside development. See [The move that
+happens at login](/guides/backend/sessions/#the-move-that-happens-at-login).
+
+#### Password capture and code interception
+
+The framework never handles a password. Browser login is OpenID Connect, or
+plain OAuth 2.0 for a provider without ID Tokens, and the only grant is
+Authorization Code with mandatory `S256` PKCE; the password, implicit, and
+client credentials grants are not implemented. The `state`, the PKCE verifier,
+and the `nonce` live in a server-side transaction consumed exactly once, the
+browser holding only an opaque key in a ten-minute cookie, and an ID Token is
+accepted only under `RS256` with its `nonce` and `azp` checked. Browserless
+devices use the Device Authorization Grant at the interval the server sets.
+Passkeys are WebAuthn bound to the configured origins, with user verification
+on demand and a reversed signature counter reported. `pw dev` runs a local
+OpenID Provider that checks no password and refuses `prod`, so an application
+is tested signed in through the real login, session, guard, and CSRF check
+rather than behind a bypass flag. See [Authentication
+design](/guides/backend/authentication-design/#what-the-modes-separate) and
+the [development identity provider](/productivity/dev-identity-provider/).
+
+#### Forgery and injection in the page
+
+Cross-site request forgery, script injection, `javascript:` URLs, framing, and
+the compression side channel on the CSRF token each have a section of this
+page: see [What is on by
+default](/guides/architecture/security/#what-is-on-by-default) and [How CSRF
+works here](/guides/architecture/security/#how-csrf-works-here). The escaping
+and URL rules are tinybind-go's htmlbind, which decides what a value may become
+by the position it lands in — text and attributes are escaped, a URL attribute
+demands a `url` at generation time and a permitted scheme at render time, and a
+`<script>` body or event handler takes nothing a `string` can reach; its
+[security
+reference](https://github.com/shibukawa/tinybind-go/blob/main/docs/htmlbind_security.md)
+has the full table. `pw.Redirect` refuses a target a browser could not follow
+without running script, and the login's `next` parameter accepts only a rooted
+local path.
+
+#### SQL injection
+
+Every `{name}` in a `.pw.sql` body is a prepared-statement placeholder:
+tinybind-go's sqlbind never concatenates a template expression into SQL text,
+refuses a handwritten `$1` or `?`, and lets no value stand where an identifier,
+an operator, or a sort direction belongs. It also removes the reason people
+concatenate: a search with optional conditions is written as plain SQL with
+`{if}` blocks punched out of it, and the compiler withholds dangling `AND`s and
+commas, drops an empty `WHERE`, renumbers the placeholders, and expands a slice
+into an `IN` list, so the clause injection enters through is never assembled by
+hand. An `UPDATE` or `DELETE` whose `WHERE` could be empty on some branch is
+refused at generation. See [Conditional
+SQL](/guides/storage/queries/#conditional-sql), [Two safety
+rules](/guides/storage/queries/#two-safety-rules), and sqlbind's [Values are
+always
+parameters](https://github.com/shibukawa/tinybind-go/blob/main/docs/sqlbind.md#values-are-always-parameters).
+
+#### Path traversal
+
+Static assets are served from the tree `pw build` embedded, so outside
+development there is no disk to traverse, and the request path still has to be
+canonical: dot-prefixed segments, `..`, backslashes, NUL, and symbolic links are
+refused, after one round of percent-decoding. See [Path
+handling](/guides/frontend/static-assets/#path-handling).
+
+#### Flooding and brute force
+
+Rate limiting is off until configured, because the proxy in front of a
+deployment already limits by address; what it adds is the budget the edge cannot
+compute, per signed-in user — 600 requests a minute to a user and 300 to an
+address by default, 429 with `Retry-After` past that, and a process-wide
+ceiling. The address counted comes from `X-Forwarded-For` only when the peer is
+in `server.trusted_proxies`, so a header cannot buy a fresh budget, and a forged
+`kid` triggers at most one key refresh per cooldown. See [Rate
+Limiting](/guides/backend/rate-limiting/).
+
+#### Timing attacks
+
+Every comparison against a secret — the CSRF token, a signed cookie's MAC, a
+passkey challenge, an HMAC bearer token, a signed storage URL, an OIDC `nonce` —
+is constant time, so response time says nothing about how close a guess came.
+
+#### Token attacks
+
+A bearer token is parsed under hard bounds — three segments of 8 KiB, 16 levels
+of nesting, 256 members, no duplicate members, no `crit`, integer dates — before
+anything is verified. `alg: none` is refused, the allowlist cannot name a
+symmetric algorithm, and the key is resolved by `kid` from a JWKS on the
+issuer's own origin, fetched over HTTPS without redirects, for the same
+algorithm the header names; an ambiguous match or an RSA key under 2048 bits is
+refused. Then the whole claim set is required: `iss`, `aud` with `any` or `all`
+of the configured values, `exp`, `nbf`, and `iat` within a leeway capped at
+five minutes, `exp - iat` within `max_token_lifetime`, `sub`, a `typ` of
+`at+jwt` so an ID Token cannot be replayed as an access token, `jti`, and every
+`required_scopes` entry. Only then does the request reach admission and
+revocation, which fail closed, and every rejection is the same 401 with
+`WWW-Authenticate: Bearer`. An unknown `kid` triggers at most one refresh per
+cooldown, and cached keys outlive an outage by an hour, as [Known
+limits](/guides/architecture/security/#cached-jwks-keys-expire-even-during-an-outage)
+explains. See [JWT-only API
+servers](/guides/backend/authentication/#jwt-only-api-servers) and
+[`[auth.jwt]`](/reference/configuration/#authjwt).
+
+#### Crashes and error detail
+
+A panic in a handler becomes a 500 through the same negotiated error path as
+any other failure, with the panic in the log and nothing of it in the response,
+and outside development an error page carries a status and a title and nothing
+else. See [Different with no setting at
+all](/guides/architecture/security/#different-with-no-setting-at-all).
+
+### Non-functional security concerns
+
+These are not implemented in the framework, because another layer or the
+application is the right owner. The list above does not replace a review of
+what your own handler trusts; [What you still
+own](/guides/architecture/security/#what-you-still-own) names the rest.
+
+#### TLS termination
+
+TLS terminates at the load balancer or the CDN. The framework binds a plain
+port, learns that a request was HTTPS from its own TLS connection or from the
+`X-Forwarded-Proto` a proxy in `server.trusted_proxies` sent, and sends HSTS
+only on a request verified that way. A process that must serve TLS itself can,
+because `pw.Middlewares` returns the composed chain as an ordinary
+`http.Handler`. See [Reverse Proxy](/guides/deployment/reverse-proxy/).
+
+#### Volumetric denial of service
+
+Traffic that saturates a link or a port is absorbed by the WAF or the edge,
+which sees it before the process does. The timeouts, caps, and rate limits
+above are application-layer flood control, and the budget per signed-in user is
+the one part only the application can compute.
+
+#### Authorization
+
+A validated session or bearer token says who is asking, not what they may do.
+Path protection covers whole routes; anything finer belongs to the handler, or
+to `{check …}` in the page.
+
+#### What a request value may control
+
+Nothing in a `Parse` struct is unbindable, so a value the caller must not
+control does not belong in one: bind what the request may carry and derive the
+rest in the handler. A component published as redrawable makes its parameters
+attacker-controlled, and checking ownership is the component's own job.
+
+#### Where a redirect may go
+
+The URL rules refuse a scheme that executes, not a destination: `//other.example/`
+is navigable, and `ping` and `srcset` accept any destination that parses. The
+login's `next` is the one place the framework insists on a local path;
+everywhere else, a user-supplied destination is yours to validate.
+
+#### Uploaded files and archives
+
+An uploaded file is bytes to the binder: the framework never opens an archive,
+never renders an upload, and bounds only its size. Unpacking, scanning, and
+serving what a user uploaded are decisions the application makes with its own
+limits.
+
+#### Template positions without a rule
+
+htmlbind does not yet filter a `meta refresh` URL, applies HTML escaping rather
+than CSS escaping to a `style` attribute, and has no rule for `srcdoc`. Do not
+build any of them from untrusted input; the [security
+reference](https://github.com/shibukawa/tinybind-go/blob/main/docs/htmlbind_security.md#known-gaps)
+tracks the list.
+
+#### Secrets already leaked
+
+Values marked secret are redacted from logs and the startup summary, and `pw
+doctor` reports a literal secret in a committed file; neither can tell you the
+value was already taken. Rotation is yours.
+
 ## What a request passes through
 
 A request reaches your handler through a chain, and the order is not arbitrary.

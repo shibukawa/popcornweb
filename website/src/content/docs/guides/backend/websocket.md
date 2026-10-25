@@ -167,7 +167,7 @@ what a `gorilla/websocket` application already ran with:
 
 | Option | Default | What it bounds |
 | --- | --- | --- |
-| `ReadLimit` | 1 MiB | One inbound message; a larger one closes the connection |
+| `ReadLimit` | 1 MiB | One inbound message, counted after decompression; a larger one closes the connection with 1009 |
 | `IdleTimeout` | 60s | The read deadline, refreshed by each pong |
 | `PingInterval` | 54s | How often the runtime pings; must be below `IdleTimeout` |
 | `WriteTimeout` | 10s | One write, so a stalled peer cannot pin a writer |

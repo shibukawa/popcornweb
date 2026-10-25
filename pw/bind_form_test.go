@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	tinybind "github.com/shibukawa/tinybind-go"
+	tinybind "github.com/shibukawa/tinybind-go/httpbind"
 )
 
 type replayFormInput struct{ Owner string }

@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	tinybind "github.com/shibukawa/tinybind-go"
+	tinybind "github.com/shibukawa/tinybind-go/httpbind"
 )
 
 // Problem is the application-facing RFC problem value.

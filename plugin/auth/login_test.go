@@ -26,8 +26,8 @@ import (
 	"github.com/shibukawa/popcornweb/pw"
 	"github.com/shibukawa/popcornweb/sessionstore"
 	_ "github.com/shibukawa/popcornweb/sessionstore/sqlite"
-	httpbind "github.com/shibukawa/tinybind-go"
 	"github.com/shibukawa/tinybind-go/configbind"
+	httpbind "github.com/shibukawa/tinybind-go/httpbind"
 )
 
 // identityProvider is a minimal OpenID Provider fixture. Its authorization

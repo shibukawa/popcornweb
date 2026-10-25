@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"strings"
 
-	tinybind "github.com/shibukawa/tinybind-go"
+	tinybind "github.com/shibukawa/tinybind-go/httpbind"
 )
 
 func Parse[T any](r *http.Request) (T, error) {
