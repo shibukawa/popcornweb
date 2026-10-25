@@ -138,6 +138,43 @@ itself is `HttpOnly`, `Secure`, and `SameSite=Lax`, and startup refuses
 `secure = false` outside development. See [The move that happens at
 login](/guides/backend/sessions/#the-move-that-happens-at-login).
 
+**Password capture and code interception.** The framework never handles a
+password. Browser sign-in is OpenID Connect, or plain OAuth 2.0 for a provider
+such as X that issues no ID Token, and the only grant either uses is
+Authorization Code with PKCE: every authorization request carries an `S256`
+challenge, a 32-byte `state`, and for OIDC a fresh `nonce`, with no setting
+that turns any of them off. The Resource Owner Password grant, the implicit
+flow, and the client credentials grant are not implemented, and neither is an
+authorization server — the package is a client, bounded on purpose. The state,
+the verifier, and the nonce stay in a server-side transaction that is consumed
+exactly once and compared in constant time; the browser holds only an opaque
+key to it, in a cookie that lives ten minutes, so a callback forged or replayed
+from another page carries nothing the transaction will recognize, and the
+redirect URI the exchange names has to be the one the login started with. The
+client authenticates to the token endpoint with HTTP Basic or a form field,
+never a query parameter, and an ID Token is accepted only under `RS256`, with
+its `nonce` and `azp` checked. A device with no browser uses the Device
+Authorization Grant, polling at the interval the server set and backing off on
+`slow_down` rather than hammering it. A passkey login is WebAuthn held to its
+own origin: the client data has to name the ceremony and an allowed origin and
+may not come from a cross-origin frame, the RP ID hash is compared in constant
+time, user verification can be demanded, a signature counter that moves
+backwards is reported, and attestation is not relied upon. The one-time secret
+an administrator issues under `passkey_only` is kept as a digest and spent on
+redemption. The modes themselves refuse what they cannot prove: `oauth_only`
+declines the shared-device setting and answers a step-up with 503, because an
+unsigned profile supports neither, and a mode fails at startup when a setting
+from another one is left behind, since a setting that is silently ignored
+reads as configured security. Development gets no hole either: `pw dev` can
+run a local OpenID Provider that speaks the same flow, so an application is
+built and tested signed in — through the real login, session, guard, and CSRF
+check — instead of behind a flag that skips them, which is the kind of flag
+that ships. That provider lets you pick a user from a roster and checks no
+password, so it binds to loopback, refuses to start under `prod`, and fails
+`pw build` when the application imports it. See [Authentication
+design](/guides/backend/authentication-design/#what-the-modes-separate) and
+the [development identity provider](/productivity/dev-identity-provider/).
+
 **Forgery and injection in the page.** Cross-site request forgery, script
 injection, a `javascript:` URL, framing, and the compression side channel on
 the CSRF token each have a section of this page, because each needs more than a
