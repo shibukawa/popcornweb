@@ -1,6 +1,6 @@
 ---
 title: Behind a Reverse Proxy
-description: What a terminating proxy changes about HTTPS detection, the CSRF origin check, and progressive rendering, and which setting puts each one back.
+description: What a terminating proxy changes about HTTPS detection, the CSRF origin check, the client address, and progressive rendering, and which setting puts each one back.
 sidebar:
   order: 4
 ---
@@ -20,8 +20,8 @@ refused, and progressive rendering stops being progressive.
 If nothing sits in front of your application — the process terminates TLS
 itself, or it is reachable only from a socket you own — skip this page and leave
 `server.trusted_proxies` empty. The empty list is what makes `X-Forwarded-Proto`
-unspoofable, and naming a network you do not fully control gives that header
-away to anyone who can reach the port from inside it.
+and `X-Forwarded-For` unspoofable, and naming a network you do not fully control
+gives both headers away to anyone who can reach the port from inside it.
 
 The opposite arrangement — the application forwarding some paths on to a service
 the browser never reaches directly — is a different job with a different page:
@@ -71,40 +71,73 @@ is what each one is holding up.
 
 ## What `trusted_proxies` decides
 
-One thing, today: whether `X-Forwarded-Proto` is believed when the security
-headers middleware asks if this request arrived over HTTPS. Since HSTS is sent
-only on a verified HTTPS request, and a terminating proxy leaves no TLS
-connection to verify, the list is what stands between a configured
-`Strict-Transport-Security` and a header that never ships. Configure HSTS,
-deploy behind a proxy, watch the header not appear — that is this, and the fix
-is the list.
+Two things, and both come from one question: whose forwarding headers count as
+evidence. A header from a peer on the list is believed. The same header from
+anyone else is treated as absent rather than as false, so a deployment behind a
+proxy it never named gets exactly the answers it would get with no proxy there —
+HSTS withheld, an `http://` origin, one address for every visitor.
 
-It goes no further than that. The framework reconstructs no client IP, and the
-other forwarding headers are read nowhere in a production build:
+The first is whether `X-Forwarded-Proto` is believed when the process asks what
+scheme the client used. A direct TLS connection answers that on its own; a
+terminating proxy leaves none, so with the list empty every request is `http`.
+HSTS is sent only on a verified HTTPS request, which puts the list between a
+configured `Strict-Transport-Security` and a header that never ships. Configure
+HSTS, deploy behind a proxy, watch the header not appear — that is this, and the
+fix is the list. The same resolved scheme is what the CSRF check reconstructs
+this deployment's origin with, what a WebSocket upgrade's origin check uses, and
+what `plugin/auth` reconstructs its own origin and post-logout redirect URL from,
+so there is one answer to "was this HTTPS" and the list gates all of it.
+
+The second is which address is the client. Behind a proxy `RemoteAddr` is the
+proxy, and everything that bounds one caller — the rate limiter's `per_address`
+bucket, `html.live_max_responses` for an anonymous visitor — would count the
+whole deployment as one. When the peer is on the list, the framework walks
+`X-Forwarded-For` from the right, past every hop that is itself a declared
+proxy, and takes the first address that is not one: the last hop a proxy you
+trust vouched for. A chain made entirely of your own proxies yields its leftmost
+entry. A hop that does not parse as an address ends the walk and the TCP peer is
+used instead, because a chain that cannot be read cannot be trusted partway.
+From a peer not on the list the header is ignored and the peer is the client, so
+nobody buys a fresh budget by asserting one.
 
 | Header | What reads it |
 | --- | --- |
-| `X-Forwarded-Proto` | the security headers middleware, gated by this list; and `plugin/auth`, ungated, when it builds the post-logout redirect URL |
-| `Host` | the CSRF origin check, and every absolute URL the framework builds |
-| `X-Forwarded-For`, `X-Forwarded-Host`, `Forwarded`, `X-Real-IP` | nothing outside development |
+| `X-Forwarded-Proto` | the scheme the client used, from a declared proxy only: whether HSTS is sent, and the scheme of the origin the CSRF check, a WebSocket upgrade, and `plugin/auth` reconstruct for this deployment |
+| `X-Forwarded-For` | the client's address, from a declared proxy only: what the `per_address` rate limit bucket and `html.live_max_responses` count against |
+| `Host` | the host half of that reconstructed origin, and every absolute URL the framework builds |
+| `X-Forwarded-Host`, `Forwarded`, `X-Real-IP` | nothing outside development |
 
-The ungated read in that first row is why the proxy must **set**
-`X-Forwarded-Proto` rather than append to whatever arrived. `$scheme` in nginx
-overwrites; a configuration that preserves a client-supplied value lets the
-client name the scheme.
+The two headers ask opposite things of the proxy, and the nginx block above does
+both. The scheme is read from the first value of `X-Forwarded-Proto`, so the
+proxy must **set** that header rather than append to whatever arrived: `$scheme`
+overwrites, and a configuration that preserves a client-supplied value lets the
+client name the scheme. `X-Forwarded-For` is read from the right, so the proxy
+should **append** — which is what `$proxy_add_x_forwarded_for` does — and
+anything the client forged sits to the left of the hop the proxy added, where
+the walk never reaches it.
 
 Values are IP addresses or CIDR blocks, and a malformed one fails startup rather
 than being skipped. Name the narrowest thing that is true — `127.0.0.1` for a
-proxy on the same host, the pod or subnet CIDR for a sidecar or an ingress.
+proxy on the same host, the pod or subnet CIDR for a sidecar or an ingress —
+because everything inside a named network may assert both headers, and a client
+that reaches the port from inside it is a hop the walk trusts. Leave the list
+empty behind a proxy and the first request carrying either header logs one
+warning per process saying so. A list that names the wrong network gets no
+warning; the headers are simply ignored.
 
 **When the proxy has no fixed address** — an application load balancer drawing
-from a rotating pool, a CDN, a platform that hands you no range at all — the
-better answer is usually to stop sending HSTS from the application and let the
-load balancer send it. That layer terminates the TLS connection, so it knows the
-answer the application is trying to infer, and one layer setting a header beats
-two layers disagreeing about it. Reach for `trusted_proxies = ["0.0.0.0/0"]`
-only when the port is genuinely unreachable except through the balancer, and
-write it knowing it says the network is your only boundary.
+from a rotating pool, a CDN, a platform that hands you no range at all — each
+thing the list decides has a fallback that needs no list. Stop sending HSTS from
+the application and let the load balancer send it: that layer terminates the TLS
+connection, so it knows the answer the application is trying to infer, and one
+layer setting a header beats two layers disagreeing about it. Name the public
+origin in `security.csrf.trusted_origins`, which the next section covers. Leave
+the per-client bounds to the balancer, which is the layer that still sees
+distinct clients; [the live bound below](/guides/deployment/reverse-proxy/#one-address-every-anonymous-visitor)
+says how. Reach for `trusted_proxies = ["0.0.0.0/0"]` only when the port is
+genuinely unreachable except through the balancer, and write it knowing it says
+the network is your only boundary — inside it, anyone can name the scheme and
+the client address alike.
 
 ## The origin check has its own list
 
@@ -114,15 +147,19 @@ with nothing in the response saying why.
 
 The [CSRF check](/guides/architecture/security/#how-csrf-works-here) compares
 the browser's `Origin` against the origin the process reconstructs for itself,
-scheme included, and it reconstructs that scheme from `r.TLS`. Behind a
-terminating proxy there is none, so the process decides it is
-`http://app.example.com` while the browser is telling it `https://app.example.com`.
-Same host, different scheme, no match.
+scheme included, and the scheme is the one the previous section resolved:
+`r.TLS`, or `X-Forwarded-Proto` from a declared proxy. With the list empty there
+is neither, so the process decides it is `http://app.example.com` while the
+browser is telling it `https://app.example.com`. Same host, different scheme, no
+match.
 
-Nothing repairs this by reading `X-Forwarded-Proto`, and the omission is
-deliberate rather than an oversight: the reconstructed origin is the value the
-comparison is *made against*, so a caller able to assert the header would be
-asserting the answer. A deployment names its own public origin instead.
+Declaring the proxy repairs the scheme, and for a deployment with one hostname
+that is the whole fix. The second list is for what the proxy cannot tell the
+process: every other origin a browser may legitimately show, and the deployment
+whose proxy has no address to declare. The reconstructed origin is the value the
+comparison is *made against*, so the proxy list can change only what the
+deployment calls itself, never which other origins are acceptable. That is what
+this list is for.
 
 ```toml
 [security.csrf]
@@ -182,14 +219,18 @@ does, or lower `live_max_duration` to fit the timeout you are given.
 ## One address, every anonymous visitor
 
 `html.live_max_responses` bounds concurrent live responses per client, and the
-client is identified by the authenticated subject when there is one and by
-`RemoteAddr` when there is not. Behind a proxy every anonymous visitor shares
-one address. The bound stops being four connections per browser and becomes four
-for the entire deployment, at which point the fifth visitor watching a public
-dashboard is refused.
+client is identified by the authenticated subject when there is one and by the
+resolved client address when there is not. Behind a proxy the list does not
+name, that address is the proxy's, and every anonymous visitor shares it. The
+bound stops being four connections per browser and becomes four for the entire
+deployment, at which point the fifth visitor watching a public dashboard is
+refused.
 
-Which fix applies depends on who is watching. Live pages behind a login are
-keyed by subject and need no change at all. Public ones need the bound moved:
+Which fix applies depends on who is watching and on whether the proxy can be
+named. Live pages behind a login are keyed by subject and need no change at all.
+Public ones behind a proxy with a fixed address need only `trusted_proxies`,
+which puts the bound back on the visitor. Public ones behind a proxy with no
+address to declare need the bound moved:
 
 ```toml
 [html]
@@ -198,7 +239,9 @@ live_max_responses = 0   # unbounded here
 
 Zero removes it, which is only safe if something else limits connections — and
 the proxy is the layer that can, because it is the one that still sees distinct
-clients.
+clients. The [rate limiter's](/guides/backend/rate-limiting/) `per_address`
+bucket has no off position of its own, so behind a proxy you cannot name, leave
+the rate limiter to the edge as well.
 
 ## What stops working in development
 
